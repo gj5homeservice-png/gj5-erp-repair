@@ -33,6 +33,7 @@ export interface RepairCall {
   warrantyDuration?: string; // e.g. "1 Month", "3 Months", "6 Months", "Custom Duration"
   warrantyCustomValue?: string; // e.g. "15 DAY"
   warrantyExpiry?: string; // ISO String for countdown
+  storeLocation?: string; // [SHOWROOM, SERVICE CENTER, GODOWN, OTHER]
 }
 
 export interface Inquiry {

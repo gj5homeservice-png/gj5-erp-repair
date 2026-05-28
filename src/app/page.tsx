@@ -15,8 +15,7 @@ import {
   Eye,
   Upload,
   Image as ImageIcon,
-  Trash2,
-  ShieldAlert
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,7 +91,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-[#0B0F19] text-slate-100">
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 border-r border-slate-800 bg-[#0B0F19]",
         isSidebarOpen ? "w-64" : "w-20"
@@ -142,10 +140,9 @@ export default function DashboardPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-6 py-4">
-                {/* Branding Section */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" /> Shop Identity & Branding
+                    <ImageIcon className="w-4 h-4" /> Branding & Identity
                   </h4>
                   <div className="flex items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
                     <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
@@ -157,11 +154,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 space-y-3">
                       <p className="text-sm font-medium text-slate-300">Shop Logo Asset</p>
-                      <p className="text-xs text-slate-500 leading-relaxed">This image appears in the sidebar, stickers, and invoices.</p>
                       <div className="flex gap-2">
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
                         <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600">
-                          <Upload className="w-4 h-4 mr-2" /> Change Logo
+                          <Upload className="w-4 h-4 mr-2" /> Upload Logo
                         </Button>
                         {store.shopLogo && (
                           <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
@@ -175,10 +171,9 @@ export default function DashboardPage() {
 
                 <Separator className="bg-slate-800" />
 
-                {/* Module Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <LayoutDashboard className="w-4 h-4" /> Sidebar Feature Toggles
+                    <LayoutDashboard className="w-4 h-4" /> Sidebar Module Toggles
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.keys(store.visibility.tabs).map((tab) => (
@@ -195,20 +190,19 @@ export default function DashboardPage() {
 
                 <Separator className="bg-slate-800" />
 
-                {/* KPI Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Eye className="w-4 h-4" /> Master Analytics KPI Toggles
+                    <Eye className="w-4 h-4" /> Analytics KPI Toggles
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       { id: 'totalActive', label: 'Total Active' },
-                      { id: 'pending', label: 'Pending (Yellow)' },
-                      { id: 'completed', label: 'Completed (Green)' },
-                      { id: 'rejected', label: 'Rejected (Red)' },
-                      { id: 'repeat', label: 'Repeat (Purple)' },
-                      { id: 'exchange', label: 'Exch/Pur (Teal)' },
-                      { id: 'warranty', label: 'Warranty (Gold)' }
+                      { id: 'pending', label: 'Pending' },
+                      { id: 'completed', label: 'Completed' },
+                      { id: 'rejected', label: 'Rejected' },
+                      { id: 'repeat', label: 'Repeat Complaints' },
+                      { id: 'exchange', label: 'Exchange/Pur' },
+                      { id: 'warranty', label: 'Warranty Calls' }
                     ].map((kpi) => (
                       <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                         <Label className="text-sm font-medium">{kpi.label}</Label>
@@ -229,17 +223,15 @@ export default function DashboardPage() {
             className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all"
           >
             {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            {isSidebarOpen && <span className="font-medium">Collapse Sidebar</span>}
+            {isSidebarOpen && <span className="font-medium">Collapse</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className={cn(
         "flex-1 flex flex-col transition-all duration-300",
         isSidebarOpen ? "ml-64" : "ml-20"
       )}>
-        {/* Header */}
         <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 bg-[#0B0F19]/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-4 flex-1 max-w-xl">
              <div className="relative w-full">
@@ -263,7 +255,6 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Content Area */}
         <div className="p-8">
           {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={() => setActiveTab('Billing')} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}

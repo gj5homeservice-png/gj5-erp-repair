@@ -28,7 +28,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
     window.print();
   };
 
-  // Full Customer Metadata for Left QR
   const qrMetadata = JSON.stringify({
     cid: call.customerId,
     name: call.customerName,
@@ -52,7 +51,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
         </DialogHeader>
 
         <div className="p-10 flex flex-col items-center gap-8">
-          {/* Physical Sticker Simulation (100mm x 50mm / 4x2 inch) */}
           <div 
             id="thermal-sticker"
             className="w-[600px] h-[300px] bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0"
@@ -61,7 +59,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
               fontFamily: 'Inter, system-ui, sans-serif'
             }}
           >
-            {/* Header Branding */}
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2">
               <div className="flex flex-col">
                 <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</h1>
@@ -71,11 +68,8 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
               </div>
             </div>
 
-            {/* Sticker Body */}
             <div className="flex flex-1 gap-6 items-center">
-              {/* Left Side: Logo + QR */}
               <div className="flex flex-col items-center gap-1.5 flex-1">
-                {/* Logo Placeholder Slot */}
                 <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden mb-1">
                   {shopLogo ? (
                     <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
@@ -98,7 +92,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                 </div>
               </div>
 
-              {/* Right Side: Barcode (RAW JOB ID ONLY) */}
               <div className="flex flex-col items-center justify-center gap-2 flex-[1.5]">
                 <div className="w-full flex justify-center">
                   <Barcode 
@@ -117,9 +110,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                   <p className="text-[11px] font-bold text-slate-800 mt-1 uppercase leading-tight">
                     {call.brand} {call.model} - {call.screenSize}"
                   </p>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">
-                    Service & Maintenance Registry
-                  </p>
                 </div>
               </div>
             </div>
@@ -127,12 +117,11 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
 
           <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 w-full max-w-lg space-y-4">
             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Thermal Print Calibration
+              <Settings className="w-4 h-4" /> Thermal Calibration
             </h4>
             <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
               <li>Printer Target: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
-              <li>Orientation: <span className="text-white font-bold">Landscape / Fit to Page</span>.</li>
-              <li>Left QR encodes <span className="text-emerald-400">Full Profile Metadata</span>.</li>
+              <li>Left QR encodes <span className="text-emerald-400">Full Metadata Manifest</span>.</li>
               <li>Right Barcode encodes <span className="text-blue-400">Raw Alphanumeric Job ID</span>.</li>
             </ul>
           </div>
@@ -153,7 +142,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
       <style jsx global>{`
         @media print {
           @page {
-            size: 4in 2in;
+            size: 100mm 50mm;
             margin: 0;
           }
           body * {
@@ -168,10 +157,10 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
             position: fixed;
             left: 0;
             top: 0;
-            width: 4in !important;
-            height: 2in !important;
+            width: 100mm !important;
+            height: 50mm !important;
             margin: 0 !important;
-            padding: 0.2in !important;
+            padding: 2mm !important;
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;

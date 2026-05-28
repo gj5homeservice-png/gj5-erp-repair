@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Tv,
   Printer as PrinterIcon,
-  ShieldCheck
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,11 +101,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     });
   }, [store.calls, searchQuery, activeFilter]);
 
-  const handleEdit = (call: RepairCall) => {
-    setEditingCall(call);
-    setModalOpen(true);
-  };
-
   const calculateWarrantyExpiry = (duration: string, customValue?: string) => {
     const now = new Date();
     if (duration === '1 Month') return addMonths(now, 1).toISOString();
@@ -132,6 +128,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
       store.updateCall({ ...call, takePrice });
+    }
+  };
+
+  const handleStoreLocationChange = (callId: string, storeLocation: string) => {
+    const call = store.calls.find((c: RepairCall) => c.id === callId);
+    if (call) {
+      store.updateCall({ ...call, storeLocation });
     }
   };
 
@@ -170,6 +173,11 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     window.open(url, '_blank');
   };
 
+  const handleEdit = (call: RepairCall) => {
+    setEditingCall(call);
+    setModalOpen(true);
+  };
+
   const visibleKpis = [
     { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', active: activeFilter === 'Active', filter: 'Active' },
     { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Pending', filter: 'Pending' },
@@ -184,7 +192,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className={cn(
-          "grid gap-4 flex-1",
+          "grid gap-4 flex-1 w-full",
           visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
         )}>
           {visibleKpis.map(kpi => (
@@ -230,7 +238,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Warranty Tracker</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+                {activeFilter === 'ExchangePurchase' ? 'Store Location' : 'Warranty Tracker'}
+              </TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
             </TableRow>
@@ -303,6 +313,23 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                             />
                           )}
                        </div>
+                     ) : isExchangePurchase ? (
+                        <div className="flex flex-col gap-2 min-w-[140px]">
+                           <Select 
+                             value={call.storeLocation || 'GODOWN'} 
+                             onValueChange={(v) => handleStoreLocationChange(call.id, v)}
+                           >
+                             <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent className="bg-slate-900 border-slate-800">
+                               <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
+                               <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
+                               <SelectItem value="GODOWN">GODOWN</SelectItem>
+                               <SelectItem value="OTHER">OTHER</SelectItem>
+                             </SelectContent>
+                           </Select>
+                        </div>
                      ) : (
                        <div className="h-8 w-full bg-slate-900/20 rounded border border-dashed border-slate-800/50"></div>
                      )}
@@ -341,7 +368,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           />
                         </div>
                       ) : (
-                        warrantyLeft !== null && (
+                        warrantyLeft !== null && call.status === 'Completed' && (
                           <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
                             Warranty Left: {warrantyLeft} Days
                           </div>

@@ -33,8 +33,7 @@ import {
   ChevronRight,
   RefreshCw,
   Truck,
-  MessageSquare,
-  LayoutGrid
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -76,13 +75,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
   
-  // WhatsApp Template Suite State
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
   const [templates, setTemplates] = useState([
-    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS.",
-    "Dear Customer, the estimated repair cost for your device is Rs.____. Please confirm approval.",
-    "Dear Customer, your repaired device has been safely delivered. Thank you!"
+    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS. Registered Issue: [RegisteredIssue].",
+    "Dear Customer, the estimated repair cost for job [JobID] is Rs.____. Please confirm approval.",
+    "Dear Customer, your repaired device [JobID] has been safely delivered to [Address]. Thank you!"
   ]);
 
   useEffect(() => {
@@ -122,7 +120,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setCurrentVisitNotes('');
       setCurrentVisitTechnician('');
     }
-  }, [editingCall, isOpen, store.calls]);
+  }, [editingCall, isOpen]);
 
   const handleSearchRepeat = () => {
     if (!repeatSearchQuery) return;
@@ -203,10 +201,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
     onSave(finalData);
 
-    // Automated Logistics Redirection
-    if (whatsappEnabled) {
+    if (whatsappEnabled || finalData.intakeMode === 'Logistics Dispatch') {
       let targetMobile = formData.mobile;
-      if (formData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
+      if (finalData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
         targetMobile = formData.runnerMobile;
       }
 
@@ -231,11 +228,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-900/50">
             <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+               <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
                   <PlusCircle className="w-6 h-6" />
                </div>
                <DialogTitle className="text-2xl font-headline font-bold">
-                 {editingCall ? 'Edit Service Call' : 'Repair Registry Portal'}
+                 {editingCall ? 'Update Repair Hub' : 'Service Registry Portal'}
                </DialogTitle>
             </div>
             <TabsList className="bg-slate-800/50 border border-slate-700 h-11">
@@ -246,18 +243,17 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             </TabsList>
           </div>
 
-          <div className="p-8 max-h-[80vh] overflow-y-auto">
+          <div className="p-8 max-h-[75vh] overflow-y-auto">
             <TabsContent value="New Call" className="space-y-8 mt-0 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Left Column: Core Data */}
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Job ID</Label>
-                      <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code font-bold text-blue-400" />
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Master Job ID</Label>
+                      <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code font-bold text-[#0066FF]" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Customer ID</Label>
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Customer ID</Label>
                       <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code" />
                     </div>
                   </div>
@@ -278,14 +274,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Name</Label>
+                      <Label>Customer Name</Label>
                       <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Mobile</Label>
+                      <Label>Mobile Number</Label>
                       <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                     </div>
                     <div className="space-y-2">
@@ -295,7 +291,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Address</Label>
+                    <Label>Full Address</Label>
                     <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                   </div>
 
@@ -309,7 +305,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                       <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Size (Inch)</Label>
+                      <Label>Screen Size (Inch)</Label>
                       <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                     </div>
                   </div>
@@ -317,7 +313,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Technician</Label>
-                      <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
+                      <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                         <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                           <SelectValue placeholder="Select Staff..." />
                         </SelectTrigger>
@@ -339,6 +335,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                           <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
                           <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
                           <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
+                          <SelectItem value="HDMI / Wi-Fi Not Working">HDMI / Wi-Fi Not Working</SelectItem>
+                          <SelectItem value="White Screen / Backlight Issue">White Screen / Backlight Issue</SelectItem>
                           <SelectItem value="Other / Custom Notes">Other / Custom Notes</SelectItem>
                         </SelectContent>
                       </Select>
@@ -346,18 +344,18 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Details</Label>
+                    <Label>Additional Technical Details</Label>
                     <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[80px]" />
                   </div>
                 </div>
 
-                {/* Right Column: Intake & Logistics Dispatch */}
                 <div className="space-y-8">
-                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                       <Truck className="w-5 h-5 text-blue-500" />
-                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Intake Mode</h3>
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6">
+                    <div className="flex items-center gap-2">
+                       <Truck className="w-5 h-5 text-[#0066FF]" />
+                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Intake Workflow</h3>
                     </div>
+                    
                     <RadioGroup 
                       value={formData.intakeMode} 
                       onValueChange={(v: any) => setFormData({...formData, intakeMode: v})}
@@ -374,14 +372,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     </RadioGroup>
 
                     {formData.intakeMode === 'Logistics Dispatch' && (
-                      <div className="grid grid-cols-2 gap-4 pt-4 animate-in slide-in-from-top-2">
+                      <div className="grid grid-cols-2 gap-4 pt-4 animate-in slide-in-from-top-2 border-t border-slate-800">
                         <div className="space-y-2">
                           <Label className="text-xs">Runner Name</Label>
                           <Input 
-                            placeholder="e.g. Rahul Kumar" 
+                            placeholder="e.g. Rahul" 
                             value={formData.runnerName || ''}
                             onChange={e => setFormData({...formData, runnerName: e.target.value})}
-                            className="bg-slate-900 border-slate-800 h-10" 
+                            className="bg-slate-900 border-slate-800" 
                           />
                         </div>
                         <div className="space-y-2">
@@ -390,7 +388,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                             placeholder="Mobile No." 
                             value={formData.runnerMobile || ''}
                             onChange={e => setFormData({...formData, runnerMobile: e.target.value})}
-                            className="bg-slate-900 border-slate-800 h-10" 
+                            className="bg-slate-900 border-slate-800" 
                           />
                         </div>
                       </div>
@@ -400,21 +398,21 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
                     <div className="flex items-center justify-between">
                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                         <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Custom Templates
+                         <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Template Suite
                        </h3>
                        <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
                     </div>
 
-                    <div className={cn("space-y-4 transition-all duration-300", !whatsappEnabled && "opacity-40 pointer-events-none grayscale")}>
+                    <div className={cn("space-y-4 transition-all", !whatsappEnabled && "opacity-40 grayscale pointer-events-none")}>
                        {[0, 1, 2].map((idx) => (
-                         <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                         <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800 hover:bg-slate-900/60 transition-colors">
                             <div className="pt-2">
                                <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
                                   <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
                                </RadioGroup>
                             </div>
                             <div className="flex-1 space-y-1">
-                               <Label className="text-[10px] text-slate-500 font-bold uppercase">Template {idx + 1}</Label>
+                               <Label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Template Option {idx + 1}</Label>
                                <Textarea 
                                  value={templates[idx]}
                                  onChange={e => handleTemplateChange(idx, e.target.value)}
@@ -433,10 +431,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
                   <div className="space-y-2">
                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
-                        <RefreshCw className="w-8 h-8 text-blue-500" />
+                        <RefreshCw className="w-8 h-8 text-[#0066FF]" />
                      </div>
-                     <h3 className="text-2xl font-headline font-bold">Search Existing Profile</h3>
-                     <p className="text-slate-500 text-sm">Retrieve via Mobile or ID</p>
+                     <h3 className="text-2xl font-headline font-bold">Infinite Profile Retrieval</h3>
+                     <p className="text-slate-500 text-sm">Search by Mobile, Job ID or Customer ID</p>
                   </div>
                   
                   <div className="flex gap-2">
@@ -444,7 +442,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Enter details..." />
                      </div>
-                     <Button onClick={handleSearchRepeat} className="bg-blue-600 hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Search</Button>
+                     <Button onClick={handleSearchRepeat} className="bg-[#0066FF] hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Run Search</Button>
                   </div>
 
                   {searchResults.length > 0 && (
@@ -456,7 +454,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                 <p className="font-bold text-slate-100">{result.customerName}</p>
                                 <p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p>
                              </div>
-                             <Button onClick={() => selectProfileForRepeat(result)} className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+                             <Button onClick={() => selectProfileForRepeat(result)} className="bg-[#0066FF] hover:bg-blue-700 rounded-xl">
                                 <UserPlus className="w-4 h-4 mr-2" /> Select & Re-Open
                              </Button>
                           </div>
@@ -471,39 +469,35 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                <div className="bg-blue-500/5 border border-blue-500/20 rounded-3xl p-6 space-y-5">
                   <div className="flex items-center justify-between">
                      <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                       <HistoryIcon className="w-4 h-4" /> Infinite Repair History Log
+                       <HistoryIcon className="w-4 h-4" /> Infinite Repair History Ledger
                      </h3>
                      <Badge className="bg-[#0066FF] text-white font-black px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge>
                   </div>
                   
-                  <div className="rounded-2xl border border-slate-800/50 bg-slate-900/80 overflow-hidden">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden">
                      <div className="max-h-[250px] overflow-y-auto">
                         <table className="w-full text-[11px] text-left">
-                           <thead className="bg-slate-950 text-slate-500 sticky top-0 uppercase font-bold border-b border-slate-800">
+                           <thead className="bg-slate-950 text-slate-500 uppercase font-bold border-b border-slate-800">
                               <tr>
                                  <th className="p-4">Visit #</th>
-                                 <th className="p-4">Date & Time</th>
-                                 <th className="p-4">Logged Issue</th>
+                                 <th className="p-4">Timestamp</th>
+                                 <th className="p-4">Registered Issue</th>
                                  <th className="p-4">Technician</th>
                                  <th className="p-4 text-right">Status</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-800">
-                              {formData.visitHistory && formData.visitHistory.length > 0 ? (
-                                [...formData.visitHistory].map((h, i) => (
-                                  <tr key={i} className="hover:bg-slate-800/20">
-                                     <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
-                                     <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
-                                     <td className="p-4 truncate max-w-[200px]">{h.issue}</td>
-                                     <td className="p-4 font-bold text-blue-400">{h.technician}</td>
-                                     <td className="p-4 text-right">
-                                        <Badge variant="outline" className="text-[9px] uppercase">{h.statusAtTime}</Badge>
-                                     </td>
-                                  </tr>
-                                ))
-                              ) : (
-                                <tr><td colSpan={5} className="p-8 text-center text-slate-600">No logs found.</td></tr>
-                              )}
+                              {formData.visitHistory?.map((h, i) => (
+                                <tr key={i} className="hover:bg-slate-800/20">
+                                   <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
+                                   <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
+                                   <td className="p-4 truncate max-w-[200px]">{h.issue}</td>
+                                   <td className="p-4 font-bold text-[#0066FF]">{h.technician}</td>
+                                   <td className="p-4 text-right">
+                                      <Badge variant="outline" className="text-[9px] uppercase">{h.statusAtTime}</Badge>
+                                   </td>
+                                </tr>
+                              ))}
                            </tbody>
                         </table>
                      </div>
@@ -512,23 +506,23 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                     <Label className="text-[10px] font-bold text-slate-500 uppercase">Locked Job ID</Label>
+                     <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Locked Job ID</Label>
                      <Input readOnly value={formData.id} className="bg-slate-950 border-slate-800 font-code font-bold opacity-50 cursor-not-allowed" />
                   </div>
                   <div className="space-y-2">
-                     <Label className="text-[10px] font-bold text-slate-500 uppercase">Locked Customer ID</Label>
+                     <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Locked Customer ID</Label>
                      <Input readOnly value={formData.customerId} className="bg-slate-950 border-slate-800 font-code opacity-50 cursor-not-allowed" />
                   </div>
                </div>
 
                <div className="p-8 bg-blue-500/5 border border-dashed border-blue-500/20 rounded-3xl space-y-6">
                   <h3 className="text-lg font-headline font-bold text-blue-400 flex items-center gap-2">
-                     <PlusCircle className="w-5 h-5" /> Add Current Visit Re-Repair Details
+                     <PlusCircle className="w-5 h-5" /> Append Current Re-Repair Visit
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
-                           <Label>Current Re-Repair Issue</Label>
+                           <Label>Current Visit Issue</Label>
                            <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue />
@@ -536,14 +530,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                               <SelectContent className="bg-slate-900 border-slate-800">
                                  <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
                                  <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
-                                 <SelectItem value="Lines on Screen">Lines on Screen</SelectItem>
+                                 <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
                                  <SelectItem value="Other">Other</SelectItem>
                               </SelectContent>
                            </Select>
                         </div>
                         <div className="space-y-2">
                            <Label>New Assigned Technician</Label>
-                           <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
+                           <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue placeholder="Select Staff..." />
                               </SelectTrigger>
@@ -556,7 +550,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         </div>
                      </div>
                      <div className="space-y-2">
-                        <Label>Technical Notes</Label>
+                        <Label>Technical Notes / Remarks</Label>
                         <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px]" />
                      </div>
                   </div>
@@ -565,10 +559,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
           </div>
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
-             <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <Button variant="ghost" onClick={onClose} className="rounded-xl">Cancel</Button>
              <div className="flex items-center gap-4">
-                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
-                  {activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call' : 'Create Registry'}
+                <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
+                  {activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call Registry' : 'Create Registry'}
                   <ChevronRight className="w-4 h-4" />
                 </Button>
              </div>
@@ -578,3 +572,4 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     </Dialog>
   );
 }
+

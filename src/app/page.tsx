@@ -133,7 +133,7 @@ export default function DashboardPage() {
                 {isSidebarOpen && <span className="font-medium">System Settings</span>}
               </button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl">
+            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl overflow-y-auto max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
                   <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
@@ -206,7 +206,8 @@ export default function DashboardPage() {
                       { id: 'completed', label: 'Completed (Green)' },
                       { id: 'rejected', label: 'Rejected (Red)' },
                       { id: 'repeat', label: 'Repeat Complaints' },
-                      { id: 'exchange', label: 'Exchange/Purchase TVs' }
+                      { id: 'exchange', label: 'Exchange/Purchase TVs' },
+                      { id: 'warranty', label: 'Warranty Calls' }
                     ].map((kpi) => (
                       <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                         <Label className="text-sm font-medium">{kpi.label}</Label>

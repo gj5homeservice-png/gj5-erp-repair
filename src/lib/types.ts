@@ -22,7 +22,7 @@ export interface RepairCall {
   screenSize: string;
   technician: string;
   pickupRequired: boolean;
-  pickupMode: 'Customer' | 'Transportation';
+  intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
   runnerName: string | null;
   runnerMobile: string | null;
   createdAt: string;
@@ -30,6 +30,8 @@ export interface RepairCall {
   status: RepairStatus;
   visitHistory: RepairHistoryEntry[];
   takePrice?: number;
+  warrantyDuration?: string; // e.g. "3 Months", "6 Months"
+  warrantyExpiry?: string;
 }
 
 export interface Inquiry {

@@ -34,7 +34,7 @@ import {
   RefreshCw,
   Truck,
   MessageSquare,
-  CheckCircle2
+  LayoutGrid
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     screenSize: '',
     technician: '',
     pickupRequired: false,
-    pickupMode: 'Customer',
+    intakeMode: 'Customer Walk-In',
     runnerName: '',
     runnerMobile: '',
     status: 'Pending' as RepairStatus,
@@ -112,7 +112,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         screenSize: '',
         technician: '',
         pickupRequired: false,
-        pickupMode: 'Customer',
+        intakeMode: 'Customer Walk-In',
         runnerName: '',
         runnerMobile: '',
         status: 'Pending',
@@ -206,7 +206,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     // Automated Dispatch Logic
     if (whatsappEnabled) {
       let targetMobile = formData.mobile;
-      if (formData.pickupMode === 'Transportation' && formData.runnerMobile) {
+      if (formData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
         targetMobile = formData.runnerMobile;
       }
 
@@ -219,7 +219,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                  .replace('[RegisteredIssue]', currentVisitIssue)
                  .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
-        const url = `${store.whatsappGateway}send?phone=91${targetMobile}&text=${encodeURIComponent(msg)}`;
+        const url = `https://web.whatsapp.com/send?phone=91${targetMobile}&text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
       }
     }
@@ -353,29 +353,29 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
                 {/* Right Column: Dispatch & Logistics */}
                 <div className="space-y-8">
-                  {/* Transportation Node */}
+                  {/* Intake Selection Node */}
                   <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 shadow-inner">
                     <div className="flex items-center justify-between">
                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                         <Truck className="w-4 h-4 text-blue-500" /> Pickup Logistics Mode
+                         <Truck className="w-4 h-4 text-blue-500" /> Intake Selection Node
                        </h3>
                     </div>
                     <RadioGroup 
-                      value={formData.pickupMode} 
-                      onValueChange={(v: any) => setFormData({...formData, pickupMode: v})}
+                      value={formData.intakeMode} 
+                      onValueChange={(v: any) => setFormData({...formData, intakeMode: v})}
                       className="flex gap-8"
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Customer" id="mode-cust" />
-                        <Label htmlFor="mode-cust">Customer Walk-in</Label>
+                        <RadioGroupItem value="Customer Walk-In" id="mode-cust" />
+                        <Label htmlFor="mode-cust">Customer Walk-In</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Transportation" id="mode-trans" />
+                        <RadioGroupItem value="Logistics Dispatch" id="mode-trans" />
                         <Label htmlFor="mode-trans">Logistics Dispatch</Label>
                       </div>
                     </RadioGroup>
 
-                    {formData.pickupMode === 'Transportation' && (
+                    {formData.intakeMode === 'Logistics Dispatch' && (
                       <div className="grid grid-cols-2 gap-4 pt-4 animate-in slide-in-from-top-2">
                         <div className="space-y-2">
                           <Label className="text-xs">Runner Name</Label>
@@ -498,7 +498,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                            </thead>
                            <tbody className="divide-y divide-slate-800">
                               {formData.visitHistory && formData.visitHistory.length > 0 ? (
-                                [...formData.visitHistory].reverse().map((h, i) => (
+                                [...formData.visitHistory].map((h, i) => (
                                   <tr key={i} className="hover:bg-slate-800/20">
                                      <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
                                      <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>

@@ -17,6 +17,7 @@ export interface VisibilitySettings {
     rejected: boolean;
     repeat: boolean;
     exchange: boolean;
+    warranty: boolean;
   };
 }
 
@@ -44,7 +45,8 @@ export function useErpStore() {
       completed: true,
       rejected: true,
       repeat: true,
-      exchange: true
+      exchange: true,
+      warranty: true
     }
   });
 
@@ -80,13 +82,14 @@ export function useErpStore() {
         model: 'KD-55X7500H',
         screenSize: '55',
         technician: 'Rajesh Sharma',
-        pickupRequired: true,
-        pickupMode: 'Customer',
+        pickupRequired: false,
+        intakeMode: 'Customer Walk-In',
         runnerName: null,
         runnerMobile: null,
         createdAt: initialTimestamp,
         updatedAt: initialTimestamp,
         status: 'Pending',
+        warrantyDuration: 'None',
         visitHistory: [
           {
             visitNumber: 1,

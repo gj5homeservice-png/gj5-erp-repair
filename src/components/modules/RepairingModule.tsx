@@ -14,9 +14,9 @@ import {
   History,
   Search,
   RefreshCw,
-  AlertCircle,
   Tv,
-  Printer as PrinterIcon
+  Printer as PrinterIcon,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +36,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
@@ -48,7 +55,7 @@ interface RepairingModuleProps {
   onInvoiceRequest?: (call: RepairCall) => void;
 }
 
-type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurchase';
+type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurchase' | 'Warranty';
 
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -64,7 +71,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
     const repeats = store.calls.filter((c: RepairCall) => (c.visitHistory?.length || 0) > 1).length;
     const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
-    return { totalActive, pending, completed, rejected, repeats, exchangePurchase };
+    const warranty = store.calls.filter((c: RepairCall) => c.warrantyDuration && c.warrantyDuration !== 'None').length;
+    return { totalActive, pending, completed, rejected, repeats, exchangePurchase, warranty };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
@@ -82,6 +90,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
       else if (activeFilter === 'Repeat') matchesFilter = (c.visitHistory?.length || 0) > 1;
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
+      else if (activeFilter === 'Warranty') matchesFilter = c.warrantyDuration && c.warrantyDuration !== 'None';
 
       return (matchesSearch || !searchQuery) && matchesFilter;
     });
@@ -106,6 +115,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     }
   };
 
+  const handleWarrantyChange = (callId: string, duration: string) => {
+    const call = store.calls.find((c: RepairCall) => c.id === callId);
+    if (call) {
+      store.updateCall({ ...call, warrantyDuration: duration });
+    }
+  };
+
   const calculateAging = (updatedDate: string) => {
     const updated = new Date(updatedDate);
     const now = new Date();
@@ -114,7 +130,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   };
 
   const openMap = (address: string, pincode: string) => {
-    const url = `https://www.google.com/maps/@21.1714048,72.8563712,8748m/data=!3m1!1e3?q=${encodeURIComponent(address + ' ' + (pincode || ''))}`;
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(address + ' ' + (pincode || ''))}`;
     window.open(url, '_blank');
   };
 
@@ -125,6 +141,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', active: activeFilter === 'Rejected', filter: 'Rejected' },
     { id: 'repeat', title: 'Repeat', value: stats.repeats, icon: RefreshCw, color: 'bg-purple-600', active: activeFilter === 'Repeat', filter: 'Repeat' },
     { id: 'exchange', title: 'Exchange/Pur', value: stats.exchangePurchase, icon: Tv, color: 'bg-cyan-500', active: activeFilter === 'ExchangePurchase', filter: 'ExchangePurchase' },
+    { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: ShieldCheck, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Warranty', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
   return (
@@ -132,7 +149,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className={cn(
           "grid gap-4 flex-1",
-          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-7"
         )}>
           {visibleKpis.map(kpi => (
             <StatCard 
@@ -177,7 +194,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Dispatch Sticker</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Warranty Tracker</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
             </TableRow>
@@ -231,14 +248,21 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     </div>
                   </TableCell>
                   <TableCell>
-                     <div className="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800 min-w-[180px]">
-                        <div className="p-1 bg-white rounded flex-shrink-0">
-                           <QRCodeSVG value={qrData} size={40} />
-                        </div>
-                        <div className="flex flex-col leading-tight overflow-hidden">
-                           <span className="text-[9px] font-black text-[#0066FF] tracking-tighter uppercase truncate">GJ5 HOME SERVICE</span>
-                           <span className="text-[8px] font-bold text-slate-500 tracking-widest truncate">MO-88669 83900</span>
-                        </div>
+                     <div className="min-w-[120px]">
+                        <Select 
+                          value={call.warrantyDuration || 'None'} 
+                          onValueChange={(v) => handleWarrantyChange(call.id, v)}
+                        >
+                          <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800">
+                            <SelectItem value="None">No Warranty</SelectItem>
+                            <SelectItem value="3 Months">3 Months</SelectItem>
+                            <SelectItem value="6 Months">6 Months</SelectItem>
+                            <SelectItem value="1 Year">1 Year</SelectItem>
+                          </SelectContent>
+                        </Select>
                      </div>
                   </TableCell>
                   <TableCell>

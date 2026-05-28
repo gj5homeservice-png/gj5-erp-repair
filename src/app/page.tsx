@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +14,9 @@ import {
   X,
   LayoutDashboard,
   Eye,
-  EyeOff
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +42,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet'>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
@@ -48,7 +52,6 @@ export default function DashboardPage() {
   ].filter(item => item.visible);
 
   useEffect(() => {
-    // If current tab is hidden by settings, switch to first available
     if (navigation.length > 0 && !navigation.find(n => n.id === activeTab)) {
       setActiveTab(navigation[0].id as any);
     }
@@ -76,6 +79,17 @@ export default function DashboardPage() {
     store.updateVisibility(newSettings);
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        store.setShopLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#0B0F19] text-slate-100">
       {/* Sidebar */}
@@ -84,8 +98,12 @@ export default function DashboardPage() {
         isSidebarOpen ? "w-64" : "w-20"
       )}>
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl">
-            G
+          <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
+            {store.shopLogo ? (
+              <img src={store.shopLogo} className="w-full h-full object-cover" alt="G" />
+            ) : (
+              "G"
+            )}
           </div>
           {isSidebarOpen && <span className="font-headline font-bold text-xl tracking-tight">GJ5 PLUS</span>}
         </div>
@@ -120,10 +138,44 @@ export default function DashboardPage() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
                   <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
-                  Master Dashboard Visibility Panel
+                  Master Dashboard visibility Panel
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-6 py-4">
+                {/* Branding Section */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" /> Master Shop Branding
+                  </h4>
+                  <div className="flex items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                    <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+                      {store.shopLogo ? (
+                        <img src={store.shopLogo} className="w-full h-full object-cover" alt="Shop Logo" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-slate-700" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <p className="text-sm font-medium text-slate-300">Shop Identity Logo</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">This logo will appear in the sidebar and all thermal sticker prints.</p>
+                      <div className="flex gap-2">
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                        <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600">
+                          <Upload className="w-4 h-4 mr-2" /> Change Logo
+                        </Button>
+                        {store.shopLogo && (
+                          <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="bg-slate-800" />
+
+                {/* Module Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4" /> Sidebar Module Toggles
@@ -143,6 +195,7 @@ export default function DashboardPage() {
 
                 <Separator className="bg-slate-800" />
 
+                {/* KPI Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                     <Eye className="w-4 h-4" /> Analytics KPI Card Toggles

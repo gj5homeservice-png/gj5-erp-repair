@@ -3,7 +3,8 @@ export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | '
 export interface RepairHistoryEntry {
   timestamp: string;
   issue: string;
-  technician: string;
+  technician?: string;
+  techTags?: string[];
   notes: string;
   statusAtTime: RepairStatus;
   visitNumber: number;
@@ -20,7 +21,8 @@ export interface RepairCall {
   brand: string;
   model: string;
   screenSize: string;
-  technician: string;
+  technician?: string;
+  techTags?: string[];
   pickupRequired: boolean;
   intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
   runnerName: string | null;

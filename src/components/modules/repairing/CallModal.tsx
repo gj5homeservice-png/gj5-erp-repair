@@ -33,7 +33,9 @@ import {
   ChevronRight,
   RefreshCw,
   Truck,
-  MessageSquare
+  MessageSquare,
+  Paperclip,
+  Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,9 @@ interface CallModalProps {
   onSave: (data: RepairCall) => void;
   store: any;
 }
+
+const BRANDS = ['Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
+const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 
 export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallModalProps) {
   const [activeTab, setActiveTab] = useState('New Call');
@@ -59,7 +64,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     brand: '',
     model: '',
     screenSize: '',
-    technician: '',
+    techTags: [],
     pickupRequired: false,
     intakeMode: 'Customer Walk-In',
     runnerName: '',
@@ -70,18 +75,31 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
   const [currentVisitIssue, setCurrentVisitIssue] = useState('No Power / Dead');
   const [currentVisitNotes, setCurrentVisitNotes] = useState('');
-  const [currentVisitTechnician, setCurrentVisitTechnician] = useState('');
+  const [currentVisitTags, setCurrentVisitTags] = useState<string[]>([]);
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
   
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
-  const [templates, setTemplates] = useState([
-    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS. Registered Issue: [RegisteredIssue].",
+  const [templates, setTemplates] = useState<string[]>([
+    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS. Registered Issue: [RegisteredIssue]. Tech: [TechTags].",
     "Dear Customer, the estimated repair cost for job [JobID] is Rs.____. Please confirm approval.",
     "Dear Customer, your repaired device [JobID] has been safely delivered to [Address]. Thank you!"
   ]);
+  const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
+
+  // Load templates from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('gj5_whatsapp_templates');
+    if (saved) {
+      try {
+        setTemplates(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse templates", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (editingCall) {
@@ -89,7 +107,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       const latest = editingCall.visitHistory[editingCall.visitHistory.length - 1];
       setCurrentVisitIssue(latest?.issue || 'No Power / Dead');
       setCurrentVisitNotes(latest?.notes || '');
-      setCurrentVisitTechnician(latest?.technician || '');
+      setCurrentVisitTags(latest?.techTags || []);
       setActiveTab('New Call');
     } else if (isOpen) {
       const catPrefix = (formData.category || 'TV').toUpperCase();
@@ -108,7 +126,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         brand: '',
         model: '',
         screenSize: '',
-        technician: '',
+        techTags: [],
         pickupRequired: false,
         intakeMode: 'Customer Walk-In',
         runnerName: '',
@@ -118,7 +136,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       });
       setCurrentVisitIssue('No Power / Dead');
       setCurrentVisitNotes('');
-      setCurrentVisitTechnician('');
+      setCurrentVisitTags([]);
     }
   }, [editingCall, isOpen]);
 
@@ -134,7 +152,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
   const selectProfileForRepeat = (call: RepairCall) => {
     setFormData(call);
-    setCurrentVisitTechnician('');
+    setCurrentVisitTags([]);
     setCurrentVisitNotes('');
     setActiveTab('Repeat Call Form');
   };
@@ -143,6 +161,26 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     const newTemplates = [...templates];
     newTemplates[index] = value;
     setTemplates(newTemplates);
+    localStorage.setItem('gj5_whatsapp_templates', JSON.stringify(newTemplates));
+  };
+
+  const handleAttachment = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newAttachments = [...attachments];
+        newAttachments[index] = reader.result as string;
+        setAttachments(newAttachments);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    setCurrentVisitTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
   };
 
   const handleSave = () => {
@@ -152,37 +190,31 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     let finalData = { ...formData } as RepairCall;
     const now = new Date().toISOString();
 
+    const visitEntry: RepairHistoryEntry = {
+      visitNumber: (finalData.visitHistory?.length || 0) + 1,
+      timestamp: now,
+      issue: currentVisitIssue,
+      techTags: currentVisitTags,
+      notes: currentVisitNotes,
+      statusAtTime: 'Pending'
+    };
+
     if (isNew) {
-      const firstVisit: RepairHistoryEntry = {
-        visitNumber: 1,
-        timestamp: now,
-        issue: currentVisitIssue,
-        technician: currentVisitTechnician,
-        notes: currentVisitNotes,
-        statusAtTime: 'Pending'
-      };
       finalData = {
         ...finalData,
         createdAt: now,
         updatedAt: now,
         status: 'Pending',
-        visitHistory: [firstVisit]
+        visitHistory: [visitEntry],
+        techTags: currentVisitTags
       };
     } else if (isRepeat) {
-      const nextVisitNum = (finalData.visitHistory?.length || 0) + 1;
-      const nextVisit: RepairHistoryEntry = {
-        visitNumber: nextVisitNum,
-        timestamp: now,
-        issue: currentVisitIssue,
-        technician: currentVisitTechnician,
-        notes: currentVisitNotes,
-        statusAtTime: 'Pending'
-      };
       finalData = {
         ...finalData,
         updatedAt: now,
         status: 'Pending',
-        visitHistory: [...(finalData.visitHistory || []), nextVisit]
+        visitHistory: [...(finalData.visitHistory || []), visitEntry],
+        techTags: currentVisitTags
       };
     } else if (editingCall) {
       const latestIdx = finalData.visitHistory.length - 1;
@@ -190,12 +222,13 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       updatedHistory[latestIdx] = {
         ...updatedHistory[latestIdx],
         issue: currentVisitIssue,
-        technician: currentVisitTechnician,
+        techTags: currentVisitTags,
         notes: currentVisitNotes
       };
       finalData = {
         ...finalData,
-        visitHistory: updatedHistory
+        visitHistory: updatedHistory,
+        techTags: currentVisitTags
       };
     }
 
@@ -214,6 +247,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                  .replace('[CustomerName]', finalData.customerName || 'Customer')
                  .replace('[Address]', finalData.address || 'Address')
                  .replace('[RegisteredIssue]', currentVisitIssue)
+                 .replace('[TechTags]', currentVisitTags.join(', '))
                  .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
         const url = `https://web.whatsapp.com/send?phone=91${targetMobile}&text=${encodeURIComponent(msg)}`;
@@ -298,7 +332,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Brand</Label>
-                      <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                      <Select value={formData.brand} onValueChange={(v) => setFormData({...formData, brand: v})}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                          <SelectValue placeholder="Select Brand..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Model</Label>
@@ -312,17 +353,23 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Technician</Label>
-                      <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                          <SelectValue placeholder="Select Staff..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800">
-                          {store.employees.map((emp:any) => (
-                            <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label className="mb-2 block">Technician Repair Tags</Label>
+                      <div className="flex gap-2">
+                         {TECH_TAGS.map(tag => (
+                           <button
+                             key={tag}
+                             onClick={() => toggleTag(tag)}
+                             className={cn(
+                               "px-3 py-2 rounded-lg text-[10px] font-bold transition-all border",
+                               currentVisitTags.includes(tag)
+                                ? "bg-[#0066FF] text-white border-[#0066FF]"
+                                : "bg-slate-900 text-slate-500 border-slate-800"
+                             )}
+                           >
+                             {tag}
+                           </button>
+                         ))}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Common Issue</Label>
@@ -341,11 +388,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Additional Technical Details</Label>
-                    <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[80px]" />
                   </div>
                 </div>
 
@@ -411,13 +453,36 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                   <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
                                </RadioGroup>
                             </div>
-                            <div className="flex-1 space-y-1">
-                               <Label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Template Option {idx + 1}</Label>
+                            <div className="flex-1 space-y-2">
+                               <div className="flex justify-between items-center">
+                                  <Label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Template Option {idx + 1}</Label>
+                                  <div className="flex items-center gap-2">
+                                     <input 
+                                       type="file" 
+                                       id={`attach-${idx}`} 
+                                       className="hidden" 
+                                       accept="image/*" 
+                                       onChange={(e) => handleAttachment(idx, e)}
+                                     />
+                                     <button 
+                                       onClick={() => document.getElementById(`attach-${idx}`)?.click()}
+                                       className={cn("p-1 rounded hover:bg-slate-800 transition-colors", attachments[idx] ? "text-emerald-400" : "text-slate-500")}
+                                       title="Attach Image"
+                                     >
+                                        <Paperclip className="w-3.5 h-3.5" />
+                                     </button>
+                                  </div>
+                               </div>
                                <Textarea 
                                  value={templates[idx]}
                                  onChange={e => handleTemplateChange(idx, e.target.value)}
                                  className="bg-transparent border-0 p-0 text-xs min-h-[60px] focus-visible:ring-0 resize-none leading-relaxed"
                                />
+                               {attachments[idx] && (
+                                 <div className="mt-2 w-12 h-12 rounded overflow-hidden border border-slate-700">
+                                    <img src={attachments[idx]!} className="w-full h-full object-cover" alt="Attached" />
+                                 </div>
+                               )}
                             </div>
                          </div>
                        ))}
@@ -482,7 +547,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                  <th className="p-4">Visit #</th>
                                  <th className="p-4">Timestamp</th>
                                  <th className="p-4">Registered Issue</th>
-                                 <th className="p-4">Technician</th>
+                                 <th className="p-4">Tech Tags</th>
                                  <th className="p-4 text-right">Status</th>
                               </tr>
                            </thead>
@@ -492,7 +557,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                    <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
                                    <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
                                    <td className="p-4 truncate max-w-[200px]">{h.issue}</td>
-                                   <td className="p-4 font-bold text-[#0066FF]">{h.technician}</td>
+                                   <td className="p-4 font-bold text-[#0066FF]">
+                                      {h.techTags?.join(', ') || 'None'}
+                                   </td>
                                    <td className="p-4 text-right">
                                       <Badge variant="outline" className="text-[9px] uppercase">{h.statusAtTime}</Badge>
                                    </td>
@@ -536,21 +603,27 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                            </Select>
                         </div>
                         <div className="space-y-2">
-                           <Label>New Assigned Technician</Label>
-                           <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
-                              <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
-                                 <SelectValue placeholder="Select Staff..." />
-                              </SelectTrigger>
-                              <SelectContent className="bg-slate-900 border-slate-800">
-                                 {store.employees.map((emp:any) => (
-                                    <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
+                           <Label className="mb-2 block">Current Field tags</Label>
+                           <div className="flex gap-2">
+                              {TECH_TAGS.map(tag => (
+                                <button
+                                  key={tag}
+                                  onClick={() => toggleTag(tag)}
+                                  className={cn(
+                                    "px-3 py-2 rounded-lg text-[10px] font-bold transition-all border",
+                                    currentVisitTags.includes(tag)
+                                     ? "bg-[#0066FF] text-white border-[#0066FF]"
+                                     : "bg-slate-900 text-slate-500 border-slate-800"
+                                  )}
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                           </div>
                         </div>
                      </div>
                      <div className="space-y-2">
-                        <Label>Technical Notes / Remarks</Label>
+                        <Label>Technical Remarks (Visit #{ (formData.visitHistory?.length || 0) + 1 })</Label>
                         <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px]" />
                      </div>
                   </div>
@@ -572,4 +645,3 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     </Dialog>
   );
 }
-

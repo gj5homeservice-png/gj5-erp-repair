@@ -239,7 +239,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">
-                {activeFilter === 'ExchangePurchase' ? 'Store Location' : 'Warranty Tracker'}
+                {activeFilter === 'ExchangePurchase' || filteredCalls.some((c:any) => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
               </TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
@@ -250,6 +250,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
               const showWarranty = call.status === 'Pending' || call.status === 'Completed';
+              const isRejected = call.status === 'Rejected';
               const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
               
               return (
@@ -287,7 +288,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     </div>
                   </TableCell>
                   <TableCell>
-                     {showWarranty ? (
+                     {isRejected ? (
+                        <div className="h-8 w-full bg-slate-900/10 rounded"></div>
+                     ) : showWarranty ? (
                        <div className="flex flex-col gap-2 min-w-[140px]">
                           <Select 
                             value={call.warrantyDuration || 'None'} 

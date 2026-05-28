@@ -430,7 +430,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                 </div>
                              </div>
                              <Button onClick={() => selectProfileForRepeat(result)} className="bg-blue-600 hover:bg-blue-700 rounded-xl h-11 px-6 shadow-lg shadow-blue-500/10 flex gap-2">
-                                <UserPlus className="w-4 h-4" /> Select & Add Entry
+                                <UserPlus className="w-4 h-4" /> Select & Re-Open
                              </Button>
                           </div>
                         ))}

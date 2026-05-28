@@ -45,21 +45,21 @@ interface RepairingModuleProps {
   onInvoiceRequest: (call: RepairCall) => void;
 }
 
-type FilterStatus = 'All' | RepairStatus | 'Repeat';
+type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat';
 
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<FilterStatus>('All');
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
 
   const stats = useMemo(() => {
-    const total = store.calls.length;
+    const totalActive = store.calls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
     const repeats = store.calls.filter((c: RepairCall) => c.history && c.history.length > 0).length;
-    return { total, pending, completed, rejected, repeats };
+    return { totalActive, pending, completed, rejected, repeats };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
@@ -72,7 +72,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         (c.technician && c.technician.toLowerCase().includes(searchQuery.toLowerCase()));
 
       let matchesFilter = true;
-      if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
+      if (activeFilter === 'Active') matchesFilter = c.status !== 'Completed' && c.status !== 'Rejected';
+      else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
       else if (activeFilter === 'Repeat') matchesFilter = c.history && c.history.length > 0;
@@ -107,14 +108,15 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 5-Card Analytics Header */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard 
           title="Total Active Calls" 
-          value={stats.total} 
+          value={stats.totalActive} 
           icon={TrendingUp} 
           color="bg-[#0066FF]" 
-          active={activeFilter === 'All'}
-          onClick={() => setActiveFilter('All')}
+          active={activeFilter === 'Active'}
+          onClick={() => setActiveFilter('Active')}
         />
         <StatCard 
           title="Pending" 
@@ -162,8 +164,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
            />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6" onClick={() => setActiveFilter('All')}>
-            <History className="w-4 h-4 mr-2" /> Clear Filters
+          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6" onClick={() => { setSearchQuery(''); setActiveFilter('Active'); }}>
+            <History className="w-4 h-4 mr-2" /> Reset View
           </Button>
           <Button className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
             <Plus className="w-5 h-5 mr-2" /> Log New Service Call
@@ -192,7 +194,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     <span>{call.id}</span>
                     {call.history && call.history.length > 0 && (
                       <Badge variant="outline" className="w-fit text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/20">
-                        REPEAT #{call.history.length}
+                        VISITS: {call.history.length}
                       </Badge>
                     )}
                   </div>

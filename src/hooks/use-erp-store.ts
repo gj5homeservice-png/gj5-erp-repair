@@ -55,7 +55,15 @@ export function useErpStore() {
   };
 
   const addAttendance = (record: AttendanceRecord) => setAttendance(prev => [record, ...prev]);
-  const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => prev.map(r => r.id === record.id ? record : r));
+  const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => {
+    const existing = prev.findIndex(r => r.employeeId === record.employeeId && r.date === record.date);
+    if (existing > -1) {
+       const updated = [...prev];
+       updated[existing] = { ...updated[existing], ...record };
+       return updated;
+    }
+    return [record, ...prev];
+  });
 
   const addInvoice = (invoice: Invoice) => setInvoices(prev => [invoice, ...prev]);
 

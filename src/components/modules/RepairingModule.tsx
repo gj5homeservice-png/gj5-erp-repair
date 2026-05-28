@@ -13,7 +13,8 @@ import {
   Edit, 
   MessageCircle,
   TrendingUp,
-  History
+  History,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { format } from 'date-fns';
@@ -58,6 +60,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => 
       c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.mobile.includes(searchQuery) ||
       c.technician.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,46 +95,29 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Active Calls" 
-          value={stats.total} 
-          icon={TrendingUp} 
-          color="bg-[#0066FF]" 
-        />
-        <StatCard 
-          title="Pending" 
-          value={stats.pending} 
-          icon={Clock} 
-          color="bg-[#FFD700]" 
-          textColor="text-black"
-        />
-        <StatCard 
-          title="Completed" 
-          value={stats.completed} 
-          icon={CheckCircle2} 
-          color="bg-emerald-500" 
-        />
-        <StatCard 
-          title="Rejected" 
-          value={stats.rejected} 
-          icon={XCircle} 
-          color="bg-[#FF3366]" 
-        />
+        <StatCard title="Total Active Calls" value={stats.total} icon={TrendingUp} color="bg-[#0066FF]" />
+        <StatCard title="Pending" value={stats.pending} icon={Clock} color="bg-[#FFD700]" textColor="text-black" />
+        <StatCard title="Completed" value={stats.completed} icon={CheckCircle2} color="bg-emerald-500" />
+        <StatCard title="Rejected" value={stats.rejected} icon={XCircle} color="bg-[#FF3366]" />
       </div>
 
-      <div className="flex justify-between items-center bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
-        <h2 className="text-2xl font-headline font-bold">Call Directory Log</h2>
-        <div className="flex gap-4">
-          <Button 
-            variant="outline" 
-            className="rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6"
-            onClick={() => setModalOpen(true)}
-          >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
+        <div className="flex-1 w-full md:max-w-md relative">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+           <Input 
+             placeholder="Smart Search Job, Mobile, Customer..." 
+             value={searchQuery}
+             onChange={e => setSearchQuery(e.target.value)}
+             className="pl-10 bg-slate-950 border-slate-800 focus:ring-[#0066FF] h-11"
+           />
+        </div>
+        <div className="flex gap-4 w-full md:w-auto">
+          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6">
             <History className="w-4 h-4 mr-2" />
-            Inquiry
+            Inquiry Log
           </Button>
           <Button 
-            className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20"
+            className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20"
             onClick={() => {
               setEditingCall(null);
               setModalOpen(true);
@@ -185,7 +171,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{call.technician || 'Unassigned'}</span>
-                    <span className="text-[10px] text-slate-500 uppercase">Pickup: {call.pickupBy || 'N/A'}</span>
+                    <span className="text-[10px] text-slate-500 uppercase">Pickup: {call.pickupBy || 'N/A'} {call.runnerName ? `(${call.runnerName})` : ''}</span>
                   </div>
                 </TableCell>
                 <TableCell>

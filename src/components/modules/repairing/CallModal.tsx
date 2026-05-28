@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RepairCall } from '@/lib/types';
 import { troubleshootingAssistant } from '@/ai/flows/troubleshooting-assistant-flow';
 import { Loader2, Sparkles, Send } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CallModalProps {
   isOpen: boolean;
@@ -65,16 +66,32 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     if (editingCall) {
       setFormData(editingCall);
     } else {
-      // Generate IDs
-      const nextCustId = `GJ5${1001 + store.calls.length}`;
+      const nextCustIdNum = 1001 + store.calls.length;
+      const nextCustId = `GJ5${nextCustIdNum}`;
       const prefix = formData.category?.toUpperCase() || 'JOB';
-      const nextJobId = `${prefix}${1001 + store.calls.filter((c:any) => c.category === formData.category).length}`;
-      setFormData(prev => ({
-        ...prev,
-        customerId: nextCustId,
+      const catCallsCount = store.calls.filter((c:any) => c.category === formData.category).length;
+      const nextJobId = `${prefix}${1001 + catCallsCount}`;
+      
+      setFormData({
         id: nextJobId,
+        customerId: nextCustId,
+        customerName: '',
+        mobile: '',
+        address: '',
+        pincode: '',
+        category: formData.category || 'TV',
+        brand: '',
+        model: '',
+        screenSize: '',
+        issue: 'No Power / Dead',
+        notes: '',
+        technician: '',
+        pickupRequired: false,
+        pickupBy: 'Customer',
+        runnerName: '',
+        status: 'Pending',
         createdAt: new Date().toISOString()
-      }));
+      });
     }
   }, [editingCall, isOpen, formData.category]);
 
@@ -98,7 +115,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
   const handleWhatsappSend = () => {
     const templates = [
-      `Dear ${formData.customerName}, your repair job ${formData.id} has been registered at GJ5 PLUS.`,
+      `Dear ${formData.customerName}, your repair job ${formData.id} has been registered on ${new Date().toLocaleDateString()} at GJ5 PLUS.`,
       `Dear ${formData.customerName}, the estimated repair cost for your ${formData.brand} device is pending. Please confirm approval.`,
       `Dear ${formData.customerName}, your repaired device has been safely delivered. Thank you!`
     ];
@@ -117,10 +134,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden">
-        <Tabs defaultValue="New Call" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
             <DialogTitle className="text-2xl font-headline font-bold">
-              {editingCall ? 'Edit Service Call' : 'Log Entry'}
+              {editingCall ? 'Edit Service Call' : 'Internal Service Registry'}
             </DialogTitle>
             <TabsList className="bg-slate-800/50 border border-slate-700">
               <TabsTrigger value="New Call">New Call</TabsTrigger>
@@ -133,7 +150,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             <TabsContent value="New Call" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-slate-400">Job ID</Label>
+                  <Label className="text-slate-400">Job ID (Sequential)</Label>
                   <Input readOnly value={formData.id} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400" />
                 </div>
                 <div className="space-y-2">
@@ -147,11 +164,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     onValueChange={(v) => setFormData({...formData, category: v})}
                   >
                     <SelectTrigger className="bg-slate-900 border-slate-800">
-                      <SelectValue placeholder="Select Category" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TV">Television</SelectItem>
-                      <SelectItem value="AC">Air Conditioner</SelectItem>
+                      <SelectItem value="TV">Television (TV)</SelectItem>
+                      <SelectItem value="AC">Air Conditioner (AC)</SelectItem>
                       <SelectItem value="COMP">Computer/Laptop</SelectItem>
                       <SelectItem value="FRIDGE">Refrigerator</SelectItem>
                       <SelectItem value="WASHING">Washing Machine</SelectItem>
@@ -164,7 +181,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <Input 
                     value={formData.customerName} 
                     onChange={e => setFormData({...formData, customerName: e.target.value})} 
-                    placeholder="Enter Name"
+                    placeholder="Enter full name"
                     className="bg-slate-900 border-slate-800"
                   />
                 </div>
@@ -179,7 +196,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Pincode</Label>
+                  <Label>Pincode Number</Label>
                   <Input 
                     value={formData.pincode} 
                     onChange={e => setFormData({...formData, pincode: e.target.value})} 
@@ -189,11 +206,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 </div>
 
                 <div className="space-y-2 lg:col-span-2">
-                  <Label>Full Address</Label>
+                  <Label>Full Address (For Maps)</Label>
                   <Input 
                     value={formData.address} 
                     onChange={e => setFormData({...formData, address: e.target.value})} 
-                    placeholder="Enter full address for map navigation"
+                    placeholder="Plot, Society, Area..."
                     className="bg-slate-900 border-slate-800"
                   />
                 </div>
@@ -203,7 +220,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <Input 
                     value={formData.brand} 
                     onChange={e => setFormData({...formData, brand: e.target.value})} 
-                    placeholder="Samsung, Sony, LG..."
+                    placeholder="Samsung, LG, Sony..."
                     className="bg-slate-900 border-slate-800"
                   />
                 </div>
@@ -219,14 +236,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 <div className="space-y-2">
                   <Label>Screen Size (Inch)</Label>
                   <Input 
-                    type="number"
+                    type="text"
                     value={formData.screenSize} 
                     onChange={e => setFormData({...formData, screenSize: e.target.value})} 
+                    placeholder="e.g. 55"
                     className="bg-slate-900 border-slate-800"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Smart Issue Selector</Label>
+                  <Label>Smart Common Issue Selector</Label>
                   <Select 
                     value={formData.issue} 
                     onValueChange={(v) => setFormData({...formData, issue: v})}
@@ -249,7 +267,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
               {formData.issue === 'Other / Custom Notes' && (
                 <div className="space-y-2">
-                  <Label>Custom Notes</Label>
+                  <Label>Custom Problem Description</Label>
                   <Textarea 
                     value={formData.notes} 
                     onChange={e => setFormData({...formData, notes: e.target.value})}
@@ -261,15 +279,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
               <div className="flex items-center gap-4 bg-[#0066FF]/5 p-4 rounded-xl border border-[#0066FF]/20">
                 <Sparkles className="text-[#0066FF] w-6 h-6" />
                 <div className="flex-1">
-                  <h4 className="font-headline font-bold text-sm text-[#0066FF]">AI Troubleshooting Assistant</h4>
-                  <p className="text-xs text-slate-400">Get diagnostic steps & common repair suggestions</p>
+                  <h4 className="font-headline font-bold text-sm text-[#0066FF]">AI Service Assistant</h4>
+                  <p className="text-xs text-slate-400">Automated troubleshooting & diagnosis check</p>
                 </div>
                 <Button 
                   onClick={handleAiAssist} 
                   disabled={isAiLoading}
                   className="bg-[#0066FF] hover:bg-[#0052CC]"
                 >
-                  {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Analyze Issue'}
+                  {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Run Diagnosis'}
                 </Button>
               </div>
 
@@ -277,31 +295,28 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 <div className="bg-slate-800/40 p-6 rounded-xl border border-slate-700 space-y-4 animate-in slide-in-from-top-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Diagnostic Steps</h5>
+                      <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Diagnostic Procedure</h5>
                       <ul className="text-sm space-y-1 list-disc list-inside">
                         {aiSuggestions.diagnosticSteps.map((s:string, i:number) => <li key={i}>{s}</li>)}
                       </ul>
                     </div>
                     <div>
-                      <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Repair Suggestions</h5>
+                      <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Technical Suggestions</h5>
                       <ul className="text-sm space-y-1 list-disc list-inside">
                         {aiSuggestions.repairSuggestions.map((s:string, i:number) => <li key={i}>{s}</li>)}
                       </ul>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
-                    <span className="text-xs font-bold text-slate-500">Complexity:</span>
-                    <Badge variant={aiSuggestions.estimatedComplexity === 'High' ? 'destructive' : 'default'}>
-                      {aiSuggestions.estimatedComplexity}
-                    </Badge>
-                  </div>
+                  <Badge variant={aiSuggestions.estimatedComplexity === 'High' ? 'destructive' : 'default'} className="mt-2">
+                    Repair Complexity: {aiSuggestions.estimatedComplexity}
+                  </Badge>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-800">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-lg font-headline font-bold">Pickup Service</Label>
+                    <Label className="text-lg font-headline font-bold">Log Pickup Service</Label>
                     <Switch 
                       checked={formData.pickupRequired} 
                       onCheckedChange={v => setFormData({...formData, pickupRequired: v})} 
@@ -327,7 +342,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
                       {formData.pickupBy === 'Amaro Boy' && (
                         <div className="space-y-2">
-                          <Label>Runner Name</Label>
+                          <Label>Runner / Staff Name</Label>
                           <Input 
                             value={formData.runnerName || ''} 
                             onChange={e => setFormData({...formData, runnerName: e.target.value})} 
@@ -351,24 +366,24 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   {whatsappEnabled && (
                     <div className="space-y-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700 animate-in fade-in">
                       <RadioGroup value={selectedMsgTemplate} onValueChange={setSelectedMsgTemplate} className="space-y-3">
-                        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 cursor-pointer">
+                        <div className={cn("flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors", selectedMsgTemplate === '1' ? 'bg-[#0066FF]/20' : 'hover:bg-slate-800/50')}>
                           <RadioGroupItem value="1" id="msg-1" />
                           <div className="flex-1 text-xs">
-                            <Label htmlFor="msg-1" className="font-bold block mb-1">Call Registered Msg</Label>
-                            <p className="text-slate-500">Dear Customer, your repair job [JobID] has been registered...</p>
+                            <Label htmlFor="msg-1" className="font-bold block mb-1">Call Registered Message</Label>
+                            <p className="text-slate-500">Dear Customer, your repair job {formData.id} has been registered...</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 cursor-pointer">
+                        <div className={cn("flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors", selectedMsgTemplate === '2' ? 'bg-[#0066FF]/20' : 'hover:bg-slate-800/50')}>
                           <RadioGroupItem value="2" id="msg-2" />
                           <div className="flex-1 text-xs">
-                            <Label htmlFor="msg-2" className="font-bold block mb-1">Quotation Approval Msg</Label>
+                            <Label htmlFor="msg-2" className="font-bold block mb-1">Quotation Approval Alert</Label>
                             <p className="text-slate-500">Dear Customer, the estimated repair cost for your device is...</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 cursor-pointer">
+                        <div className={cn("flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors", selectedMsgTemplate === '3' ? 'bg-[#0066FF]/20' : 'hover:bg-slate-800/50')}>
                           <RadioGroupItem value="3" id="msg-3" />
                           <div className="flex-1 text-xs">
-                            <Label htmlFor="msg-3" className="font-bold block mb-1">Delivered to Home Msg</Label>
+                            <Label htmlFor="msg-3" className="font-bold block mb-1">Delivered / Pickup Message</Label>
                             <p className="text-slate-500">Dear Customer, your repaired device has been safely delivered...</p>
                           </div>
                         </div>
@@ -379,40 +394,46 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
               </div>
             </TabsContent>
 
-            <TabsContent value="Repeat Call">
-              <div className="flex flex-col items-center justify-center py-12 text-slate-500 space-y-4">
-                 <p>Search existing Customer ID or Mobile to load profile.</p>
-                 <Input className="max-w-sm bg-slate-900 border-slate-800" placeholder="GJ51XXX or Mobile" />
-              </div>
+            <TabsContent value="Repeat Call" className="py-12 flex flex-col items-center justify-center space-y-6">
+                 <div className="text-center space-y-2">
+                    <h3 className="text-xl font-headline font-bold">Load Existing Profile</h3>
+                    <p className="text-slate-500 text-sm">Search by Customer ID (GJ51XXX) or Registered Mobile</p>
+                 </div>
+                 <div className="flex gap-2 w-full max-w-sm">
+                    <Input className="bg-slate-900 border-slate-800" placeholder="e.g. GJ51001" />
+                    <Button className="bg-[#0066FF]">Search</Button>
+                 </div>
             </TabsContent>
             
-            <TabsContent value="Inquiry">
-               <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                       <Label>Name</Label>
-                       <Input className="bg-slate-900 border-slate-800" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label>Mobile</Label>
-                       <Input className="bg-slate-900 border-slate-800" />
-                    </div>
+            <TabsContent value="Inquiry" className="space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <Label>Walk-in Customer Name</Label>
+                     <Input className="bg-slate-900 border-slate-800" />
                   </div>
                   <div className="space-y-2">
-                     <Label>Inquiry Details</Label>
-                     <Textarea className="bg-slate-900 border-slate-800 min-h-[150px]" />
+                     <Label>Mobile</Label>
+                     <Input className="bg-slate-900 border-slate-800" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                     <Label>Address / Locality</Label>
+                     <Input className="bg-slate-900 border-slate-800" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                     <Label>General Inquiry Notes</Label>
+                     <Textarea className="bg-slate-900 border-slate-800 min-h-[150px]" placeholder="Type inquiry details here..." />
                   </div>
                </div>
             </TabsContent>
           </div>
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50">
-             <Button variant="ghost" onClick={onClose} className="hover:bg-slate-800">Cancel</Button>
+             <Button variant="ghost" onClick={onClose} className="hover:bg-slate-800">Close</Button>
              <Button 
                onClick={handleSave}
-               className="bg-[#0066FF] hover:bg-[#0052CC] px-10 shadow-lg shadow-blue-500/20"
+               className="bg-[#0066FF] hover:bg-[#0052CC] px-10 shadow-lg shadow-blue-500/20 font-bold"
              >
-               {editingCall ? 'Update Call' : 'Create Call Entry'}
+               {editingCall ? 'Update Job Details' : '+ Create Service Entry'}
              </Button>
           </DialogFooter>
         </Tabs>

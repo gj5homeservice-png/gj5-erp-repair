@@ -14,7 +14,9 @@ import {
   History,
   Search,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Tv,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,7 +46,7 @@ interface RepairingModuleProps {
   onInvoiceRequest: (call: RepairCall) => void;
 }
 
-type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat';
+type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurchase';
 
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -57,8 +59,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
-    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory && c.visitHistory.length > 1).length;
-    return { totalActive, pending, completed, rejected, repeats };
+    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory.length > 1).length;
+    const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
+    return { totalActive, pending, completed, rejected, repeats, exchangePurchase };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
@@ -74,7 +77,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
-      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory && c.visitHistory.length > 1;
+      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory.length > 1;
+      else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
 
       return matchesSearch && matchesFilter;
     });
@@ -92,6 +96,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     }
   };
 
+  const handlePriceChange = (callId: string, takePrice: number) => {
+    const call = store.calls.find((c: RepairCall) => c.id === callId);
+    if (call) {
+      store.updateCall({ ...call, takePrice });
+    }
+  };
+
   const calculateAging = (updatedDate: string) => {
     const updated = new Date(updatedDate);
     const now = new Date();
@@ -106,10 +117,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* 5-Card Analytics Header */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* 6-Card Analytics Header */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard 
-          title="Total Active Calls" 
+          title="Total Active" 
           value={stats.totalActive} 
           icon={TrendingUp} 
           color="bg-[#0066FF]" 
@@ -142,12 +153,20 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           onClick={() => setActiveFilter('Rejected')}
         />
         <StatCard 
-          title="Repeat Complaints" 
+          title="Repeat" 
           value={stats.repeats} 
           icon={RefreshCw} 
           color="bg-purple-600" 
           active={activeFilter === 'Repeat'}
           onClick={() => setActiveFilter('Repeat')}
+        />
+        <StatCard 
+          title="Exchange/Pur" 
+          value={stats.exchangePurchase} 
+          icon={Tv} 
+          color="bg-cyan-500" 
+          active={activeFilter === 'ExchangePurchase'}
+          onClick={() => setActiveFilter('ExchangePurchase')}
         />
       </div>
 
@@ -187,6 +206,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           <TableBody>
             {filteredCalls.map((call: RepairCall) => {
               const latestVisit = call.visitHistory[call.visitHistory.length - 1];
+              const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
+              
               return (
                 <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
                   <TableCell className="font-code font-bold text-blue-400">
@@ -232,7 +253,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                             "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
                             call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
                             call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                            "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                            call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                            "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
                           )}>
                             {call.status}
                           </button>
@@ -241,9 +263,29 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Exchange')}>Exchange</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
+                      {isExchangePurchase ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
+                            <Input 
+                              type="number" 
+                              value={call.takePrice || ''} 
+                              onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
+                              placeholder="Take Price"
+                              className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
+                            />
+                          </div>
+                          {call.takePrice && (
+                             <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-tight">Acquired @ ₹{call.takePrice}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -300,14 +342,14 @@ function StatCard({ title, value, icon: Icon, color, textColor = "text-white", a
         active ? "ring-2 ring-blue-500 scale-[1.02]" : "hover:bg-slate-800/60"
       )}
     >
-      <CardContent className="p-5">
+      <CardContent className="p-4">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">{title}</p>
-            <h3 className="text-2xl font-headline font-bold">{value}</h3>
+            <p className="text-slate-400 text-[9px] uppercase font-bold tracking-widest mb-1">{title}</p>
+            <h3 className="text-xl font-headline font-bold">{value}</h3>
           </div>
-          <div className={cn("p-2.5 rounded-xl", color, textColor)}>
-            <Icon className="w-5 h-5" />
+          <div className={cn("p-2 rounded-xl", color, textColor)}>
+            <Icon className="w-4 h-4" />
           </div>
         </div>
       </CardContent>

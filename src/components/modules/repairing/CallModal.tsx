@@ -283,7 +283,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-400 font-medium">Technician Selection</Label>
-                  <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
+                  <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
                     <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                       <SelectValue placeholder="Assign Staff..." />
                     </SelectTrigger>

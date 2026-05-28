@@ -1,4 +1,4 @@
-export type RepairStatus = 'Pending' | 'Completed' | 'Rejected';
+export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface RepairHistoryEntry {
   timestamp: string;
@@ -28,6 +28,7 @@ export interface RepairCall {
   updatedAt: string; // Latest visit timestamp for Aging reset
   status: RepairStatus; // Latest status
   visitHistory: RepairHistoryEntry[];
+  takePrice?: number; // Price paid for Exchange/Purchase
 }
 
 export interface Inquiry {

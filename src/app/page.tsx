@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -15,7 +16,8 @@ import {
   Eye,
   Upload,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  Truck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,7 @@ import { RepairingModule } from '@/components/modules/RepairingModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
+import { LogisticsModule } from '@/components/modules/LogisticsModule';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -38,7 +41,7 @@ import { Separator } from '@/components/ui/separator';
 
 export default function DashboardPage() {
   const store = useErpStore();
-  const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet'>('Repairing');
+  const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Logistics'>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -48,6 +51,7 @@ export default function DashboardPage() {
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
     { name: 'Employees', icon: Users, id: 'Employees', visible: store.visibility.tabs.Employees },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet', visible: store.visibility.tabs['E-Wallet'] },
+    { name: 'Logistics', icon: Truck, id: 'Logistics', visible: store.visibility.tabs.Logistics },
   ].filter(item => item.visible);
 
   useEffect(() => {
@@ -260,6 +264,7 @@ export default function DashboardPage() {
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
+          {activeTab === 'Logistics' && <LogisticsModule store={store} />}
         </div>
       </main>
     </div>

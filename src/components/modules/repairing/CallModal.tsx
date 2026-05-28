@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -19,24 +20,16 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RepairCall, RepairHistoryEntry, RepairStatus, Inquiry } from '@/lib/types';
 import { 
-  ShieldCheck, 
   History as HistoryIcon, 
   Search, 
   UserPlus, 
   PlusCircle, 
   ChevronRight,
   RefreshCw,
-  Truck,
-  MessageSquare,
-  Paperclip,
-  Upload,
-  Camera,
   Notebook
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -69,8 +62,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     techTags: [],
     pickupRequired: false,
     intakeMode: 'Customer Walk-In',
-    runnerName: '',
-    runnerMobile: '',
     status: 'Pending' as RepairStatus,
     visitHistory: []
   });
@@ -90,26 +81,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
-  
-  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
-  const [templates, setTemplates] = useState<string[]>([
-    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS. Registered Issue: [RegisteredIssue]. Tech: [TechTags].",
-    "Dear Customer, the estimated repair cost for job [JobID] is Rs.____. Please confirm approval.",
-    "Dear Customer, your repaired device [JobID] has been safely delivered to [Address]. Thank you!"
-  ]);
-  const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
-
-  useEffect(() => {
-    const savedTemplates = localStorage.getItem('gj5_whatsapp_templates');
-    if (savedTemplates) {
-      try { setTemplates(JSON.parse(savedTemplates)); } catch (e) { console.error(e); }
-    }
-    const savedAttachments = localStorage.getItem('gj5_whatsapp_attachments');
-    if (savedAttachments) {
-      try { setAttachments(JSON.parse(savedAttachments)); } catch (e) { console.error(e); }
-    }
-  }, []);
 
   useEffect(() => {
     if (editingCall) {
@@ -142,8 +113,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         techTags: [],
         pickupRequired: false,
         intakeMode: 'Customer Walk-In',
-        runnerName: '',
-        runnerMobile: '',
         status: 'Pending',
         visitHistory: []
       });
@@ -176,27 +145,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     setFormData(call);
     setCurrentVisitTags([]);
     setActiveTab('Repeat Call Form');
-  };
-
-  const handleTemplateChange = (index: number, value: string) => {
-    const newTemplates = [...templates];
-    newTemplates[index] = value;
-    setTemplates(newTemplates);
-    localStorage.setItem('gj5_whatsapp_templates', JSON.stringify(newTemplates));
-  };
-
-  const handleAttachment = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newAttachments = [...attachments];
-        newAttachments[index] = reader.result as string;
-        setAttachments(newAttachments);
-        localStorage.setItem('gj5_whatsapp_attachments', JSON.stringify(newAttachments));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const toggleTag = (tag: string) => {
@@ -255,20 +203,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     }
 
     onSave(finalData);
-
-    if (whatsappEnabled && finalData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
-      let msg = templates[selectedTemplateIndex];
-      msg = msg.replace('[JobID]', finalData.id)
-               .replace('[CustomerID]', finalData.customerId)
-               .replace('[CustomerName]', finalData.customerName || 'Customer')
-               .replace('[Address]', finalData.address || 'Address')
-               .replace('[RegisteredIssue]', currentVisitIssue)
-               .replace('[TechTags]', currentVisitTags.join(', '))
-               .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
-
-      const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
-      window.open(url, '_blank');
-    }
   };
 
   return (
@@ -292,7 +226,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             </TabsList>
           </div>
 
-          <div className="p-8 max-h-[75vh] overflow-y-auto">
+          <div className="p-8 max-h-[70vh] overflow-y-auto">
             <TabsContent value="New Call" className="space-y-8 mt-0 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
@@ -343,42 +277,43 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     <Label>Full Address</Label>
                     <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                   </div>
+                </div>
 
-                  <div className="space-y-4">
-                    <div className="flex gap-4">
-                      <div className="flex-1 space-y-2">
-                        <Label>Brand Selection</Label>
-                        <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                          <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                            <SelectValue placeholder="Select Brand..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800">
-                            {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {selectedBrand === 'Other' && (
-                        <div className="flex-1 space-y-2 animate-in slide-in-from-left-4">
-                          <Label>Enter Brand Name</Label>
-                          <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. Sharp" />
-                        </div>
-                      )}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Brand Selection</Label>
+                      <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                          <SelectValue placeholder="Select Brand..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Model Number</Label>
-                        <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    {selectedBrand === 'Other' && (
+                      <div className="space-y-2 animate-in slide-in-from-left-4">
+                        <Label>Enter Brand Name</Label>
+                        <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. Sharp" />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Screen Size (Inch)</Label>
-                        <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Model Number</Label>
+                      <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Screen Size (Inch)</Label>
+                      <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Repair Tags</Label>
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Assignments</Label>
                       <div className="flex flex-row gap-2">
                          {TECH_TAGS.map(tag => (
                            <button
@@ -406,111 +341,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                           <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
                           <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
                           <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
-                          <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
-                          <SelectItem value="HDMI / Wi-Fi Not Working">HDMI / Wi-Fi Not Working</SelectItem>
-                          <SelectItem value="White Screen / Backlight Issue">White Screen / Backlight Issue</SelectItem>
-                          <SelectItem value="Other / Custom Notes">Other / Custom Notes</SelectItem>
+                          <SelectItem value="HDMI Not Working">HDMI Not Working</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6">
-                    <div className="flex items-center gap-2">
-                       <Truck className="w-5 h-5 text-[#0066FF]" />
-                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Intake Workflow</h3>
-                    </div>
-                    
-                    <RadioGroup 
-                      value={formData.intakeMode} 
-                      onValueChange={(v: any) => setFormData({...formData, intakeMode: v})}
-                      className="flex gap-8"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Customer Walk-In" id="mode-walkin" />
-                        <Label htmlFor="mode-walkin">Customer Walk-In</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Logistics Dispatch" id="mode-dispatch" />
-                        <Label htmlFor="mode-dispatch">Logistics Dispatch</Label>
-                      </div>
-                    </RadioGroup>
-
-                    {formData.intakeMode === 'Logistics Dispatch' && (
-                      <div className="grid grid-cols-2 gap-4 pt-4 animate-in slide-in-from-top-2 border-t border-slate-800">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Runner Name</Label>
-                          <Input 
-                            placeholder="e.g. Rahul" 
-                            value={formData.runnerName || ''}
-                            onChange={e => setFormData({...formData, runnerName: e.target.value})}
-                            className="bg-slate-900 border-slate-800" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Runner Mobile (10-Digit)</Label>
-                          <Input 
-                            placeholder="Mobile No." 
-                            value={formData.runnerMobile || ''}
-                            onChange={e => setFormData({...formData, runnerMobile: e.target.value})}
-                            className="bg-slate-900 border-slate-800" 
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
-                    <div className="flex items-center justify-between">
-                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                         <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Template Suite
-                       </h3>
-                       <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
-                    </div>
-
-                    <div className={cn("space-y-4 transition-all", !whatsappEnabled && "opacity-40 grayscale pointer-events-none")}>
-                       {[0, 1, 2].map((idx) => (
-                         <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800 hover:bg-slate-900/60 transition-colors">
-                            <div className="pt-2">
-                               <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
-                                  <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
-                               </RadioGroup>
-                            </div>
-                            <div className="flex-1 space-y-2">
-                               <div className="flex justify-between items-center">
-                                  <Label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Template Option {idx + 1}</Label>
-                                  <div className="flex items-center gap-2">
-                                     <input 
-                                       type="file" 
-                                       id={`attach-${idx}`} 
-                                       className="hidden" 
-                                       accept="image/*" 
-                                       onChange={(e) => handleAttachment(idx, e)}
-                                     />
-                                     <button 
-                                       onClick={() => document.getElementById(`attach-${idx}`)?.click()}
-                                       className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-all", attachments[idx] ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-500 hover:bg-slate-700")}
-                                     >
-                                        <Paperclip className="w-3 h-3" />
-                                        {attachments[idx] ? "Attached" : "Attach Image / Capture"}
-                                     </button>
-                                  </div>
-                               </div>
-                               <Textarea 
-                                 value={templates[idx]}
-                                 onChange={e => handleTemplateChange(idx, e.target.value)}
-                                 className="bg-transparent border-0 p-0 text-xs min-h-[60px] focus-visible:ring-0 resize-none leading-relaxed"
-                               />
-                               {attachments[idx] && (
-                                 <div className="mt-2 w-12 h-12 rounded overflow-hidden border border-slate-700">
-                                    <img src={attachments[idx]!} className="w-full h-full object-cover" alt="Attached" />
-                                 </div>
-                               )}
-                            </div>
-                         </div>
-                       ))}
                     </div>
                   </div>
                 </div>
@@ -524,13 +358,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <RefreshCw className="w-8 h-8 text-[#0066FF]" />
                      </div>
                      <h3 className="text-2xl font-headline font-bold">Infinite Profile Retrieval</h3>
-                     <p className="text-slate-500 text-sm">Search by Mobile, Job ID or Customer ID</p>
                   </div>
                   
                   <div className="flex gap-2">
                      <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                        <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Enter details..." />
+                        <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Search Mobile, Job ID or Customer ID..." />
                      </div>
                      <Button onClick={handleSearchRepeat} className="bg-[#0066FF] hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Run Search</Button>
                   </div>
@@ -572,7 +405,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                  <th className="p-4">Visit #</th>
                                  <th className="p-4">Timestamp</th>
                                  <th className="p-4">Registered Issue</th>
-                                 <th className="p-4">Tech Tags</th>
                                  <th className="p-4 text-right">Status</th>
                               </tr>
                            </thead>
@@ -582,9 +414,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                    <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
                                    <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
                                    <td className="p-4 truncate max-w-[200px]">{h.issue}</td>
-                                   <td className="p-4 font-bold text-[#0066FF]">
-                                      {h.techTags?.join(', ') || 'None'}
-                                   </td>
                                    <td className="p-4 text-right">
                                       <Badge variant="outline" className="text-[9px] uppercase">{h.statusAtTime}</Badge>
                                    </td>
@@ -628,7 +457,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                            </Select>
                         </div>
                         <div className="space-y-3">
-                           <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Technician Repair Assignment</Label>
+                           <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Technician Assignment</Label>
                            <div className="flex flex-row gap-2">
                               {TECH_TAGS.map(tag => (
                                 <button
@@ -659,7 +488,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                   <div>
                     <h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3>
-                    <p className="text-slate-500 text-sm">Capture query details for visitors and casual walk-ins.</p>
+                    <p className="text-slate-500 text-sm">Capture query details for visitors and walk-ins.</p>
                   </div>
                 </div>
 
@@ -671,16 +500,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         value={inquiryData.customerName} 
                         onChange={e => setInquiryData({...inquiryData, customerName: e.target.value})} 
                         className="bg-slate-950 border-slate-800 h-12" 
-                        placeholder="e.g. Rahul Sharma"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase">Mobile Number (10-Digit)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Mobile Number</Label>
                       <Input 
                         value={inquiryData.mobile} 
                         onChange={e => setInquiryData({...inquiryData, mobile: e.target.value})} 
                         className="bg-slate-950 border-slate-800 h-12" 
-                        placeholder="Enter mobile..."
                       />
                     </div>
                   </div>
@@ -691,7 +518,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         value={inquiryData.address} 
                         onChange={e => setInquiryData({...inquiryData, address: e.target.value})} 
                         className="bg-slate-950 border-slate-800 h-12" 
-                        placeholder="Street, Area, Building..."
                       />
                     </div>
                     <div className="space-y-2">
@@ -700,7 +526,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         value={inquiryData.pincode} 
                         onChange={e => setInquiryData({...inquiryData, pincode: e.target.value})} 
                         className="bg-slate-950 border-slate-800 h-12" 
-                        placeholder="395XXX"
                       />
                     </div>
                   </div>
@@ -711,8 +536,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <Textarea 
                     value={inquiryData.notes} 
                     onChange={e => setInquiryData({...inquiryData, notes: e.target.value})} 
-                    className="bg-slate-950 border-slate-800 min-h-[150px] p-4 text-sm leading-relaxed" 
-                    placeholder="Enter manual notes, estimates given, or query description..."
+                    className="bg-slate-950 border-slate-800 min-h-[150px]" 
                   />
                 </div>
               </div>
@@ -721,12 +545,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
              <Button variant="ghost" onClick={onClose} className="rounded-xl">Cancel</Button>
-             <div className="flex items-center gap-4">
-                <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
-                  {activeTab === 'Inquiry' ? 'Create Inquiry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call Registry' : 'Create Registry'}
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-             </div>
+             <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
+               {activeTab === 'Inquiry' ? 'Create Inquiry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call Registry' : 'Create Registry'}
+               <ChevronRight className="w-4 h-4" />
+             </Button>
           </DialogFooter>
         </Tabs>
       </DialogContent>

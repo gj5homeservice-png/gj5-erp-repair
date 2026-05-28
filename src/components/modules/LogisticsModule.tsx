@@ -1,0 +1,308 @@
+
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Truck, 
+  User, 
+  Phone, 
+  Package, 
+  MessageSquare, 
+  Paperclip, 
+  Send,
+  MapPin,
+  Clock,
+  MoreVertical,
+  ChevronRight,
+  Search
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
+export function LogisticsModule({ store }: { store: any }) {
+  const [formData, setFormData] = useState({
+    runnerName: '',
+    runnerMobile: '',
+    selectedJobId: ''
+  });
+
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+  const [templates, setTemplates] = useState<string[]>([
+    "Runner Dispatch: Dear [RunnerName], please collect device [JobID] from [CustomerName] at [Address]. Issue: [Issue].",
+    "Quotation Update: Dear Customer, your device [JobID] is picked up by [RunnerName]. Estimating cost now.",
+    "Delivery Alert: Dear [CustomerName], runner [RunnerName] is arriving for delivery of [JobID] shortly."
+  ]);
+  const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
+
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('gj5_logistics_templates');
+    if (savedTemplates) {
+      try { setTemplates(JSON.parse(savedTemplates)); } catch (e) { console.error(e); }
+    }
+  }, []);
+
+  const activeJobs = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected');
+
+  const handleTemplateChange = (index: number, value: string) => {
+    const newTemplates = [...templates];
+    newTemplates[index] = value;
+    setTemplates(newTemplates);
+    localStorage.setItem('gj5_logistics_templates', JSON.stringify(newTemplates));
+  };
+
+  const handleAttachment = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newAttachments = [...attachments];
+        newAttachments[index] = reader.result as string;
+        setAttachments(newAttachments);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDispatch = () => {
+    const job = activeJobs.find((j: any) => j.id === formData.selectedJobId);
+    if (!job || !formData.runnerName || !formData.runnerMobile) return;
+
+    const newLog = {
+      id: `LOG${Date.now()}`,
+      runnerName: formData.runnerName,
+      runnerMobile: formData.runnerMobile,
+      jobId: job.id,
+      customerName: job.customerName,
+      customerMobile: job.mobile,
+      address: job.address,
+      dispatchTime: new Date().toISOString(),
+      status: 'In-Transit' as const
+    };
+
+    store.addLogisticsLog(newLog);
+
+    // WhatsApp Dispatch
+    let msg = templates[selectedTemplateIndex];
+    msg = msg.replace('[RunnerName]', formData.runnerName)
+             .replace('[JobID]', job.id)
+             .replace('[CustomerName]', job.customerName)
+             .replace('[Address]', job.address)
+             .replace('[Issue]', job.visitHistory?.[job.visitHistory.length - 1]?.issue || 'N/A');
+
+    const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+
+    setFormData({ runnerName: '', runnerMobile: '', selectedJobId: '' });
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Top Pane: Assignment Form */}
+      <Card className="bg-slate-900/40 border-slate-800">
+        <CardHeader className="border-b border-slate-800">
+          <CardTitle className="flex items-center gap-2 font-headline text-xl">
+            <Truck className="w-6 h-6 text-[#0066FF]" />
+            Runner Assignment Control
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input 
+                      value={formData.runnerName}
+                      onChange={e => setFormData({...formData, runnerName: e.target.value})}
+                      placeholder="e.g. Rahul Patel"
+                      className="pl-10 bg-slate-950 border-slate-800 h-11" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile (10-Digit)</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input 
+                      value={formData.runnerMobile}
+                      onChange={e => setFormData({...formData, runnerMobile: e.target.value})}
+                      placeholder="9988776655"
+                      className="pl-10 bg-slate-950 border-slate-800 h-11" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Job Linker</Label>
+                <Select value={formData.selectedJobId} onValueChange={v => setFormData({...formData, selectedJobId: v})}>
+                  <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+                    <SelectValue placeholder="Select an active job from registry..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    {activeJobs.map((job: any) => (
+                      <SelectItem key={job.id} value={job.id}>
+                        {job.id} - {job.customerName} ({job.address})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button 
+                onClick={handleDispatch}
+                disabled={!formData.runnerName || !formData.runnerMobile || !formData.selectedJobId}
+                className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-headline font-bold uppercase shadow-lg shadow-blue-500/20"
+              >
+                <Send className="w-5 h-5 mr-2" />
+                🚀 Dispatch & Send to Runner
+              </Button>
+            </div>
+
+            <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-500" /> Messaging Template Suite
+              </h3>
+              <div className="space-y-4">
+                {[0, 1, 2].map((idx) => (
+                  <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                    <div className="pt-2">
+                      <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
+                        <RadioGroupItem value={idx.toString()} id={`log-tpl-${idx}`} />
+                      </RadioGroup>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Option {idx + 1}</Label>
+                        <div className="flex items-center gap-2">
+                          <input type="file" id={`log-attach-${idx}`} className="hidden" accept="image/*" onChange={(e) => handleAttachment(idx, e)} />
+                          <button 
+                            onClick={() => document.getElementById(`log-attach-${idx}`)?.click()}
+                            className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-bold uppercase", attachments[idx] ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-500")}
+                          >
+                            <Paperclip className="w-3 h-3" />
+                            {attachments[idx] ? "Attached" : "Attach"}
+                          </button>
+                        </div>
+                      </div>
+                      <Textarea 
+                        value={templates[idx]}
+                        onChange={e => handleTemplateChange(idx, e.target.value)}
+                        className="bg-transparent border-0 p-0 text-xs min-h-[50px] focus-visible:ring-0 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bottom Pane: Logistics Ledger */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-headline font-bold flex items-center gap-2">
+          <Package className="w-6 h-6 text-[#FFD700]" />
+          Active Logistics Ledger Directory
+        </h3>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+          <Table>
+            <TableHeader className="bg-slate-900/60">
+              <TableRow className="border-slate-800 hover:bg-transparent">
+                <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
+                <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
+                <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
+                <TableHead className="font-headline text-slate-400">Destination Address</TableHead>
+                <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
+                <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
+                <TableHead className="text-right font-headline text-slate-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {store.logistics.map((log: any) => (
+                <TableRow key={log.id} className="border-slate-800/50 hover:bg-slate-800/20">
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-bold">{log.runnerName}</span>
+                      <span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 text-blue-400 font-code">
+                      {log.jobId}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{log.customerName}</span>
+                      <span className="text-[10px] text-slate-500">{log.customerMobile}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 max-w-[200px]">
+                      <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span className="text-xs text-slate-400 truncate">{log.address}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Clock className="w-3 h-3" />
+                      {format(new Date(log.dispatchTime), 'hh:mm a')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Select 
+                      value={log.status} 
+                      onValueChange={(v: any) => store.updateLogisticsLog(log.id, v)}
+                    >
+                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800">
+                        <SelectItem value="In-Transit">In-Transit</SelectItem>
+                        <SelectItem value="Collected">Collected</SelectItem>
+                        <SelectItem value="Arrived at Workshop">Arrived at Workshop</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" className="hover:bg-slate-800"><MoreVertical className="w-4 h-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {store.logistics.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center text-slate-500">No active logistics dispatches currently in transit.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  );
+}

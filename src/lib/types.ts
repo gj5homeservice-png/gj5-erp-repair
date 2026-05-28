@@ -26,8 +26,6 @@ export interface RepairCall {
   techTags?: string[];
   pickupRequired: boolean;
   intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
-  runnerName: string | null;
-  runnerMobile: string | null;
   createdAt: string;
   updatedAt: string;
   status: RepairStatus;
@@ -75,6 +73,20 @@ export interface Expense {
   category: 'Chai Nasta' | 'Stationery' | 'Tools & Consumables' | 'Miscellaneous / Other';
   description: string;
   timestamp: string;
+}
+
+export type LogisticsStatus = 'In-Transit' | 'Collected' | 'Arrived at Workshop';
+
+export interface LogisticsLog {
+  id: string;
+  runnerName: string;
+  runnerMobile: string;
+  jobId: string;
+  customerName: string;
+  customerMobile: string;
+  address: string;
+  dispatchTime: string;
+  status: LogisticsStatus;
 }
 
 export interface Invoice {

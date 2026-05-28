@@ -1,7 +1,8 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice, LogisticsLog } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -9,6 +10,7 @@ export interface VisibilitySettings {
     Billing: boolean;
     Employees: boolean;
     'E-Wallet': boolean;
+    Logistics: boolean;
   };
   kpis: {
     totalActive: boolean;
@@ -28,6 +30,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [logistics, setLogistics] = useState<LogisticsLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
   const [shopLogo, setShopLogo] = useState<string | null>(null);
@@ -37,7 +40,8 @@ export function useErpStore() {
       Repairing: true,
       Billing: true,
       Employees: true,
-      'E-Wallet': true
+      'E-Wallet': true,
+      Logistics: true
     },
     kpis: {
       totalActive: true,
@@ -84,8 +88,6 @@ export function useErpStore() {
         technician: 'Rajesh Sharma',
         pickupRequired: false,
         intakeMode: 'Customer Walk-In',
-        runnerName: null,
-        runnerMobile: null,
         createdAt: initialTimestamp,
         updatedAt: initialTimestamp,
         status: 'Pending',
@@ -138,12 +140,17 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
+  const addLogisticsLog = (log: LogisticsLog) => setLogistics(prev => [log, ...prev]);
+  const updateLogisticsLog = (id: string, status: LogisticsLog['status']) => 
+    setLogistics(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+
   return {
     calls, addCall, updateCall,
     inquiries, addInquiry,
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
+    logistics, addLogisticsLog, updateLogisticsLog,
     walletBalance, setWalletBalance,
     whatsappGateway, setWhatsappGateway,
     shopLogo, setShopLogo: handleSetShopLogo,

@@ -50,7 +50,7 @@ interface CallModalProps {
   store: any;
 }
 
-const BRANDS = ['Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
+const BRANDS = ['GJ5 PLUS', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 
 export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallModalProps) {
@@ -92,7 +92,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   ]);
   const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
 
-  // Load templates and visibility from localStorage
   useEffect(() => {
     const savedTemplates = localStorage.getItem('gj5_whatsapp_templates');
     if (savedTemplates) {
@@ -140,12 +139,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         status: 'Pending',
         visitHistory: []
       });
-      setSelectedBrand('');
+      setSelectedBrand('GJ5 PLUS');
       setCustomBrand('');
       setCurrentVisitIssue('No Power / Dead');
       setCurrentVisitTags([]);
     }
-  }, [editingCall, isOpen]);
+  }, [editingCall, isOpen, store.calls]);
 
   const handleSearchRepeat = () => {
     if (!repeatSearchQuery) return;
@@ -203,7 +202,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       timestamp: now,
       issue: currentVisitIssue,
       techTags: currentVisitTags,
-      notes: '', // Notes field removed as per requirement
+      notes: '',
       statusAtTime: 'Pending'
     };
 
@@ -636,3 +635,4 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     </Dialog>
   );
 }
+

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -289,7 +290,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                   </TableCell>
                   <TableCell>
                      {isRejected ? (
-                        <div className="h-8 w-full bg-slate-900/10 rounded"></div>
+                        <div className="h-8 w-full"></div>
                      ) : showWarranty ? (
                        <div className="flex flex-col gap-2 min-w-[140px]">
                           <Select 
@@ -334,7 +335,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                            </Select>
                         </div>
                      ) : (
-                       <div className="h-8 w-full bg-slate-900/20 rounded border border-dashed border-slate-800/50"></div>
+                       <div className="h-8 w-full"></div>
                      )}
                   </TableCell>
                   <TableCell>

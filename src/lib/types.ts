@@ -32,7 +32,7 @@ export interface RepairCall {
   takePrice?: number;
   warrantyDuration?: string; // e.g. "1 Month", "3 Months", "6 Months", "Custom Duration"
   warrantyCustomValue?: string; // e.g. "45 Days"
-  warrantyExpiry?: string;
+  warrantyExpiry?: string; // ISO String
 }
 
 export interface Inquiry {

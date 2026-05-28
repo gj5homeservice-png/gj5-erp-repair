@@ -46,7 +46,7 @@ import {
 import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
-import { format } from 'date-fns';
+import { format, differenceInDays, addMonths, addDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface RepairingModuleProps {
@@ -64,17 +64,22 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
 
   const stats = useMemo(() => {
+    const now = new Date();
     const totalActive = store.calls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
     const repeats = store.calls.filter((c: RepairCall) => (c.visitHistory?.length || 0) > 1).length;
     const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
-    const warranty = store.calls.filter((c: RepairCall) => c.warrantyDuration && c.warrantyDuration !== 'None').length;
+    const warranty = store.calls.filter((c: RepairCall) => {
+      if (!c.warrantyExpiry) return false;
+      return new Date(c.warrantyExpiry) > now;
+    }).length;
     return { totalActive, pending, completed, rejected, repeats, exchangePurchase, warranty };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
+    const now = new Date();
     return store.calls.filter((c: RepairCall) => {
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,7 +94,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
       else if (activeFilter === 'Repeat') matchesFilter = (c.visitHistory?.length || 0) > 1;
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
-      else if (activeFilter === 'Warranty') matchesFilter = c.warrantyDuration && c.warrantyDuration !== 'None';
+      else if (activeFilter === 'Warranty') matchesFilter = c.warrantyExpiry && new Date(c.warrantyExpiry) > now;
 
       return (matchesSearch || !searchQuery) && matchesFilter;
     });
@@ -100,10 +105,26 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     setModalOpen(true);
   };
 
+  const calculateWarrantyExpiry = (duration: string, customValue?: string) => {
+    const now = new Date();
+    if (duration === '1 Month') return addMonths(now, 1).toISOString();
+    if (duration === '3 Months') return addMonths(now, 3).toISOString();
+    if (duration === '6 Months') return addMonths(now, 6).toISOString();
+    if (duration === 'Custom Duration' && customValue) {
+      const days = parseInt(customValue);
+      if (!isNaN(days)) return addDays(now, days).toISOString();
+    }
+    return undefined;
+  };
+
   const handleStatusChange = (callId: string, status: RepairStatus) => {
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
-      store.updateCall({ ...call, status, updatedAt: new Date().toISOString() });
+      let warrantyExpiry = call.warrantyExpiry;
+      if (status === 'Completed' && call.warrantyDuration && call.warrantyDuration !== 'None') {
+        warrantyExpiry = calculateWarrantyExpiry(call.warrantyDuration, call.warrantyCustomValue);
+      }
+      store.updateCall({ ...call, status, warrantyExpiry, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -117,22 +138,31 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const handleWarrantyChange = (callId: string, duration: string) => {
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
-      store.updateCall({ ...call, warrantyDuration: duration });
+      const isCompleted = call.status === 'Completed';
+      const warrantyExpiry = isCompleted && duration !== 'None' 
+        ? calculateWarrantyExpiry(duration, call.warrantyCustomValue) 
+        : undefined;
+      store.updateCall({ ...call, warrantyDuration: duration, warrantyExpiry });
     }
   };
 
   const handleCustomWarrantyChange = (callId: string, value: string) => {
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
-      store.updateCall({ ...call, warrantyCustomValue: value });
+      const isCompleted = call.status === 'Completed';
+      const warrantyExpiry = isCompleted && call.warrantyDuration === 'Custom Duration'
+        ? calculateWarrantyExpiry('Custom Duration', value)
+        : undefined;
+      store.updateCall({ ...call, warrantyCustomValue: value, warrantyExpiry });
     }
   };
 
-  const calculateAging = (updatedDate: string) => {
-    const updated = new Date(updatedDate);
+  const calculateWarrantyLeft = (expiryDate?: string) => {
+    if (!expiryDate) return null;
     const now = new Date();
-    const diff = Math.floor((now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24));
-    return diff || 0;
+    const expiry = parseISO(expiryDate);
+    const diff = differenceInDays(expiry, now);
+    return diff > 0 ? diff : 0;
   };
 
   const openMap = (address: string, pincode: string) => {
@@ -209,6 +239,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
             {filteredCalls.map((call: RepairCall) => {
               const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
+              const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
               
               return (
                 <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
@@ -265,7 +296,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           <Input 
                             value={call.warrantyCustomValue || ''}
                             onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
-                            placeholder="e.g. 45 Days"
+                            placeholder="e.g. 15 DAY"
                             className="h-7 text-[10px] bg-slate-950 border-slate-800"
                           />
                         )}
@@ -305,7 +336,11 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           />
                         </div>
                       ) : (
-                        <div className="text-[10px] text-slate-500 font-medium">Workshop: {calculateAging(call.updatedAt)} Days</div>
+                        warrantyLeft !== null && (
+                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
+                            Warranty Left: {warrantyLeft} Days
+                          </div>
+                        )
                       )}
                     </div>
                   </TableCell>

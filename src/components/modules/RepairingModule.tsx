@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Plus, 
   Clock, 
@@ -17,7 +16,9 @@ import {
   RefreshCw,
   AlertCircle,
   Tv,
-  Printer as PrinterIcon
+  Printer as PrinterIcon,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,6 +57,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stats = useMemo(() => {
     const totalActive = store.calls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
@@ -86,6 +88,17 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       return matchesSearch && matchesFilter;
     });
   }, [store.calls, searchQuery, activeFilter]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        store.setShopLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleEdit = (call: RepairCall) => {
     setEditingCall(call);
@@ -120,56 +133,85 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard 
-          title="Total Active" 
-          value={stats.totalActive} 
-          icon={TrendingUp} 
-          color="bg-[#0066FF]" 
-          active={activeFilter === 'Active'}
-          onClick={() => setActiveFilter('Active')}
-        />
-        <StatCard 
-          title="Pending" 
-          value={stats.pending} 
-          icon={Clock} 
-          color="bg-[#FFD700]" 
-          textColor="text-black"
-          active={activeFilter === 'Pending'}
-          onClick={() => setActiveFilter('Pending')}
-        />
-        <StatCard 
-          title="Completed" 
-          value={stats.completed} 
-          icon={CheckCircle2} 
-          color="bg-emerald-500" 
-          active={activeFilter === 'Completed'}
-          onClick={() => setActiveFilter('Completed')}
-        />
-        <StatCard 
-          title="Rejected" 
-          value={stats.rejected} 
-          icon={XCircle} 
-          color="bg-[#FF3366]" 
-          active={activeFilter === 'Rejected'}
-          onClick={() => setActiveFilter('Rejected')}
-        />
-        <StatCard 
-          title="Repeat" 
-          value={stats.repeats} 
-          icon={RefreshCw} 
-          color="bg-purple-600" 
-          active={activeFilter === 'Repeat'}
-          onClick={() => setActiveFilter('Repeat')}
-        />
-        <StatCard 
-          title="Exchange/Pur" 
-          value={stats.exchangePurchase} 
-          icon={Tv} 
-          color="bg-cyan-500" 
-          active={activeFilter === 'ExchangePurchase'}
-          onClick={() => setActiveFilter('ExchangePurchase')}
-        />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1">
+          <StatCard 
+            title="Total Active" 
+            value={stats.totalActive} 
+            icon={TrendingUp} 
+            color="bg-[#0066FF]" 
+            active={activeFilter === 'Active'}
+            onClick={() => setActiveFilter('Active')}
+          />
+          <StatCard 
+            title="Pending" 
+            value={stats.pending} 
+            icon={Clock} 
+            color="bg-[#FFD700]" 
+            textColor="text-black"
+            active={activeFilter === 'Pending'}
+            onClick={() => setActiveFilter('Pending')}
+          />
+          <StatCard 
+            title="Completed" 
+            value={stats.completed} 
+            icon={CheckCircle2} 
+            color="bg-emerald-500" 
+            active={activeFilter === 'Completed'}
+            onClick={() => setActiveFilter('Completed')}
+          />
+          <StatCard 
+            title="Rejected" 
+            value={stats.rejected} 
+            icon={XCircle} 
+            color="bg-[#FF3366]" 
+            active={activeFilter === 'Rejected'}
+            onClick={() => setActiveFilter('Rejected')}
+          />
+          <StatCard 
+            title="Repeat" 
+            value={stats.repeats} 
+            icon={RefreshCw} 
+            color="bg-purple-600" 
+            active={activeFilter === 'Repeat'}
+            onClick={() => setActiveFilter('Repeat')}
+          />
+          <StatCard 
+            title="Exchange/Pur" 
+            value={stats.exchangePurchase} 
+            icon={Tv} 
+            color="bg-cyan-500" 
+            active={activeFilter === 'ExchangePurchase'}
+            onClick={() => setActiveFilter('ExchangePurchase')}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 min-w-[200px]">
+           <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleLogoUpload} 
+           />
+           <Button 
+            variant="outline" 
+            className="border-slate-800 bg-slate-900/50 hover:bg-slate-800 h-10 w-full rounded-xl"
+            onClick={() => fileInputRef.current?.click()}
+           >
+            {store.shopLogo ? (
+              <div className="flex items-center gap-2">
+                <img src={store.shopLogo} className="w-5 h-5 rounded object-cover" alt="Shop Logo" />
+                <span className="text-xs">Change Shop Logo</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                <span className="text-xs">Upload Shop Logo</span>
+              </div>
+            )}
+           </Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
@@ -338,7 +380,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       <StickerModal 
         isOpen={!!stickerCall} 
         onClose={() => setStickerCall(null)} 
-        call={stickerCall} 
+        call={stickerCall}
+        shopLogo={store.shopLogo}
       />
     </div>
   );

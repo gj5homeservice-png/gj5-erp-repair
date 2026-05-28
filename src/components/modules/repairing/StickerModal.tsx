@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -13,29 +12,29 @@ import { Button } from '@/components/ui/button';
 import { RepairCall } from '@/lib/types';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
-import { Printer, X, Laptop, Monitor, Tablet, Wrench, Settings } from 'lucide-react';
+import { Printer, Settings, ImageIcon } from 'lucide-react';
 
 interface StickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   call: RepairCall | null;
+  shopLogo?: string | null;
 }
 
-export function StickerModal({ isOpen, onClose, call }: StickerModalProps) {
+export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalProps) {
   if (!call) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
-  // Metadata for Left QR
+  // Full Customer Metadata for Left QR
   const qrMetadata = JSON.stringify({
     cid: call.customerId,
     name: call.customerName,
     mob: call.mobile,
     addr: `${call.address}, ${call.pincode}`,
-    jid: call.id,
-    issue: call.visitHistory?.[call.visitHistory.length - 1]?.issue || 'N/A'
+    jid: call.id
   });
 
   return (
@@ -53,95 +52,91 @@ export function StickerModal({ isOpen, onClose, call }: StickerModalProps) {
         </DialogHeader>
 
         <div className="p-10 flex flex-col items-center gap-8">
-          {/* Physical Sticker Simulation */}
+          {/* Physical Sticker Simulation (100mm x 50mm / 4x2 inch) */}
           <div 
             id="thermal-sticker"
             className="w-[600px] h-[300px] bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0"
             style={{ 
               aspectRatio: '2/1',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              fontFamily: 'Inter, system-ui, sans-serif'
             }}
           >
-            {/* Sticker Content */}
-            <div className="flex-1 flex flex-col">
-              {/* Header Branding */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-4">
-                <div className="flex items-center gap-3">
-                   <div className="flex flex-col">
-                      <h1 className="text-3xl font-black italic tracking-tighter leading-none">GJ5</h1>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Home Service</span>
-                   </div>
-                </div>
-                <div className="text-right">
-                   <h2 className="text-2xl font-black text-red-600 leading-none">MO- 88669 83900</h2>
-                   <p className="text-[9px] font-bold uppercase tracking-tighter text-slate-500 mt-1">Surat • Fast Service • Reliable Solution</p>
-                </div>
+            {/* Header Branding */}
+            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2">
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</h1>
               </div>
-
-              {/* Dual Encoding Engine Body */}
-              <div className="flex flex-1 gap-6 items-center">
-                {/* Left Side: Profile QR */}
-                <div className="flex flex-col items-center gap-2 flex-1">
-                  <div className="p-2 bg-white border-2 border-slate-900 rounded-lg">
-                    <QRCodeSVG value={qrMetadata} size={110} level="H" />
-                  </div>
-                  <div className="text-center">
-                    <span className="text-[11px] font-black uppercase tracking-tight bg-slate-900 text-white px-2 py-0.5 rounded">
-                      Customer ID - {call.customerId}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Vertical Separator */}
-                <div className="w-0.5 h-full bg-slate-200"></div>
-
-                {/* Right Side: Job Barcode */}
-                <div className="flex flex-col items-center justify-center gap-2 flex-[1.5]">
-                  <div className="w-full flex justify-center">
-                    <Barcode 
-                      value={call.id} 
-                      width={2.2} 
-                      height={75} 
-                      displayValue={false} 
-                      background="transparent" 
-                      margin={0}
-                    />
-                  </div>
-                  <div className="text-center w-full mt-2">
-                    <span className="text-lg font-black uppercase tracking-widest block leading-none">
-                      Job ID - {call.id}
-                    </span>
-                    <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase">
-                      {call.brand} {call.model} • {call.screenSize}"
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Icons Overlay */}
-              <div className="mt-4 pt-2 border-t-2 border-slate-900 flex justify-between items-center bg-slate-50 -mx-4 -mb-4 px-4 py-2">
-                 <div className="flex gap-4 opacity-70">
-                    <div className="flex items-center gap-1"><Monitor className="w-3 h-3" /><span className="text-[8px] font-bold">TV</span></div>
-                    <div className="flex items-center gap-1"><Laptop className="w-3 h-3" /><span className="text-[8px] font-bold">LAPTOP</span></div>
-                    <div className="flex items-center gap-1"><Tablet className="w-3 h-3" /><span className="text-[8px] font-bold">AC</span></div>
-                    <div className="flex items-center gap-1"><Wrench className="w-3 h-3" /><span className="text-[8px] font-bold">REPAIR</span></div>
-                 </div>
-                 <div className="text-[9px] font-black italic tracking-widest text-slate-400">
-                    GJ5 PLUS ERP SYSTEM
-                 </div>
+              <div className="text-right">
+                <h2 className="text-xl font-black text-red-600 leading-none">MO-88669 83900</h2>
               </div>
             </div>
+
+            {/* Sticker Body */}
+            <div className="flex flex-1 gap-6 items-center">
+              {/* Left Side: Logo + QR */}
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                {/* Logo Placeholder Slot */}
+                <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden">
+                  {shopLogo ? (
+                    <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                  ) : (
+                    <div className="flex flex-col items-center opacity-30">
+                      <ImageIcon className="w-5 h-5" />
+                      <span className="text-[6px] font-bold uppercase">Shop Logo</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-1.5 bg-white border border-slate-900 rounded-lg">
+                  <QRCodeSVG value={qrMetadata} size={90} level="H" />
+                </div>
+                
+                <div className="text-center">
+                  <span className="text-[10px] font-black uppercase tracking-tighter bg-slate-900 text-white px-2 py-0.5 rounded leading-none">
+                    CUSTOMER ID - {call.customerId}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Side: Barcode (RAW JOB ID ONLY) */}
+              <div className="flex flex-col items-center justify-center gap-2 flex-[1.5]">
+                <div className="w-full flex justify-center">
+                  <Barcode 
+                    value={call.id} 
+                    width={2.2} 
+                    height={65} 
+                    displayValue={false} 
+                    background="transparent" 
+                    margin={0}
+                  />
+                </div>
+                <div className="text-center w-full">
+                  <span className="text-xl font-black uppercase tracking-widest block leading-none">
+                    JOB ID - {call.id}
+                  </span>
+                  <p className="text-[11px] font-bold text-slate-800 mt-1 uppercase leading-tight">
+                    {call.brand} {call.model} - {call.screenSize}"
+                  </p>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">
+                    Service & Maintenance Registry
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Print Orientation Line */}
+            <div className="absolute top-0 bottom-0 left-0 w-1 bg-slate-100 print:hidden"></div>
           </div>
 
           <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 w-full max-w-lg space-y-4">
             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Printing Instructions
+              <Settings className="w-4 h-4" /> Thermal Print Calibration
             </h4>
             <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
-              <li>Ensure your thermal printer is loaded with <span className="text-white font-bold">2x4 inch (100x50mm)</span> labels.</li>
-              <li>In the print dialog, set "Scale" to <span className="text-white font-bold">Fit to Page</span> or <span className="text-white font-bold">100%</span>.</li>
-              <li>Select <span className="text-white font-bold">Portrait/Landscape</span> as per your printer driver orientation.</li>
-              <li>Disable "Headers and Footers" in the browser print settings.</li>
+              <li>Printer Target: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
+              <li>Orientation: <span className="text-white font-bold">Landscape / Fit to Page</span>.</li>
+              <li>Left QR encodes <span className="text-emerald-400">Full Profile Metadata</span>.</li>
+              <li>Right Barcode encodes <span className="text-blue-400">Raw Job ID</span> for rapid scanner lookup.</li>
             </ul>
           </div>
         </div>
@@ -160,8 +155,14 @@ export function StickerModal({ isOpen, onClose, call }: StickerModalProps) {
 
       <style jsx global>{`
         @media print {
+          @page {
+            size: 4in 2in;
+            margin: 0;
+          }
           body * {
             visibility: hidden;
+            background: white !important;
+            color: black !important;
           }
           #thermal-sticker, #thermal-sticker * {
             visibility: visible;
@@ -173,9 +174,10 @@ export function StickerModal({ isOpen, onClose, call }: StickerModalProps) {
             width: 4in !important;
             height: 2in !important;
             margin: 0 !important;
-            padding: 0.25in !important;
+            padding: 0.2in !important;
             border: none !important;
             box-shadow: none !important;
+            border-radius: 0 !important;
           }
         }
       `}</style>

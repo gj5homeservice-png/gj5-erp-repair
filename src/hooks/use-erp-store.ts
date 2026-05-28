@@ -12,8 +12,13 @@ export function useErpStore() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
+  const [shopLogo, setShopLogo] = useState<string | null>(null);
 
   useEffect(() => {
+    // Load logo from local storage if exists
+    const savedLogo = localStorage.getItem('gj5_shop_logo');
+    if (savedLogo) setShopLogo(savedLogo);
+
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
       { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
@@ -53,6 +58,15 @@ export function useErpStore() {
     ]);
   }, []);
 
+  const handleSetShopLogo = (logo: string | null) => {
+    setShopLogo(logo);
+    if (logo) {
+      localStorage.setItem('gj5_shop_logo', logo);
+    } else {
+      localStorage.removeItem('gj5_shop_logo');
+    }
+  };
+
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
   const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   
@@ -84,6 +98,7 @@ export function useErpStore() {
     expenses, addExpense,
     invoices, addInvoice,
     walletBalance, setWalletBalance,
-    whatsappGateway, setWhatsappGateway
+    whatsappGateway, setWhatsappGateway,
+    shopLogo, setShopLogo: handleSetShopLogo
   };
 }

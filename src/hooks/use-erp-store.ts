@@ -19,6 +19,7 @@ export function useErpStore() {
       { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
     ]);
 
+    const initialTimestamp = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
     setCalls([
       {
         id: 'TV1001',
@@ -31,16 +32,23 @@ export function useErpStore() {
         brand: 'Sony',
         model: 'KD-55X7500H',
         screenSize: '55',
-        issue: 'Sound OK - No Video',
-        notes: 'Backlight suspected',
         technician: 'Rajesh Sharma',
         pickupRequired: true,
         pickupBy: 'Amaro Boy',
         runnerName: 'Amit Patel',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: initialTimestamp,
+        updatedAt: initialTimestamp,
         status: 'Pending',
-        visitHistory: []
+        visitHistory: [
+          {
+            visitNumber: 1,
+            timestamp: initialTimestamp,
+            issue: 'Sound OK - No Video',
+            technician: 'Rajesh Sharma',
+            notes: 'Initial check, backlight suspected',
+            statusAtTime: 'Pending'
+          }
+        ]
       }
     ]);
   }, []);

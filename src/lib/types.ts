@@ -20,15 +20,13 @@ export interface RepairCall {
   brand: string;
   model: string;
   screenSize: string;
-  issue: string;
-  notes: string;
-  technician: string;
+  technician: string; // Latest technician from history
   pickupRequired: boolean;
   pickupBy: 'Customer' | 'Amaro Boy' | null;
   runnerName: string | null;
-  createdAt: string;
-  updatedAt: string; // Used for Aging Tracker reset
-  status: RepairStatus;
+  createdAt: string; // Original creation
+  updatedAt: string; // Latest visit timestamp for Aging reset
+  status: RepairStatus; // Latest status
   visitHistory: RepairHistoryEntry[];
 }
 

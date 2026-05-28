@@ -20,7 +20,6 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RepairCall, RepairHistoryEntry, RepairStatus } from '@/lib/types';
@@ -31,7 +30,6 @@ import {
   Search, 
   UserPlus, 
   History as HistoryIcon, 
-  Clock, 
   ShieldCheck, 
   ChevronRight,
   RefreshCw,
@@ -61,8 +59,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     brand: '',
     model: '',
     screenSize: '',
-    issue: 'No Power / Dead',
-    notes: '',
     technician: '',
     pickupRequired: false,
     pickupBy: 'Customer',
@@ -70,6 +66,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     status: 'Pending' as RepairStatus,
     visitHistory: []
   });
+
+  const [currentVisitIssue, setCurrentVisitIssue] = useState('No Power / Dead');
+  const [currentVisitNotes, setCurrentVisitNotes] = useState('');
+  const [currentVisitTechnician, setCurrentVisitTechnician] = useState('');
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
@@ -81,6 +81,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   useEffect(() => {
     if (editingCall) {
       setFormData(editingCall);
+      const latest = editingCall.visitHistory[editingCall.visitHistory.length - 1];
+      setCurrentVisitIssue(latest?.issue || 'No Power / Dead');
+      setCurrentVisitNotes(latest?.notes || '');
+      setCurrentVisitTechnician(latest?.technician || '');
       setActiveTab('New Call');
     } else if (isOpen) {
       const nextCustIdNum = 1001 + store.calls.length;
@@ -100,17 +104,16 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         brand: '',
         model: '',
         screenSize: '',
-        issue: 'No Power / Dead',
-        notes: '',
         technician: '',
         pickupRequired: false,
         pickupBy: 'Customer',
         runnerName: '',
         status: 'Pending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
         visitHistory: []
       });
+      setCurrentVisitIssue('No Power / Dead');
+      setCurrentVisitNotes('');
+      setCurrentVisitTechnician('');
     }
   }, [editingCall, isOpen]);
 
@@ -118,30 +121,28 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     if (!repeatSearchQuery) return;
     const results = store.calls.filter((c: RepairCall) => 
       c.customerId.toLowerCase().includes(repeatSearchQuery.toLowerCase()) ||
+      c.id.toLowerCase().includes(repeatSearchQuery.toLowerCase()) ||
       c.mobile.includes(repeatSearchQuery)
     );
     setSearchResults(results);
   };
 
   const selectProfileForRepeat = (call: RepairCall) => {
-    setFormData({
-      ...call,
-      updatedAt: new Date().toISOString(),
-      status: 'Pending',
-      visitHistory: call.visitHistory || []
-    });
+    setFormData(call);
+    setCurrentVisitTechnician('');
+    setCurrentVisitNotes('');
     setActiveTab('Repeat Call Form');
   };
 
   const handleAiAssist = async () => {
-    if (!formData.category || !formData.issue) return;
+    if (!formData.category || !currentVisitIssue) return;
     setAiLoading(true);
     try {
       const result = await troubleshootingAssistant({
         deviceCategory: formData.category || 'Electronic',
         deviceBrand: formData.brand || 'Generic',
         deviceModel: formData.model || 'Unknown',
-        issueDescription: formData.issue === 'Other / Custom Notes' ? formData.notes || '' : formData.issue || ''
+        issueDescription: currentVisitIssue === 'Other / Custom Notes' ? currentVisitNotes : currentVisitIssue
       });
       setAiSuggestions(result);
     } catch (e) {
@@ -152,25 +153,57 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   };
 
   const handleSave = () => {
+    const isNew = !editingCall && activeTab === 'New Call';
     const isRepeat = activeTab === 'Repeat Call Form';
-    let finalData = { ...formData } as RepairCall;
     
-    if (isRepeat) {
-      const visitNumber = (finalData.visitHistory?.length || 0) + 1;
-      const newHistoryEntry: RepairHistoryEntry = {
-        timestamp: new Date().toISOString(),
-        issue: formData.issue || 'Repeat Service Request',
-        technician: formData.technician || 'Unassigned',
-        notes: formData.notes || '',
-        statusAtTime: 'Pending',
-        visitNumber
+    let finalData = { ...formData } as RepairCall;
+    const now = new Date().toISOString();
+
+    if (isNew) {
+      const firstVisit: RepairHistoryEntry = {
+        visitNumber: 1,
+        timestamp: now,
+        issue: currentVisitIssue,
+        technician: currentVisitTechnician,
+        notes: currentVisitNotes,
+        statusAtTime: 'Pending'
       };
-      
       finalData = {
         ...finalData,
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
         status: 'Pending',
-        visitHistory: [...(finalData.visitHistory || []), newHistoryEntry]
+        visitHistory: [firstVisit]
+      };
+    } else if (isRepeat) {
+      const nextVisitNum = (finalData.visitHistory?.length || 0) + 1;
+      const nextVisit: RepairHistoryEntry = {
+        visitNumber: nextVisitNum,
+        timestamp: now,
+        issue: currentVisitIssue,
+        technician: currentVisitTechnician,
+        notes: currentVisitNotes,
+        statusAtTime: 'Pending'
+      };
+      finalData = {
+        ...finalData,
+        updatedAt: now, // Reset aging counter
+        status: 'Pending',
+        visitHistory: [...(finalData.visitHistory || []), nextVisit]
+      };
+    } else if (editingCall) {
+      // Direct Edit Logic - Update latest visit or whole call
+      const latestIdx = finalData.visitHistory.length - 1;
+      const updatedHistory = [...finalData.visitHistory];
+      updatedHistory[latestIdx] = {
+        ...updatedHistory[latestIdx],
+        issue: currentVisitIssue,
+        technician: currentVisitTechnician,
+        notes: currentVisitNotes
+      };
+      finalData = {
+        ...finalData,
+        visitHistory: updatedHistory
       };
     }
 
@@ -270,8 +303,21 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. 55" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Smart Issue Selector</Label>
-                  <Select value={formData.issue} onValueChange={(v) => setFormData({...formData, issue: v})}>
+                  <Label className="text-slate-400 font-medium">Technician Selection</Label>
+                  <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
+                    <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                      <SelectValue placeholder="Assign Staff..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800">
+                      {store.employees.map((emp:any) => (
+                        <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-400 font-medium">Common Issue Selector</Label>
+                  <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                     <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                       <SelectValue />
                     </SelectTrigger>
@@ -289,8 +335,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-400 font-medium">Detailed Fault Notes</Label>
-                <Textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="bg-slate-900 border-slate-800 min-h-[100px] resize-none" />
+                <Label className="text-slate-400 font-medium">Issue Description / Fault Notes</Label>
+                <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[100px] resize-none" placeholder="Describe context for Visit #1..." />
               </div>
 
               <div className="flex items-center gap-4 bg-[#0066FF]/5 p-4 rounded-xl border border-[#0066FF]/20 group transition-all hover:bg-[#0066FF]/10">
@@ -308,10 +354,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700 animate-in slide-in-from-top-4 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                         Diagnostic Procedure
-                      </h5>
+                      <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">Diagnostic Procedure</h5>
                       <ul className="text-sm space-y-3 text-slate-300">
                         {aiSuggestions.diagnosticSteps.map((s:string, i:number) => (
                           <li key={i} className="flex gap-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/50">
@@ -322,10 +365,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                       </ul>
                     </div>
                     <div className="space-y-4">
-                      <h5 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                         Technical Suggestions
-                      </h5>
+                      <h5 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">Technical Suggestions</h5>
                       <ul className="text-sm space-y-3 text-slate-300">
                         {aiSuggestions.repairSuggestions.map((s:string, i:number) => (
                           <li key={i} className="flex gap-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/50">
@@ -347,7 +387,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <RefreshCw className="w-8 h-8 text-blue-500" />
                      </div>
                      <h3 className="text-2xl font-headline font-bold">Load Existing Profile</h3>
-                     <p className="text-slate-500 text-sm">Search via Customer ID or Mobile Number</p>
+                     <p className="text-slate-500 text-sm">Search via Customer ID, Job ID or Mobile Number</p>
                   </div>
                   
                   <div className="flex gap-2">
@@ -367,7 +407,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                              <div className="text-left space-y-1">
                                 <p className="font-bold text-slate-100 text-lg">{result.customerName}</p>
                                 <div className="flex gap-4 text-xs text-slate-500 font-medium">
-                                   <span className="bg-slate-800 px-2 py-0.5 rounded text-blue-400 font-code">{result.customerId}</span>
+                                   <span className="bg-slate-800 px-2 py-0.5 rounded text-blue-400 font-code">{result.id}</span>
                                    <span>{result.mobile}</span>
                                 </div>
                              </div>
@@ -386,7 +426,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                <div className="bg-blue-500/5 border border-blue-500/20 rounded-3xl p-6 space-y-5">
                   <div className="flex items-center justify-between">
                      <h3 className="text-sm font-bold text-blue-400 flex items-center gap-2 uppercase tracking-widest">
-                       <HistoryIcon className="w-4 h-4" /> Infinite Repair Visit History Log
+                       <HistoryIcon className="w-4 h-4" /> Infinite Repair Visit History Log Grid
                      </h3>
                      <Badge className="bg-blue-500 text-white font-bold px-3">VISITS: {formData.visitHistory?.length || 0}</Badge>
                   </div>
@@ -415,7 +455,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                </tr>
                              ))
                            ) : (
-                             <tr><td colSpan={5} className="p-8 text-center text-slate-600 italic">No previous re-repair history entries recorded.</td></tr>
+                             <tr><td colSpan={5} className="p-8 text-center text-slate-600 italic">No visit history found.</td></tr>
                            )}
                         </tbody>
                      </table>
@@ -444,8 +484,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
-                           <Label className="text-slate-300 font-bold">Current Visit Re-Repair Issue</Label>
-                           <Select value={formData.issue} onValueChange={(v) => setFormData({...formData, issue: v})}>
+                           <Label className="text-slate-300 font-bold">Current Re-Repair Issue / complaint</Label>
+                           <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue placeholder="Identify current problem..." />
                               </SelectTrigger>
@@ -461,8 +501,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                            </Select>
                         </div>
                         <div className="space-y-2">
-                           <Label className="text-slate-300 font-bold">Assigned Technician (Current Turn)</Label>
-                           <Select value={formData.technician} onValueChange={(v) => setFormData({...formData, technician: v})}>
+                           <Label className="text-slate-300 font-bold">New/Current Technician</Label>
+                           <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue placeholder="Select Staff..." />
                               </SelectTrigger>
@@ -475,8 +515,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         </div>
                      </div>
                      <div className="space-y-2">
-                        <Label className="text-slate-300 font-bold">Current Technical Re-Repair Notes</Label>
-                        <Textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="bg-slate-900 border-slate-800 min-h-[120px] resize-none" placeholder="Describe context..." />
+                        <Label className="text-slate-300 font-bold">Current Visit Technical Notes</Label>
+                        <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px] resize-none" placeholder="Describe context..." />
                      </div>
                   </div>
                </div>
@@ -502,10 +542,16 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
              <Button variant="ghost" onClick={onClose} className="hover:bg-slate-800 order-2 sm:order-1">Dismiss Portal</Button>
-             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl shadow-xl shadow-blue-500/20 font-bold order-1 sm:order-2 flex gap-2">
-               {editingCall ? 'Update Entry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : 'Commit Registry Entry'}
-               <ChevronRight className="w-4 h-4" />
-             </Button>
+             <div className="flex items-center gap-4 order-1 sm:order-2">
+                <div className="flex items-center gap-2 px-4 h-12 bg-slate-800 rounded-xl border border-slate-700">
+                   <Label className="text-xs font-bold text-slate-500 uppercase">WhatsApp</Label>
+                   <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
+                </div>
+                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl shadow-xl shadow-blue-500/20 font-bold flex gap-2">
+                  {editingCall ? 'Update Entry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : 'Commit Registry Entry'}
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+             </div>
           </DialogFooter>
         </Tabs>
       </DialogContent>

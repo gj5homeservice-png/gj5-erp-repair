@@ -57,25 +57,26 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
-    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory && c.visitHistory.length > 0).length;
+    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory && c.visitHistory.length > 1).length;
     return { totalActive, pending, completed, rejected, repeats };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => {
+      const latestVisit = c.visitHistory[c.visitHistory.length - 1];
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.mobile.includes(searchQuery) ||
-        (c.technician && c.technician.toLowerCase().includes(searchQuery.toLowerCase()));
+        (latestVisit?.technician && latestVisit.technician.toLowerCase().includes(searchQuery.toLowerCase()));
 
       let matchesFilter = true;
       if (activeFilter === 'Active') matchesFilter = c.status !== 'Completed' && c.status !== 'Rejected';
       else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
-      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory && c.visitHistory.length > 0;
+      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory && c.visitHistory.length > 1;
 
       return matchesSearch && matchesFilter;
     });
@@ -176,7 +177,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         <Table>
           <TableHeader className="bg-slate-900/60">
             <TableRow className="hover:bg-transparent border-slate-800">
-              <TableHead className="w-[120px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
+              <TableHead className="w-[140px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
@@ -186,79 +187,83 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCalls.map((call: RepairCall) => (
-              <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
-                <TableCell className="font-code font-bold text-blue-400">
-                  <div className="flex flex-col gap-1">
-                    <span>{call.id}</span>
-                    {call.visitHistory && call.visitHistory.length > 0 && (
-                      <Badge variant="outline" className="w-fit text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/20">
+            {filteredCalls.map((call: RepairCall) => {
+              const latestVisit = call.visitHistory[call.visitHistory.length - 1];
+              return (
+                <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
+                  <TableCell className="font-code font-bold text-blue-400">
+                    <div className="flex flex-col gap-1">
+                      <span>{call.id}</span>
+                      <Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">
                         VISITS: {call.visitHistory.length}
                       </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-slate-100">{call.customerName}</span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" /> {call.mobile}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-sm">{call.brand} {call.model}</span>
-                    <span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-xs text-slate-400">
-                    {format(new Date(call.createdAt), 'dd/MM/yyyy')}
-                    <br />
-                    {format(new Date(call.createdAt), 'hh:mm a')}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm font-medium">{call.technician || 'Unassigned'}</span>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className={cn(
-                          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                          call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
-                          call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                          "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                        )}>
-                          {call.status}
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-slate-900 border-slate-800">
-                        <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
-                      <MapPin className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => onInvoiceRequest(call)}>
-                      <Receipt className="w-4 h-4 mr-2" /> $ Bill
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-100">{call.customerName}</span>
+                        <span className="text-[10px] text-slate-500 font-code">{call.customerId}</span>
+                      </div>
+                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" /> {call.mobile}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm">{call.brand} {call.model}</span>
+                      <span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-slate-400">
+                      {latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}
+                      <br />
+                      {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm font-medium">{latestVisit?.technician || 'Unassigned'}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                            call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
+                            call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                            "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                          )}>
+                            {call.status}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-slate-900 border-slate-800">
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
+                        <MapPin className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => onInvoiceRequest(call)}>
+                        <Receipt className="w-4 h-4 mr-2" /> $ Bill
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {filteredCalls.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="h-32 text-center text-slate-500">

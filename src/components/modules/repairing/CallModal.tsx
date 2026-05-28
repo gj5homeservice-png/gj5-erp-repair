@@ -203,7 +203,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
     onSave(finalData);
 
-    // Automated Dispatch Logic
+    // Automated Logistics Redirection
     if (whatsappEnabled) {
       let targetMobile = formData.mobile;
       if (formData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
@@ -351,14 +351,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                 </div>
 
-                {/* Right Column: Dispatch & Logistics */}
+                {/* Right Column: Intake & Logistics Dispatch */}
                 <div className="space-y-8">
-                  {/* Intake Selection Node */}
-                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 shadow-inner">
-                    <div className="flex items-center justify-between">
-                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                         <Truck className="w-4 h-4 text-blue-500" /> Intake Selection Node
-                       </h3>
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                       <Truck className="w-5 h-5 text-blue-500" />
+                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Intake Mode</h3>
                     </div>
                     <RadioGroup 
                       value={formData.intakeMode} 
@@ -366,12 +364,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                       className="flex gap-8"
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Customer Walk-In" id="mode-cust" />
-                        <Label htmlFor="mode-cust">Customer Walk-In</Label>
+                        <RadioGroupItem value="Customer Walk-In" id="mode-walkin" />
+                        <Label htmlFor="mode-walkin">Customer Walk-In</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Logistics Dispatch" id="mode-trans" />
-                        <Label htmlFor="mode-trans">Logistics Dispatch</Label>
+                        <RadioGroupItem value="Logistics Dispatch" id="mode-dispatch" />
+                        <Label htmlFor="mode-dispatch">Logistics Dispatch</Label>
                       </div>
                     </RadioGroup>
 
@@ -380,8 +378,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <div className="space-y-2">
                           <Label className="text-xs">Runner Name</Label>
                           <Input 
-                            placeholder="Enter Runner Name" 
-                            value={formData.runnerName || ''} 
+                            placeholder="e.g. Rahul Kumar" 
+                            value={formData.runnerName || ''}
                             onChange={e => setFormData({...formData, runnerName: e.target.value})}
                             className="bg-slate-900 border-slate-800 h-10" 
                           />
@@ -389,8 +387,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <div className="space-y-2">
                           <Label className="text-xs">Runner Mobile (10-Digit)</Label>
                           <Input 
-                            placeholder="Runner Contact" 
-                            value={formData.runnerMobile || ''} 
+                            placeholder="Mobile No." 
+                            value={formData.runnerMobile || ''}
                             onChange={e => setFormData({...formData, runnerMobile: e.target.value})}
                             className="bg-slate-900 border-slate-800 h-10" 
                           />
@@ -399,38 +397,32 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     )}
                   </div>
 
-                  {/* Messaging Suite */}
-                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 shadow-inner">
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
                     <div className="flex items-center justify-between">
                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                         <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Template Suite
+                         <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Custom Templates
                        </h3>
                        <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
                     </div>
 
-                    <div className={cn("space-y-4 transition-opacity", !whatsappEnabled && "opacity-40 pointer-events-none")}>
-                      {[0, 1, 2].map((idx) => (
-                        <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-3 rounded-xl border border-slate-800">
-                          <div className="pt-2">
-                            <RadioGroup 
-                              value={selectedTemplateIndex.toString()} 
-                              onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}
-                            >
-                              <div className="flex items-center">
-                                <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} className="border-slate-700" />
-                              </div>
-                            </RadioGroup>
-                          </div>
-                          <div className="flex-1 space-y-1">
-                             <Label className="text-[10px] text-slate-500 font-bold uppercase">Template {idx + 1}</Label>
-                             <Textarea 
-                               value={templates[idx]} 
-                               onChange={e => handleTemplateChange(idx, e.target.value)}
-                               className="bg-transparent border-0 p-0 text-xs min-h-[60px] focus-visible:ring-0 resize-none leading-relaxed" 
-                             />
-                          </div>
-                        </div>
-                      ))}
+                    <div className={cn("space-y-4 transition-all duration-300", !whatsappEnabled && "opacity-40 pointer-events-none grayscale")}>
+                       {[0, 1, 2].map((idx) => (
+                         <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                            <div className="pt-2">
+                               <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
+                                  <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
+                               </RadioGroup>
+                            </div>
+                            <div className="flex-1 space-y-1">
+                               <Label className="text-[10px] text-slate-500 font-bold uppercase">Template {idx + 1}</Label>
+                               <Textarea 
+                                 value={templates[idx]}
+                                 onChange={e => handleTemplateChange(idx, e.target.value)}
+                                 className="bg-transparent border-0 p-0 text-xs min-h-[60px] focus-visible:ring-0 resize-none leading-relaxed"
+                               />
+                            </div>
+                         </div>
+                       ))}
                     </div>
                   </div>
                 </div>

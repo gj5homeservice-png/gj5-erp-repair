@@ -15,7 +15,8 @@ import {
   Eye,
   Upload,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,14 +138,14 @@ export default function DashboardPage() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
                   <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
-                  Master Dashboard Visibility Panel
+                  Master Controller Panel
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-6 py-4">
                 {/* Branding Section */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" /> Master Shop Branding
+                    <ImageIcon className="w-4 h-4" /> Shop Identity & Branding
                   </h4>
                   <div className="flex items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
                     <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
@@ -155,8 +156,8 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="flex-1 space-y-3">
-                      <p className="text-sm font-medium text-slate-300">Shop Identity Logo</p>
-                      <p className="text-xs text-slate-500 leading-relaxed">This logo will appear in the sidebar and all thermal sticker prints.</p>
+                      <p className="text-sm font-medium text-slate-300">Shop Logo Asset</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">This image appears in the sidebar, stickers, and invoices.</p>
                       <div className="flex gap-2">
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
                         <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600">
@@ -177,7 +178,7 @@ export default function DashboardPage() {
                 {/* Module Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <LayoutDashboard className="w-4 h-4" /> Sidebar Module Toggles
+                    <LayoutDashboard className="w-4 h-4" /> Sidebar Feature Toggles
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.keys(store.visibility.tabs).map((tab) => (
@@ -197,17 +198,17 @@ export default function DashboardPage() {
                 {/* KPI Toggles */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Eye className="w-4 h-4" /> Analytics KPI Card Toggles
+                    <Eye className="w-4 h-4" /> Master Analytics KPI Toggles
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { id: 'totalActive', label: 'Total Active Calls' },
+                      { id: 'totalActive', label: 'Total Active' },
                       { id: 'pending', label: 'Pending (Yellow)' },
                       { id: 'completed', label: 'Completed (Green)' },
                       { id: 'rejected', label: 'Rejected (Red)' },
-                      { id: 'repeat', label: 'Repeat Complaints' },
-                      { id: 'exchange', label: 'Exchange/Purchase TVs' },
-                      { id: 'warranty', label: 'Warranty Calls' }
+                      { id: 'repeat', label: 'Repeat (Purple)' },
+                      { id: 'exchange', label: 'Exch/Pur (Teal)' },
+                      { id: 'warranty', label: 'Warranty (Gold)' }
                     ].map((kpi) => (
                       <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                         <Label className="text-sm font-medium">{kpi.label}</Label>

@@ -48,7 +48,6 @@ import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { QRCodeSVG } from 'qrcode.react';
 
 interface RepairingModuleProps {
   store: any;
@@ -122,6 +121,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     }
   };
 
+  const handleCustomWarrantyChange = (callId: string, value: string) => {
+    const call = store.calls.find((c: RepairCall) => c.id === callId);
+    if (call) {
+      store.updateCall({ ...call, warrantyCustomValue: value });
+    }
+  };
+
   const calculateAging = (updatedDate: string) => {
     const updated = new Date(updatedDate);
     const now = new Date();
@@ -141,7 +147,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', active: activeFilter === 'Rejected', filter: 'Rejected' },
     { id: 'repeat', title: 'Repeat', value: stats.repeats, icon: RefreshCw, color: 'bg-purple-600', active: activeFilter === 'Repeat', filter: 'Repeat' },
     { id: 'exchange', title: 'Exchange/Pur', value: stats.exchangePurchase, icon: Tv, color: 'bg-cyan-500', active: activeFilter === 'ExchangePurchase', filter: 'ExchangePurchase' },
-    { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: ShieldCheck, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Warranty', filter: 'Warranty' },
+    { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: ShieldCheck, color: 'bg-orange-500', active: activeFilter === 'Warranty', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
   return (
@@ -149,7 +155,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className={cn(
           "grid gap-4 flex-1",
-          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-7"
+          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
         )}>
           {visibleKpis.map(kpi => (
             <StatCard 
@@ -204,15 +210,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
               
-              const qrData = JSON.stringify({
-                jid: call.id,
-                cid: call.customerId,
-                name: call.customerName,
-                mob: call.mobile,
-                issue: latestVisit?.issue,
-                date: latestVisit?.timestamp
-              });
-
               return (
                 <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
                   <TableCell className="font-code font-bold text-blue-400">
@@ -248,7 +245,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     </div>
                   </TableCell>
                   <TableCell>
-                     <div className="min-w-[120px]">
+                     <div className="flex flex-col gap-2 min-w-[140px]">
                         <Select 
                           value={call.warrantyDuration || 'None'} 
                           onValueChange={(v) => handleWarrantyChange(call.id, v)}
@@ -261,8 +258,17 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                             <SelectItem value="3 Months">3 Months</SelectItem>
                             <SelectItem value="6 Months">6 Months</SelectItem>
                             <SelectItem value="1 Year">1 Year</SelectItem>
+                            <SelectItem value="Custom Duration">Custom Duration</SelectItem>
                           </SelectContent>
                         </Select>
+                        {call.warrantyDuration === 'Custom Duration' && (
+                          <Input 
+                            value={call.warrantyCustomValue || ''}
+                            onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
+                            placeholder="e.g. 45 Days"
+                            className="h-7 text-[10px] bg-slate-950 border-slate-800"
+                          />
+                        )}
                      </div>
                   </TableCell>
                   <TableCell>

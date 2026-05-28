@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -16,7 +17,7 @@ import {
   RefreshCw,
   AlertCircle,
   Tv,
-  Wallet
+  QrCode as QrIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,10 +41,11 @@ import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface RepairingModuleProps {
   store: any;
-  onInvoiceRequest: (call: RepairCall) => void;
+  onInvoiceRequest?: (call: RepairCall) => void;
 }
 
 type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurchase';
@@ -190,7 +192,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-900/60">
             <TableRow className="hover:bg-transparent border-slate-800">
@@ -198,7 +200,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Technician</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">QR Manifest Panel</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Pickup</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
             </TableRow>
@@ -208,8 +211,17 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               const latestVisit = call.visitHistory[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
               
+              const qrData = JSON.stringify({
+                jobId: call.id,
+                customerId: call.customerId,
+                name: call.customerName,
+                mobile: call.mobile,
+                issue: latestVisit?.issue,
+                date: latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : ''
+              });
+
               return (
-                <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
+                <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
                   <TableCell className="font-code font-bold text-blue-400">
                     <div className="flex flex-col gap-1">
                       <span>{call.id}</span>
@@ -243,7 +255,18 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm font-medium">{latestVisit?.technician || 'Unassigned'}</span>
+                    <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2 min-w-[200px]">
+                       <div className="bg-white p-1 rounded-lg">
+                          <QRCodeSVG value={qrData} size={40} level="H" />
+                       </div>
+                       <div className="flex flex-col">
+                          <span className="text-[9px] font-black text-white/90 leading-tight">GJ5 HOME SERVICE</span>
+                          <span className="text-[8px] font-bold text-[#FFD700] tracking-tighter">MO-88669 83900</span>
+                       </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-medium text-slate-400">{call.pickupBy || 'Direct'}</span>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-2">
@@ -284,7 +307,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           )}
                         </div>
                       ) : (
-                        <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
+                        <div className="text-[10px] text-slate-500">Workshop: {calculateAging(call.updatedAt)} Days</div>
                       )}
                     </div>
                   </TableCell>
@@ -293,11 +316,11 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
                         <MapPin className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => onInvoiceRequest(call)}>
-                        <Receipt className="w-4 h-4 mr-2" /> $ Bill
-                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}>
+                        <Receipt className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -306,7 +329,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
             })}
             {filteredCalls.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-slate-500">
+                <TableCell colSpan={8} className="h-32 text-center text-slate-500">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle className="w-8 h-8 opacity-20" />
                     <p>No matching service calls found.</p>

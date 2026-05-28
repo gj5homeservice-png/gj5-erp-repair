@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -24,19 +25,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RepairCall, RepairHistoryEntry, RepairStatus } from '@/lib/types';
 import { 
-  Loader2, 
-  Sparkles, 
+  ShieldCheck, 
+  History as HistoryIcon, 
   Search, 
   UserPlus, 
-  History as HistoryIcon, 
-  ShieldCheck, 
+  PlusCircle, 
   ChevronRight,
-  RefreshCw,
-  PlusCircle,
-  X
+  RefreshCw
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CallModalProps {
   isOpen: boolean;
@@ -113,7 +111,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setCurrentVisitNotes('');
       setCurrentVisitTechnician('');
     }
-  }, [editingCall, isOpen]);
+  }, [editingCall, isOpen, store.calls]);
 
   const handleSearchRepeat = () => {
     if (!repeatSearchQuery) return;
@@ -167,7 +165,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       };
       finalData = {
         ...finalData,
-        updatedAt: now, // Reset aging counter
+        updatedAt: now,
         status: 'Pending',
         visitHistory: [...(finalData.visitHistory || []), nextVisit]
       };
@@ -190,7 +188,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     
     if (whatsappEnabled) {
       const templates = [
-        `Dear ${formData.customerName}, your repair job ${formData.id} has been registered on ${format(new Date(), 'dd/MM/yyyy')} at GJ5 PLUS.`,
+        `Dear ${formData.customerName}, your repair job ${formData.id} has been registered on ${format(new Date(), 'dd/MM/yyyy HH:mm')} at GJ5 PLUS.`,
         `Dear ${formData.customerName}, the estimated repair cost for your device is Rs.____. Please confirm approval.`,
         `Dear ${formData.customerName}, your repaired device has been safely delivered. Thank you!`
       ];
@@ -210,7 +208,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <PlusCircle className="w-6 h-6" />
                </div>
                <DialogTitle className="text-2xl font-headline font-bold">
-                 {editingCall ? 'Update Call Entry' : 'Workshop Service Portal'}
+                 {editingCall ? 'Edit Service Call' : 'Repair Registry Portal'}
                </DialogTitle>
             </div>
             <TabsList className="bg-slate-800/50 border border-slate-700 h-11">
@@ -225,67 +223,64 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             <TabsContent value="New Call" className="space-y-8 mt-0 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Locked Job ID</Label>
-                  <div className="relative">
-                    <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500/50" />
-                    <Input readOnly value={formData.id} className="pl-10 bg-slate-900/50 border-slate-800 font-code font-bold text-blue-400 cursor-not-allowed" />
-                  </div>
+                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Job ID</Label>
+                  <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code font-bold text-blue-400 cursor-not-allowed" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Locked Customer ID</Label>
+                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Customer ID</Label>
                   <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code cursor-not-allowed" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Device Category</Label>
+                  <Label className="text-slate-400 font-medium">Category</Label>
                   <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
                     <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800">
-                      <SelectItem value="TV">Television (TV)</SelectItem>
-                      <SelectItem value="AC">Air Conditioner (AC)</SelectItem>
-                      <SelectItem value="COMP">Computer/Laptop</SelectItem>
-                      <SelectItem value="FRIDGE">Refrigerator</SelectItem>
+                      <SelectItem value="TV">TV</SelectItem>
+                      <SelectItem value="AC">AC</SelectItem>
+                      <SelectItem value="COMP">Computer</SelectItem>
+                      <SelectItem value="FRIDGE">Fridge</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Customer Name</Label>
-                  <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="Full name..." />
+                  <Label>Name</Label>
+                  <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Mobile Number</Label>
-                  <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="10-digit..." />
+                  <Label>Mobile</Label>
+                  <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Pincode Number</Label>
-                  <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="6-digit..." />
+                  <Label>Pincode</Label>
+                  <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
 
                 <div className="space-y-2 lg:col-span-2">
-                  <Label className="text-slate-400 font-medium">Full Service Address</Label>
-                  <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="Address details..." />
+                  <Label>Address</Label>
+                  <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Device Brand</Label>
-                  <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="Sony, Samsung..." />
+                  <Label>Brand</Label>
+                  <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Model Number</Label>
+                  <Label>Model</Label>
                   <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Screen Size (Inch)</Label>
-                  <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. 55" />
+                  <Label>Size (Inch)</Label>
+                  <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Technician Selection</Label>
-                  <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
+                  <Label>Technician</Label>
+                  <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                     <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                      <SelectValue placeholder="Assign Staff..." />
+                      <SelectValue placeholder="Select Staff..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800">
                       {store.employees.map((emp:any) => (
@@ -295,7 +290,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Common Issue Selector</Label>
+                  <Label>Common Issue</Label>
                   <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                     <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                       <SelectValue />
@@ -314,8 +309,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-400 font-medium">Fault Notes</Label>
-                <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[100px] resize-none" placeholder="Visit details..." />
+                <Label>Details</Label>
+                <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[100px]" />
               </div>
             </TabsContent>
 
@@ -325,14 +320,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
                         <RefreshCw className="w-8 h-8 text-blue-500" />
                      </div>
-                     <h3 className="text-2xl font-headline font-bold">Load Existing Profile</h3>
-                     <p className="text-slate-500 text-sm">Search by ID or Mobile</p>
+                     <h3 className="text-2xl font-headline font-bold">Search Profile</h3>
+                     <p className="text-slate-500 text-sm">Find via Mobile or ID</p>
                   </div>
                   
                   <div className="flex gap-2">
                      <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                        <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Customer Search..." />
+                        <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Enter details..." />
                      </div>
                      <Button onClick={handleSearchRepeat} className="bg-blue-600 hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Search</Button>
                   </div>
@@ -361,12 +356,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                <div className="bg-blue-500/5 border border-blue-500/20 rounded-3xl p-6 space-y-5">
                   <div className="flex items-center justify-between">
                      <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                       <HistoryIcon className="w-4 h-4" /> Repair Visit History Log
+                       <HistoryIcon className="w-4 h-4" /> Visit History Log
                      </h3>
-                     <Badge className="bg-blue-500 text-white font-bold">VISITS: {formData.visitHistory?.length || 0}</Badge>
+                     <Badge className="bg-blue-600 text-white font-bold">VISITS: {formData.visitHistory?.length || 0}</Badge>
                   </div>
                   
-                  {/* SCROLLABLE HISTORY TABLE */}
                   <div className="rounded-2xl border border-slate-800/50 bg-slate-900/80 overflow-hidden">
                      <div className="max-h-[250px] overflow-y-auto">
                         <table className="w-full text-[11px] text-left">
@@ -393,7 +387,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                   </tr>
                                 ))
                               ) : (
-                                <tr><td colSpan={5} className="p-8 text-center text-slate-600">No history found.</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-slate-600">No logs found.</td></tr>
                               )}
                            </tbody>
                         </table>
@@ -401,7 +395,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60">
                   <div className="space-y-2">
                      <Label className="text-slate-500 font-bold uppercase text-[10px]">LOCKED JOB ID</Label>
                      <Input readOnly value={formData.id} className="bg-slate-950 border-slate-800 font-code font-bold" />
@@ -409,10 +403,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="space-y-2">
                      <Label className="text-slate-500 font-bold uppercase text-[10px]">LOCKED CUSTOMER ID</Label>
                      <Input readOnly value={formData.customerId} className="bg-slate-950 border-slate-800 font-code" />
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-slate-500 font-bold uppercase text-[10px]">Customer Name</Label>
-                     <Input readOnly value={formData.customerName} className="bg-slate-950 border-slate-800" />
                   </div>
                </div>
 
@@ -423,7 +413,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
-                           <Label>Current Re-Repair Issue</Label>
+                           <Label>Current Issue</Label>
                            <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue />
@@ -433,12 +423,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                  <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
                                  <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
                                  <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
-                                 <SelectItem value="Other / Custom Notes">Other / Custom Notes</SelectItem>
+                                 <SelectItem value="Other">Other</SelectItem>
                               </SelectContent>
                            </Select>
                         </div>
                         <div className="space-y-2">
-                           <Label>Assign New Technician</Label>
+                           <Label>Technician</Label>
                            <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue placeholder="Staff..." />
@@ -453,39 +443,39 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                      </div>
                      <div className="space-y-2">
                         <Label>Technical Notes</Label>
-                        <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px]" placeholder="Specific turn context..." />
+                        <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px]" />
                      </div>
                   </div>
                </div>
             </TabsContent>
             
-            <TabsContent value="Inquiry" className="space-y-6 animate-in slide-in-from-left-4">
+            <TabsContent value="Inquiry" className="space-y-6">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                     <Label>Customer Name</Label>
-                     <Input className="bg-slate-900 border-slate-800 h-11" placeholder="Inquiry name..." />
+                     <Label>Name</Label>
+                     <Input className="bg-slate-900 border-slate-800 h-11" />
                   </div>
                   <div className="space-y-2">
                      <Label>Mobile</Label>
-                     <Input className="bg-slate-900 border-slate-800 h-11" placeholder="Mobile..." />
+                     <Input className="bg-slate-900 border-slate-800 h-11" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                      <Label>Notes</Label>
-                     <Textarea className="bg-slate-900 border-slate-800 min-h-[200px]" />
+                     <Textarea className="bg-slate-900 border-slate-800 min-h-[150px]" />
                   </div>
                </div>
             </TabsContent>
           </div>
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
-             <Button variant="ghost" onClick={onClose}>Dismiss</Button>
+             <Button variant="ghost" onClick={onClose}>Cancel</Button>
              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 px-4 h-12 bg-slate-800 rounded-xl border border-slate-700">
-                   <Label className="text-xs font-bold text-slate-500 uppercase">WhatsApp</Label>
+                   <Label className="text-xs font-bold text-slate-500">WhatsApp</Label>
                    <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
                 </div>
-                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl shadow-xl shadow-blue-500/20 font-bold flex gap-2">
-                  {editingCall ? 'Update Entry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : 'Commit Registry Entry'}
+                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
+                  {editingCall ? 'Update Call' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : 'Create Registry'}
                   <ChevronRight className="w-4 h-4" />
                 </Button>
              </div>

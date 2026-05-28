@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -138,7 +137,7 @@ export default function DashboardPage() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
                   <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
-                  Master Dashboard visibility Panel
+                  Master Dashboard Visibility Panel
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-6 py-4">
@@ -228,7 +227,7 @@ export default function DashboardPage() {
             className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all"
           >
             {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            {isSidebarOpen && <span className="font-medium">Collapse</span>}
+            {isSidebarOpen && <span className="font-medium">Collapse Sidebar</span>}
           </button>
         </div>
       </aside>
@@ -253,7 +252,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end mr-4">
               <span className="text-sm font-semibold">Admin Console</span>
-              <span className="text-xs text-slate-500 uppercase tracking-widest font-code">v2.4.0</span>
+              <span className="text-xs text-slate-500 uppercase tracking-widest font-code">v2.5.0</span>
             </div>
             <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
               <Bell className="w-5 h-5" />
@@ -264,7 +263,7 @@ export default function DashboardPage() {
 
         {/* Content Area */}
         <div className="p-8">
-          {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={(call) => setActiveTab('Billing')} />}
+          {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={() => setActiveTab('Billing')} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}

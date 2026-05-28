@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -74,7 +73,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.mobile.includes(searchQuery);
+        c.mobile?.includes(searchQuery);
 
       let matchesFilter = true;
       if (activeFilter === 'Active') matchesFilter = c.status !== 'Completed' && c.status !== 'Rejected';
@@ -84,7 +83,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Repeat') matchesFilter = (c.visitHistory?.length || 0) > 1;
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
 
-      return matchesSearch && matchesFilter;
+      return (matchesSearch || !searchQuery) && matchesFilter;
     });
   }, [store.calls, searchQuery, activeFilter]);
 
@@ -115,7 +114,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   };
 
   const openMap = (address: string, pincode: string) => {
-    const url = `https://www.google.com/maps/@21.1714048,72.8563712,8748m/data=!3m1!1e3?q=${encodeURIComponent(address + ' ' + pincode)}`;
+    const url = `https://www.google.com/maps/@21.1714048,72.8563712,8748m/data=!3m1!1e3?q=${encodeURIComponent(address + ' ' + (pincode || ''))}`;
     window.open(url, '_blank');
   };
 
@@ -178,8 +177,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">QR Manifest</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Pickup</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Dispatch Sticker</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
             </TableRow>
@@ -244,9 +242,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                      </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs font-medium text-slate-400">{call.pickupBy || 'Direct'}</span>
-                  </TableCell>
-                  <TableCell>
                     <div className="space-y-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -269,20 +264,18 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                         </DropdownMenuContent>
                       </DropdownMenu>
                       {isExchangePurchase ? (
-                        <div className="flex flex-col gap-1">
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
-                            <Input 
-                              type="number" 
-                              value={call.takePrice || ''} 
-                              onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
-                              placeholder="Take Price"
-                              className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
-                            />
-                          </div>
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
+                          <Input 
+                            type="number" 
+                            value={call.takePrice || ''} 
+                            onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
+                            placeholder="Take Price"
+                            className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
+                          />
                         </div>
                       ) : (
-                        <div className="text-[10px] text-slate-500">Workshop: {calculateAging(call.updatedAt)} Days</div>
+                        <div className="text-[10px] text-slate-500 font-medium">Workshop: {calculateAging(call.updatedAt)} Days</div>
                       )}
                     </div>
                   </TableCell>
@@ -305,16 +298,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 </TableRow>
               );
             })}
-            {filteredCalls.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-slate-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <AlertCircle className="w-8 h-8 opacity-20" />
-                    <p>No matching service calls found.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
       </div>

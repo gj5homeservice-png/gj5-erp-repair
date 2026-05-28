@@ -76,7 +76,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
               {/* Left Side: Logo + QR */}
               <div className="flex flex-col items-center gap-1.5 flex-1">
                 {/* Logo Placeholder Slot */}
-                <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden">
+                <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden mb-1">
                   {shopLogo ? (
                     <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
@@ -91,7 +91,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                   <QRCodeSVG value={qrMetadata} size={90} level="H" />
                 </div>
                 
-                <div className="text-center">
+                <div className="text-center mt-1">
                   <span className="text-[10px] font-black uppercase tracking-tighter bg-slate-900 text-white px-2 py-0.5 rounded leading-none">
                     CUSTOMER ID - {call.customerId}
                   </span>
@@ -123,9 +123,6 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                 </div>
               </div>
             </div>
-
-            {/* Print Orientation Line */}
-            <div className="absolute top-0 bottom-0 left-0 w-1 bg-slate-100 print:hidden"></div>
           </div>
 
           <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 w-full max-w-lg space-y-4">
@@ -136,7 +133,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
               <li>Printer Target: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
               <li>Orientation: <span className="text-white font-bold">Landscape / Fit to Page</span>.</li>
               <li>Left QR encodes <span className="text-emerald-400">Full Profile Metadata</span>.</li>
-              <li>Right Barcode encodes <span className="text-blue-400">Raw Job ID</span> for rapid scanner lookup.</li>
+              <li>Right Barcode encodes <span className="text-blue-400">Raw Alphanumeric Job ID</span>.</li>
             </ul>
           </div>
         </div>

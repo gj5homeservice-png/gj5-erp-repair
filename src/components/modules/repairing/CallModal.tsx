@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -23,6 +22,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RepairCall, RepairHistoryEntry, RepairStatus } from '@/lib/types';
 import { 
   ShieldCheck, 
@@ -31,7 +31,10 @@ import {
   UserPlus, 
   PlusCircle, 
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Truck,
+  MessageSquare,
+  CheckCircle2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -59,8 +62,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     screenSize: '',
     technician: '',
     pickupRequired: false,
-    pickupBy: 'Customer',
+    pickupMode: 'Customer',
     runnerName: '',
+    runnerMobile: '',
     status: 'Pending' as RepairStatus,
     visitHistory: []
   });
@@ -71,8 +75,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
+  
+  // WhatsApp Template Suite State
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [selectedMsgTemplate, setSelectedMsgTemplate] = useState('1');
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+  const [templates, setTemplates] = useState([
+    "Dear Customer, your repair job [JobID] has been registered on [DateTime] at GJ5 PLUS.",
+    "Dear Customer, the estimated repair cost for your device is Rs.____. Please confirm approval.",
+    "Dear Customer, your repaired device has been safely delivered. Thank you!"
+  ]);
 
   useEffect(() => {
     if (editingCall) {
@@ -83,11 +94,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setCurrentVisitTechnician(latest?.technician || '');
       setActiveTab('New Call');
     } else if (isOpen) {
-      const nextCustIdNum = 1001 + store.calls.length;
-      const nextCustId = `GJ5${nextCustIdNum}`;
-      const prefix = formData.category?.toUpperCase() || 'JOB';
-      const catCallsCount = store.calls.filter((c:any) => c.category === formData.category).length;
-      const nextJobId = `${prefix}${1001 + catCallsCount}`;
+      const catPrefix = (formData.category || 'TV').toUpperCase();
+      const catCount = store.calls.filter((c:any) => c.category === (formData.category || 'TV')).length;
+      const nextJobId = `${catPrefix}${1001 + catCount}`;
+      const nextCustId = `GJ5${1001 + store.calls.length}`;
       
       setFormData({
         id: nextJobId,
@@ -102,8 +112,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         screenSize: '',
         technician: '',
         pickupRequired: false,
-        pickupBy: 'Customer',
+        pickupMode: 'Customer',
         runnerName: '',
+        runnerMobile: '',
         status: 'Pending',
         visitHistory: []
       });
@@ -128,6 +139,12 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     setCurrentVisitTechnician('');
     setCurrentVisitNotes('');
     setActiveTab('Repeat Call Form');
+  };
+
+  const handleTemplateChange = (index: number, value: string) => {
+    const newTemplates = [...templates];
+    newTemplates[index] = value;
+    setTemplates(newTemplates);
   };
 
   const handleSave = () => {
@@ -185,24 +202,34 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     }
 
     onSave(finalData);
-    
+
+    // Automated Dispatch Logic
     if (whatsappEnabled) {
-      const templates = [
-        `Dear ${formData.customerName}, your repair job ${formData.id} has been registered on ${format(new Date(), 'dd/MM/yyyy HH:mm')} at GJ5 PLUS.`,
-        `Dear ${formData.customerName}, the estimated repair cost for your device is Rs.____. Please confirm approval.`,
-        `Dear ${formData.customerName}, your repaired device has been safely delivered. Thank you!`
-      ];
-      const msg = templates[parseInt(selectedMsgTemplate) - 1];
-      const url = `${store.whatsappGateway}send?phone=91${formData.mobile}&text=${encodeURIComponent(msg)}`;
-      window.open(url, '_blank');
+      let targetMobile = formData.mobile;
+      if (formData.pickupMode === 'Transportation' && formData.runnerMobile) {
+        targetMobile = formData.runnerMobile;
+      }
+
+      if (targetMobile) {
+        let msg = templates[selectedTemplateIndex];
+        msg = msg.replace('[JobID]', finalData.id)
+                 .replace('[CustomerID]', finalData.customerId)
+                 .replace('[CustomerName]', finalData.customerName || 'Customer')
+                 .replace('[Address]', finalData.address || 'Address')
+                 .replace('[RegisteredIssue]', currentVisitIssue)
+                 .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
+
+        const url = `${store.whatsappGateway}send?phone=91${targetMobile}&text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+      }
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="max-w-7xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50">
+          <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-900/50">
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
                   <PlusCircle className="w-6 h-6" />
@@ -219,98 +246,194 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             </TabsList>
           </div>
 
-          <div className="p-8 max-h-[75vh] overflow-y-auto">
+          <div className="p-8 max-h-[80vh] overflow-y-auto">
             <TabsContent value="New Call" className="space-y-8 mt-0 animate-in fade-in duration-300">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Job ID</Label>
-                  <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code font-bold text-blue-400 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Customer ID</Label>
-                  <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-400 font-medium">Category</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800">
-                      <SelectItem value="TV">TV</SelectItem>
-                      <SelectItem value="AC">AC</SelectItem>
-                      <SelectItem value="COMP">Computer</SelectItem>
-                      <SelectItem value="FRIDGE">Fridge</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Left Column: Core Data */}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Job ID</Label>
+                      <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code font-bold text-blue-400" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Customer ID</Label>
+                      <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          <SelectItem value="TV">TV</SelectItem>
+                          <SelectItem value="AC">AC</SelectItem>
+                          <SelectItem value="COMP">Computer</SelectItem>
+                          <SelectItem value="FRIDGE">Fridge</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Mobile</Label>
+                      <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Pincode</Label>
+                      <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Address</Label>
+                    <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Brand</Label>
+                      <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Model</Label>
+                      <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Size (Inch)</Label>
+                      <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Technician</Label>
+                      <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                          <SelectValue placeholder="Select Staff..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          {store.employees.map((emp:any) => (
+                            <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Common Issue</Label>
+                      <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
+                          <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
+                          <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
+                          <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
+                          <SelectItem value="Other / Custom Notes">Other / Custom Notes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Details</Label>
+                    <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[80px]" />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mobile</Label>
-                  <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Pincode</Label>
-                  <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
+                {/* Right Column: Dispatch & Logistics */}
+                <div className="space-y-8">
+                  {/* Transportation Node */}
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 shadow-inner">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                         <Truck className="w-4 h-4 text-blue-500" /> Pickup Logistics Mode
+                       </h3>
+                    </div>
+                    <RadioGroup 
+                      value={formData.pickupMode} 
+                      onValueChange={(v: any) => setFormData({...formData, pickupMode: v})}
+                      className="flex gap-8"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Customer" id="mode-cust" />
+                        <Label htmlFor="mode-cust">Customer Walk-in</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Transportation" id="mode-trans" />
+                        <Label htmlFor="mode-trans">Logistics Dispatch</Label>
+                      </div>
+                    </RadioGroup>
 
-                <div className="space-y-2 lg:col-span-2">
-                  <Label>Address</Label>
-                  <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
+                    {formData.pickupMode === 'Transportation' && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 animate-in slide-in-from-top-2">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Runner Name</Label>
+                          <Input 
+                            placeholder="Enter Runner Name" 
+                            value={formData.runnerName || ''} 
+                            onChange={e => setFormData({...formData, runnerName: e.target.value})}
+                            className="bg-slate-900 border-slate-800 h-10" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Runner Mobile (10-Digit)</Label>
+                          <Input 
+                            placeholder="Runner Contact" 
+                            value={formData.runnerMobile || ''} 
+                            onChange={e => setFormData({...formData, runnerMobile: e.target.value})}
+                            className="bg-slate-900 border-slate-800 h-10" 
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Brand</Label>
-                  <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
+                  {/* Messaging Suite */}
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 shadow-inner">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                         <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Template Suite
+                       </h3>
+                       <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Model</Label>
-                  <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Size (Inch)</Label>
-                  <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Technician</Label>
-                  <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                      <SelectValue placeholder="Select Staff..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800">
-                      {store.employees.map((emp:any) => (
-                        <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                    <div className={cn("space-y-4 transition-opacity", !whatsappEnabled && "opacity-40 pointer-events-none")}>
+                      {[0, 1, 2].map((idx) => (
+                        <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                          <div className="pt-2">
+                            <RadioGroup 
+                              value={selectedTemplateIndex.toString()} 
+                              onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}
+                            >
+                              <div className="flex items-center">
+                                <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} className="border-slate-700" />
+                              </div>
+                            </RadioGroup>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                             <Label className="text-[10px] text-slate-500 font-bold uppercase">Template {idx + 1}</Label>
+                             <Textarea 
+                               value={templates[idx]} 
+                               onChange={e => handleTemplateChange(idx, e.target.value)}
+                               className="bg-transparent border-0 p-0 text-xs min-h-[60px] focus-visible:ring-0 resize-none leading-relaxed" 
+                             />
+                          </div>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Common Issue</Label>
-                  <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800">
-                      <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
-                      <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
-                      <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
-                      <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
-                      <SelectItem value="HDMI / Wi-Fi Not Working">HDMI / Wi-Fi Not Working</SelectItem>
-                      <SelectItem value="White Screen / Backlight Issue">White Screen / Backlight Issue</SelectItem>
-                      <SelectItem value="Other / Custom Notes">Other / Custom Notes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Details</Label>
-                <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[100px]" />
               </div>
             </TabsContent>
 
@@ -320,8 +443,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
                         <RefreshCw className="w-8 h-8 text-blue-500" />
                      </div>
-                     <h3 className="text-2xl font-headline font-bold">Search Profile</h3>
-                     <p className="text-slate-500 text-sm">Find via Mobile or ID</p>
+                     <h3 className="text-2xl font-headline font-bold">Search Existing Profile</h3>
+                     <p className="text-slate-500 text-sm">Retrieve via Mobile or ID</p>
                   </div>
                   
                   <div className="flex gap-2">
@@ -356,9 +479,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                <div className="bg-blue-500/5 border border-blue-500/20 rounded-3xl p-6 space-y-5">
                   <div className="flex items-center justify-between">
                      <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                       <HistoryIcon className="w-4 h-4" /> Visit History Log
+                       <HistoryIcon className="w-4 h-4" /> Infinite Repair History Log
                      </h3>
-                     <Badge className="bg-blue-600 text-white font-bold">VISITS: {formData.visitHistory?.length || 0}</Badge>
+                     <Badge className="bg-[#0066FF] text-white font-black px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge>
                   </div>
                   
                   <div className="rounded-2xl border border-slate-800/50 bg-slate-900/80 overflow-hidden">
@@ -366,22 +489,22 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <table className="w-full text-[11px] text-left">
                            <thead className="bg-slate-950 text-slate-500 sticky top-0 uppercase font-bold border-b border-slate-800">
                               <tr>
-                                 <th className="p-3">Visit #</th>
-                                 <th className="p-3">Date & Time</th>
-                                 <th className="p-3">Logged Issue</th>
-                                 <th className="p-3">Technician</th>
-                                 <th className="p-3 text-right">Status</th>
+                                 <th className="p-4">Visit #</th>
+                                 <th className="p-4">Date & Time</th>
+                                 <th className="p-4">Logged Issue</th>
+                                 <th className="p-4">Technician</th>
+                                 <th className="p-4 text-right">Status</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-800">
                               {formData.visitHistory && formData.visitHistory.length > 0 ? (
                                 [...formData.visitHistory].reverse().map((h, i) => (
                                   <tr key={i} className="hover:bg-slate-800/20">
-                                     <td className="p-3 font-bold text-slate-400">#{h.visitNumber}</td>
-                                     <td className="p-3 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
-                                     <td className="p-3 truncate max-w-[150px]">{h.issue}</td>
-                                     <td className="p-3 font-bold text-blue-400">{h.technician}</td>
-                                     <td className="p-3 text-right">
+                                     <td className="p-4 font-bold text-slate-400">#{h.visitNumber}</td>
+                                     <td className="p-4 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
+                                     <td className="p-4 truncate max-w-[200px]">{h.issue}</td>
+                                     <td className="p-4 font-bold text-blue-400">{h.technician}</td>
+                                     <td className="p-4 text-right">
                                         <Badge variant="outline" className="text-[9px] uppercase">{h.statusAtTime}</Badge>
                                      </td>
                                   </tr>
@@ -395,25 +518,25 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                     <Label className="text-slate-500 font-bold uppercase text-[10px]">LOCKED JOB ID</Label>
-                     <Input readOnly value={formData.id} className="bg-slate-950 border-slate-800 font-code font-bold" />
+                     <Label className="text-[10px] font-bold text-slate-500 uppercase">Locked Job ID</Label>
+                     <Input readOnly value={formData.id} className="bg-slate-950 border-slate-800 font-code font-bold opacity-50 cursor-not-allowed" />
                   </div>
                   <div className="space-y-2">
-                     <Label className="text-slate-500 font-bold uppercase text-[10px]">LOCKED CUSTOMER ID</Label>
-                     <Input readOnly value={formData.customerId} className="bg-slate-950 border-slate-800 font-code" />
+                     <Label className="text-[10px] font-bold text-slate-500 uppercase">Locked Customer ID</Label>
+                     <Input readOnly value={formData.customerId} className="bg-slate-950 border-slate-800 font-code opacity-50 cursor-not-allowed" />
                   </div>
                </div>
 
                <div className="p-8 bg-blue-500/5 border border-dashed border-blue-500/20 rounded-3xl space-y-6">
                   <h3 className="text-lg font-headline font-bold text-blue-400 flex items-center gap-2">
-                     <PlusCircle className="w-5 h-5" /> Add Current Visit Details
+                     <PlusCircle className="w-5 h-5" /> Add Current Visit Re-Repair Details
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
-                           <Label>Current Issue</Label>
+                           <Label>Current Re-Repair Issue</Label>
                            <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue />
@@ -421,17 +544,16 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                               <SelectContent className="bg-slate-900 border-slate-800">
                                  <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
                                  <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
-                                 <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
-                                 <SelectItem value="Video OK - No Sound">Video OK - No Sound</SelectItem>
+                                 <SelectItem value="Lines on Screen">Lines on Screen</SelectItem>
                                  <SelectItem value="Other">Other</SelectItem>
                               </SelectContent>
                            </Select>
                         </div>
                         <div className="space-y-2">
-                           <Label>Technician</Label>
+                           <Label>New Assigned Technician</Label>
                            <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
-                                 <SelectValue placeholder="Staff..." />
+                                 <SelectValue placeholder="Select Staff..." />
                               </SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800">
                                  {store.employees.map((emp:any) => (
@@ -448,34 +570,13 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                </div>
             </TabsContent>
-            
-            <TabsContent value="Inquiry" className="space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <Label>Name</Label>
-                     <Input className="bg-slate-900 border-slate-800 h-11" />
-                  </div>
-                  <div className="space-y-2">
-                     <Label>Mobile</Label>
-                     <Input className="bg-slate-900 border-slate-800 h-11" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                     <Label>Notes</Label>
-                     <Textarea className="bg-slate-900 border-slate-800 min-h-[150px]" />
-                  </div>
-               </div>
-            </TabsContent>
           </div>
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 h-12 bg-slate-800 rounded-xl border border-slate-700">
-                   <Label className="text-xs font-bold text-slate-500">WhatsApp</Label>
-                   <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
-                </div>
                 <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
-                  {editingCall ? 'Update Call' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : 'Create Registry'}
+                  {activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call' : 'Create Registry'}
                   <ChevronRight className="w-4 h-4" />
                 </Button>
              </div>

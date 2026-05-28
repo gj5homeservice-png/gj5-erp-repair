@@ -49,7 +49,6 @@ export function useErpStore() {
   });
 
   useEffect(() => {
-    // Load logo and visibility from local storage if exists
     const savedLogo = localStorage.getItem('gj5_shop_logo');
     if (savedLogo) setShopLogo(savedLogo);
 
@@ -82,8 +81,9 @@ export function useErpStore() {
         screenSize: '55',
         technician: 'Rajesh Sharma',
         pickupRequired: true,
-        pickupBy: 'Amaro Boy',
-        runnerName: 'Amit Patel',
+        pickupMode: 'Customer',
+        runnerName: null,
+        runnerMobile: null,
         createdAt: initialTimestamp,
         updatedAt: initialTimestamp,
         status: 'Pending',
@@ -125,7 +125,6 @@ export function useErpStore() {
     setWalletBalance(prev => prev - expense.amount);
   };
 
-  const addAttendance = (record: AttendanceRecord) => setAttendance(prev => [record, ...prev]);
   const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => {
     const existing = prev.findIndex(r => r.employeeId === record.employeeId && r.date === record.date);
     if (existing > -1) {
@@ -136,15 +135,12 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
-  const addInvoice = (invoice: Invoice) => setInvoices(prev => [invoice, ...prev]);
-
   return {
-    calls, setCalls, addCall, updateCall,
+    calls, addCall, updateCall,
     inquiries, addInquiry,
     employees,
-    attendance, addAttendance, updateAttendance,
+    attendance, updateAttendance,
     expenses, addExpense,
-    invoices, addInvoice,
     walletBalance, setWalletBalance,
     whatsappGateway, setWhatsappGateway,
     shopLogo, setShopLogo: handleSetShopLogo,

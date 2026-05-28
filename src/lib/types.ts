@@ -20,15 +20,16 @@ export interface RepairCall {
   brand: string;
   model: string;
   screenSize: string;
-  technician: string; // Latest technician from history
+  technician: string;
   pickupRequired: boolean;
-  pickupBy: 'Customer' | 'Amaro Boy' | null;
+  pickupMode: 'Customer' | 'Transportation';
   runnerName: string | null;
-  createdAt: string; // Original creation
-  updatedAt: string; // Latest visit timestamp for Aging reset
-  status: RepairStatus; // Latest status
+  runnerMobile: string | null;
+  createdAt: string;
+  updatedAt: string;
+  status: RepairStatus;
   visitHistory: RepairHistoryEntry[];
-  takePrice?: number; // Price paid for Exchange/Purchase
+  takePrice?: number;
 }
 
 export interface Inquiry {

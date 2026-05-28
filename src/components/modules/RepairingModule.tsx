@@ -7,17 +7,18 @@ import {
   CheckCircle2, 
   XCircle, 
   Filter, 
-  MoreVertical, 
   MapPin, 
   Receipt, 
   Edit, 
   MessageCircle,
   TrendingUp,
   History,
-  Search
+  Search,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Table, 
   TableBody, 
@@ -44,28 +45,41 @@ interface RepairingModuleProps {
   onInvoiceRequest: (call: RepairCall) => void;
 }
 
+type FilterStatus = 'All' | RepairStatus | 'Repeat';
+
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>('All');
 
   const stats = useMemo(() => {
     const total = store.calls.length;
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
-    return { total, pending, completed, rejected };
+    const repeats = store.calls.filter((c: RepairCall) => c.history && c.history.length > 0).length;
+    return { total, pending, completed, rejected, repeats };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
-    return store.calls.filter((c: RepairCall) => 
-      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.mobile.includes(searchQuery) ||
-      c.technician.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [store.calls, searchQuery]);
+    return store.calls.filter((c: RepairCall) => {
+      const matchesSearch = 
+        c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.mobile.includes(searchQuery) ||
+        (c.technician && c.technician.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      let matchesFilter = true;
+      if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
+      else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
+      else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
+      else if (activeFilter === 'Repeat') matchesFilter = c.history && c.history.length > 0;
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [store.calls, searchQuery, activeFilter]);
 
   const handleEdit = (call: RepairCall) => {
     setEditingCall(call);
@@ -75,7 +89,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const handleStatusChange = (callId: string, status: RepairStatus) => {
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
-      store.updateCall({ ...call, status });
+      store.updateCall({ ...call, status, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -83,7 +97,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const updated = new Date(updatedDate);
     const now = new Date();
     const diff = Math.floor((now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return diff || 0;
   };
 
   const openMap = (address: string, pincode: string) => {
@@ -93,11 +107,48 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Active Calls" value={stats.total} icon={TrendingUp} color="bg-[#0066FF]" />
-        <StatCard title="Pending" value={stats.pending} icon={Clock} color="bg-[#FFD700]" textColor="text-black" />
-        <StatCard title="Completed" value={stats.completed} icon={CheckCircle2} color="bg-emerald-500" />
-        <StatCard title="Rejected" value={stats.rejected} icon={XCircle} color="bg-[#FF3366]" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard 
+          title="Total Active Calls" 
+          value={stats.total} 
+          icon={TrendingUp} 
+          color="bg-[#0066FF]" 
+          active={activeFilter === 'All'}
+          onClick={() => setActiveFilter('All')}
+        />
+        <StatCard 
+          title="Pending" 
+          value={stats.pending} 
+          icon={Clock} 
+          color="bg-[#FFD700]" 
+          textColor="text-black"
+          active={activeFilter === 'Pending'}
+          onClick={() => setActiveFilter('Pending')}
+        />
+        <StatCard 
+          title="Completed" 
+          value={stats.completed} 
+          icon={CheckCircle2} 
+          color="bg-emerald-500" 
+          active={activeFilter === 'Completed'}
+          onClick={() => setActiveFilter('Completed')}
+        />
+        <StatCard 
+          title="Rejected" 
+          value={stats.rejected} 
+          icon={XCircle} 
+          color="bg-[#FF3366]" 
+          active={activeFilter === 'Rejected'}
+          onClick={() => setActiveFilter('Rejected')}
+        />
+        <StatCard 
+          title="Repeat Complaints" 
+          value={stats.repeats} 
+          icon={RefreshCw} 
+          color="bg-purple-600" 
+          active={activeFilter === 'Repeat'}
+          onClick={() => setActiveFilter('Repeat')}
+        />
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
@@ -107,23 +158,15 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
              placeholder="Smart Search Job, Mobile, Customer..." 
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}
-             className="pl-10 bg-slate-950 border-slate-800 focus:ring-[#0066FF] h-11"
+             className="pl-10 bg-slate-950 border-slate-800 h-11"
            />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6">
-            <History className="w-4 h-4 mr-2" />
-            Inquiry Log
+          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6" onClick={() => setActiveFilter('All')}>
+            <History className="w-4 h-4 mr-2" /> Clear Filters
           </Button>
-          <Button 
-            className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20"
-            onClick={() => {
-              setEditingCall(null);
-              setModalOpen(true);
-            }}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Log New Service Call
+          <Button className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
+            <Plus className="w-5 h-5 mr-2" /> Log New Service Call
           </Button>
         </div>
       </div>
@@ -132,26 +175,34 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         <Table>
           <TableHeader className="bg-slate-900/60">
             <TableRow className="hover:bg-transparent border-slate-800">
-              <TableHead className="w-[120px] font-headline text-slate-400 font-medium">Job ID</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium">Customer Details</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium">Device Profile</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium">Technician</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium">Status & Aging</TableHead>
-              <TableHead className="text-right font-headline text-slate-400 font-medium">Actions</TableHead>
+              <TableHead className="w-[120px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Technician</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
+              <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCalls.map((call: RepairCall) => (
               <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
-                <TableCell className="font-code font-bold text-blue-400">{call.id}</TableCell>
+                <TableCell className="font-code font-bold text-blue-400">
+                  <div className="flex flex-col gap-1">
+                    <span>{call.id}</span>
+                    {call.history && call.history.length > 0 && (
+                      <Badge variant="outline" className="w-fit text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/20">
+                        REPEAT #{call.history.length}
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-semibold text-slate-100">{call.customerName}</span>
                     <span className="text-xs text-slate-500 flex items-center gap-1">
                       <MessageCircle className="w-3 h-3" /> {call.mobile}
                     </span>
-                    <span className="text-[10px] text-slate-600 uppercase mt-1">ID: {call.customerId}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -168,17 +219,14 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{call.technician || 'Unassigned'}</span>
-                    <span className="text-[10px] text-slate-500 uppercase">Pickup: {call.pickupBy || 'N/A'} {call.runnerName ? `(${call.runnerName})` : ''}</span>
-                  </div>
+                  <span className="text-sm font-medium">{call.technician || 'Unassigned'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className={cn(
-                          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
                           call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
                           call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
                           "bg-rose-500/10 text-rose-400 border border-rose-500/20"
@@ -192,41 +240,34 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                         <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <div className="text-[10px] text-slate-500">
-                      In Workshop: {calculateAging(call.updatedAt)} Days
-                    </div>
+                    <div className="text-[10px] text-slate-500">In Workshop: {calculateAging(call.updatedAt)} Days</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="text-slate-400 hover:text-white hover:bg-slate-800"
-                      onClick={() => openMap(call.address, call.pincode)}
-                    >
+                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
                       <MapPin className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      size="sm" 
-                      className="bg-[#0066FF] hover:bg-[#0052CC] h-8"
-                      onClick={() => onInvoiceRequest(call)}
-                    >
-                      <Receipt className="w-4 h-4 mr-2" />
-                      $ Bill
+                    <Button size="sm" className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => onInvoiceRequest(call)}>
+                      <Receipt className="w-4 h-4 mr-2" /> $ Bill
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="hover:bg-slate-800"
-                      onClick={() => handleEdit(call)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
+            {filteredCalls.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="h-32 text-center text-slate-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <AlertCircle className="w-8 h-8 opacity-20" />
+                    <p>No matching service calls found.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -246,17 +287,23 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, textColor = "text-white" }: any) {
+function StatCard({ title, value, icon: Icon, color, textColor = "text-white", active, onClick }: any) {
   return (
-    <Card className="bg-slate-900/40 border-slate-800 overflow-hidden group">
-      <CardContent className="p-6">
+    <Card 
+      onClick={onClick}
+      className={cn(
+        "bg-slate-900/40 border-slate-800 overflow-hidden group cursor-pointer transition-all",
+        active ? "ring-2 ring-blue-500 scale-[1.02]" : "hover:bg-slate-800/60"
+      )}
+    >
+      <CardContent className="p-5">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-slate-400 text-sm font-medium mb-1">{title}</p>
-            <h3 className="text-3xl font-headline font-bold">{value}</h3>
+            <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">{title}</p>
+            <h3 className="text-2xl font-headline font-bold">{value}</h3>
           </div>
-          <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110", color, textColor)}>
-            <Icon className="w-6 h-6" />
+          <div className={cn("p-2.5 rounded-xl", color, textColor)}>
+            <Icon className="w-5 h-5" />
           </div>
         </div>
       </CardContent>

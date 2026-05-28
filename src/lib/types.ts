@@ -5,6 +5,8 @@ export interface RepairHistoryEntry {
   issue: string;
   technician: string;
   notes: string;
+  statusAtTime: RepairStatus;
+  visitNumber: number;
 }
 
 export interface RepairCall {

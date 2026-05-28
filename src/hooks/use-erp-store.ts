@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice, RepairHistoryEntry } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice } from '@/lib/types';
 
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
@@ -40,7 +40,7 @@ export function useErpStore() {
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'Pending',
-        history: []
+        visitHistory: []
       }
     ]);
   }, []);

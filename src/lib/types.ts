@@ -29,7 +29,7 @@ export interface RepairCall {
   createdAt: string;
   updatedAt: string; // Used for Aging Tracker reset
   status: RepairStatus;
-  history: RepairHistoryEntry[];
+  visitHistory: RepairHistoryEntry[];
 }
 
 export interface Inquiry {

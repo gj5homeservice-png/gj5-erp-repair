@@ -68,7 +68,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     pickupBy: 'Customer',
     runnerName: '',
     status: 'Pending' as RepairStatus,
-    history: []
+    visitHistory: []
   });
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
@@ -109,7 +109,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         status: 'Pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        history: []
+        visitHistory: []
       });
     }
   }, [editingCall, isOpen]);
@@ -128,7 +128,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       ...call,
       updatedAt: new Date().toISOString(),
       status: 'Pending',
-      history: call.history || []
+      visitHistory: call.visitHistory || []
     });
     setActiveTab('Repeat Call Form');
   };
@@ -156,7 +156,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     let finalData = { ...formData } as RepairCall;
     
     if (isRepeat) {
-      const visitNumber = (finalData.history?.length || 0) + 1;
+      const visitNumber = (finalData.visitHistory?.length || 0) + 1;
       const newHistoryEntry: RepairHistoryEntry = {
         timestamp: new Date().toISOString(),
         issue: formData.issue || 'Repeat Service Request',
@@ -170,7 +170,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         ...finalData,
         updatedAt: new Date().toISOString(),
         status: 'Pending',
-        history: [...(finalData.history || []), newHistoryEntry]
+        visitHistory: [...(finalData.visitHistory || []), newHistoryEntry]
       };
     }
 
@@ -338,64 +338,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                 </div>
               )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-slate-800">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-bold">Pickup Service Registry</Label>
-                      <p className="text-[10px] text-slate-500">Log transportation details</p>
-                    </div>
-                    <Switch checked={formData.pickupRequired} onCheckedChange={v => setFormData({...formData, pickupRequired: v})} />
-                  </div>
-                  {formData.pickupRequired && (
-                    <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800 animate-in zoom-in-95 space-y-4">
-                      <RadioGroup value={formData.pickupBy || 'Customer'} onValueChange={(v:any) => setFormData({...formData, pickupBy: v})} className="flex gap-6">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Customer" id="p-cust" className="border-slate-600" />
-                          <Label htmlFor="p-cust" className="text-xs">Customer</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Amaro Boy" id="p-boy" className="border-slate-600" />
-                          <Label htmlFor="p-boy" className="text-xs">Amaro Boy (Lavayo)</Label>
-                        </div>
-                      </RadioGroup>
-                      {formData.pickupBy === 'Amaro Boy' && (
-                        <div className="space-y-2">
-                           <Label className="text-[10px] text-slate-500 uppercase font-bold">Runner Staff Name</Label>
-                           <Input placeholder="Enter name..." value={formData.runnerName || ''} onChange={e => setFormData({...formData, runnerName: e.target.value})} className="bg-slate-900 border-slate-800 h-10" />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/20">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-bold text-emerald-400">WhatsApp Redirection</Label>
-                      <p className="text-[10px] text-emerald-500/60 uppercase font-bold">Automated Redirect</p>
-                    </div>
-                    <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} className="data-[state=checked]:bg-emerald-500" />
-                  </div>
-                  {whatsappEnabled && (
-                    <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800 space-y-4 animate-in slide-in-from-right-4">
-                      <RadioGroup value={selectedMsgTemplate} onValueChange={setSelectedMsgTemplate} className="space-y-3">
-                         {[
-                           { id: '1', label: 'Call Registered Msg' },
-                           { id: '2', label: 'Quotation Approval Msg' },
-                           { id: '3', label: 'Delivered to Home Msg' }
-                         ].map(t => (
-                           <div key={t.id} className="flex items-center space-x-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-emerald-500/30 transition-colors cursor-pointer group">
-                              <RadioGroupItem value={t.id} id={`msg-${t.id}`} className="border-slate-600 data-[state=checked]:border-emerald-500" />
-                              <Label htmlFor={`msg-${t.id}`} className="text-[11px] cursor-pointer flex-1 group-hover:text-emerald-400 transition-colors">{t.label}</Label>
-                           </div>
-                         ))}
-                      </RadioGroup>
-                    </div>
-                  )}
-                </div>
-              </div>
             </TabsContent>
 
             <TabsContent value="Repeat Call" className="animate-in fade-in duration-300">
@@ -446,7 +388,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                      <h3 className="text-sm font-bold text-blue-400 flex items-center gap-2 uppercase tracking-widest">
                        <HistoryIcon className="w-4 h-4" /> Infinite Repair Visit History Log
                      </h3>
-                     <Badge className="bg-blue-500 text-white font-bold px-3">VISITS: {formData.history?.length || 0}</Badge>
+                     <Badge className="bg-blue-500 text-white font-bold px-3">VISITS: {formData.visitHistory?.length || 0}</Badge>
                   </div>
                   <div className="rounded-2xl border border-slate-800/50 bg-slate-900/80 overflow-hidden">
                      <table className="w-full text-[11px] text-left">
@@ -460,15 +402,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                           {formData.history && formData.history.length > 0 ? (
-                             [...formData.history].reverse().map((h, i) => (
+                           {formData.visitHistory && formData.visitHistory.length > 0 ? (
+                             [...formData.visitHistory].reverse().map((h, i) => (
                                <tr key={i} className="hover:bg-slate-800/20 transition-colors">
-                                  <td className="p-3 font-bold text-slate-400">#{h.visitNumber || (formData.history!.length - i)}</td>
+                                  <td className="p-3 font-bold text-slate-400">#{h.visitNumber}</td>
                                   <td className="p-3 font-code text-slate-300">{format(new Date(h.timestamp), 'dd/MM/yyyy HH:mm')}</td>
                                   <td className="p-3 max-w-[200px] truncate">{h.issue}</td>
                                   <td className="p-3 font-bold text-blue-400">{h.technician}</td>
                                   <td className="p-3 text-right">
-                                     <Badge variant="outline" className="text-[9px] h-5 px-1.5 uppercase">{h.statusAtTime || 'Completed'}</Badge>
+                                     <Badge variant="outline" className="text-[9px] h-5 px-1.5 uppercase">{h.statusAtTime}</Badge>
                                   </td>
                                </tr>
                              ))

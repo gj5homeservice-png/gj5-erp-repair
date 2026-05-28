@@ -6,7 +6,6 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle, 
-  Filter, 
   MapPin, 
   Receipt, 
   Edit, 
@@ -58,7 +57,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
-    const repeats = store.calls.filter((c: RepairCall) => c.history && c.history.length > 0).length;
+    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory && c.visitHistory.length > 0).length;
     return { totalActive, pending, completed, rejected, repeats };
   }, [store.calls]);
 
@@ -76,7 +75,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
-      else if (activeFilter === 'Repeat') matchesFilter = c.history && c.history.length > 0;
+      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory && c.visitHistory.length > 0;
 
       return matchesSearch && matchesFilter;
     });
@@ -192,9 +191,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 <TableCell className="font-code font-bold text-blue-400">
                   <div className="flex flex-col gap-1">
                     <span>{call.id}</span>
-                    {call.history && call.history.length > 0 && (
+                    {call.visitHistory && call.visitHistory.length > 0 && (
                       <Badge variant="outline" className="w-fit text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/20">
-                        VISITS: {call.history.length}
+                        VISITS: {call.visitHistory.length}
                       </Badge>
                     )}
                   </div>

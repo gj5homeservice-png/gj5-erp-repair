@@ -239,6 +239,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
             {filteredCalls.map((call: RepairCall) => {
               const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
+              const showWarranty = call.status === 'Pending' || call.status === 'Completed';
               const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
               
               return (
@@ -276,31 +277,35 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                     </div>
                   </TableCell>
                   <TableCell>
-                     <div className="flex flex-col gap-2 min-w-[140px]">
-                        <Select 
-                          value={call.warrantyDuration || 'None'} 
-                          onValueChange={(v) => handleWarrantyChange(call.id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800">
-                            <SelectItem value="None">No Warranty</SelectItem>
-                            <SelectItem value="1 Month">1 Month</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="Custom Duration">Custom Duration</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {call.warrantyDuration === 'Custom Duration' && (
-                          <Input 
-                            value={call.warrantyCustomValue || ''}
-                            onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
-                            placeholder="e.g. 15 DAY"
-                            className="h-7 text-[10px] bg-slate-950 border-slate-800"
-                          />
-                        )}
-                     </div>
+                     {showWarranty ? (
+                       <div className="flex flex-col gap-2 min-w-[140px]">
+                          <Select 
+                            value={call.warrantyDuration || 'None'} 
+                            onValueChange={(v) => handleWarrantyChange(call.id, v)}
+                          >
+                            <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800">
+                              <SelectItem value="None">No Warranty</SelectItem>
+                              <SelectItem value="1 Month">1 Month</SelectItem>
+                              <SelectItem value="3 Months">3 Months</SelectItem>
+                              <SelectItem value="6 Months">6 Months</SelectItem>
+                              <SelectItem value="Custom Duration">Custom Duration</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {call.warrantyDuration === 'Custom Duration' && (
+                            <Input 
+                              value={call.warrantyCustomValue || ''}
+                              onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
+                              placeholder="e.g. 15 DAY"
+                              className="h-7 text-[10px] bg-slate-950 border-slate-800"
+                            />
+                          )}
+                       </div>
+                     ) : (
+                       <div className="h-8 w-full bg-slate-900/20 rounded border border-dashed border-slate-800/50"></div>
+                     )}
                   </TableCell>
                   <TableCell>
                     <div className="space-y-2">

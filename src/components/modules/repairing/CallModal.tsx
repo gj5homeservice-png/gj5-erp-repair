@@ -317,7 +317,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Technician</Label>
-                      <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
+                      <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
                         <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
                           <SelectValue placeholder="Select Staff..." />
                         </SelectTrigger>
@@ -543,7 +543,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         </div>
                         <div className="space-y-2">
                            <Label>New Assigned Technician</Label>
-                           <Select value={currentVisitTechnician} onValueChange={setCurrentVisitTechnician}>
+                           <Select value={currentVisitTechnician} onValueChange={currentVisitTechnician}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-12">
                                  <SelectValue placeholder="Select Staff..." />
                               </SelectTrigger>

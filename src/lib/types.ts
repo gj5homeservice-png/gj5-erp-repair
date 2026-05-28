@@ -31,8 +31,8 @@ export interface RepairCall {
   visitHistory: RepairHistoryEntry[];
   takePrice?: number;
   warrantyDuration?: string; // e.g. "1 Month", "3 Months", "6 Months", "Custom Duration"
-  warrantyCustomValue?: string; // e.g. "45 Days"
-  warrantyExpiry?: string; // ISO String
+  warrantyCustomValue?: string; // e.g. "15 DAY"
+  warrantyExpiry?: string; // ISO String for countdown
 }
 
 export interface Inquiry {

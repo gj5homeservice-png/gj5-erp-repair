@@ -17,7 +17,7 @@ import {
   RefreshCw,
   AlertCircle,
   Tv,
-  QrCode as QrIcon
+  Printer as PrinterIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,9 +39,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
+import { StickerModal } from './repairing/StickerModal';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { QRCodeSVG } from 'qrcode.react';
 
 interface RepairingModuleProps {
   store: any;
@@ -53,6 +53,7 @@ type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurcha
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
+  const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
 
@@ -61,7 +62,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
-    const repeats = store.calls.filter((c: RepairCall) => c.visitHistory.length > 1).length;
+    const repeats = store.calls.filter((c: RepairCall) => (c.visitHistory?.length || 0) > 1).length;
     const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
     return { totalActive, pending, completed, rejected, repeats, exchangePurchase };
   }, [store.calls]);
@@ -79,7 +80,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
-      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory.length > 1;
+      else if (activeFilter === 'Repeat') matchesFilter = (c.visitHistory?.length || 0) > 1;
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
 
       return matchesSearch && matchesFilter;
@@ -119,7 +120,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* 6-Card Analytics Header */}
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard 
           title="Total Active" 
@@ -200,7 +200,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">QR Manifest Panel</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Pickup</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
@@ -208,25 +207,16 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           </TableHeader>
           <TableBody>
             {filteredCalls.map((call: RepairCall) => {
-              const latestVisit = call.visitHistory[call.visitHistory.length - 1];
+              const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
               
-              const qrData = JSON.stringify({
-                jobId: call.id,
-                customerId: call.customerId,
-                name: call.customerName,
-                mobile: call.mobile,
-                issue: latestVisit?.issue,
-                date: latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : ''
-              });
-
               return (
                 <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
                   <TableCell className="font-code font-bold text-blue-400">
                     <div className="flex flex-col gap-1">
                       <span>{call.id}</span>
                       <Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">
-                        VISITS: {call.visitHistory.length}
+                        VISITS: {call.visitHistory?.length || 0}
                       </Badge>
                     </div>
                   </TableCell>
@@ -252,17 +242,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       {latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}
                       <br />
                       {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-2 min-w-[200px]">
-                       <div className="bg-white p-1 rounded-lg">
-                          <QRCodeSVG value={qrData} size={40} level="H" />
-                       </div>
-                       <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-white/90 leading-tight">GJ5 HOME SERVICE</span>
-                          <span className="text-[8px] font-bold text-[#FFD700] tracking-tighter">MO-88669 83900</span>
-                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -319,6 +298,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
                         <Edit className="w-4 h-4" />
                       </Button>
+                      <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}>
+                        <PrinterIcon className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}>
                         <Receipt className="w-4 h-4" />
                       </Button>
@@ -351,6 +333,12 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           setModalOpen(false);
         }}
         store={store}
+      />
+
+      <StickerModal 
+        isOpen={!!stickerCall} 
+        onClose={() => setStickerCall(null)} 
+        call={stickerCall} 
       />
     </div>
   );

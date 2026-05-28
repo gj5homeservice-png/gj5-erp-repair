@@ -79,10 +79,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     }
   };
 
-  const calculateAging = (dateString: string) => {
-    const created = new Date(dateString);
+  const calculateAging = (updatedDate: string) => {
+    const updated = new Date(updatedDate);
     const now = new Date();
-    const diff = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = Math.floor((now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24));
     return diff;
   };
 
@@ -93,7 +93,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Active Calls" value={stats.total} icon={TrendingUp} color="bg-[#0066FF]" />
         <StatCard title="Pending" value={stats.pending} icon={Clock} color="bg-[#FFD700]" textColor="text-black" />
@@ -194,7 +193,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="text-[10px] text-slate-500">
-                      In Workshop: {calculateAging(call.createdAt)} Days
+                      In Workshop: {calculateAging(call.updatedAt)} Days
                     </div>
                   </div>
                 </TableCell>
@@ -237,7 +236,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         onClose={() => setModalOpen(false)} 
         editingCall={editingCall}
         onSave={(data) => {
-          if (editingCall) store.updateCall(data);
+          if (editingCall || store.calls.find((c:any) => c.id === data.id)) store.updateCall(data);
           else store.addCall(data);
           setModalOpen(false);
         }}

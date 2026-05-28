@@ -13,7 +13,6 @@ export function useErpStore() {
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
 
-  // Initial Seed Data for Demo
   useEffect(() => {
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
@@ -33,13 +32,15 @@ export function useErpStore() {
         model: 'KD-55X7500H',
         screenSize: '55',
         issue: 'Sound OK - No Video',
-        notes: '',
+        notes: 'Backlight suspected',
         technician: 'Rajesh Sharma',
         pickupRequired: true,
         pickupBy: 'Amaro Boy',
         runnerName: 'Amit Patel',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Pending'
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Pending',
+        history: []
       }
     ]);
   }, []);

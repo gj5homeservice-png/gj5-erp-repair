@@ -1,5 +1,12 @@
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected';
 
+export interface RepairHistoryEntry {
+  timestamp: string;
+  issue: string;
+  technician: string;
+  notes: string;
+}
+
 export interface RepairCall {
   id: string; // Job ID e.g. TV1001
   customerId: string; // GJ51001
@@ -18,7 +25,9 @@ export interface RepairCall {
   pickupBy: 'Customer' | 'Amaro Boy' | null;
   runnerName: string | null;
   createdAt: string;
+  updatedAt: string; // Used for Aging Tracker reset
   status: RepairStatus;
+  history: RepairHistoryEntry[];
 }
 
 export interface Inquiry {

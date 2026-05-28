@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Force sidebar sequence: Repairing, Billing, Employees, E-Wallet, Logistics
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
@@ -136,14 +137,14 @@ export default function DashboardPage() {
                 {isSidebarOpen && <span className="font-medium">System Settings</span>}
               </button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
                   <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
                   Master Controller Panel
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-6 py-4">
+              <div className="space-y-6 py-4 overflow-y-auto max-h-[70vh] pr-2">
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" /> Branding & Identity
@@ -240,17 +241,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4 flex-1 max-w-xl">
              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <Input 
-                  placeholder="Master Search Job ID, Mobile, Customer..." 
-                  className="pl-10 bg-slate-900/50 border-slate-800 focus:ring-[#0066FF] h-11 rounded-xl w-full"
-                />
+                <Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11" />
              </div>
           </div>
 
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end mr-4">
               <span className="text-sm font-semibold">Admin Console</span>
-              <span className="text-xs text-slate-500 uppercase tracking-widest font-code">v2.5.0</span>
+              <span className="text-xs text-slate-500 tracking-widest font-code">v2.5.0</span>
             </div>
             <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
               <Bell className="w-5 h-5" />

@@ -136,13 +136,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     }
   };
 
-  const handlePriceChange = (callId: string, takePrice: number) => {
-    const call = store.calls.find((c: RepairCall) => c.id === callId);
-    if (call) {
-      store.updateCall({ ...call, takePrice });
-    }
-  };
-
   const handleStoreLocationChange = (callId: string, storeLocation: string) => {
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
@@ -183,11 +176,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const openMap = (address: string, pincode: string) => {
     const url = `https://www.google.com/maps/search/${encodeURIComponent(address + ' ' + (pincode || ''))}`;
     window.open(url, '_blank');
-  };
-
-  const handleEdit = (call: RepairCall) => {
-    setEditingCall(call);
-    setModalOpen(true);
   };
 
   const visibleKpis = [
@@ -249,10 +237,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           </Button>
           <Button 
             className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" 
-            onClick={() => { 
-              setEditingCall(null); 
-              setModalOpen(true); 
-            }}
+            onClick={() => { setEditingCall(null); setModalOpen(true); }}
           >
             <Plus className="w-5 h-5 mr-2" /> Log New Service Call
           </Button>
@@ -264,15 +249,15 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
           <Table>
             <TableHeader className="bg-slate-900/60">
               <TableRow className="hover:bg-transparent border-slate-800">
-                <TableHead className="w-[140px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
-                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
-                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
-                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">
-                  {activeFilter === 'ExchangePurchase' || filteredCalls.some((c:any) => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
+                <TableHead className="w-[140px] font-headline text-slate-400 uppercase text-[11px] tracking-wider">Job ID</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Customer Details</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Device Profile</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">
+                  {filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
                 </TableHead>
-                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
-                <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
+                <TableHead className="text-right font-headline text-slate-400 uppercase text-[11px] tracking-wider">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -280,7 +265,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
                 const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
                 const showWarranty = call.status === 'Pending' || call.status === 'Completed';
-                const isRejected = call.status === 'Rejected';
                 const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
                 
                 return (
@@ -318,19 +302,17 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       </div>
                     </TableCell>
                     <TableCell>
-                       {isRejected ? (
-                          <div className="h-8 w-full"></div>
-                       ) : showWarranty ? (
+                       {showWarranty ? (
                          <div className="flex flex-col gap-2 min-w-[140px]">
                             <Select 
-                              value={call.warrantyDuration || 'None'} 
+                              value={call.warrantyDuration || 'No Warranty'} 
                               onValueChange={(v) => handleWarrantyChange(call.id, v)}
                             >
                               <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800">
-                                <SelectItem value="None">No Warranty</SelectItem>
+                                <SelectItem value="No Warranty">No Warranty</SelectItem>
                                 <SelectItem value="1 Month">1 Month</SelectItem>
                                 <SelectItem value="3 Months">3 Months</SelectItem>
                                 <SelectItem value="6 Months">6 Months</SelectItem>
@@ -389,23 +371,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                             <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {isExchangePurchase ? (
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
-                            <Input 
-                              type="number" 
-                              value={call.takePrice || ''} 
-                              onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
-                              placeholder="Take Price"
-                              className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
-                            />
+                        {warrantyLeft !== null && call.status === 'Completed' && (
+                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
+                            Warranty Left: {warrantyLeft} Days
                           </div>
-                        ) : (
-                          warrantyLeft !== null && call.status === 'Completed' && (
-                            <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
-                              Warranty Left: {warrantyLeft} Days
-                            </div>
-                          )
                         )}
                       </div>
                     </TableCell>
@@ -414,7 +383,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                         <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
                           <MapPin className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}>
@@ -444,27 +413,18 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                   <TableHead className="font-headline text-slate-400">Timestamp</TableHead>
                   <TableHead className="font-headline text-slate-400">Visitor Name</TableHead>
                   <TableHead className="font-headline text-slate-400">Mobile</TableHead>
-                  <TableHead className="font-headline text-slate-400">Full Address</TableHead>
                   <TableHead className="font-headline text-slate-400">Inquiry Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInquiries.map((inq: Inquiry) => (
                   <TableRow key={inq.id} className="border-slate-800/50 hover:bg-slate-800/20">
-                    <TableCell className="text-xs font-code text-slate-500">
-                      {format(new Date(inq.createdAt), 'dd/MM/yyyy HH:mm')}
-                    </TableCell>
+                    <TableCell className="text-xs font-code text-slate-500">{format(new Date(inq.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
                     <TableCell className="font-bold">{inq.customerName}</TableCell>
                     <TableCell className="font-code text-blue-400">{inq.mobile}</TableCell>
-                    <TableCell className="text-xs text-slate-400">{inq.address}, {inq.pincode}</TableCell>
-                    <TableCell className="text-sm max-w-md italic text-slate-300">"{inq.notes}"</TableCell>
+                    <TableCell className="text-sm italic text-slate-300">"{inq.notes}"</TableCell>
                   </TableRow>
                 ))}
-                {filteredInquiries.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-slate-500">No walk-in inquiry records found.</TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           </div>

@@ -30,7 +30,7 @@ export interface RepairCall {
   status: RepairStatus;
   visitHistory: RepairHistoryEntry[];
   takePrice?: number;
-  warrantyDuration?: string; // e.g. "3 Months", "6 Months", "Custom Duration"
+  warrantyDuration?: string; // e.g. "1 Month", "3 Months", "6 Months", "Custom Duration"
   warrantyCustomValue?: string; // e.g. "45 Days"
   warrantyExpiry?: string;
 }

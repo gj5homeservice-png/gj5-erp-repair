@@ -255,9 +255,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           </SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-800">
                             <SelectItem value="None">No Warranty</SelectItem>
+                            <SelectItem value="1 Month">1 Month</SelectItem>
                             <SelectItem value="3 Months">3 Months</SelectItem>
                             <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="1 Year">1 Year</SelectItem>
                             <SelectItem value="Custom Duration">Custom Duration</SelectItem>
                           </SelectContent>
                         </Select>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -35,7 +36,8 @@ import {
   Truck,
   MessageSquare,
   Paperclip,
-  Upload
+  Upload,
+  Camera
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -73,8 +75,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     visitHistory: []
   });
 
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [customBrand, setCustomBrand] = useState('');
   const [currentVisitIssue, setCurrentVisitIssue] = useState('No Power / Dead');
-  const [currentVisitNotes, setCurrentVisitNotes] = useState('');
   const [currentVisitTags, setCurrentVisitTags] = useState<string[]>([]);
 
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
@@ -89,15 +92,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   ]);
   const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
 
-  // Load templates from localStorage
+  // Load templates and visibility from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('gj5_whatsapp_templates');
-    if (saved) {
-      try {
-        setTemplates(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse templates", e);
-      }
+    const savedTemplates = localStorage.getItem('gj5_whatsapp_templates');
+    if (savedTemplates) {
+      try { setTemplates(JSON.parse(savedTemplates)); } catch (e) { console.error(e); }
+    }
+    const savedAttachments = localStorage.getItem('gj5_whatsapp_attachments');
+    if (savedAttachments) {
+      try { setAttachments(JSON.parse(savedAttachments)); } catch (e) { console.error(e); }
     }
   }, []);
 
@@ -106,8 +109,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setFormData(editingCall);
       const latest = editingCall.visitHistory[editingCall.visitHistory.length - 1];
       setCurrentVisitIssue(latest?.issue || 'No Power / Dead');
-      setCurrentVisitNotes(latest?.notes || '');
-      setCurrentVisitTags(latest?.techTags || []);
+      setCurrentVisitTags(editingCall.techTags || []);
+      
+      const isPredefined = BRANDS.includes(editingCall.brand);
+      setSelectedBrand(isPredefined ? editingCall.brand : 'Other');
+      setCustomBrand(isPredefined ? '' : editingCall.brand);
       setActiveTab('New Call');
     } else if (isOpen) {
       const catPrefix = (formData.category || 'TV').toUpperCase();
@@ -134,8 +140,9 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         status: 'Pending',
         visitHistory: []
       });
+      setSelectedBrand('');
+      setCustomBrand('');
       setCurrentVisitIssue('No Power / Dead');
-      setCurrentVisitNotes('');
       setCurrentVisitTags([]);
     }
   }, [editingCall, isOpen]);
@@ -153,7 +160,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   const selectProfileForRepeat = (call: RepairCall) => {
     setFormData(call);
     setCurrentVisitTags([]);
-    setCurrentVisitNotes('');
     setActiveTab('Repeat Call Form');
   };
 
@@ -172,6 +178,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         const newAttachments = [...attachments];
         newAttachments[index] = reader.result as string;
         setAttachments(newAttachments);
+        localStorage.setItem('gj5_whatsapp_attachments', JSON.stringify(newAttachments));
       };
       reader.readAsDataURL(file);
     }
@@ -187,7 +194,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     const isNew = !editingCall && activeTab === 'New Call';
     const isRepeat = activeTab === 'Repeat Call Form';
     
-    let finalData = { ...formData } as RepairCall;
+    const finalBrand = selectedBrand === 'Other' ? customBrand : selectedBrand;
+    let finalData = { ...formData, brand: finalBrand, techTags: currentVisitTags } as RepairCall;
     const now = new Date().toISOString();
 
     const visitEntry: RepairHistoryEntry = {
@@ -195,7 +203,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       timestamp: now,
       issue: currentVisitIssue,
       techTags: currentVisitTags,
-      notes: currentVisitNotes,
+      notes: '', // Notes field removed as per requirement
       statusAtTime: 'Pending'
     };
 
@@ -205,54 +213,31 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         createdAt: now,
         updatedAt: now,
         status: 'Pending',
-        visitHistory: [visitEntry],
-        techTags: currentVisitTags
+        visitHistory: [visitEntry]
       };
     } else if (isRepeat) {
       finalData = {
         ...finalData,
         updatedAt: now,
         status: 'Pending',
-        visitHistory: [...(finalData.visitHistory || []), visitEntry],
-        techTags: currentVisitTags
-      };
-    } else if (editingCall) {
-      const latestIdx = finalData.visitHistory.length - 1;
-      const updatedHistory = [...finalData.visitHistory];
-      updatedHistory[latestIdx] = {
-        ...updatedHistory[latestIdx],
-        issue: currentVisitIssue,
-        techTags: currentVisitTags,
-        notes: currentVisitNotes
-      };
-      finalData = {
-        ...finalData,
-        visitHistory: updatedHistory,
-        techTags: currentVisitTags
+        visitHistory: [...(finalData.visitHistory || []), visitEntry]
       };
     }
 
     onSave(finalData);
 
-    if (whatsappEnabled || finalData.intakeMode === 'Logistics Dispatch') {
-      let targetMobile = formData.mobile;
-      if (finalData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
-        targetMobile = formData.runnerMobile;
-      }
+    if (whatsappEnabled && finalData.intakeMode === 'Logistics Dispatch' && formData.runnerMobile) {
+      let msg = templates[selectedTemplateIndex];
+      msg = msg.replace('[JobID]', finalData.id)
+               .replace('[CustomerID]', finalData.customerId)
+               .replace('[CustomerName]', finalData.customerName || 'Customer')
+               .replace('[Address]', finalData.address || 'Address')
+               .replace('[RegisteredIssue]', currentVisitIssue)
+               .replace('[TechTags]', currentVisitTags.join(', '))
+               .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
-      if (targetMobile) {
-        let msg = templates[selectedTemplateIndex];
-        msg = msg.replace('[JobID]', finalData.id)
-                 .replace('[CustomerID]', finalData.customerId)
-                 .replace('[CustomerName]', finalData.customerName || 'Customer')
-                 .replace('[Address]', finalData.address || 'Address')
-                 .replace('[RegisteredIssue]', currentVisitIssue)
-                 .replace('[TechTags]', currentVisitTags.join(', '))
-                 .replace('[DateTime]', format(new Date(), 'dd/MM/yyyy HH:mm'));
-
-        const url = `https://web.whatsapp.com/send?phone=91${targetMobile}&text=${encodeURIComponent(msg)}`;
-        window.open(url, '_blank');
-      }
+      const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
     }
   };
 
@@ -329,41 +314,51 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Brand</Label>
-                      <Select value={formData.brand} onValueChange={(v) => setFormData({...formData, brand: v})}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                          <SelectValue placeholder="Select Brand..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800">
-                          {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                  <div className="space-y-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1 space-y-2">
+                        <Label>Brand Selection</Label>
+                        <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+                          <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
+                            <SelectValue placeholder="Select Brand..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800">
+                            {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {selectedBrand === 'Other' && (
+                        <div className="flex-1 space-y-2 animate-in slide-in-from-left-4">
+                          <Label>Enter Brand Name</Label>
+                          <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. Sharp" />
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label>Model</Label>
-                      <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Screen Size (Inch)</Label>
-                      <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Model Number</Label>
+                        <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Screen Size (Inch)</Label>
+                        <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="mb-2 block">Technician Repair Tags</Label>
-                      <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Repair Tags</Label>
+                      <div className="flex flex-row gap-2">
                          {TECH_TAGS.map(tag => (
                            <button
                              key={tag}
                              onClick={() => toggleTag(tag)}
                              className={cn(
-                               "px-3 py-2 rounded-lg text-[10px] font-bold transition-all border",
+                               "flex-1 px-3 py-2.5 rounded-xl text-[10px] font-bold transition-all border shadow-sm",
                                currentVisitTags.includes(tag)
-                                ? "bg-[#0066FF] text-white border-[#0066FF]"
-                                : "bg-slate-900 text-slate-500 border-slate-800"
+                                ? "bg-[#0066FF] text-white border-[#0066FF] scale-[1.02]"
+                                : "bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700"
                              )}
                            >
                              {tag}
@@ -466,10 +461,10 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                                      />
                                      <button 
                                        onClick={() => document.getElementById(`attach-${idx}`)?.click()}
-                                       className={cn("p-1 rounded hover:bg-slate-800 transition-colors", attachments[idx] ? "text-emerald-400" : "text-slate-500")}
-                                       title="Attach Image"
+                                       className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-all", attachments[idx] ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-500 hover:bg-slate-700")}
                                      >
-                                        <Paperclip className="w-3.5 h-3.5" />
+                                        <Paperclip className="w-3 h-3" />
+                                        {attachments[idx] ? "Attached" : "Attach Image / Capture"}
                                      </button>
                                   </div>
                                </div>
@@ -602,18 +597,18 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                               </SelectContent>
                            </Select>
                         </div>
-                        <div className="space-y-2">
-                           <Label className="mb-2 block">Current Field tags</Label>
-                           <div className="flex gap-2">
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Technician Repair Assignment</Label>
+                           <div className="flex flex-row gap-2">
                               {TECH_TAGS.map(tag => (
                                 <button
                                   key={tag}
                                   onClick={() => toggleTag(tag)}
                                   className={cn(
-                                    "px-3 py-2 rounded-lg text-[10px] font-bold transition-all border",
+                                    "flex-1 px-3 py-2.5 rounded-xl text-[10px] font-bold transition-all border shadow-sm",
                                     currentVisitTags.includes(tag)
-                                     ? "bg-[#0066FF] text-white border-[#0066FF]"
-                                     : "bg-slate-900 text-slate-500 border-slate-800"
+                                     ? "bg-[#0066FF] text-white border-[#0066FF] scale-[1.02]"
+                                     : "bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700"
                                   )}
                                 >
                                   {tag}
@@ -621,10 +616,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                               ))}
                            </div>
                         </div>
-                     </div>
-                     <div className="space-y-2">
-                        <Label>Technical Remarks (Visit #{ (formData.visitHistory?.length || 0) + 1 })</Label>
-                        <Textarea value={currentVisitNotes} onChange={e => setCurrentVisitNotes(e.target.value)} className="bg-slate-900 border-slate-800 min-h-[120px]" />
                      </div>
                   </div>
                </div>

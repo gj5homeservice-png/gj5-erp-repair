@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Wrench, 
   ReceiptText, 
@@ -8,32 +8,73 @@ import {
   Wallet, 
   Search, 
   Bell, 
-  Settings,
+  Settings as SettingsIcon,
   Menu,
   X,
-  PlusCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useErpStore } from '@/hooks/use-erp-store';
+import { useErpStore, VisibilitySettings } from '@/hooks/use-erp-store';
 import { RepairingModule } from '@/components/modules/RepairingModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 
 export default function DashboardPage() {
+  const store = useErpStore();
   const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet'>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const store = useErpStore();
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
 
   const navigation = [
-    { name: 'Repairing', icon: Wrench, id: 'Repairing' },
-    { name: 'Billing', icon: ReceiptText, id: 'Billing' },
-    { name: 'Employees', icon: Users, id: 'Employees' },
-    { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' },
-  ];
+    { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
+    { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
+    { name: 'Employees', icon: Users, id: 'Employees', visible: store.visibility.tabs.Employees },
+    { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet', visible: store.visibility.tabs['E-Wallet'] },
+  ].filter(item => item.visible);
+
+  useEffect(() => {
+    // If current tab is hidden by settings, switch to first available
+    if (navigation.length > 0 && !navigation.find(n => n.id === activeTab)) {
+      setActiveTab(navigation[0].id as any);
+    }
+  }, [store.visibility.tabs]);
+
+  const handleToggleTab = (tab: keyof VisibilitySettings['tabs']) => {
+    const newSettings = {
+      ...store.visibility,
+      tabs: {
+        ...store.visibility.tabs,
+        [tab]: !store.visibility.tabs[tab]
+      }
+    };
+    store.updateVisibility(newSettings);
+  };
+
+  const handleToggleKpi = (kpi: keyof VisibilitySettings['kpis']) => {
+    const newSettings = {
+      ...store.visibility,
+      kpis: {
+        ...store.visibility.kpis,
+        [kpi]: !store.visibility.kpis[kpi]
+      }
+    };
+    store.updateVisibility(newSettings);
+  };
 
   return (
     <div className="flex min-h-screen bg-[#0B0F19] text-slate-100">
@@ -67,7 +108,68 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
+            <DialogTrigger asChild>
+              <button className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
+                <SettingsIcon className="w-5 h-5" />
+                {isSidebarOpen && <span className="font-medium">System Settings</span>}
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
+                  <SettingsIcon className="w-6 h-6 text-[#0066FF]" />
+                  Master Dashboard Visibility Panel
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <LayoutDashboard className="w-4 h-4" /> Sidebar Module Toggles
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.keys(store.visibility.tabs).map((tab) => (
+                      <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <Label className="text-sm font-medium">{tab}</Label>
+                        <Switch 
+                          checked={store.visibility.tabs[tab as keyof VisibilitySettings['tabs']]} 
+                          onCheckedChange={() => handleToggleTab(tab as keyof VisibilitySettings['tabs'])}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="bg-slate-800" />
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <Eye className="w-4 h-4" /> Analytics KPI Card Toggles
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { id: 'totalActive', label: 'Total Active Calls' },
+                      { id: 'pending', label: 'Pending (Yellow)' },
+                      { id: 'completed', label: 'Completed (Green)' },
+                      { id: 'rejected', label: 'Rejected (Red)' },
+                      { id: 'repeat', label: 'Repeat Complaints' },
+                      { id: 'exchange', label: 'Exchange/Purchase TVs' }
+                    ].map((kpi) => (
+                      <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <Label className="text-sm font-medium">{kpi.label}</Label>
+                        <Switch 
+                          checked={store.visibility.kpis[kpi.id as keyof VisibilitySettings['kpis']]} 
+                          onCheckedChange={() => handleToggleKpi(kpi.id as keyof VisibilitySettings['kpis'])}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)}
             className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all"
@@ -103,9 +205,6 @@ export default function DashboardPage() {
             <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-[#FF3366] rounded-full border-2 border-[#0B0F19]"></span>
-            </button>
-            <button className="p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
-              <Settings className="w-5 h-5" />
             </button>
           </div>
         </header>

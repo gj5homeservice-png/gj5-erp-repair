@@ -43,6 +43,7 @@ import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface RepairingModuleProps {
   store: any;
@@ -131,59 +132,34 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     window.open(url, '_blank');
   };
 
+  const visibleKpis = [
+    { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', active: activeFilter === 'Active', filter: 'Active' },
+    { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Pending', filter: 'Pending' },
+    { id: 'completed', title: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'bg-emerald-500', active: activeFilter === 'Completed', filter: 'Completed' },
+    { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', active: activeFilter === 'Rejected', filter: 'Rejected' },
+    { id: 'repeat', title: 'Repeat', value: stats.repeats, icon: RefreshCw, color: 'bg-purple-600', active: activeFilter === 'Repeat', filter: 'Repeat' },
+    { id: 'exchange', title: 'Exchange/Pur', value: stats.exchangePurchase, icon: Tv, color: 'bg-cyan-500', active: activeFilter === 'ExchangePurchase', filter: 'ExchangePurchase' },
+  ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1">
-          <StatCard 
-            title="Total Active" 
-            value={stats.totalActive} 
-            icon={TrendingUp} 
-            color="bg-[#0066FF]" 
-            active={activeFilter === 'Active'}
-            onClick={() => setActiveFilter('Active')}
-          />
-          <StatCard 
-            title="Pending" 
-            value={stats.pending} 
-            icon={Clock} 
-            color="bg-[#FFD700]" 
-            textColor="text-black"
-            active={activeFilter === 'Pending'}
-            onClick={() => setActiveFilter('Pending')}
-          />
-          <StatCard 
-            title="Completed" 
-            value={stats.completed} 
-            icon={CheckCircle2} 
-            color="bg-emerald-500" 
-            active={activeFilter === 'Completed'}
-            onClick={() => setActiveFilter('Completed')}
-          />
-          <StatCard 
-            title="Rejected" 
-            value={stats.rejected} 
-            icon={XCircle} 
-            color="bg-[#FF3366]" 
-            active={activeFilter === 'Rejected'}
-            onClick={() => setActiveFilter('Rejected')}
-          />
-          <StatCard 
-            title="Repeat" 
-            value={stats.repeats} 
-            icon={RefreshCw} 
-            color="bg-purple-600" 
-            active={activeFilter === 'Repeat'}
-            onClick={() => setActiveFilter('Repeat')}
-          />
-          <StatCard 
-            title="Exchange/Pur" 
-            value={stats.exchangePurchase} 
-            icon={Tv} 
-            color="bg-cyan-500" 
-            active={activeFilter === 'ExchangePurchase'}
-            onClick={() => setActiveFilter('ExchangePurchase')}
-          />
+        <div className={cn(
+          "grid gap-4 flex-1",
+          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+        )}>
+          {visibleKpis.map(kpi => (
+            <StatCard 
+              key={kpi.id}
+              title={kpi.title} 
+              value={kpi.value} 
+              icon={kpi.icon} 
+              color={kpi.color} 
+              textColor={kpi.textColor}
+              active={kpi.active}
+              onClick={() => setActiveFilter(kpi.filter as FilterStatus)}
+            />
+          ))}
         </div>
 
         <div className="flex flex-col gap-2 min-w-[200px]">
@@ -242,6 +218,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
+              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">QR Manifest</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Pickup</TableHead>
               <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
               <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
@@ -252,6 +229,15 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
               const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
               
+              const qrData = JSON.stringify({
+                jid: call.id,
+                cid: call.customerId,
+                name: call.customerName,
+                mob: call.mobile,
+                issue: latestVisit?.issue,
+                date: latestVisit?.timestamp
+              });
+
               return (
                 <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
                   <TableCell className="font-code font-bold text-blue-400">
@@ -285,6 +271,17 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       <br />
                       {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                     <div className="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800 min-w-[180px]">
+                        <div className="p-1 bg-white rounded flex-shrink-0">
+                           <QRCodeSVG value={qrData} size={40} />
+                        </div>
+                        <div className="flex flex-col leading-tight overflow-hidden">
+                           <span className="text-[9px] font-black text-[#0066FF] tracking-tighter uppercase truncate">GJ5 HOME SERVICE</span>
+                           <span className="text-[8px] font-bold text-slate-500 tracking-widest truncate">MO-88669 83900</span>
+                        </div>
+                     </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-xs font-medium text-slate-400">{call.pickupBy || 'Direct'}</span>
@@ -323,9 +320,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                               className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
                             />
                           </div>
-                          {call.takePrice && (
-                             <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-tight">Acquired @ ₹{call.takePrice}</span>
-                          )}
                         </div>
                       ) : (
                         <div className="text-[10px] text-slate-500">Workshop: {calculateAging(call.updatedAt)} Days</div>

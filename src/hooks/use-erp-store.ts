@@ -3,6 +3,23 @@
 import { useState, useEffect } from 'react';
 import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice } from '@/lib/types';
 
+export interface VisibilitySettings {
+  tabs: {
+    Repairing: boolean;
+    Billing: boolean;
+    Employees: boolean;
+    'E-Wallet': boolean;
+  };
+  kpis: {
+    totalActive: boolean;
+    pending: boolean;
+    completed: boolean;
+    rejected: boolean;
+    repeat: boolean;
+    exchange: boolean;
+  };
+}
+
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -14,10 +31,36 @@ export function useErpStore() {
   const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
   const [shopLogo, setShopLogo] = useState<string | null>(null);
 
+  const [visibility, setVisibility] = useState<VisibilitySettings>({
+    tabs: {
+      Repairing: true,
+      Billing: true,
+      Employees: true,
+      'E-Wallet': true
+    },
+    kpis: {
+      totalActive: true,
+      pending: true,
+      completed: true,
+      rejected: true,
+      repeat: true,
+      exchange: true
+    }
+  });
+
   useEffect(() => {
-    // Load logo from local storage if exists
+    // Load logo and visibility from local storage if exists
     const savedLogo = localStorage.getItem('gj5_shop_logo');
     if (savedLogo) setShopLogo(savedLogo);
+
+    const savedVisibility = localStorage.getItem('gj5_visibility_settings');
+    if (savedVisibility) {
+      try {
+        setVisibility(JSON.parse(savedVisibility));
+      } catch (e) {
+        console.error("Failed to parse visibility settings", e);
+      }
+    }
 
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
@@ -67,6 +110,11 @@ export function useErpStore() {
     }
   };
 
+  const updateVisibility = (newSettings: VisibilitySettings) => {
+    setVisibility(newSettings);
+    localStorage.setItem('gj5_visibility_settings', JSON.stringify(newSettings));
+  };
+
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
   const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   
@@ -99,6 +147,7 @@ export function useErpStore() {
     invoices, addInvoice,
     walletBalance, setWalletBalance,
     whatsappGateway, setWhatsappGateway,
-    shopLogo, setShopLogo: handleSetShopLogo
+    shopLogo, setShopLogo: handleSetShopLogo,
+    visibility, updateVisibility
   };
 }

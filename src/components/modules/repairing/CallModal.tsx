@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -24,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { RepairCall, RepairHistoryEntry, RepairStatus } from '@/lib/types';
+import { RepairCall, RepairHistoryEntry, RepairStatus, Inquiry } from '@/lib/types';
 import { 
   ShieldCheck, 
   History as HistoryIcon, 
@@ -37,7 +36,8 @@ import {
   MessageSquare,
   Paperclip,
   Upload,
-  Camera
+  Camera,
+  Notebook
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -63,7 +63,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     address: '',
     pincode: '',
     category: 'TV',
-    brand: '',
+    brand: 'GJ5 PLUS',
     model: '',
     screenSize: '',
     techTags: [],
@@ -75,7 +75,15 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     visitHistory: []
   });
 
-  const [selectedBrand, setSelectedBrand] = useState('');
+  const [inquiryData, setInquiryData] = useState<Partial<Inquiry>>({
+    customerName: '',
+    mobile: '',
+    address: '',
+    pincode: '',
+    notes: ''
+  });
+
+  const [selectedBrand, setSelectedBrand] = useState('GJ5 PLUS');
   const [customBrand, setCustomBrand] = useState('');
   const [currentVisitIssue, setCurrentVisitIssue] = useState('No Power / Dead');
   const [currentVisitTags, setCurrentVisitTags] = useState<string[]>([]);
@@ -128,7 +136,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         address: '',
         pincode: '',
         category: formData.category || 'TV',
-        brand: '',
+        brand: 'GJ5 PLUS',
         model: '',
         screenSize: '',
         techTags: [],
@@ -143,6 +151,14 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setCustomBrand('');
       setCurrentVisitIssue('No Power / Dead');
       setCurrentVisitTags([]);
+      
+      setInquiryData({
+        customerName: '',
+        mobile: '',
+        address: '',
+        pincode: '',
+        notes: ''
+      });
     }
   }, [editingCall, isOpen, store.calls]);
 
@@ -190,6 +206,21 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   };
 
   const handleSave = () => {
+    if (activeTab === 'Inquiry') {
+      const newInquiry: Inquiry = {
+        id: `INQ${Date.now()}`,
+        customerName: inquiryData.customerName || '',
+        mobile: inquiryData.mobile || '',
+        address: inquiryData.address || '',
+        pincode: inquiryData.pincode || '',
+        notes: inquiryData.notes || '',
+        createdAt: new Date().toISOString()
+      };
+      store.addInquiry(newInquiry);
+      onClose();
+      return;
+    }
+
     const isNew = !editingCall && activeTab === 'New Call';
     const isRepeat = activeTab === 'Repeat Call Form';
     
@@ -250,7 +281,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   <PlusCircle className="w-6 h-6" />
                </div>
                <DialogTitle className="text-2xl font-headline font-bold">
-                 {editingCall ? 'Update Repair Hub' : 'Service Registry Portal'}
+                 {editingCall ? 'Update Repair Hub' : activeTab === 'Inquiry' ? 'Inquiry Capture Portal' : 'Service Registry Portal'}
                </DialogTitle>
             </div>
             <TabsList className="bg-slate-800/50 border border-slate-700 h-11">
@@ -619,13 +650,80 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                </div>
             </TabsContent>
+
+            <TabsContent value="Inquiry" className="animate-in fade-in zoom-in-95 duration-300">
+              <div className="max-w-4xl mx-auto space-y-8 bg-slate-900/40 p-10 rounded-3xl border border-slate-800 shadow-xl">
+                <div className="flex items-center gap-4 border-b border-slate-800 pb-6 mb-2">
+                  <div className="p-3 bg-blue-600/10 rounded-2xl border border-blue-500/20">
+                    <Notebook className="w-8 h-8 text-[#0066FF]" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3>
+                    <p className="text-slate-500 text-sm">Capture query details for visitors and casual walk-ins.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Customer Name</Label>
+                      <Input 
+                        value={inquiryData.customerName} 
+                        onChange={e => setInquiryData({...inquiryData, customerName: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 h-12" 
+                        placeholder="e.g. Rahul Sharma"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Mobile Number (10-Digit)</Label>
+                      <Input 
+                        value={inquiryData.mobile} 
+                        onChange={e => setInquiryData({...inquiryData, mobile: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 h-12" 
+                        placeholder="Enter mobile..."
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Full Address</Label>
+                      <Input 
+                        value={inquiryData.address} 
+                        onChange={e => setInquiryData({...inquiryData, address: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 h-12" 
+                        placeholder="Street, Area, Building..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Pincode</Label>
+                      <Input 
+                        value={inquiryData.pincode} 
+                        onChange={e => setInquiryData({...inquiryData, pincode: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 h-12" 
+                        placeholder="395XXX"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase">Inquiry Details / Purpose of Visit</Label>
+                  <Textarea 
+                    value={inquiryData.notes} 
+                    onChange={e => setInquiryData({...inquiryData, notes: e.target.value})} 
+                    className="bg-slate-950 border-slate-800 min-h-[150px] p-4 text-sm leading-relaxed" 
+                    placeholder="Enter manual notes, estimates given, or query description..."
+                  />
+                </div>
+              </div>
+            </TabsContent>
           </div>
 
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-4">
              <Button variant="ghost" onClick={onClose} className="rounded-xl">Cancel</Button>
              <div className="flex items-center gap-4">
                 <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20">
-                  {activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call Registry' : 'Create Registry'}
+                  {activeTab === 'Inquiry' ? 'Create Inquiry' : activeTab === 'Repeat Call Form' ? 'Commit Re-Repair Visit' : editingCall ? 'Update Call Registry' : 'Create Registry'}
                   <ChevronRight className="w-4 h-4" />
                 </Button>
              </div>
@@ -635,4 +733,3 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     </Dialog>
   );
 }
-

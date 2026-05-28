@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -18,7 +17,9 @@ import {
   Tv,
   Printer as PrinterIcon,
   ShieldCheck,
-  Building2
+  Building2,
+  Users,
+  NotebookTabs
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,7 +46,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { RepairCall, RepairStatus } from '@/lib/types';
+import { RepairCall, RepairStatus, Inquiry } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { format, differenceInDays, addMonths, addDays, parseISO } from 'date-fns';
@@ -57,6 +58,7 @@ interface RepairingModuleProps {
 }
 
 type FilterStatus = 'All' | 'Active' | RepairStatus | 'Repeat' | 'ExchangePurchase' | 'Warranty';
+type ViewMode = 'Repairing' | 'Inquiries';
 
 export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -64,6 +66,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
+  const [viewMode, setViewMode] = useState<ViewMode>('Repairing');
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -101,6 +104,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       return (matchesSearch || !searchQuery) && matchesFilter;
     });
   }, [store.calls, searchQuery, activeFilter]);
+
+  const filteredInquiries = useMemo(() => {
+    return store.inquiries.filter((i: Inquiry) => 
+      i.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.mobile.includes(searchQuery)
+    );
+  }, [store.inquiries, searchQuery]);
 
   const calculateWarrantyExpiry = (duration: string, customValue?: string) => {
     const now = new Date();
@@ -205,7 +215,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               color={kpi.color} 
               textColor={kpi.textColor}
               active={kpi.active}
-              onClick={() => setActiveFilter(kpi.filter as FilterStatus)}
+              onClick={() => {
+                setViewMode('Repairing');
+                setActiveFilter(kpi.filter as FilterStatus);
+              }}
             />
           ))}
         </div>
@@ -222,186 +235,240 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
            />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none rounded-xl border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-11 px-6" onClick={() => { setSearchQuery(''); setActiveFilter('Active'); }}>
-            <History className="w-4 h-4 mr-2" /> Reset
+          <Button 
+            variant="outline" 
+            className={cn(
+              "flex-1 md:flex-none rounded-xl border-slate-700 h-11 px-6",
+              viewMode === 'Inquiries' ? "bg-slate-700 text-white" : "bg-slate-800/50 hover:bg-slate-700"
+            )}
+            onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}
+          >
+            <NotebookTabs className="w-4 h-4 mr-2" /> 
+            {viewMode === 'Repairing' ? "View Walk-In Inquiries" : "Back to Repair Grid"}
           </Button>
-          <Button className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
+          <Button 
+            className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" 
+            onClick={() => { 
+              setEditingCall(null); 
+              setModalOpen(true); 
+            }}
+          >
             <Plus className="w-5 h-5 mr-2" /> Log New Service Call
           </Button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-slate-900/60">
-            <TableRow className="hover:bg-transparent border-slate-800">
-              <TableHead className="w-[140px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">
-                {activeFilter === 'ExchangePurchase' || filteredCalls.some((c:any) => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
-              </TableHead>
-              <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
-              <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCalls.map((call: RepairCall) => {
-              const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
-              const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
-              const showWarranty = call.status === 'Pending' || call.status === 'Completed';
-              const isRejected = call.status === 'Rejected';
-              const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
-              
-              return (
-                <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
-                  <TableCell className="font-code font-bold text-blue-400">
-                    <div className="flex flex-col gap-1">
-                      <span>{call.id}</span>
-                      <Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">
-                        VISITS: {call.visitHistory?.length || 0}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-slate-100">{call.customerName}</span>
-                        <span className="text-[10px] text-slate-500 font-code">{call.customerId}</span>
+      {viewMode === 'Repairing' ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-900/60">
+              <TableRow className="hover:bg-transparent border-slate-800">
+                <TableHead className="w-[140px] font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Job ID</TableHead>
+                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Customer Details</TableHead>
+                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Device Profile</TableHead>
+                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
+                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+                  {activeFilter === 'ExchangePurchase' || filteredCalls.some((c:any) => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
+                </TableHead>
+                <TableHead className="font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
+                <TableHead className="text-right font-headline text-slate-400 font-medium uppercase text-[11px] tracking-wider">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCalls.map((call: RepairCall) => {
+                const latestVisit = call.visitHistory?.[call.visitHistory.length - 1];
+                const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
+                const showWarranty = call.status === 'Pending' || call.status === 'Completed';
+                const isRejected = call.status === 'Rejected';
+                const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
+                
+                return (
+                  <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
+                    <TableCell className="font-code font-bold text-blue-400">
+                      <div className="flex flex-col gap-1">
+                        <span>{call.id}</span>
+                        <Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">
+                          VISITS: {call.visitHistory?.length || 0}
+                        </Badge>
                       </div>
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <MessageCircle className="w-3 h-3" /> {call.mobile}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm">{call.brand} {call.model}</span>
-                      <span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs text-slate-400">
-                      {latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}
-                      <br />
-                      {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                     {isRejected ? (
-                        <div className="h-8 w-full"></div>
-                     ) : showWarranty ? (
-                       <div className="flex flex-col gap-2 min-w-[140px]">
-                          <Select 
-                            value={call.warrantyDuration || 'None'} 
-                            onValueChange={(v) => handleWarrantyChange(call.id, v)}
-                          >
-                            <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800">
-                              <SelectItem value="None">No Warranty</SelectItem>
-                              <SelectItem value="1 Month">1 Month</SelectItem>
-                              <SelectItem value="3 Months">3 Months</SelectItem>
-                              <SelectItem value="6 Months">6 Months</SelectItem>
-                              <SelectItem value="Custom Duration">Custom Duration</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {call.warrantyDuration === 'Custom Duration' && (
-                            <Input 
-                              value={call.warrantyCustomValue || ''}
-                              onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
-                              placeholder="e.g. 15 DAY"
-                              className="h-7 text-[10px] bg-slate-950 border-slate-800"
-                            />
-                          )}
-                       </div>
-                     ) : isExchangePurchase ? (
-                        <div className="flex flex-col gap-2 min-w-[140px]">
-                           <Select 
-                             value={call.storeLocation || 'GODOWN'} 
-                             onValueChange={(v) => handleStoreLocationChange(call.id, v)}
-                           >
-                             <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent className="bg-slate-900 border-slate-800">
-                               <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
-                               <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
-                               <SelectItem value="GODOWN">GODOWN</SelectItem>
-                               <SelectItem value="OTHER">OTHER</SelectItem>
-                             </SelectContent>
-                           </Select>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-100">{call.customerName}</span>
+                          <span className="text-[10px] text-slate-500 font-code">{call.customerId}</span>
                         </div>
-                     ) : (
-                       <div className="h-8 w-full"></div>
-                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                            call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
-                            call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                            call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                            "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                          )}>
-                            {call.status}
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-slate-900 border-slate-800">
-                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Exchange')}>Exchange</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      {isExchangePurchase ? (
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
-                          <Input 
-                            type="number" 
-                            value={call.takePrice || ''} 
-                            onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
-                            placeholder="Take Price"
-                            className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
-                          />
-                        </div>
-                      ) : (
-                        warrantyLeft !== null && call.status === 'Completed' && (
-                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
-                            Warranty Left: {warrantyLeft} Days
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <MessageCircle className="w-3 h-3" /> {call.mobile}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm">{call.brand} {call.model}</span>
+                        <span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs text-slate-400">
+                        {latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}
+                        <br />
+                        {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                       {isRejected ? (
+                          <div className="h-8 w-full"></div>
+                       ) : showWarranty ? (
+                         <div className="flex flex-col gap-2 min-w-[140px]">
+                            <Select 
+                              value={call.warrantyDuration || 'None'} 
+                              onValueChange={(v) => handleWarrantyChange(call.id, v)}
+                            >
+                              <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800">
+                                <SelectItem value="None">No Warranty</SelectItem>
+                                <SelectItem value="1 Month">1 Month</SelectItem>
+                                <SelectItem value="3 Months">3 Months</SelectItem>
+                                <SelectItem value="6 Months">6 Months</SelectItem>
+                                <SelectItem value="Custom Duration">Custom Duration</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {call.warrantyDuration === 'Custom Duration' && (
+                              <Input 
+                                value={call.warrantyCustomValue || ''}
+                                onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
+                                placeholder="e.g. 15 DAY"
+                                className="h-7 text-[10px] bg-slate-950 border-slate-800"
+                              />
+                            )}
+                         </div>
+                       ) : isExchangePurchase ? (
+                          <div className="flex flex-col gap-2 min-w-[140px]">
+                             <Select 
+                               value={call.storeLocation || 'GODOWN'} 
+                               onValueChange={(v) => handleStoreLocationChange(call.id, v)}
+                             >
+                               <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent className="bg-slate-900 border-slate-800">
+                                 <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
+                                 <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
+                                 <SelectItem value="GODOWN">GODOWN</SelectItem>
+                                 <SelectItem value="OTHER">OTHER</SelectItem>
+                               </SelectContent>
+                             </Select>
                           </div>
-                        )
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
-                        <MapPin className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}>
-                        <PrinterIcon className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}>
-                        <Receipt className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                       ) : (
+                         <div className="h-8 w-full"></div>
+                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                              call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
+                              call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                              call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                              "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                            )}>
+                              {call.status}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-slate-900 border-slate-800">
+                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Exchange')}>Exchange</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {isExchangePurchase ? (
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">₹</span>
+                            <Input 
+                              type="number" 
+                              value={call.takePrice || ''} 
+                              onChange={(e) => handlePriceChange(call.id, Number(e.target.value))}
+                              placeholder="Take Price"
+                              className="h-7 pl-5 text-[10px] bg-slate-950 border-slate-800 w-24"
+                            />
+                          </div>
+                        ) : (
+                          warrantyLeft !== null && call.status === 'Completed' && (
+                            <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
+                              Warranty Left: {warrantyLeft} Days
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
+                          <MapPin className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(call)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}>
+                          <PrinterIcon className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}>
+                          <Receipt className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="space-y-4 animate-in slide-in-from-bottom-6 duration-500">
+          <div className="flex items-center gap-3 mb-2">
+            <NotebookTabs className="w-6 h-6 text-[#0066FF]" />
+            <h3 className="text-xl font-headline font-bold">Walk-In Inquiry Logs</h3>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-900/60">
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="font-headline text-slate-400">Timestamp</TableHead>
+                  <TableHead className="font-headline text-slate-400">Visitor Name</TableHead>
+                  <TableHead className="font-headline text-slate-400">Mobile</TableHead>
+                  <TableHead className="font-headline text-slate-400">Full Address</TableHead>
+                  <TableHead className="font-headline text-slate-400">Inquiry Details</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredInquiries.map((inq: Inquiry) => (
+                  <TableRow key={inq.id} className="border-slate-800/50 hover:bg-slate-800/20">
+                    <TableCell className="text-xs font-code text-slate-500">
+                      {format(new Date(inq.createdAt), 'dd/MM/yyyy HH:mm')}
+                    </TableCell>
+                    <TableCell className="font-bold">{inq.customerName}</TableCell>
+                    <TableCell className="font-code text-blue-400">{inq.mobile}</TableCell>
+                    <TableCell className="text-xs text-slate-400">{inq.address}, {inq.pincode}</TableCell>
+                    <TableCell className="text-sm max-w-md italic text-slate-300">"{inq.notes}"</TableCell>
+                  </TableRow>
+                ))}
+                {filteredInquiries.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-slate-500">No walk-in inquiry records found.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       <CallModal 
         isOpen={isModalOpen} 

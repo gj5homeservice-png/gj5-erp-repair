@@ -309,7 +309,16 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Assignments</Label>
                         <div className="flex flex-row gap-2">
                            {TECH_TAGS.map(tag => (
-                             <button key={tag} onClick={() => toggleTag(tag)} className={cn("flex-1 px-3 py-3 rounded-xl text-[10px] font-bold transition-all border", currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800")}>{tag}</button>
+                             <button 
+                               key={tag} 
+                               onClick={() => toggleTag(tag)} 
+                               className={cn(
+                                 "flex-1 px-3 py-3 rounded-xl text-[10px] font-bold transition-all border", 
+                                 currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800"
+                               )}
+                             >
+                               {tag}
+                             </button>
                            ))}
                         </div>
                       </div>
@@ -329,14 +338,27 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 </TabsContent>
                 <TabsContent value="Repeat Call" className="animate-in fade-in duration-300">
                    <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
-                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20"><RefreshCw className="w-8 h-8 text-[#0066FF]" /></div>
+                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20">
+                         <RefreshCw className="w-8 h-8 text-[#0066FF]" />
+                      </div>
                       <div className="flex gap-2">
-                         <div className="relative flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" /><Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Search Mobile, Job ID or Customer ID..." /></div>
+                         <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                            <Input 
+                              value={repeatSearchQuery} 
+                              onChange={e => setRepeatSearchQuery(e.target.value)} 
+                              className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" 
+                              placeholder="Search Mobile, Job ID or Customer ID..." 
+                            />
+                         </div>
                          <Button onClick={handleSearchRepeat} className="bg-[#0066FF] hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Search</Button>
                       </div>
                       {searchResults.map(result => (
                         <div key={result.id} className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between hover:bg-slate-800/30">
-                           <div className="text-left"><p className="font-bold text-slate-100">{result.customerName}</p><p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p></div>
+                           <div className="text-left">
+                              <p className="font-bold text-slate-100">{result.customerName}</p>
+                              <p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p>
+                           </div>
                            <Button onClick={() => selectProfileForRepeat(result)} className="bg-[#0066FF] hover:bg-blue-700 rounded-xl">Re-Open</Button>
                         </div>
                       ))}
@@ -344,50 +366,151 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                 </TabsContent>
                 <TabsContent value="Repeat Call Form" className="space-y-8 animate-in zoom-in-95">
                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6">
-                      <div className="flex justify-between items-center mb-4"><h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><HistoryIcon className="w-4 h-4" /> Visit History</h3><Badge className="bg-[#0066FF] px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge></div>
+                      <div className="flex justify-between items-center mb-4">
+                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                            <HistoryIcon className="w-4 h-4" /> Visit History
+                         </h3>
+                         <Badge className="bg-[#0066FF] px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge>
+                      </div>
                       <div className="max-h-[250px] overflow-y-auto border border-slate-800 rounded-xl bg-slate-950/50">
                          <table className="w-full text-[11px] text-left">
-                            <thead className="bg-slate-900 text-slate-500 uppercase font-bold sticky top-0"><tr><th className="p-4">Visit #</th><th className="p-4">Date</th><th className="p-4">Issue</th><th className="p-4 text-right">Status</th></tr></thead>
+                            <thead className="bg-slate-900 text-slate-500 uppercase font-bold sticky top-0">
+                               <tr>
+                                  <th className="p-4">Visit #</th>
+                                  <th className="p-4">Date</th>
+                                  <th className="p-4">Issue</th>
+                                  <th className="p-4 text-right">Status</th>
+                               </tr>
+                            </thead>
                             <tbody className="divide-y divide-slate-800">
                                {formData.visitHistory?.map((h, i) => (
-                                 <tr key={i} className="hover:bg-slate-800/20"><td className="p-4 font-bold">#{h.visitNumber}</td><td className="p-4 font-code">{format(new Date(h.timestamp), 'dd/MM/yyyy')}</td><td className="p-4">{h.issue}</td><td className="p-4 text-right"><Badge variant="outline" className="text-[9px]">{h.statusAtTime}</Badge></td></tr>
+                                 <tr key={i} className="hover:bg-slate-800/20">
+                                    <td className="p-4 font-bold">#{h.visitNumber}</td>
+                                    <td className="p-4 font-code">{format(new Date(h.timestamp), 'dd/MM/yyyy')}</td>
+                                    <td className="p-4">{h.issue}</td>
+                                    <td className="p-4 text-right">
+                                       <Badge variant="outline" className="text-[9px]">{h.statusAtTime}</Badge>
+                                    </td>
+                                 </tr>
                                ))}
                             </tbody>
                          </table>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2"><Label>Locked Job ID</Label><Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code opacity-50" /></div>
-                      <div className="space-y-2"><Label>Locked Customer ID</Label><Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code opacity-50" /></div>
+                      <div className="space-y-2">
+                         <Label>Locked Job ID</Label>
+                         <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
+                      </div>
+                      <div className="space-y-2">
+                         <Label>Locked Customer ID</Label>
+                         <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
+                      </div>
                    </div>
                    <div className="space-y-4">
-                      <div className="space-y-2"><Label>Current Visit Issue</Label><Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}><SelectTrigger className="bg-slate-900 h-12"><SelectValue /></SelectTrigger><SelectContent className="bg-slate-900"><SelectItem value="No Power / Dead">No Power / Dead</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
-                      <div className="flex flex-row gap-2">{TECH_TAGS.map(tag => (<button key={tag} onClick={() => toggleTag(tag)} className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border", currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800")}>{tag}</button>))}</div>
+                      <div className="space-y-2">
+                         <Label>Current Visit Issue</Label>
+                         <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
+                            <SelectTrigger className="bg-slate-900 h-12">
+                               <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900">
+                               <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
+                               <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                         </Select>
+                      </div>
+                      <div className="flex flex-row gap-2">
+                         {TECH_TAGS.map(tag => (
+                           <button 
+                             key={tag} 
+                             onClick={() => toggleTag(tag)} 
+                             className={cn(
+                               "flex-1 py-3 rounded-xl text-[10px] font-bold border", 
+                               currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800"
+                             )}
+                           >
+                             {tag}
+                           </button>
+                         ))}
+                      </div>
                    </div>
                 </TabsContent>
                 <TabsContent value="Inquiry" className="animate-in fade-in zoom-in-95 duration-300">
                   <div className="space-y-8 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">
-                    <div className="flex items-center gap-4 border-b border-slate-800 pb-6"><div className="p-3 bg-blue-600/10 rounded-2xl"><Notebook className="w-8 h-8 text-[#0066FF]" /></div><div><h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3></div></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2"><Label>Customer Name</Label><Input value={inquiryData.customerName} onChange={e => setInquiryData({...inquiryData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
-                      <div className="space-y-2"><Label>Mobile Number</Label><Input value={inquiryData.mobile} onChange={e => setInquiryData({...inquiryData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
-                      <div className="space-y-2"><Label>Full Address</Label><Input value={inquiryData.address} onChange={e => setInquiryData({...inquiryData, address: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
-                      <div className="space-y-2"><Label>Pincode</Label><Input value={inquiryData.pincode} onChange={e => setInquiryData({...inquiryData, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
+                    <div className="flex items-center gap-4 border-b border-slate-800 pb-6">
+                       <div className="p-3 bg-blue-600/10 rounded-2xl">
+                          <Notebook className="w-8 h-8 text-[#0066FF]" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3>
+                       </div>
                     </div>
-                    <div className="space-y-2"><Label>Inquiry Details</Label><Textarea value={inquiryData.notes} onChange={e => setInquiryData({...inquiryData, notes: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[150px]" /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                         <Label>Customer Name</Label>
+                         <Input value={inquiryData.customerName} onChange={e => setInquiryData({...inquiryData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
+                      </div>
+                      <div className="space-y-2">
+                         <Label>Mobile Number</Label>
+                         <Input value={inquiryData.mobile} onChange={e => setInquiryData({...inquiryData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
+                      </div>
+                      <div className="space-y-2">
+                         <Label>Full Address</Label>
+                         <Input value={inquiryData.address} onChange={e => setInquiryData({...inquiryData, address: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
+                      </div>
+                      <div className="space-y-2">
+                         <Label>Pincode</Label>
+                         <Input value={inquiryData.pincode} onChange={e => setInquiryData({...inquiryData, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-12" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                       <Label>Inquiry Details</Label>
+                       <Textarea value={inquiryData.notes} onChange={e => setInquiryData({...inquiryData, notes: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[150px]" />
+                    </div>
                   </div>
                 </TabsContent>
               </div>
               <div className="lg:col-span-4 border-l border-slate-800 pl-8 space-y-6">
-                <div className="flex items-center gap-2 mb-4"><MessageSquare className="w-5 h-5 text-emerald-500" /><h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">WhatsApp Template Suite</h3></div>
+                <div className="flex items-center gap-2 mb-4">
+                   <MessageSquare className="w-5 h-5 text-emerald-500" />
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">WhatsApp Template Suite</h3>
+                </div>
                 <div className="space-y-6">
                   {[0, 1, 2].map((idx) => (
-                    <div key={idx} className={cn("p-4 rounded-2xl border transition-all space-y-3", activeTemplateIdx === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all space-y-3", 
+                        activeTemplateIdx === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800"
+                      )}
+                    >
                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2"><RadioGroup value={activeTemplateIdx.toString()} onValueChange={(v) => setActiveTemplateIdx(parseInt(v))}><RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} /></RadioGroup><Label htmlFor={`tpl-${idx}`} className="text-[10px] font-bold uppercase text-slate-500">Template {idx + 1}</Label></div>
-                         <div className="flex items-center gap-2"><input type="file" id={`img-${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} /><button onClick={() => document.getElementById(`img-${idx}`)?.click()} className={cn("p-1.5 rounded-lg border text-[10px] font-bold uppercase flex items-center gap-1.5", templateImages[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 border-slate-700")}><Paperclip className="w-3 h-3" /> {templateImages[idx] ? "Attached" : "Attach Image"}</button></div>
+                         <div className="flex items-center gap-2">
+                            <RadioGroup value={activeTemplateIdx.toString()} onValueChange={(v) => setActiveTemplateIdx(parseInt(v))}>
+                               <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
+                            </RadioGroup>
+                            <Label htmlFor={`tpl-${idx}`} className="text-[10px] font-bold uppercase text-slate-500">Template {idx + 1}</Label>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <input type="file" id={`img-${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
+                            <button 
+                              onClick={() => document.getElementById(`img-${idx}`)?.click()} 
+                              className={cn(
+                                "p-1.5 rounded-lg border text-[10px] font-bold uppercase flex items-center gap-1.5", 
+                                templateImages[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 border-slate-700"
+                              )}
+                            >
+                               <Paperclip className="w-3 h-3" /> {templateImages[idx] ? "Attached" : "Attach Image"}
+                            </button>
+                         </div>
                       </div>
-                      <Textarea value={templates[idx]} onChange={(e) => handleTemplateChange(idx, e.target.value)} className="bg-transparent border-0 p-0 text-xs min-h-[80px] focus-visible:ring-0 resize-none" placeholder="Type message template..." />
+                      <Textarea 
+                        value={templates[idx]} 
+                        onChange={(e) => handleTemplateChange(idx, e.target.value)} 
+                        className="bg-transparent border-0 p-0 text-xs min-h-[80px] focus-visible:ring-0 resize-none" 
+                        placeholder="Type message template..." 
+                      />
                     </div>
                   ))}
                 </div>
@@ -396,7 +519,13 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
           </div>
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2">{activeTab === 'Inquiry' ? 'Create Inquiry' : editingCall ? 'Update Registry' : 'Create Registry'}<ChevronRight className="w-4 h-4" /></Button>
+             <Button 
+               onClick={handleSave} 
+               className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2"
+             >
+                {activeTab === 'Inquiry' ? 'Create Inquiry' : editingCall ? 'Update Registry' : 'Create Registry'}
+                <ChevronRight className="w-4 h-4" />
+             </Button>
           </DialogFooter>
         </Tabs>
       </DialogContent>

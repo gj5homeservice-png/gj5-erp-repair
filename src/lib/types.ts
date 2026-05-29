@@ -77,7 +77,7 @@ export interface Expense {
 
 export type LogisticsStatus = 'In-Transit' | 'Collected' | 'Arrived at Workshop';
 
-export interface LogisticsLog {
+export interface TransportationLog {
   id: string;
   runnerName: string;
   runnerMobile: string;

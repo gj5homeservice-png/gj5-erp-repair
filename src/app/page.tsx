@@ -26,7 +26,7 @@ import { RepairingModule } from '@/components/modules/RepairingModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
-import { LogisticsModule } from '@/components/modules/LogisticsModule';
+import { TransportationModule } from '@/components/modules/TransportationModule';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -100,7 +100,14 @@ export default function DashboardPage() {
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
           {navigation.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className={cn("w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100")}>
+            <button 
+              key={item.id} 
+              onClick={() => setActiveTab(item.id as any)} 
+              className={cn(
+                "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", 
+                activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
+              )}
+            >
               <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
               {isSidebarOpen && <span className="font-medium">{item.name}</span>}
             </button>
@@ -116,7 +123,11 @@ export default function DashboardPage() {
               </button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl">
-              <DialogHeader><DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2"><SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
+                  <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
+                </DialogTitle>
+              </DialogHeader>
               <div className="space-y-6 py-4 overflow-y-auto max-h-[70vh] pr-2">
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding & Identity</h4>
@@ -179,11 +190,20 @@ export default function DashboardPage() {
       <main className={cn("flex-1 flex flex-col transition-all duration-300", isSidebarOpen ? "ml-64" : "ml-20")}>
         <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 bg-[#0B0F19]/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-4 flex-1 max-w-xl">
-             <div className="relative w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11" /></div>
+             <div className="relative w-full">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+               <Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11" />
+             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex flex-col items-end mr-4"><span className="text-sm font-semibold">Admin Console</span><span className="text-xs text-slate-500 tracking-widest font-code">v2.5.0</span></div>
-            <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg"><Bell className="w-5 h-5" /><span className="absolute top-2 right-2 w-2 h-2 bg-[#FF3366] rounded-full border-2 border-[#0B0F19]"></span></button>
+            <div className="flex flex-col items-end mr-4">
+              <span className="text-sm font-semibold">Admin Console</span>
+              <span className="text-xs text-slate-500 tracking-widest font-code">v2.5.0</span>
+            </div>
+            <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#FF3366] rounded-full border-2 border-[#0B0F19]"></span>
+            </button>
           </div>
         </header>
         <div className="p-8">
@@ -191,7 +211,7 @@ export default function DashboardPage() {
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
-          {activeTab === 'Transportation' && <LogisticsModule store={store} />}
+          {activeTab === 'Transportation' && <TransportationModule store={store} />}
         </div>
       </main>
     </div>

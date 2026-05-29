@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice, LogisticsLog } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice, TransportationLog } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -30,7 +30,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [logistics, setLogistics] = useState<LogisticsLog[]>([]);
+  const [transportation, setTransportation] = useState<TransportationLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
   const [shopLogo, setShopLogo] = useState<string | null>(null);
@@ -140,9 +140,9 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
-  const addLogisticsLog = (log: LogisticsLog) => setLogistics(prev => [log, ...prev]);
-  const updateLogisticsLog = (id: string, status: LogisticsLog['status']) => 
-    setLogistics(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  const addTransportationLog = (log: TransportationLog) => setTransportation(prev => [log, ...prev]);
+  const updateTransportationLog = (id: string, status: TransportationLog['status']) => 
+    setTransportation(prev => prev.map(l => l.id === id ? { ...l, status } : l));
 
   return {
     calls, addCall, updateCall,
@@ -150,7 +150,7 @@ export function useErpStore() {
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
-    logistics, addLogisticsLog, updateLogisticsLog,
+    transportation, addTransportationLog, updateTransportationLog,
     walletBalance, setWalletBalance,
     whatsappGateway, setWhatsappGateway,
     shopLogo, setShopLogo: handleSetShopLogo,

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -8,7 +7,6 @@ import {
   CheckCircle2, 
   XCircle, 
   MapPin, 
-  Receipt, 
   Edit, 
   MessageCircle,
   TrendingUp,
@@ -151,6 +149,7 @@ export function RepairingModule({ store }: RepairingModuleProps) {
     return diff > 0 ? diff : 0;
   };
 
+  // Hardcoded 5-card analytics header
   const visibleKpis = [
     { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', active: activeFilter === 'Active', filter: 'Active' },
     { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Pending', filter: 'Pending' },
@@ -162,10 +161,7 @@ export function RepairingModule({ store }: RepairingModuleProps) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className={cn(
-          "grid gap-4 flex-1 w-full",
-          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-5"
-        )}>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1 w-full">
           {visibleKpis.map(kpi => (
             <StatCard 
               key={kpi.id}

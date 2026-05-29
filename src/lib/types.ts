@@ -21,15 +21,12 @@ export interface RepairCall {
   brand: string;
   model: string;
   screenSize: string;
-  technician?: string;
   techTags?: string[];
-  pickupRequired: boolean;
   intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
   createdAt: string;
   updatedAt: string;
   status: RepairStatus;
   visitHistory: RepairHistoryEntry[];
-  takePrice?: number;
   warrantyDuration?: string; // e.g. "1 Month", "3 Months", "6 Months", "Custom Duration"
   warrantyCustomValue?: string; // e.g. "15 DAY"
   warrantyExpiry?: string; // ISO String for countdown
@@ -86,19 +83,4 @@ export interface TransportationLog {
   address: string;
   dispatchTime: string;
   status: LogisticsStatus;
-}
-
-export interface Invoice {
-  id: string;
-  callId: string;
-  customerName: string;
-  category: string;
-  hardwareCost: number;
-  laborCost: number;
-  taxEnabled: boolean;
-  cgst: number;
-  sgst: number;
-  total: number;
-  date: string;
-  notes: string;
 }

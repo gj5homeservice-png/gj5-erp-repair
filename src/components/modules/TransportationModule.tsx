@@ -119,7 +119,7 @@ export function TransportationModule({ store }: { store: any }) {
         <CardHeader className="border-b border-slate-800">
           <CardTitle className="flex items-center gap-2 font-headline text-xl">
             <Truck className="w-6 h-6 text-[#0066FF]" />
-            Transportation Command Panel
+            Transportation Dispatch Panel
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8">
@@ -196,7 +196,7 @@ export function TransportationModule({ store }: { store: any }) {
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
                 <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
                 <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
-                <TableHead className="font-headline text-slate-400">Target Destination Address</TableHead>
+                <TableHead className="font-headline text-slate-400">Target Destination</TableHead>
                 <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
                 <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
               </TableRow>

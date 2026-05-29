@@ -14,7 +14,7 @@ import {
   LayoutDashboard,
   Eye,
   Upload,
-  Image as ImageIcon,
+  ImageIcon,
   Trash2,
   Truck
 } from 'lucide-react';
@@ -45,17 +45,20 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Hardcoded 5-item sequence enforcing the vertical tree layout
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
     { name: 'Employees', icon: Users, id: 'Employees', visible: store.visibility.tabs.Employees },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet', visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Transportation', icon: Truck, id: 'Transportation', visible: store.visibility.tabs.Transportation },
-  ].filter(item => item.visible);
+  ];
+
+  const visibleNavigation = navigation.filter(item => item.visible);
 
   useEffect(() => {
-    if (navigation.length > 0 && !navigation.find(n => n.id === activeTab)) {
-      setActiveTab(navigation[0].id as any);
+    if (visibleNavigation.length > 0 && !visibleNavigation.find(n => n.id === activeTab)) {
+      setActiveTab(visibleNavigation[0].id as any);
     }
   }, [store.visibility.tabs]);
 
@@ -98,7 +101,7 @@ export default function DashboardPage() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          {navigation.map((item) => (
+          {navigation.map((item) => item.visible && (
             <button 
               key={item.id} 
               onClick={() => setActiveTab(item.id as any)} 

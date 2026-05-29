@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -21,7 +20,6 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RepairCall, RepairStatus, Inquiry } from '@/lib/types';
 import { 
@@ -59,7 +57,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     model: '',
     screenSize: '',
     techTags: [],
-    pickupRequired: false,
     intakeMode: 'Customer Walk-In',
     status: 'Pending' as RepairStatus,
     visitHistory: []
@@ -120,7 +117,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
         model: '',
         screenSize: '',
         techTags: [],
-        pickupRequired: false,
         intakeMode: 'Customer Walk-In',
         status: 'Pending',
         visitHistory: []

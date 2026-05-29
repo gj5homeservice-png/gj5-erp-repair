@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -63,9 +62,7 @@ export function useErpStore() {
 
     const savedCalls = localStorage.getItem('gj5_repair_calls');
     if (savedCalls) {
-      try {
-        setCalls(JSON.parse(savedCalls));
-      } catch (e) {}
+      try { setCalls(JSON.parse(savedCalls)); } catch (e) {}
     } else {
       const initialTimestamp = new Date().toISOString();
       setCalls([
@@ -80,7 +77,6 @@ export function useErpStore() {
           brand: 'Sony',
           model: 'KD-55X7500H',
           screenSize: '55',
-          pickupRequired: false,
           intakeMode: 'Customer Walk-In',
           createdAt: initialTimestamp,
           updatedAt: initialTimestamp,

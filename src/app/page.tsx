@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Hardcoded 5-item sequence enforcing the vertical tree layout
+  // Hardcoded sequence enforcing the vertical tree layout
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },

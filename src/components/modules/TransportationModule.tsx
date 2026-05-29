@@ -196,7 +196,7 @@ export function TransportationModule({ store }: { store: any }) {
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
                 <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
                 <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
-                <TableHead className="font-headline text-slate-400">Target Destination</TableHead>
+                <TableHead className="font-headline text-slate-400">Target Destination Address</TableHead>
                 <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
                 <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
               </TableRow>

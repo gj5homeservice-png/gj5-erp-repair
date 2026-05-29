@@ -205,7 +205,7 @@ export function RepairingModule({ store }: RepairingModuleProps) {
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Device Profile</TableHead>
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider text-center">
-                  {(activeFilter === 'ExchangePurchase' || filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase')) ? 'Store Location' : 'Warranty Tracker'}
+                  {(activeFilter === 'ExchangePurchase' || filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase')) ? 'STORE LOCATION' : 'WARRANTY TRACKER'}
                 </TableHead>
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Status</TableHead>
                 <TableHead className="text-right font-headline text-slate-400 uppercase text-[11px] tracking-wider">Actions</TableHead>

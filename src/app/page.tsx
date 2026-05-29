@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // HARDCODED SIDEBAR ARRAY SEQUENCE (Implementing image_fe9b27.png Order)
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
@@ -207,7 +208,7 @@ export default function DashboardPage() {
           </div>
         </header>
         <div className="p-8">
-          {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={() => setActiveTab('Billing')} />}
+          {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={(call) => { setActiveTab('Billing'); /* logic to pass data can be added */ }} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}

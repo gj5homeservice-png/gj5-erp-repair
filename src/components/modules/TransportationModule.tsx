@@ -9,7 +9,8 @@ import {
   Paperclip, 
   Send,
   MapPin,
-  Clock
+  Clock,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,21 +129,11 @@ export function TransportationModule({ store }: { store: any }) {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
-                  <Input 
-                    value={formData.runnerName} 
-                    onChange={e => setFormData({...formData, runnerName: e.target.value})} 
-                    placeholder="e.g. Rahul Patel" 
-                    className="bg-slate-950 border-slate-800 h-11" 
-                  />
+                  <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} placeholder="e.g. Rahul Patel" className="bg-slate-950 border-slate-800 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile (10-Digit)</Label>
-                  <Input 
-                    value={formData.runnerMobile} 
-                    onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
-                    placeholder="9988776655" 
-                    className="bg-slate-950 border-slate-800 h-11" 
-                  />
+                  <Input value={formData.runnerMobile} onChange={e => setFormData({...formData, runnerMobile: e.target.value})} placeholder="9988776655" className="bg-slate-950 border-slate-800 h-11" />
                 </div>
               </div>
 
@@ -160,11 +151,7 @@ export function TransportationModule({ store }: { store: any }) {
                 </Select>
               </div>
 
-              <Button 
-                onClick={handleDispatch} 
-                disabled={!formData.runnerName || !formData.runnerMobile || !formData.selectedJobId} 
-                className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase"
-              >
+              <Button onClick={handleDispatch} disabled={!formData.runnerName || !formData.runnerMobile || !formData.selectedJobId} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase">
                 <Send className="w-5 h-5 mr-2" /> 🚀 Dispatch & Send to Runner
               </Button>
             </div>
@@ -184,22 +171,12 @@ export function TransportationModule({ store }: { store: any }) {
                         <Label className="text-[10px] text-slate-500 font-bold uppercase">Option {idx + 1}</Label>
                         <div className="flex items-center gap-2">
                           <input type="file" id={`trans-attach-${idx}`} className="hidden" onChange={(e) => handleAttachment(idx, e)} />
-                          <button 
-                            onClick={() => document.getElementById(`trans-attach-${idx}`)?.click()} 
-                            className={cn(
-                              "px-2 py-1 rounded-md text-[9px] font-bold uppercase flex items-center gap-1.5", 
-                              attachments[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-500"
-                            )}
-                          >
-                            <Paperclip className="w-3 h-3" /> {attachments[idx] ? "Attached" : "Attach Image"}
+                          <button onClick={() => document.getElementById(`trans-attach-${idx}`)?.click()} className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase", attachments[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-500")}>
+                            <Paperclip className="w-3 h-3 mr-1" /> {attachments[idx] ? "Attached" : "Attach Image"}
                           </button>
                         </div>
                       </div>
-                      <Textarea 
-                        value={templates[idx]} 
-                        onChange={e => handleTemplateChange(idx, e.target.value)} 
-                        className="bg-transparent border-0 p-0 text-xs min-h-[50px] focus-visible:ring-0 resize-none leading-relaxed" 
-                      />
+                      <Textarea value={templates[idx]} onChange={e => handleTemplateChange(idx, e.target.value)} className="bg-transparent border-0 p-0 text-xs min-h-[50px] focus-visible:ring-0 resize-none leading-relaxed" />
                     </div>
                   </div>
                 ))}
@@ -220,7 +197,7 @@ export function TransportationModule({ store }: { store: any }) {
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
                 <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
                 <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
-                <TableHead className="font-headline text-slate-400">Target Destination Address</TableHead>
+                <TableHead className="font-headline text-slate-400">Target Destination</TableHead>
                 <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
                 <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
               </TableRow>
@@ -228,36 +205,14 @@ export function TransportationModule({ store }: { store: any }) {
             <TableBody>
               {store.transportation.map((log: any) => (
                 <TableRow key={log.id} className="border-slate-800/50 hover:bg-slate-800/20">
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold">{log.runnerName}</span>
-                      <span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold">{log.customerName}</span>
-                      <span className="text-[10px] text-slate-500">{log.customerMobile}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 max-w-[200px] text-xs text-slate-400">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{log.address}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Clock className="w-3 h-3" />
-                      {format(new Date(log.dispatchTime), 'hh:mm a')}
-                    </div>
-                  </TableCell>
+                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.customerName}</span><span className="text-[10px] text-slate-500">{log.customerMobile}</span></div></TableCell>
+                  <TableCell><div className="flex items-center gap-2 max-w-[200px] text-xs text-slate-400"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{log.address}</span></div></TableCell>
+                  <TableCell><div className="flex items-center gap-2 text-xs text-slate-500"><Clock className="w-3 h-3" />{format(new Date(log.dispatchTime), 'hh:mm a')}</div></TableCell>
                   <TableCell>
                     <Select value={log.status} onValueChange={(v: any) => store.updateTransportationLog(log.id, v)}>
-                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800">
                         <SelectItem value="In-Transit">In-Transit</SelectItem>
                         <SelectItem value="Collected">Collected</SelectItem>
@@ -268,9 +223,7 @@ export function TransportationModule({ store }: { store: any }) {
                 </TableRow>
               ))}
               {store.transportation.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transportation transits.</TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transportation transits.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

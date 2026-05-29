@@ -212,6 +212,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     if (!editingCall && activeTab === 'New Call') {
       finalData = { ...finalData, createdAt: now, updatedAt: now, status: 'Pending', visitHistory: [visitEntry] };
     } else if (activeTab === 'Repeat Call Form') {
+      // RESET AGING: status to pending, updatedAt to now, append visit
       finalData = { ...finalData, updatedAt: now, status: 'Pending', visitHistory: [...(finalData.visitHistory || []), visitEntry] };
     }
 

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -23,13 +22,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { RepairCall, RepairHistoryEntry, RepairStatus, Inquiry } from '@/lib/types';
+import { RepairCall, RepairStatus, Inquiry } from '@/lib/types';
 import { 
-  History as HistoryIcon, 
-  Search, 
   PlusCircle, 
   ChevronRight,
-  RefreshCw,
   Notebook,
   MessageSquare,
   Paperclip
@@ -89,9 +85,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   ]);
   const [templateImages, setTemplateImages] = useState<(string | null)[]>([null, null, null]);
 
-  const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
-
   useEffect(() => {
     const savedTemplates = localStorage.getItem('gj5_modal_whatsapp_templates');
     if (savedTemplates) {
@@ -137,22 +130,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       setCurrentVisitTags([]);
     }
   }, [editingCall, isOpen]);
-
-  const handleSearchRepeat = () => {
-    if (!repeatSearchQuery) return;
-    const results = store.calls.filter((c: RepairCall) => 
-      c.customerId.toLowerCase().includes(repeatSearchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(repeatSearchQuery.toLowerCase()) ||
-      c.mobile.includes(repeatSearchQuery)
-    );
-    setSearchResults(results);
-  };
-
-  const selectProfileForRepeat = (call: RepairCall) => {
-    setFormData(call);
-    setCurrentVisitTags([]);
-    setActiveTab('Repeat Call Form');
-  };
 
   const toggleTag = (tag: string) => {
     setCurrentVisitTags(prev => 
@@ -200,8 +177,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     let finalData = { ...formData, brand: finalBrand, techTags: currentVisitTags } as RepairCall;
     const now = new Date().toISOString();
 
-    const visitEntry: RepairHistoryEntry = {
-      visitNumber: (finalData.visitHistory?.length || 0) + 1,
+    const visitEntry = {
+      visitNumber: 1,
       timestamp: now,
       issue: currentVisitIssue,
       techTags: currentVisitTags,
@@ -209,11 +186,8 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       statusAtTime: 'Pending'
     };
 
-    if (!editingCall && activeTab === 'New Call') {
+    if (!editingCall) {
       finalData = { ...finalData, createdAt: now, updatedAt: now, status: 'Pending', visitHistory: [visitEntry] };
-    } else if (activeTab === 'Repeat Call Form') {
-      // RESET AGING: status to pending, updatedAt to now, append visit
-      finalData = { ...finalData, updatedAt: now, status: 'Pending', visitHistory: [...(finalData.visitHistory || []), visitEntry] };
     }
 
     // Trigger WhatsApp
@@ -245,8 +219,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
             </div>
             <TabsList className="bg-slate-800/50 border border-slate-700 h-11">
               <TabsTrigger value="New Call" className="px-6">New Call</TabsTrigger>
-              <TabsTrigger value="Repeat Call" className="px-6">Repeat Search</TabsTrigger>
-              <TabsTrigger value="Repeat Call Form" disabled={activeTab !== 'Repeat Call Form'} className="px-6">Re-Repair Log</TabsTrigger>
               <TabsTrigger value="Inquiry" className="px-6">Inquiry</TabsTrigger>
             </TabsList>
           </div>
@@ -336,106 +308,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                       </div>
                     </div>
                   </div>
-                </TabsContent>
-                <TabsContent value="Repeat Call" className="animate-in fade-in duration-300">
-                   <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
-                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20">
-                         <RefreshCw className="w-8 h-8 text-[#0066FF]" />
-                      </div>
-                      <div className="flex gap-2">
-                         <div className="relative flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                            <Input 
-                              value={repeatSearchQuery} 
-                              onChange={e => setRepeatSearchQuery(e.target.value)} 
-                              className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" 
-                              placeholder="Search Mobile, Job ID or Customer ID..." 
-                            />
-                         </div>
-                         <Button onClick={handleSearchRepeat} className="bg-[#0066FF] hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Search</Button>
-                      </div>
-                      {searchResults.map(result => (
-                        <div key={result.id} className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between hover:bg-slate-800/30">
-                           <div className="text-left">
-                              <p className="font-bold text-slate-100">{result.customerName}</p>
-                              <p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p>
-                           </div>
-                           <Button onClick={() => selectProfileForRepeat(result)} className="bg-[#0066FF] hover:bg-blue-700 rounded-xl">Re-Open</Button>
-                        </div>
-                      ))}
-                   </div>
-                </TabsContent>
-                <TabsContent value="Repeat Call Form" className="space-y-8 animate-in zoom-in-95">
-                   <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6">
-                      <div className="flex justify-between items-center mb-4">
-                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                            <HistoryIcon className="w-4 h-4" /> Visit History
-                         </h3>
-                         <Badge className="bg-[#0066FF] px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge>
-                      </div>
-                      <div className="max-h-[250px] overflow-y-auto border border-slate-800 rounded-xl bg-slate-950/50">
-                         <table className="w-full text-[11px] text-left">
-                            <thead className="bg-slate-900 text-slate-500 uppercase font-bold sticky top-0">
-                               <tr>
-                                  <th className="p-4">Visit #</th>
-                                  <th className="p-4">Date</th>
-                                  <th className="p-4">Issue</th>
-                                  <th className="p-4 text-right">Status</th>
-                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800">
-                               {formData.visitHistory?.map((h, i) => (
-                                 <tr key={i} className="hover:bg-slate-800/20">
-                                    <td className="p-4 font-bold">#{h.visitNumber}</td>
-                                    <td className="p-4 font-code">{format(new Date(h.timestamp), 'dd/MM/yyyy')}</td>
-                                    <td className="p-4">{h.issue}</td>
-                                    <td className="p-4 text-right">
-                                       <Badge variant="outline" className="text-[9px]">{h.statusAtTime}</Badge>
-                                    </td>
-                                 </tr>
-                               ))}
-                            </tbody>
-                         </table>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                         <Label>Locked Job ID</Label>
-                         <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label>Locked Customer ID</Label>
-                         <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
-                      </div>
-                   </div>
-                   <div className="space-y-4">
-                      <div className="space-y-2">
-                         <Label>Current Visit Issue</Label>
-                         <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
-                            <SelectTrigger className="bg-slate-900 h-12">
-                               <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-slate-900">
-                               <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
-                               <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                         </Select>
-                      </div>
-                      <div className="flex flex-row gap-2">
-                         {TECH_TAGS.map(tag => (
-                           <button 
-                             key={tag} 
-                             onClick={() => toggleTag(tag)} 
-                             className={cn(
-                               "flex-1 py-3 rounded-xl text-[10px] font-bold border", 
-                               currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800"
-                             )}
-                           >
-                             {tag}
-                           </button>
-                         ))}
-                      </div>
-                   </div>
                 </TabsContent>
                 <TabsContent value="Inquiry" className="animate-in fade-in zoom-in-95 duration-300">
                   <div className="space-y-8 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">

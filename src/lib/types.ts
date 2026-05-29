@@ -1,4 +1,3 @@
-
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface RepairHistoryEntry {

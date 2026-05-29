@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -17,7 +16,6 @@ export interface VisibilitySettings {
     pending: boolean;
     completed: boolean;
     rejected: boolean;
-    repeat: boolean;
     exchange: boolean;
     warranty: boolean;
   };
@@ -29,7 +27,6 @@ export function useErpStore() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [transportation, setTransportation] = useState<TransportationLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
@@ -47,7 +44,6 @@ export function useErpStore() {
       pending: true,
       completed: true,
       rejected: true,
-      repeat: true,
       exchange: true,
       warranty: true
     }
@@ -95,7 +91,7 @@ export function useErpStore() {
               visitNumber: 1,
               timestamp: initialTimestamp,
               issue: 'Sound OK - No Video',
-              notes: 'Initial check, backlight suspected',
+              notes: 'Initial check',
               statusAtTime: 'Pending'
             }
           ]
@@ -116,11 +112,11 @@ export function useErpStore() {
   }, []);
 
   useEffect(() => {
-    if (calls.length > 0) localStorage.setItem('gj5_repair_calls', JSON.stringify(calls));
+    localStorage.setItem('gj5_repair_calls', JSON.stringify(calls));
   }, [calls]);
 
   useEffect(() => {
-    if (inquiries.length > 0) localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
+    localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
   }, [inquiries]);
 
   useEffect(() => {

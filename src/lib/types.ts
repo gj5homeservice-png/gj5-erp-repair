@@ -1,16 +1,5 @@
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
-export interface RepairHistoryEntry {
-  timestamp: string;
-  issue: string;
-  technician?: string;
-  techTags?: string[];
-  notes: string;
-  statusAtTime: RepairStatus;
-  visitNumber: number;
-  resolution?: string;
-}
-
 export interface RepairCall {
   id: string; // Job ID e.g. TV1001
   customerId: string; // GJ51001
@@ -22,16 +11,15 @@ export interface RepairCall {
   brand: string;
   model: string;
   screenSize: string;
-  techTags?: string[];
+  techTags: string[];
   intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
   createdAt: string;
   updatedAt: string;
   status: RepairStatus;
-  visitHistory: RepairHistoryEntry[];
   warrantyDuration?: string;
-  warrantyCustomValue?: string;
   warrantyExpiry?: string;
   storeLocation?: string;
+  problemDescription: string;
 }
 
 export interface Inquiry {
@@ -86,20 +74,6 @@ export interface TransportationLog {
   status: LogisticsStatus;
 }
 
-export type VehicleStatus = 'Available' | 'On Route' | 'Maintenance' | 'Completed';
-
-export interface Vehicle {
-  id: string;
-  vehicleNumber: string;
-  vehicleType: string;
-  driverName: string;
-  driverMobile: string;
-  fuelType: string;
-  capacity: string;
-  insuranceExpiry: string;
-  status: VehicleStatus;
-}
-
 export interface TransportEntry {
   id: string;
   vehicleNumber: string;
@@ -109,6 +83,6 @@ export interface TransportEntry {
   departureDate: string;
   arrivalDate?: string;
   fuelCost: number;
-  status: VehicleStatus;
+  status: 'Available' | 'On Route' | 'Maintenance' | 'Completed';
   createdAt: string;
 }

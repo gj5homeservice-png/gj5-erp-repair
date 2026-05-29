@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // STRICT SIDEBAR NAVIGATION TREE HARDCODE
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
@@ -133,16 +134,16 @@ export default function DashboardPage() {
               </DialogHeader>
               <div className="space-y-6 py-4 overflow-y-auto max-h-[70vh] pr-2">
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding & Identity</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding</h4>
                   <div className="flex items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
                     <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
                       {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Shop Logo" /> : <ImageIcon className="w-8 h-8 text-slate-700" />}
                     </div>
                     <div className="flex-1 space-y-3">
-                      <p className="text-sm font-medium text-slate-300">Shop Logo Asset</p>
+                      <p className="text-sm font-medium text-slate-300">Logo Asset</p>
                       <div className="flex gap-2">
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                        <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600"><Upload className="w-4 h-4 mr-2" /> Upload Logo</Button>
+                        <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600"><Upload className="w-4 h-4 mr-2" /> Upload</Button>
                         {store.shopLogo && <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>}
                       </div>
                     </div>
@@ -150,7 +151,7 @@ export default function DashboardPage() {
                 </div>
                 <Separator className="bg-slate-800" />
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Module Toggles</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Toggles</h4>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.keys(store.visibility.tabs).map((tab) => (
                       <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
@@ -162,7 +163,7 @@ export default function DashboardPage() {
                 </div>
                 <Separator className="bg-slate-800" />
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> Analytics KPI Toggles</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 5-Card Analytics</h4>
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       { id: 'totalActive', label: 'Total Active' },

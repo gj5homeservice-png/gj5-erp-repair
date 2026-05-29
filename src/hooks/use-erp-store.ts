@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, Vehicle, TransportEntry } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, TransportEntry } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -15,7 +15,6 @@ export interface VisibilitySettings {
     totalActive: boolean;
     pending: boolean;
     completed: boolean;
-    repeat: boolean;
     rejected: boolean;
     exchange: boolean;
   };
@@ -33,7 +32,6 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
     totalActive: true,
     pending: true,
     completed: true,
-    repeat: true,
     rejected: true,
     exchange: true
   }
@@ -45,12 +43,9 @@ export function useErpStore() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [transportation, setTransportation] = useState<TransportationLog[]>([]);
-  const [transportEntries, setTransportEntries] = useState<TransportEntry[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
-
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
 
   useEffect(() => {
@@ -66,52 +61,24 @@ export function useErpStore() {
           kpis: { ...DEFAULT_VISIBILITY.kpis, ...parsed.kpis }
         });
       } catch (e) {
-        console.error("Failed to parse visibility settings", e);
+        setVisibility(DEFAULT_VISIBILITY);
       }
     }
 
     const savedCalls = localStorage.getItem('gj5_repair_calls');
     if (savedCalls) {
       try { setCalls(JSON.parse(savedCalls)); } catch (e) {}
-    } else {
-      const initialTimestamp = new Date().toISOString();
-      setCalls([
-        {
-          id: 'TV1001',
-          customerId: 'GJ51001',
-          customerName: 'Suresh Kumar',
-          mobile: '9988776655',
-          address: 'Adajan, Surat',
-          pincode: '395009',
-          category: 'TV',
-          brand: 'Sony',
-          model: 'KD-55X7500H',
-          screenSize: '55',
-          intakeMode: 'Customer Walk-In',
-          createdAt: initialTimestamp,
-          updatedAt: initialTimestamp,
-          status: 'Pending',
-          visitHistory: [
-            {
-              visitNumber: 1,
-              timestamp: initialTimestamp,
-              issue: 'Sound OK - No Video',
-              notes: 'Initial check',
-              statusAtTime: 'Pending'
-            }
-          ]
-        }
-      ]);
     }
 
-    const savedEntries = localStorage.getItem('gj5_transport_entries');
-    if (savedEntries) try { setTransportEntries(JSON.parse(savedEntries)); } catch (e) {}
-
     const savedInquiries = localStorage.getItem('gj5_inquiries');
-    if (savedInquiries) try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
+    if (savedInquiries) {
+      try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
+    }
 
-    const savedVehicles = localStorage.getItem('gj5_vehicles');
-    if (savedVehicles) try { setVehicles(JSON.parse(savedVehicles)); } catch (e) {}
+    const savedLogs = localStorage.getItem('gj5_transport_logs');
+    if (savedLogs) {
+      try { setTransportationLogs(JSON.parse(savedLogs)); } catch (e) {}
+    }
 
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
@@ -124,22 +91,12 @@ export function useErpStore() {
   }, [calls]);
 
   useEffect(() => {
-    localStorage.setItem('gj5_transport_entries', JSON.stringify(transportEntries));
-  }, [transportEntries]);
-
-  useEffect(() => {
     localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
   }, [inquiries]);
 
   useEffect(() => {
-    localStorage.setItem('gj5_vehicles', JSON.stringify(vehicles));
-  }, [vehicles]);
-
-  const handleSetShopLogo = (logo: string | null) => {
-    setShopLogo(logo);
-    if (logo) localStorage.setItem('gj5_shop_logo', logo);
-    else localStorage.removeItem('gj5_shop_logo');
-  };
+    localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs));
+  }, [transportationLogs]);
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
@@ -156,6 +113,11 @@ export function useErpStore() {
     setWalletBalance(prev => prev - expense.amount);
   };
 
+  const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
+  const updateTransportLogStatus = (id: string, status: any) => {
+    setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  };
+
   const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => {
     const existing = prev.findIndex(r => r.employeeId === record.employeeId && r.date === record.date);
     if (existing > -1) {
@@ -166,24 +128,15 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
-  const addTransportEntry = (entry: TransportEntry) => setTransportEntries(prev => [entry, ...prev]);
-  const updateTransportEntry = (updated: TransportEntry) => setTransportEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
-  const deleteTransportEntry = (id: string) => setTransportEntries(prev => prev.filter(e => e.id !== id));
-
-  const addVehicle = (vehicle: Vehicle) => setVehicles(prev => [vehicle, ...prev]);
-  const updateVehicle = (updatedVehicle: Vehicle) => setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-  const deleteVehicle = (id: string) => setVehicles(prev => prev.filter(v => v.id !== id));
-
   return {
     calls, addCall, updateCall,
     inquiries, addInquiry,
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
-    transportEntries, addTransportEntry, updateTransportEntry, deleteTransportEntry,
-    vehicles, addVehicle, updateVehicle, deleteVehicle,
+    transportationLogs, addTransportLog, updateTransportLogStatus,
     walletBalance, setWalletBalance,
-    shopLogo, setShopLogo: handleSetShopLogo,
+    shopLogo, setShopLogo,
     visibility, updateVisibility
   };
 }

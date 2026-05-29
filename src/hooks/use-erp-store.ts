@@ -20,6 +20,23 @@ export interface VisibilitySettings {
   };
 }
 
+const DEFAULT_VISIBILITY: VisibilitySettings = {
+  tabs: {
+    Repairing: true,
+    Billing: true,
+    Employees: true,
+    'E-Wallet': true,
+    Transportation: true
+  },
+  kpis: {
+    totalActive: true,
+    pending: true,
+    completed: true,
+    rejected: true,
+    exchange: true
+  }
+};
+
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -31,22 +48,7 @@ export function useErpStore() {
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
 
-  const [visibility, setVisibility] = useState<VisibilitySettings>({
-    tabs: {
-      Repairing: true,
-      Billing: true,
-      Employees: true,
-      'E-Wallet': true,
-      Transportation: true
-    },
-    kpis: {
-      totalActive: true,
-      pending: true,
-      completed: true,
-      rejected: true,
-      exchange: true
-    }
-  });
+  const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
 
   useEffect(() => {
     const savedLogo = localStorage.getItem('gj5_shop_logo');
@@ -55,7 +57,12 @@ export function useErpStore() {
     const savedVisibility = localStorage.getItem('gj5_visibility_settings');
     if (savedVisibility) {
       try {
-        setVisibility(JSON.parse(savedVisibility));
+        const parsed = JSON.parse(savedVisibility);
+        // Merge with defaults to ensure new tabs like 'Transportation' appear automatically
+        setVisibility({
+          tabs: { ...DEFAULT_VISIBILITY.tabs, ...parsed.tabs },
+          kpis: { ...DEFAULT_VISIBILITY.kpis, ...parsed.kpis }
+        });
       } catch (e) {
         console.error("Failed to parse visibility settings", e);
       }

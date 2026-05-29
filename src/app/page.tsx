@@ -38,27 +38,28 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
+type ActiveTab = 'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Transportation';
+
 export default function DashboardPage() {
   const store = useErpStore();
-  const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Transportation'>('Repairing');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Hardcoded sequence enforcing the vertical tree layout
   const navigation = [
-    { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
-    { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
-    { name: 'Employees', icon: Users, id: 'Employees', visible: store.visibility.tabs.Employees },
-    { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet', visible: store.visibility.tabs['E-Wallet'] },
-    { name: 'Transportation', icon: Truck, id: 'Transportation', visible: store.visibility.tabs.Transportation },
+    { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
+    { name: 'Billing', icon: ReceiptText, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
+    { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
+    { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
+    { name: 'Transportation', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
 
   const visibleNavigation = navigation.filter(item => item.visible);
 
   useEffect(() => {
     if (visibleNavigation.length > 0 && !visibleNavigation.find(n => n.id === activeTab)) {
-      setActiveTab(visibleNavigation[0].id as any);
+      setActiveTab(visibleNavigation[0].id);
     }
   }, [store.visibility.tabs]);
 
@@ -95,7 +96,7 @@ export default function DashboardPage() {
       )}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
-            {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="G" /> : "G"}
+            {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
           </div>
           {isSidebarOpen && <span className="font-headline font-bold text-xl tracking-tight">GJ5 PLUS</span>}
         </div>
@@ -104,7 +105,7 @@ export default function DashboardPage() {
           {navigation.map((item) => item.visible && (
             <button 
               key={item.id} 
-              onClick={() => setActiveTab(item.id as any)} 
+              onClick={() => setActiveTab(item.id)} 
               className={cn(
                 "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", 
                 activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"

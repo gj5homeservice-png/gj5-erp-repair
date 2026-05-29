@@ -15,6 +15,7 @@ export interface VisibilitySettings {
     totalActive: boolean;
     pending: boolean;
     completed: boolean;
+    repeat: boolean;
     rejected: boolean;
     exchange: boolean;
   };
@@ -32,6 +33,7 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
     totalActive: true,
     pending: true,
     completed: true,
+    repeat: true,
     rejected: true,
     exchange: true
   }

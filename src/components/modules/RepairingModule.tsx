@@ -13,7 +13,8 @@ import {
   Search,
   Tv,
   Printer as PrinterIcon,
-  NotebookTabs
+  NotebookTabs,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,7 +51,7 @@ interface RepairingModuleProps {
   store: any;
 }
 
-type FilterStatus = 'All' | 'Active' | RepairStatus | 'ExchangePurchase';
+type FilterStatus = 'All' | 'Active' | RepairStatus | 'ExchangePurchase' | 'Repeat';
 type ViewMode = 'Repairing' | 'Inquiries';
 
 export function RepairingModule({ store }: RepairingModuleProps) {
@@ -71,9 +72,10 @@ export function RepairingModule({ store }: RepairingModuleProps) {
     const totalActive = store.calls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
+    const repeat = store.calls.filter((c: RepairCall) => c.visitHistory.length > 1).length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
     const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
-    return { totalActive, pending, completed, rejected, exchangePurchase };
+    return { totalActive, pending, completed, repeat, rejected, exchangePurchase };
   }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
@@ -87,6 +89,7 @@ export function RepairingModule({ store }: RepairingModuleProps) {
       if (activeFilter === 'Active') matchesFilter = c.status !== 'Completed' && c.status !== 'Rejected';
       else if (activeFilter === 'Pending') matchesFilter = c.status === 'Pending';
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
+      else if (activeFilter === 'Repeat') matchesFilter = c.visitHistory.length > 1;
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
 
@@ -149,11 +152,11 @@ export function RepairingModule({ store }: RepairingModuleProps) {
     return diff > 0 ? diff : 0;
   };
 
-  // Hardcoded 5-card analytics header
   const visibleKpis = [
     { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', active: activeFilter === 'Active', filter: 'Active' },
     { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'Pending', filter: 'Pending' },
     { id: 'completed', title: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'bg-emerald-500', active: activeFilter === 'Completed', filter: 'Completed' },
+    { id: 'repeat', title: 'Repeat Call', value: stats.repeat, icon: RotateCcw, color: 'bg-[#FF8C00]', active: activeFilter === 'Repeat', filter: 'Repeat' },
     { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', active: activeFilter === 'Rejected', filter: 'Rejected' },
     { id: 'exchange', title: 'Exchange/Pur', value: stats.exchangePurchase, icon: Tv, color: 'bg-cyan-500', active: activeFilter === 'ExchangePurchase', filter: 'ExchangePurchase' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
@@ -161,7 +164,7 @@ export function RepairingModule({ store }: RepairingModuleProps) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 flex-1 w-full">
           {visibleKpis.map(kpi => (
             <StatCard 
               key={kpi.id}
@@ -217,10 +220,20 @@ export function RepairingModule({ store }: RepairingModuleProps) {
                 const showWarranty = call.status === 'Pending' || call.status === 'Completed';
                 const isRejected = call.status === 'Rejected';
                 const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
+                const visitsCount = call.visitHistory.length;
                 
                 return (
                   <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
-                    <TableCell className="font-code font-bold text-blue-400">{call.id}</TableCell>
+                    <TableCell className="font-code font-bold text-blue-400">
+                      <div className="flex flex-col gap-1">
+                        {call.id}
+                        {visitsCount > 1 && (
+                          <Badge variant="outline" className="w-fit text-[9px] bg-orange-500/10 text-orange-400 border-orange-500/20">
+                            VISITS: {visitsCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col"><div className="flex items-center gap-1.5"><span className="font-semibold text-slate-100">{call.customerName}</span></div><span className="text-xs text-slate-500 flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {call.mobile}</span></div>
                     </TableCell>

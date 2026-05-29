@@ -32,7 +32,6 @@ export function useErpStore() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [transportation, setTransportation] = useState<TransportationLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
-  const [whatsappGateway, setWhatsappGateway] = useState<string>('https://web.whatsapp.com/');
   const [shopLogo, setShopLogo] = useState<string | null>(null);
 
   const [visibility, setVisibility] = useState<VisibilitySettings>({
@@ -67,52 +66,71 @@ export function useErpStore() {
       }
     }
 
+    const savedCalls = localStorage.getItem('gj5_repair_calls');
+    if (savedCalls) {
+      try {
+        setCalls(JSON.parse(savedCalls));
+      } catch (e) {}
+    } else {
+      const initialTimestamp = new Date().toISOString();
+      setCalls([
+        {
+          id: 'TV1001',
+          customerId: 'GJ51001',
+          customerName: 'Suresh Kumar',
+          mobile: '9988776655',
+          address: 'Adajan, Surat',
+          pincode: '395009',
+          category: 'TV',
+          brand: 'Sony',
+          model: 'KD-55X7500H',
+          screenSize: '55',
+          pickupRequired: false,
+          intakeMode: 'Customer Walk-In',
+          createdAt: initialTimestamp,
+          updatedAt: initialTimestamp,
+          status: 'Pending',
+          visitHistory: [
+            {
+              visitNumber: 1,
+              timestamp: initialTimestamp,
+              issue: 'Sound OK - No Video',
+              notes: 'Initial check, backlight suspected',
+              statusAtTime: 'Pending'
+            }
+          ]
+        }
+      ]);
+    }
+
+    const savedInquiries = localStorage.getItem('gj5_inquiries');
+    if (savedInquiries) try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
+
+    const savedLogistics = localStorage.getItem('gj5_transportation');
+    if (savedLogistics) try { setTransportation(JSON.parse(savedLogistics)); } catch (e) {}
+
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
       { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
     ]);
-
-    const initialTimestamp = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-    setCalls([
-      {
-        id: 'TV1001',
-        customerId: 'GJ51001',
-        customerName: 'Suresh Kumar',
-        mobile: '9988776655',
-        address: 'Adajan, Surat',
-        pincode: '395009',
-        category: 'TV',
-        brand: 'Sony',
-        model: 'KD-55X7500H',
-        screenSize: '55',
-        technician: 'Rajesh Sharma',
-        pickupRequired: false,
-        intakeMode: 'Customer Walk-In',
-        createdAt: initialTimestamp,
-        updatedAt: initialTimestamp,
-        status: 'Pending',
-        warrantyDuration: 'No Warranty',
-        visitHistory: [
-          {
-            visitNumber: 1,
-            timestamp: initialTimestamp,
-            issue: 'Sound OK - No Video',
-            technician: 'Rajesh Sharma',
-            notes: 'Initial check, backlight suspected',
-            statusAtTime: 'Pending'
-          }
-        ]
-      }
-    ]);
   }, []);
+
+  useEffect(() => {
+    if (calls.length > 0) localStorage.setItem('gj5_repair_calls', JSON.stringify(calls));
+  }, [calls]);
+
+  useEffect(() => {
+    if (inquiries.length > 0) localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_transportation', JSON.stringify(transportation));
+  }, [transportation]);
 
   const handleSetShopLogo = (logo: string | null) => {
     setShopLogo(logo);
-    if (logo) {
-      localStorage.setItem('gj5_shop_logo', logo);
-    } else {
-      localStorage.removeItem('gj5_shop_logo');
-    }
+    if (logo) localStorage.setItem('gj5_shop_logo', logo);
+    else localStorage.removeItem('gj5_shop_logo');
   };
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
@@ -152,7 +170,6 @@ export function useErpStore() {
     expenses, addExpense,
     transportation, addTransportationLog, updateTransportationLog,
     walletBalance, setWalletBalance,
-    whatsappGateway, setWhatsappGateway,
     shopLogo, setShopLogo: handleSetShopLogo,
     visibility, updateVisibility
   };

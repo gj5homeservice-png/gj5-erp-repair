@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, Vehicle } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, Vehicle, TransportEntry } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -44,6 +44,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transportation, setTransportation] = useState<TransportationLog[]>([]);
+  const [transportEntries, setTransportEntries] = useState<TransportEntry[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
@@ -58,7 +59,6 @@ export function useErpStore() {
     if (savedVisibility) {
       try {
         const parsed = JSON.parse(savedVisibility);
-        // Merge with defaults to ensure new tabs like 'Transportation' appear automatically
         setVisibility({
           tabs: { ...DEFAULT_VISIBILITY.tabs, ...parsed.tabs },
           kpis: { ...DEFAULT_VISIBILITY.kpis, ...parsed.kpis }
@@ -102,11 +102,11 @@ export function useErpStore() {
       ]);
     }
 
+    const savedEntries = localStorage.getItem('gj5_transport_entries');
+    if (savedEntries) try { setTransportEntries(JSON.parse(savedEntries)); } catch (e) {}
+
     const savedInquiries = localStorage.getItem('gj5_inquiries');
     if (savedInquiries) try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
-
-    const savedTrans = localStorage.getItem('gj5_transportation');
-    if (savedTrans) try { setTransportation(JSON.parse(savedTrans)); } catch (e) {}
 
     const savedVehicles = localStorage.getItem('gj5_vehicles');
     if (savedVehicles) try { setVehicles(JSON.parse(savedVehicles)); } catch (e) {}
@@ -122,12 +122,12 @@ export function useErpStore() {
   }, [calls]);
 
   useEffect(() => {
-    localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
-  }, [inquiries]);
+    localStorage.setItem('gj5_transport_entries', JSON.stringify(transportEntries));
+  }, [transportEntries]);
 
   useEffect(() => {
-    localStorage.setItem('gj5_transportation', JSON.stringify(transportation));
-  }, [transportation]);
+    localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
 
   useEffect(() => {
     localStorage.setItem('gj5_vehicles', JSON.stringify(vehicles));
@@ -164,9 +164,9 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
-  const addTransportationLog = (log: TransportationLog) => setTransportation(prev => [log, ...prev]);
-  const updateTransportationLog = (id: string, status: TransportationLog['status']) => 
-    setTransportation(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  const addTransportEntry = (entry: TransportEntry) => setTransportEntries(prev => [entry, ...prev]);
+  const updateTransportEntry = (updated: TransportEntry) => setTransportEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+  const deleteTransportEntry = (id: string) => setTransportEntries(prev => prev.filter(e => e.id !== id));
 
   const addVehicle = (vehicle: Vehicle) => setVehicles(prev => [vehicle, ...prev]);
   const updateVehicle = (updatedVehicle: Vehicle) => setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
@@ -178,7 +178,7 @@ export function useErpStore() {
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
-    transportation, addTransportationLog, updateTransportationLog,
+    transportEntries, addTransportEntry, updateTransportEntry, deleteTransportEntry,
     vehicles, addVehicle, updateVehicle, deleteVehicle,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo: handleSetShopLogo,

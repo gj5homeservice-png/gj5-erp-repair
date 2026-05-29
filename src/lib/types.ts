@@ -85,7 +85,7 @@ export interface TransportationLog {
   status: LogisticsStatus;
 }
 
-export type VehicleStatus = 'Available' | 'On Route' | 'Maintenance';
+export type VehicleStatus = 'Available' | 'On Route' | 'Maintenance' | 'Completed';
 
 export interface Vehicle {
   id: string;
@@ -97,4 +97,17 @@ export interface Vehicle {
   capacity: string;
   insuranceExpiry: string;
   status: VehicleStatus;
+}
+
+export interface TransportEntry {
+  id: string;
+  vehicleNumber: string;
+  driverName: string;
+  vehicleType: string;
+  route: string;
+  departureDate: string;
+  arrivalDate?: string;
+  fuelCost: number;
+  status: VehicleStatus;
+  createdAt: string;
 }

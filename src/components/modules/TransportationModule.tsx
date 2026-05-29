@@ -1,35 +1,25 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  Truck, 
-  Car, 
-  CheckCircle, 
-  Activity, 
-  Wrench, 
   Plus, 
-  Trash2, 
-  FileText, 
-  Smartphone, 
+  Search, 
+  Truck, 
   User, 
-  Fuel, 
-  Weight,
+  Navigation, 
+  Calendar, 
+  CreditCard,
+  CheckCircle2,
   Clock,
-  Package,
-  MapPin,
-  Send
+  XCircle,
+  MoreVertical,
+  Printer,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Table, 
   TableBody, 
@@ -38,255 +28,178 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter
-} from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { TransportEntry, VehicleStatus } from '@/lib/types';
+import { TransportModal } from './transportation/TransportModal';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Vehicle, VehicleStatus } from '@/lib/types';
 
 export function TransportationModule({ store }: { store: any }) {
-  const [isVehicleModalOpen, setVehicleModalOpen] = useState(false);
-  const [newVehicle, setNewVehicle] = useState<Partial<Vehicle>>({
-    vehicleNumber: '',
-    vehicleType: 'Tempo',
-    driverName: '',
-    driverMobile: '',
-    fuelType: 'Diesel',
-    capacity: '',
-    insuranceExpiry: '',
-    status: 'Available'
-  });
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TransportEntry | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<VehicleStatus | 'All'>('All');
 
-  const stats = {
-    totalVehicles: store.vehicles.length,
-    available: store.vehicles.filter((v: any) => v.status === 'Available').length,
-    onRoute: store.vehicles.filter((v: any) => v.status === 'On Route').length,
-    maintenance: store.vehicles.filter((v: any) => v.status === 'Maintenance').length
-  };
+  const stats = useMemo(() => {
+    const totalVehicles = store.vehicles.length;
+    const available = store.vehicles.filter((v: any) => v.status === 'Available').length;
+    const onRoute = store.vehicles.filter((v: any) => v.status === 'On Route').length;
+    const maintenance = store.vehicles.filter((v: any) => v.status === 'Maintenance').length;
+    const totalFuelCost = store.transportEntries.reduce((sum: number, e: any) => sum + e.fuelCost, 0);
 
-  const handleAddVehicle = () => {
-    if (!newVehicle.vehicleNumber || !newVehicle.driverName) return;
-    
-    const vehicle: Vehicle = {
-      id: `VEH${Date.now()}`,
-      vehicleNumber: newVehicle.vehicleNumber!,
-      vehicleType: newVehicle.vehicleType!,
-      driverName: newVehicle.driverName!,
-      driverMobile: newVehicle.driverMobile!,
-      fuelType: newVehicle.fuelType!,
-      capacity: newVehicle.capacity!,
-      insuranceExpiry: newVehicle.insuranceExpiry!,
-      status: newVehicle.status as VehicleStatus
-    };
+    return { totalVehicles, available, onRoute, maintenance, totalFuelCost };
+  }, [store.vehicles, store.transportEntries]);
 
-    store.addVehicle(vehicle);
-    setVehicleModalOpen(false);
-    setNewVehicle({
-      vehicleNumber: '',
-      vehicleType: 'Tempo',
-      driverName: '',
-      driverMobile: '',
-      fuelType: 'Diesel',
-      capacity: '',
-      insuranceExpiry: '',
-      status: 'Available'
+  const filteredEntries = useMemo(() => {
+    return store.transportEntries.filter((entry: TransportEntry) => {
+      const matchesSearch = 
+        entry.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.route.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesFilter = activeFilter === 'All' || entry.status === activeFilter;
+
+      return matchesSearch && matchesFilter;
     });
+  }, [store.transportEntries, searchQuery, activeFilter]);
+
+  const handleStatusChange = (id: string, status: VehicleStatus) => {
+    const entry = store.transportEntries.find((e: any) => e.id === id);
+    if (entry) {
+      store.updateTransportEntry({ ...entry, status });
+    }
   };
+
+  const kpis = [
+    { id: 'total', title: 'Total Vehicles', value: stats.totalVehicles, icon: Truck, color: 'bg-[#0066FF]', active: activeFilter === 'All', filter: 'All' },
+    { id: 'available', title: 'Available', value: stats.available, icon: CheckCircle2, color: 'bg-emerald-500', active: activeFilter === 'Available', filter: 'Available' },
+    { id: 'onroute', title: 'On Route', value: stats.onRoute, icon: Navigation, color: 'bg-[#FFD700]', textColor: 'text-black', active: activeFilter === 'On Route', filter: 'On Route' },
+    { id: 'maintenance', title: 'Maintenance', value: stats.maintenance, icon: Clock, color: 'bg-[#FF3366]', active: activeFilter === 'Maintenance', filter: 'Maintenance' },
+    { id: 'cost', title: 'Total Transport Cost', value: `₹${stats.totalFuelCost}`, icon: CreditCard, color: 'bg-cyan-500', active: false, filter: 'All' },
+  ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Dashboard KPI Header */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Vehicles" value={stats.totalVehicles} icon={Car} color="bg-blue-500" description="Fleet size" />
-        <StatCard title="Available" value={stats.available} icon={CheckCircle} color="bg-emerald-500" description="Ready for dispatch" />
-        <StatCard title="On Route" value={stats.onRoute} icon={Activity} color="bg-amber-500" description="Active deliveries" />
-        <StatCard title="Maintenance" value={stats.maintenance} icon={Wrench} color="bg-rose-500" description="In service center" />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {kpis.map(kpi => (
+          <StatCard 
+            key={kpi.id}
+            title={kpi.title} 
+            value={kpi.value} 
+            icon={kpi.icon} 
+            color={kpi.color} 
+            textColor={kpi.textColor}
+            active={kpi.active}
+            onClick={() => setActiveFilter(kpi.filter as any)}
+          />
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        <Card className="bg-slate-900/40 border-slate-800">
-          <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 font-headline text-xl">
-              <Car className="w-6 h-6 text-[#FFD700]" />
-              Fleet Registry & Management
-            </CardTitle>
-            <Dialog open={isVehicleModalOpen} onOpenChange={setVehicleModalOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-[#0066FF] h-9">
-                  <Plus className="w-4 h-4 mr-2" /> Register Vehicle
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#0F172A] border-slate-800 text-slate-100 max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
-                    <Car className="w-6 h-6 text-[#0066FF]" /> Vehicle Registration
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-6 py-4">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><FileText className="w-4 h-4" /> Vehicle Number</Label>
-                    <Input 
-                      value={newVehicle.vehicleNumber} 
-                      onChange={e => setNewVehicle({...newVehicle, vehicleNumber: e.target.value})}
-                      placeholder="GJ-05-XX-1234"
-                      className="bg-slate-950 border-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Truck className="w-4 h-4" /> Vehicle Type</Label>
-                    <Select value={newVehicle.vehicleType} onValueChange={v => setNewVehicle({...newVehicle, vehicleType: v})}>
-                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="Bike">Bike</SelectItem>
-                        <SelectItem value="Car">Car</SelectItem>
-                        <SelectItem value="Tempo">Tempo</SelectItem>
-                        <SelectItem value="Truck">Truck</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Driver Name</Label>
-                    <Input 
-                      value={newVehicle.driverName} 
-                      onChange={e => setNewVehicle({...newVehicle, driverName: e.target.value})}
-                      placeholder="Enter driver name"
-                      className="bg-slate-950 border-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> Driver Mobile</Label>
-                    <Input 
-                      value={newVehicle.driverMobile} 
-                      onChange={e => setNewVehicle({...newVehicle, driverMobile: e.target.value})}
-                      placeholder="10-digit number"
-                      className="bg-slate-950 border-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Fuel className="w-4 h-4" /> Fuel Type</Label>
-                    <Select value={newVehicle.fuelType} onValueChange={v => setNewVehicle({...newVehicle, fuelType: v})}>
-                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="Petrol">Petrol</SelectItem>
-                        <SelectItem value="Diesel">Diesel</SelectItem>
-                        <SelectItem value="CNG">CNG</SelectItem>
-                        <SelectItem value="Electric">Electric</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Weight className="w-4 h-4" /> Capacity (Kg/Litres)</Label>
-                    <Input 
-                      value={newVehicle.capacity} 
-                      onChange={e => setNewVehicle({...newVehicle, capacity: e.target.value})}
-                      placeholder="e.g. 500kg"
-                      className="bg-slate-950 border-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Insurance Expiry</Label>
-                    <Input 
-                      type="date"
-                      value={newVehicle.insuranceExpiry} 
-                      onChange={e => setNewVehicle({...newVehicle, insuranceExpiry: e.target.value})}
-                      className="bg-slate-950 border-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Activity className="w-4 h-4" /> Status</Label>
-                    <Select value={newVehicle.status} onValueChange={v => setNewVehicle({...newVehicle, status: v as VehicleStatus})}>
-                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="Available">Available</SelectItem>
-                        <SelectItem value="On Route">On Route</SelectItem>
-                        <SelectItem value="Maintenance">Maintenance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="ghost" onClick={() => setVehicleModalOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAddVehicle} className="bg-[#0066FF] hover:bg-blue-600 px-8">Register Vehicle</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent className="p-0 overflow-hidden">
-            <Table>
-              <TableHeader className="bg-slate-900/60">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="font-headline text-slate-400">Vehicle Info</TableHead>
-                  <TableHead className="font-headline text-slate-400">Driver Profile</TableHead>
-                  <TableHead className="font-headline text-slate-400">Operational Status</TableHead>
-                  <TableHead className="text-right font-headline text-slate-400">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {store.vehicles.map((v: Vehicle) => (
-                  <TableRow key={v.id} className="border-slate-800/50 hover:bg-slate-800/20">
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-bold">{v.vehicleNumber}</span>
-                        <span className="text-[10px] text-slate-500 uppercase">{v.vehicleType} • {v.fuelType} • {v.capacity}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{v.driverName}</span>
-                        <span className="text-[10px] text-slate-500">{v.driverMobile}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn(
-                        "text-[9px] uppercase font-bold",
-                        v.status === 'Available' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                        v.status === 'On Route' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                        "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                      )}>
-                        {v.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => store.deleteVehicle(v.id)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {store.vehicles.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500 italic">No vehicles registered in fleet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
+        <div className="flex-1 w-full md:max-w-md relative">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+           <Input 
+             placeholder="Search Vehicle Number, Driver, Route..." 
+             value={searchQuery} 
+             onChange={e => setSearchQuery(e.target.value)} 
+             className="pl-10 bg-slate-950 border-slate-800 h-11" 
+           />
+        </div>
+        <Button 
+          className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" 
+          onClick={() => { setEditingEntry(null); setModalOpen(true); }}
+        >
+          <Plus className="w-5 h-5 mr-2" /> Log New Transport Entry
+        </Button>
       </div>
+
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-900/60">
+            <TableRow className="hover:bg-transparent border-slate-800">
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Vehicle Number</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Driver Name</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Vehicle Type</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Route</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Dep. Date</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Arr. Date</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider text-right">Fuel Cost</TableHead>
+              <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Status</TableHead>
+              <TableHead className="text-right font-headline text-slate-400 uppercase text-[11px] tracking-wider">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredEntries.map((entry: TransportEntry) => (
+              <TableRow key={entry.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
+                <TableCell className="font-code font-bold text-blue-400">{entry.vehicleNumber}</TableCell>
+                <TableCell className="font-semibold text-slate-100">{entry.driverName}</TableCell>
+                <TableCell className="text-sm text-slate-400">{entry.vehicleType}</TableCell>
+                <TableCell className="text-sm">{entry.route}</TableCell>
+                <TableCell className="text-xs text-slate-500">{format(new Date(entry.departureDate), 'dd/MM/yyyy')}</TableCell>
+                <TableCell className="text-xs text-slate-500">
+                  {entry.arrivalDate ? format(new Date(entry.arrivalDate), 'dd/MM/yyyy') : '--'}
+                </TableCell>
+                <TableCell className="text-right font-code font-bold">₹{entry.fuelCost}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all", 
+                        entry.status === 'Available' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : 
+                        entry.status === 'On Route' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" : 
+                        entry.status === 'Maintenance' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : 
+                        "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20")}>
+                        {entry.status}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-900 border-slate-800">
+                      <DropdownMenuItem onClick={() => handleStatusChange(entry.id, 'Available')}>Available</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(entry.id, 'On Route')}>On Route</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(entry.id, 'Maintenance')}>Maintenance</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(entry.id, 'Completed')}>Completed</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => setEditingEntry(entry)}><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-rose-400" onClick={() => store.deleteTransportEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredEntries.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center text-slate-500 italic">No transport entries found matching your criteria.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <TransportModal 
+        isOpen={isModalOpen} 
+        onClose={() => setModalOpen(false)} 
+        editingEntry={editingEntry}
+        onSave={(data) => {
+          if (editingEntry) store.updateTransportEntry(data);
+          else store.addTransportEntry(data);
+          setModalOpen(false);
+        }}
+        store={store}
+      />
     </div>
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, description }: any) {
+function StatCard({ title, value, icon: Icon, color, textColor = "text-white", active, onClick }: any) {
   return (
-    <Card className="bg-slate-900/40 border-slate-800 overflow-hidden group">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{title}</p>
-            <h3 className="text-3xl font-headline font-bold text-white">{value}</h3>
-            <p className="text-[10px] text-slate-500 font-medium">{description}</p>
-          </div>
-          <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110", color, "bg-opacity-10 text-white")}>
-            <Icon className="w-6 h-6" />
-          </div>
-        </div>
-      </CardContent>
+    <Card onClick={onClick} className={cn("bg-slate-900/40 border-slate-800 overflow-hidden group cursor-pointer transition-all", active ? "ring-2 ring-blue-500 scale-[1.02]" : "hover:bg-slate-800/60")}>
+      <CardContent className="p-4"><div className="flex justify-between items-start"><div><p className="text-slate-400 text-[9px] uppercase font-bold tracking-widest mb-1">{title}</p><h3 className="text-xl font-headline font-bold">{value}</h3></div><div className={cn("p-2 rounded-xl", color, textColor)}><Icon className="w-4 h-4" /></div></div></CardContent>
     </Card>
   );
 }

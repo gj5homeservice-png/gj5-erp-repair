@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Truck, 
   Package, 
@@ -9,7 +9,12 @@ import {
   Send,
   MapPin,
   Clock,
-  Search
+  Search,
+  Car,
+  CheckCircle,
+  Activity,
+  Wrench,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +65,14 @@ export function TransportationModule({ store }: { store: any }) {
 
   const activeJobs = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected');
 
+  // Mock stats for the requested cards
+  const stats = {
+    totalVehicles: 12,
+    available: 8,
+    onRoute: store.transportation.filter((l: any) => l.status === 'In-Transit').length,
+    maintenance: 1
+  };
+
   const handleTemplateChange = (index: number, value: string) => {
     const newTemplates = [...templates];
     newTemplates[index] = value;
@@ -98,7 +111,7 @@ export function TransportationModule({ store }: { store: any }) {
 
     store.addTransportationLog(newLog);
 
-    // WhatsApp Dispatch
+    // WhatsApp Dispatch simulation
     let msg = templates[selectedTemplateIndex];
     msg = msg.replace('[RunnerName]', formData.runnerName)
              .replace('[JobID]', job.id)
@@ -115,6 +128,38 @@ export function TransportationModule({ store }: { store: any }) {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* KPI Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard 
+          title="Total Vehicles" 
+          value={stats.totalVehicles} 
+          icon={Car} 
+          color="bg-blue-500" 
+          description="Fleet size"
+        />
+        <StatCard 
+          title="Available" 
+          value={stats.available} 
+          icon={CheckCircle} 
+          color="bg-emerald-500" 
+          description="Ready for dispatch"
+        />
+        <StatCard 
+          title="On Route" 
+          value={stats.onRoute} 
+          icon={Activity} 
+          color="bg-amber-500" 
+          description="Active deliveries"
+        />
+        <StatCard 
+          title="Maintenance" 
+          value={stats.maintenance} 
+          icon={Wrench} 
+          color="bg-rose-500" 
+          description="In service center"
+        />
+      </div>
+
       <Card className="bg-slate-900/40 border-slate-800">
         <CardHeader className="border-b border-slate-800">
           <CardTitle className="flex items-center gap-2 font-headline text-xl">
@@ -229,5 +274,24 @@ export function TransportationModule({ store }: { store: any }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color, description }: any) {
+  return (
+    <Card className="bg-slate-900/40 border-slate-800 overflow-hidden group">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{title}</p>
+            <h3 className="text-3xl font-headline font-bold text-white">{value}</h3>
+            <p className="text-[10px] text-slate-500 font-medium">{description}</p>
+          </div>
+          <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110", color, "bg-opacity-10 text-white")}>
+            <Icon className="w-6 h-6" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

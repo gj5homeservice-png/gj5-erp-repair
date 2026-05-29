@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Clock, 
@@ -12,14 +12,11 @@ import {
   Edit, 
   MessageCircle,
   TrendingUp,
-  History,
   Search,
   RefreshCw,
   Tv,
   Printer as PrinterIcon,
   ShieldCheck,
-  Building2,
-  Users,
   NotebookTabs
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -68,9 +65,14 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('Active');
   const [viewMode, setViewMode] = useState<ViewMode>('Repairing');
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const stats = useMemo(() => {
-    const now = new Date();
     const totalActive = store.calls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
     const pending = store.calls.filter((c: RepairCall) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
@@ -82,10 +84,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       return new Date(c.warrantyExpiry) > now;
     }).length;
     return { totalActive, pending, completed, rejected, repeats, exchangePurchase, warranty };
-  }, [store.calls]);
+  }, [store.calls, now]);
 
   const filteredCalls = useMemo(() => {
-    const now = new Date();
     return store.calls.filter((c: RepairCall) => {
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -104,7 +105,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
       return (matchesSearch || !searchQuery) && matchesFilter;
     });
-  }, [store.calls, searchQuery, activeFilter]);
+  }, [store.calls, searchQuery, activeFilter, now]);
 
   const filteredInquiries = useMemo(() => {
     return store.inquiries.filter((i: Inquiry) => 
@@ -114,13 +115,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
   }, [store.inquiries, searchQuery]);
 
   const calculateWarrantyExpiry = (duration: string, customValue?: string) => {
-    const now = new Date();
-    if (duration === '1 Month') return addMonths(now, 1).toISOString();
-    if (duration === '3 Months') return addMonths(now, 3).toISOString();
-    if (duration === '6 Months') return addMonths(now, 6).toISOString();
+    const reference = new Date();
+    if (duration === '1 Month') return addMonths(reference, 1).toISOString();
+    if (duration === '3 Months') return addMonths(reference, 3).toISOString();
+    if (duration === '6 Months') return addMonths(reference, 6).toISOString();
     if (duration === 'Custom Duration' && customValue) {
       const days = parseInt(customValue);
-      if (!isNaN(days)) return addDays(now, days).toISOString();
+      if (!isNaN(days)) return addDays(reference, days).toISOString();
     }
     return undefined;
   };
@@ -129,7 +130,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
       let warrantyExpiry = call.warrantyExpiry;
-      if (status === 'Completed' && call.warrantyDuration && call.warrantyDuration !== 'None') {
+      if (status === 'Completed' && call.warrantyDuration && call.warrantyDuration !== 'No Warranty') {
         warrantyExpiry = calculateWarrantyExpiry(call.warrantyDuration, call.warrantyCustomValue);
       }
       store.updateCall({ ...call, status, warrantyExpiry, updatedAt: new Date().toISOString() });
@@ -147,7 +148,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const call = store.calls.find((c: RepairCall) => c.id === callId);
     if (call) {
       const isCompleted = call.status === 'Completed';
-      const warrantyExpiry = isCompleted && duration !== 'None' 
+      const warrantyExpiry = isCompleted && duration !== 'No Warranty' 
         ? calculateWarrantyExpiry(duration, call.warrantyCustomValue) 
         : undefined;
       store.updateCall({ ...call, warrantyDuration: duration, warrantyExpiry });
@@ -167,7 +168,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
 
   const calculateWarrantyLeft = (expiryDate?: string) => {
     if (!expiryDate) return null;
-    const now = new Date();
     const expiry = parseISO(expiryDate);
     const diff = differenceInDays(expiry, now);
     return diff > 0 ? diff : 0;
@@ -216,29 +216,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
         <div className="flex-1 w-full md:max-w-md relative">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-           <Input 
-             placeholder="Smart Search Job, Mobile, Customer..." 
-             value={searchQuery}
-             onChange={e => setSearchQuery(e.target.value)}
-             className="pl-10 bg-slate-950 border-slate-800 h-11"
-           />
+           <Input placeholder="Smart Search Job, Mobile, Customer..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-slate-950 border-slate-800 h-11" />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Button 
-            variant="outline" 
-            className={cn(
-              "flex-1 md:flex-none rounded-xl border-slate-700 h-11 px-6",
-              viewMode === 'Inquiries' ? "bg-slate-700 text-white" : "bg-slate-800/50 hover:bg-slate-700"
-            )}
-            onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}
-          >
-            <NotebookTabs className="w-4 h-4 mr-2" /> 
-            {viewMode === 'Repairing' ? "View Walk-In Inquiries" : "Back to Repair Grid"}
+          <Button variant="outline" className={cn("flex-1 md:flex-none rounded-xl border-slate-700 h-11 px-6", viewMode === 'Inquiries' ? "bg-slate-700 text-white" : "bg-slate-800/50 hover:bg-slate-700")} onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
+            <NotebookTabs className="w-4 h-4 mr-2" /> {viewMode === 'Repairing' ? "View Walk-In Inquiries" : "Back to Repair Grid"}
           </Button>
-          <Button 
-            className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" 
-            onClick={() => { setEditingCall(null); setModalOpen(true); }}
-          >
+          <Button className="flex-1 md:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 px-6 shadow-lg shadow-blue-500/20" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
             <Plus className="w-5 h-5 mr-2" /> Log New Service Call
           </Button>
         </div>
@@ -270,47 +254,20 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 return (
                   <TableRow key={call.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors group">
                     <TableCell className="font-code font-bold text-blue-400">
-                      <div className="flex flex-col gap-1">
-                        <span>{call.id}</span>
-                        <Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">
-                          VISITS: {call.visitHistory?.length || 0}
-                        </Badge>
-                      </div>
+                      <div className="flex flex-col gap-1"><span>{call.id}</span><Badge variant="outline" className="w-fit text-[9px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">VISITS: {call.visitHistory?.length || 0}</Badge></div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-slate-100">{call.customerName}</span>
-                          <span className="text-[10px] text-slate-500 font-code">{call.customerId}</span>
-                        </div>
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" /> {call.mobile}
-                        </span>
-                      </div>
+                      <div className="flex flex-col"><div className="flex items-center gap-1.5"><span className="font-semibold text-slate-100">{call.customerName}</span><span className="text-[10px] text-slate-500 font-code">{call.customerId}</span></div><span className="text-xs text-slate-500 flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {call.mobile}</span></div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{call.brand} {call.model}</span>
-                        <span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span>
-                      </div>
+                      <div className="flex flex-col"><span className="text-sm">{call.brand} {call.model}</span><span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span></div>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-slate-400">
-                        {latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}
-                        <br />
-                        {latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}
-                      </div>
-                    </TableCell>
+                    <TableCell><div className="text-xs text-slate-400">{latestVisit ? format(new Date(latestVisit.timestamp), 'dd/MM/yyyy') : '--/--/----'}<br />{latestVisit ? format(new Date(latestVisit.timestamp), 'hh:mm a') : '--:-- --'}</div></TableCell>
                     <TableCell>
                        {showWarranty ? (
                          <div className="flex flex-col gap-2 min-w-[140px]">
-                            <Select 
-                              value={call.warrantyDuration || 'No Warranty'} 
-                              onValueChange={(v) => handleWarrantyChange(call.id, v)}
-                            >
-                              <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
-                                <SelectValue />
-                              </SelectTrigger>
+                            <Select value={call.warrantyDuration || 'No Warranty'} onValueChange={(v) => handleWarrantyChange(call.id, v)}>
+                              <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 text-left"><SelectValue /></SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800">
                                 <SelectItem value="No Warranty">No Warranty</SelectItem>
                                 <SelectItem value="1 Month">1 Month</SelectItem>
@@ -320,23 +277,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                               </SelectContent>
                             </Select>
                             {call.warrantyDuration === 'Custom Duration' && (
-                              <Input 
-                                value={call.warrantyCustomValue || ''}
-                                onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)}
-                                placeholder="e.g. 15 DAY"
-                                className="h-7 text-[10px] bg-slate-950 border-slate-800"
-                              />
+                              <Input value={call.warrantyCustomValue || ''} onChange={(e) => handleCustomWarrantyChange(call.id, e.target.value)} placeholder="e.g. 15 DAY" className="h-7 text-[10px] bg-slate-950 border-slate-800" />
                             )}
                          </div>
                        ) : isExchangePurchase ? (
                           <div className="flex flex-col gap-2 min-w-[140px]">
-                             <Select 
-                               value={call.storeLocation || 'GODOWN'} 
-                               onValueChange={(v) => handleStoreLocationChange(call.id, v)}
-                             >
-                               <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800">
-                                 <SelectValue />
-                               </SelectTrigger>
+                             <Select value={call.storeLocation || 'GODOWN'} onValueChange={(v) => handleStoreLocationChange(call.id, v)}>
+                               <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 text-left"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
                                  <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
                                  <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
@@ -345,21 +292,13 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                                </SelectContent>
                              </Select>
                           </div>
-                       ) : (
-                         <div className="h-8 w-full"></div>
-                       )}
+                       ) : <div className="h-8"></div>}
                     </TableCell>
                     <TableCell>
                       <div className="space-y-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                              call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" :
-                              call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                              call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                              "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                            )}>
+                            <button className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all", call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" : call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20")}>
                               {call.status}
                             </button>
                           </DropdownMenuTrigger>
@@ -372,26 +311,16 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                           </DropdownMenuContent>
                         </DropdownMenu>
                         {warrantyLeft !== null && call.status === 'Completed' && (
-                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">
-                            Warranty Left: {warrantyLeft} Days
-                          </div>
+                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">Warranty Left: {warrantyLeft} Days</div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}>
-                          <MapPin className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}>
-                          <PrinterIcon className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}>
-                          <Receipt className="w-4 h-4" />
-                        </Button>
+                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}><MapPin className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}><Receipt className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -402,20 +331,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         </div>
       ) : (
         <div className="space-y-4 animate-in slide-in-from-bottom-6 duration-500">
-          <div className="flex items-center gap-3 mb-2">
-            <NotebookTabs className="w-6 h-6 text-[#0066FF]" />
-            <h3 className="text-xl font-headline font-bold">Walk-In Inquiry Logs</h3>
-          </div>
+          <div className="flex items-center gap-3 mb-2"><NotebookTabs className="w-6 h-6 text-[#0066FF]" /><h3 className="text-xl font-headline font-bold">Walk-In Inquiry Logs</h3></div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
             <Table>
-              <TableHeader className="bg-slate-900/60">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="font-headline text-slate-400">Timestamp</TableHead>
-                  <TableHead className="font-headline text-slate-400">Visitor Name</TableHead>
-                  <TableHead className="font-headline text-slate-400">Mobile</TableHead>
-                  <TableHead className="font-headline text-slate-400">Inquiry Details</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader className="bg-slate-900/60"><TableRow className="border-slate-800 hover:bg-transparent"><TableHead className="font-headline text-slate-400">Timestamp</TableHead><TableHead className="font-headline text-slate-400">Visitor Name</TableHead><TableHead className="font-headline text-slate-400">Mobile</TableHead><TableHead className="font-headline text-slate-400">Inquiry Details</TableHead></TableRow></TableHeader>
               <TableBody>
                 {filteredInquiries.map((inq: Inquiry) => (
                   <TableRow key={inq.id} className="border-slate-800/50 hover:bg-slate-800/20">
@@ -431,48 +350,16 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         </div>
       )}
 
-      <CallModal 
-        isOpen={isModalOpen} 
-        onClose={() => setModalOpen(false)} 
-        editingCall={editingCall}
-        onSave={(data) => {
-          if (editingCall || store.calls.find((c:any) => c.id === data.id)) store.updateCall(data);
-          else store.addCall(data);
-          setModalOpen(false);
-        }}
-        store={store}
-      />
-
-      <StickerModal 
-        isOpen={!!stickerCall} 
-        onClose={() => setStickerCall(null)} 
-        call={stickerCall}
-        shopLogo={store.shopLogo}
-      />
+      <CallModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} editingCall={editingCall} onSave={(data) => { if (editingCall || store.calls.find((c:any) => c.id === data.id)) store.updateCall(data); else store.addCall(data); setModalOpen(false); }} store={store} />
+      <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.shopLogo} />
     </div>
   );
 }
 
 function StatCard({ title, value, icon: Icon, color, textColor = "text-white", active, onClick }: any) {
   return (
-    <Card 
-      onClick={onClick}
-      className={cn(
-        "bg-slate-900/40 border-slate-800 overflow-hidden group cursor-pointer transition-all",
-        active ? "ring-2 ring-blue-500 scale-[1.02]" : "hover:bg-slate-800/60"
-      )}
-    >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-slate-400 text-[9px] uppercase font-bold tracking-widest mb-1">{title}</p>
-            <h3 className="text-xl font-headline font-bold">{value}</h3>
-          </div>
-          <div className={cn("p-2 rounded-xl", color, textColor)}>
-            <Icon className="w-4 h-4" />
-          </div>
-        </div>
-      </CardContent>
+    <Card onClick={onClick} className={cn("bg-slate-900/40 border-slate-800 overflow-hidden group cursor-pointer transition-all", active ? "ring-2 ring-blue-500 scale-[1.02]" : "hover:bg-slate-800/60")}>
+      <CardContent className="p-4"><div className="flex justify-between items-start"><div><p className="text-slate-400 text-[9px] uppercase font-bold tracking-widest mb-1">{title}</p><h3 className="text-xl font-headline font-bold">{value}</h3></div><div className={cn("p-2 rounded-xl", color, textColor)}><Icon className="w-4 h-4" /></div></div></CardContent>
     </Card>
   );
 }

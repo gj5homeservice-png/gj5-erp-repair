@@ -4,16 +4,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
-  User, 
-  Phone, 
   Package, 
   MessageSquare, 
   Paperclip, 
   Send,
   MapPin,
   Clock,
-  MoreVertical,
-  ChevronRight,
   Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,14 +46,14 @@ export function LogisticsModule({ store }: { store: any }) {
 
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
   const [templates, setTemplates] = useState<string[]>([
-    "Runner Dispatch: Dear [RunnerName], please collect device [JobID] from [CustomerName] at [Address]. Issue: [Issue].",
-    "Quotation Update: Dear Customer, your device [JobID] is picked up by [RunnerName]. Estimating cost now.",
-    "Delivery Alert: Dear [CustomerName], runner [RunnerName] is arriving for delivery of [JobID] shortly."
+    "Transportation Dispatch: Dear [RunnerName], please collect device [JobID] from [CustomerName] at [Address]. Issue: [Issue]. Timestamp: [Timestamp].",
+    "Transit Alert: Dear Customer, your device [JobID] is currently in transit with our runner [RunnerName].",
+    "Delivery Complete: Dear [CustomerName], runner [RunnerName] has successfully arrived for the delivery of [JobID]."
   ]);
   const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
 
   useEffect(() => {
-    const savedTemplates = localStorage.getItem('gj5_logistics_templates');
+    const savedTemplates = localStorage.getItem('gj5_transportation_templates');
     if (savedTemplates) {
       try { setTemplates(JSON.parse(savedTemplates)); } catch (e) { console.error(e); }
     }
@@ -69,7 +65,7 @@ export function LogisticsModule({ store }: { store: any }) {
     const newTemplates = [...templates];
     newTemplates[index] = value;
     setTemplates(newTemplates);
-    localStorage.setItem('gj5_logistics_templates', JSON.stringify(newTemplates));
+    localStorage.setItem('gj5_transportation_templates', JSON.stringify(newTemplates));
   };
 
   const handleAttachment = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +105,8 @@ export function LogisticsModule({ store }: { store: any }) {
              .replace('[JobID]', job.id)
              .replace('[CustomerName]', job.customerName)
              .replace('[Address]', job.address)
-             .replace('[Issue]', job.visitHistory?.[job.visitHistory.length - 1]?.issue || 'N/A');
+             .replace('[Issue]', job.visitHistory?.[job.visitHistory.length - 1]?.issue || 'N/A')
+             .replace('[Timestamp]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
     const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
@@ -123,7 +120,7 @@ export function LogisticsModule({ store }: { store: any }) {
         <CardHeader className="border-b border-slate-800">
           <CardTitle className="flex items-center gap-2 font-headline text-xl">
             <Truck className="w-6 h-6 text-[#0066FF]" />
-            Runner Assignment Control
+            Runner Dispatch Initializer
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8">
@@ -143,7 +140,7 @@ export function LogisticsModule({ store }: { store: any }) {
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Job Linker</Label>
                 <Select value={formData.selectedJobId} onValueChange={v => setFormData({...formData, selectedJobId: v})}>
-                  <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+                  <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-left">
                     <SelectValue placeholder="Select active job..." />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800">
@@ -167,15 +164,15 @@ export function LogisticsModule({ store }: { store: any }) {
                 {[0, 1, 2].map((idx) => (
                   <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800">
                     <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
-                      <RadioGroupItem value={idx.toString()} id={`log-tpl-${idx}`} />
+                      <RadioGroupItem value={idx.toString()} id={`trans-tpl-${idx}`} />
                     </RadioGroup>
                     <div className="flex-1 space-y-2">
                       <div className="flex justify-between items-center">
                         <Label className="text-[10px] text-slate-500 font-bold uppercase">Option {idx + 1}</Label>
                         <div className="flex items-center gap-2">
-                          <input type="file" id={`log-attach-${idx}`} className="hidden" onChange={(e) => handleAttachment(idx, e)} />
-                          <button onClick={() => document.getElementById(`log-attach-${idx}`)?.click()} className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase", attachments[idx] ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-500")}>
-                            <Paperclip className="w-3 h-3 mr-1" /> {attachments[idx] ? "Attached" : "Attach"}
+                          <input type="file" id={`trans-attach-${idx}`} className="hidden" onChange={(e) => handleAttachment(idx, e)} />
+                          <button onClick={() => document.getElementById(`trans-attach-${idx}`)?.click()} className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase", attachments[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-500")}>
+                            <Paperclip className="w-3 h-3 mr-1" /> {attachments[idx] ? "Attached" : "Attach Image"}
                           </button>
                         </div>
                       </div>
@@ -198,10 +195,11 @@ export function LogisticsModule({ store }: { store: any }) {
             <TableHeader className="bg-slate-900/60">
               <TableRow className="border-slate-800 hover:bg-transparent">
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
-                <TableHead className="font-headline text-slate-400">Job ID</TableHead>
-                <TableHead className="font-headline text-slate-400">Destination</TableHead>
-                <TableHead className="font-headline text-slate-400">Time</TableHead>
-                <TableHead className="font-headline text-slate-400">Status</TableHead>
+                <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
+                <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
+                <TableHead className="font-headline text-slate-400">Target Destination</TableHead>
+                <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
+                <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -209,6 +207,7 @@ export function LogisticsModule({ store }: { store: any }) {
                 <TableRow key={log.id} className="border-slate-800/50 hover:bg-slate-800/20">
                   <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
+                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.customerName}</span><span className="text-[10px] text-slate-500">{log.customerMobile}</span></div></TableCell>
                   <TableCell><div className="flex items-center gap-2 max-w-[200px] text-xs text-slate-400"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{log.address}</span></div></TableCell>
                   <TableCell><div className="flex items-center gap-2 text-xs text-slate-500"><Clock className="w-3 h-3" />{format(new Date(log.dispatchTime), 'hh:mm a')}</div></TableCell>
                   <TableCell>
@@ -224,7 +223,7 @@ export function LogisticsModule({ store }: { store: any }) {
                 </TableRow>
               ))}
               {store.logistics.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="h-32 text-center text-slate-500">No active logistics dispatches.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transportation transits.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

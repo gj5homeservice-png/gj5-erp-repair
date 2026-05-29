@@ -11,7 +11,6 @@ export interface VisibilitySettings {
     Employees: boolean;
     'E-Wallet': boolean;
     Transportation: boolean;
-    Logistics: boolean;
   };
   kpis: {
     totalActive: boolean;
@@ -42,8 +41,7 @@ export function useErpStore() {
       Billing: true,
       Employees: true,
       'E-Wallet': true,
-      Transportation: true,
-      Logistics: false
+      Transportation: true
     },
     kpis: {
       totalActive: true,
@@ -93,7 +91,7 @@ export function useErpStore() {
         createdAt: initialTimestamp,
         updatedAt: initialTimestamp,
         status: 'Pending',
-        warrantyDuration: 'None',
+        warrantyDuration: 'No Warranty',
         visitHistory: [
           {
             visitNumber: 1,

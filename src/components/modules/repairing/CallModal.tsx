@@ -27,14 +27,12 @@ import { RepairCall, RepairHistoryEntry, RepairStatus, Inquiry } from '@/lib/typ
 import { 
   History as HistoryIcon, 
   Search, 
-  UserPlus, 
   PlusCircle, 
   ChevronRight,
   RefreshCw,
   Notebook,
   MessageSquare,
-  Paperclip,
-  Upload
+  Paperclip
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -83,12 +81,11 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   const [currentVisitIssue, setCurrentVisitIssue] = useState('No Power / Dead');
   const [currentVisitTags, setCurrentVisitTags] = useState<string[]>([]);
   
-  // WhatsApp Template Suite State
   const [activeTemplateIdx, setActiveTemplateIdx] = useState(0);
   const [templates, setTemplates] = useState<string[]>([
-    "Registration: Hello [CustomerName], your Job [JobID] is registered. Our runner will visit soon.",
-    "Quotation: Dear [CustomerName], estimate for Job [JobID] is ready. Parts: [Parts], Labor: [Labor]. Total: [Total].",
-    "Delivery: Dear [CustomerName], your device [JobID] is repaired and out for delivery."
+    "Registration: Hello [CustomerName], your Job [JobID] is registered. Issue: [Issue]. Registered tags: [Tags].",
+    "Quotation: Dear [CustomerName], estimate for Job [JobID] is ready. Parts required for [Issue].",
+    "Delivery: Dear [CustomerName], your device [JobID] is repaired and out for delivery. Timestamp: [Timestamp]."
   ]);
   const [templateImages, setTemplateImages] = useState<(string | null)[]>([null, null, null]);
 
@@ -96,7 +93,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
   const [searchResults, setSearchResults] = useState<RepairCall[]>([]);
 
   useEffect(() => {
-    const savedTemplates = localStorage.getItem('gj5_whatsapp_templates');
+    const savedTemplates = localStorage.getItem('gj5_modal_whatsapp_templates');
     if (savedTemplates) {
       try { setTemplates(JSON.parse(savedTemplates)); } catch (e) {}
     }
@@ -108,7 +105,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       const latest = editingCall.visitHistory[editingCall.visitHistory.length - 1];
       setCurrentVisitIssue(latest?.issue || 'No Power / Dead');
       setCurrentVisitTags(editingCall.techTags || []);
-      
       const isPredefined = BRANDS.includes(editingCall.brand);
       setSelectedBrand(isPredefined ? editingCall.brand : 'Other');
       setCustomBrand(isPredefined ? '' : editingCall.brand);
@@ -118,7 +114,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
       const catCount = store.calls.filter((c:any) => c.category === (formData.category || 'TV')).length;
       const nextJobId = `${catPrefix}${1001 + catCount}`;
       const nextCustId = `GJ5${1001 + store.calls.length}`;
-      
       setFormData({
         id: nextJobId,
         customerId: nextCustId,
@@ -169,7 +164,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     const newTemplates = [...templates];
     newTemplates[idx] = val;
     setTemplates(newTemplates);
-    localStorage.setItem('gj5_whatsapp_templates', JSON.stringify(newTemplates));
+    localStorage.setItem('gj5_modal_whatsapp_templates', JSON.stringify(newTemplates));
   };
 
   const handleImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,6 +220,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
     msg = msg.replace('[CustomerName]', finalData.customerName || '')
              .replace('[JobID]', finalData.id || '')
              .replace('[Issue]', currentVisitIssue)
+             .replace('[Tags]', currentVisitTags.join(', '))
              .replace('[Timestamp]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
     const whatsappUrl = `https://web.whatsapp.com/send?phone=91${finalData.mobile}&text=${encodeURIComponent(msg)}`;
@@ -256,8 +252,6 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
 
           <div className="p-8 max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-              
-              {/* Form Content */}
               <div className="lg:col-span-8">
                 <TabsContent value="New Call" className="space-y-8 mt-0 animate-in fade-in duration-300">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -272,108 +266,60 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                           <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code" />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Category</Label>
                           <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                              <SelectValue />
-                            </SelectTrigger>
+                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800">
                               <SelectItem value="TV">TV</SelectItem>
                               <SelectItem value="AC">AC</SelectItem>
                               <SelectItem value="COMP">Computer</SelectItem>
-                              <SelectItem value="FRIDGE">Fridge</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Customer Name</Label>
-                          <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                        </div>
+                        <div className="space-y-2"><Label>Customer Name</Label><Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Mobile Number</Label>
-                          <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Pincode</Label>
-                          <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                        </div>
+                        <div className="space-y-2"><Label>Mobile Number</Label><Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                        <div className="space-y-2"><Label>Pincode</Label><Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label>Full Address</Label>
-                        <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                      </div>
+                      <div className="space-y-2"><Label>Full Address</Label><Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                     </div>
-
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Brand Selection</Label>
                           <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                              <SelectValue placeholder="Select Brand..." />
-                            </SelectTrigger>
+                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800">
                               {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
                         {selectedBrand === 'Other' && (
-                          <div className="space-y-2 animate-in slide-in-from-left-4">
-                            <Label>Enter Brand Name</Label>
-                            <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className="bg-slate-900 border-slate-800 h-11" placeholder="e.g. Sharp" />
-                          </div>
+                          <div className="space-y-2 animate-in slide-in-from-left-4"><Label>Enter Brand Name</Label><Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className="bg-slate-900 border-slate-800 h-11" /></div>
                         )}
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Model Number</Label>
-                          <Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Screen Size (Inch)</Label>
-                          <Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" />
-                        </div>
+                        <div className="space-y-2"><Label>Model Number</Label><Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                        <div className="space-y-2"><Label>Screen Size (Inch)</Label><Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                       </div>
-
                       <div className="space-y-4">
                         <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Assignments</Label>
                         <div className="flex flex-row gap-2">
                            {TECH_TAGS.map(tag => (
-                             <button
-                               key={tag}
-                               onClick={() => toggleTag(tag)}
-                               className={cn(
-                                 "flex-1 px-3 py-3 rounded-xl text-[10px] font-bold transition-all border shadow-sm",
-                                 currentVisitTags.includes(tag)
-                                  ? "bg-[#0066FF] text-white border-[#0066FF]"
-                                  : "bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700"
-                               )}
-                             >
-                               {tag}
-                             </button>
+                             <button key={tag} onClick={() => toggleTag(tag)} className={cn("flex-1 px-3 py-3 rounded-xl text-[10px] font-bold transition-all border", currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800")}>{tag}</button>
                            ))}
                         </div>
                       </div>
-
                       <div className="space-y-2">
                         <Label>Registered Issue</Label>
                         <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
-                          <SelectTrigger className="bg-slate-900 border-slate-800 h-11">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-800">
                             <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
                             <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
-                            <SelectItem value="Sound OK - No Video">Sound OK - No Video</SelectItem>
-                            <SelectItem value="HDMI Not Working">HDMI Not Working</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -381,98 +327,47 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                     </div>
                   </div>
                 </TabsContent>
-
                 <TabsContent value="Repeat Call" className="animate-in fade-in duration-300">
                    <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
-                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
-                         <RefreshCw className="w-8 h-8 text-[#0066FF]" />
-                      </div>
+                      <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20"><RefreshCw className="w-8 h-8 text-[#0066FF]" /></div>
                       <div className="flex gap-2">
-                         <div className="relative flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                            <Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Search Mobile, Job ID or Customer ID..." />
-                         </div>
+                         <div className="relative flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" /><Input value={repeatSearchQuery} onChange={e => setRepeatSearchQuery(e.target.value)} className="pl-12 bg-slate-900 border-slate-800 h-14 text-lg rounded-2xl" placeholder="Search Mobile, Job ID or Customer ID..." /></div>
                          <Button onClick={handleSearchRepeat} className="bg-[#0066FF] hover:bg-blue-700 h-14 px-10 rounded-2xl font-bold">Search</Button>
                       </div>
                       {searchResults.map(result => (
                         <div key={result.id} className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between hover:bg-slate-800/30">
-                           <div className="text-left">
-                              <p className="font-bold text-slate-100">{result.customerName}</p>
-                              <p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p>
-                           </div>
+                           <div className="text-left"><p className="font-bold text-slate-100">{result.customerName}</p><p className="text-xs text-slate-500 font-code">{result.id} • {result.mobile}</p></div>
                            <Button onClick={() => selectProfileForRepeat(result)} className="bg-[#0066FF] hover:bg-blue-700 rounded-xl">Re-Open</Button>
                         </div>
                       ))}
                    </div>
                 </TabsContent>
-
                 <TabsContent value="Repeat Call Form" className="space-y-8 animate-in zoom-in-95">
                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6">
-                      <div className="flex justify-between items-center mb-4">
-                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><HistoryIcon className="w-4 h-4" /> Visit History</h3>
-                         <Badge className="bg-[#0066FF] px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge>
-                      </div>
+                      <div className="flex justify-between items-center mb-4"><h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><HistoryIcon className="w-4 h-4" /> Visit History</h3><Badge className="bg-[#0066FF] px-4 py-1">VISITS: {formData.visitHistory?.length || 0}</Badge></div>
                       <div className="max-h-[250px] overflow-y-auto border border-slate-800 rounded-xl bg-slate-950/50">
                          <table className="w-full text-[11px] text-left">
-                            <thead className="bg-slate-900 text-slate-500 uppercase font-bold sticky top-0">
-                               <tr>
-                                  <th className="p-4">Visit #</th>
-                                  <th className="p-4">Date</th>
-                                  <th className="p-4">Issue</th>
-                                  <th className="p-4 text-right">Status</th>
-                               </tr>
-                            </thead>
+                            <thead className="bg-slate-900 text-slate-500 uppercase font-bold sticky top-0"><tr><th className="p-4">Visit #</th><th className="p-4">Date</th><th className="p-4">Issue</th><th className="p-4 text-right">Status</th></tr></thead>
                             <tbody className="divide-y divide-slate-800">
                                {formData.visitHistory?.map((h, i) => (
-                                 <tr key={i} className="hover:bg-slate-800/20">
-                                    <td className="p-4 font-bold">#{h.visitNumber}</td>
-                                    <td className="p-4 font-code">{format(new Date(h.timestamp), 'dd/MM/yyyy')}</td>
-                                    <td className="p-4">{h.issue}</td>
-                                    <td className="p-4 text-right"><Badge variant="outline" className="text-[9px]">{h.statusAtTime}</Badge></td>
-                                 </tr>
+                                 <tr key={i} className="hover:bg-slate-800/20"><td className="p-4 font-bold">#{h.visitNumber}</td><td className="p-4 font-code">{format(new Date(h.timestamp), 'dd/MM/yyyy')}</td><td className="p-4">{h.issue}</td><td className="p-4 text-right"><Badge variant="outline" className="text-[9px]">{h.statusAtTime}</Badge></td></tr>
                                ))}
                             </tbody>
                          </table>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Locked Job ID</Label>
-                        <Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Locked Customer ID</Label>
-                        <Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code opacity-50" />
-                      </div>
+                      <div className="space-y-2"><Label>Locked Job ID</Label><Input readOnly value={formData.id} className="bg-slate-900/50 border-slate-800 font-code opacity-50" /></div>
+                      <div className="space-y-2"><Label>Locked Customer ID</Label><Input readOnly value={formData.customerId} className="bg-slate-900/50 border-slate-800 font-code opacity-50" /></div>
                    </div>
                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Current Visit Issue</Label>
-                        <Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}>
-                           <SelectTrigger className="bg-slate-900 h-12">
-                              <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent className="bg-slate-900">
-                              <SelectItem value="No Power / Dead">No Power / Dead</SelectItem>
-                              <SelectItem value="Display Panel Damaged">Display Panel Damaged</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                           </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex flex-row gap-2">
-                        {TECH_TAGS.map(tag => (
-                          <button key={tag} onClick={() => toggleTag(tag)} className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border", currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800")}>{tag}</button>
-                        ))}
-                      </div>
+                      <div className="space-y-2"><Label>Current Visit Issue</Label><Select value={currentVisitIssue} onValueChange={setCurrentVisitIssue}><SelectTrigger className="bg-slate-900 h-12"><SelectValue /></SelectTrigger><SelectContent className="bg-slate-900"><SelectItem value="No Power / Dead">No Power / Dead</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
+                      <div className="flex flex-row gap-2">{TECH_TAGS.map(tag => (<button key={tag} onClick={() => toggleTag(tag)} className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border", currentVisitTags.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-500 border-slate-800")}>{tag}</button>))}</div>
                    </div>
                 </TabsContent>
-
                 <TabsContent value="Inquiry" className="animate-in fade-in zoom-in-95 duration-300">
                   <div className="space-y-8 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">
-                    <div className="flex items-center gap-4 border-b border-slate-800 pb-6">
-                      <div className="p-3 bg-blue-600/10 rounded-2xl"><Notebook className="w-8 h-8 text-[#0066FF]" /></div>
-                      <div><h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3></div>
-                    </div>
+                    <div className="flex items-center gap-4 border-b border-slate-800 pb-6"><div className="p-3 bg-blue-600/10 rounded-2xl"><Notebook className="w-8 h-8 text-[#0066FF]" /></div><div><h3 className="text-2xl font-headline font-bold">New Walk-In Inquiry</h3></div></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2"><Label>Customer Name</Label><Input value={inquiryData.customerName} onChange={e => setInquiryData({...inquiryData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
                       <div className="space-y-2"><Label>Mobile Number</Label><Input value={inquiryData.mobile} onChange={e => setInquiryData({...inquiryData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-12" /></div>
@@ -483,69 +378,25 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                   </div>
                 </TabsContent>
               </div>
-
-              {/* WhatsApp Template Suite (RIGHT SIDE) */}
               <div className="lg:col-span-4 border-l border-slate-800 pl-8 space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <MessageSquare className="w-5 h-5 text-emerald-500" />
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">WhatsApp Template Suite</h3>
-                </div>
-
+                <div className="flex items-center gap-2 mb-4"><MessageSquare className="w-5 h-5 text-emerald-500" /><h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">WhatsApp Template Suite</h3></div>
                 <div className="space-y-6">
                   {[0, 1, 2].map((idx) => (
-                    <div key={idx} className={cn(
-                      "p-4 rounded-2xl border transition-all space-y-3",
-                      activeTemplateIdx === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800"
-                    )}>
+                    <div key={idx} className={cn("p-4 rounded-2xl border transition-all space-y-3", activeTemplateIdx === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                           <RadioGroup value={activeTemplateIdx.toString()} onValueChange={(v) => setActiveTemplateIdx(parseInt(v))}>
-                              <RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} />
-                           </RadioGroup>
-                           <Label htmlFor={`tpl-${idx}`} className="text-[10px] font-bold uppercase text-slate-500">Template {idx + 1}</Label>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <input type="file" id={`img-${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
-                            <button 
-                              onClick={() => document.getElementById(`img-${idx}`)?.click()}
-                              className={cn(
-                                "p-1.5 rounded-lg border text-[10px] font-bold uppercase flex items-center gap-1.5",
-                                templateImages[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 border-slate-700"
-                              )}
-                            >
-                              <Paperclip className="w-3 h-3" /> {templateImages[idx] ? "Attached" : "Attach"}
-                            </button>
-                         </div>
+                         <div className="flex items-center gap-2"><RadioGroup value={activeTemplateIdx.toString()} onValueChange={(v) => setActiveTemplateIdx(parseInt(v))}><RadioGroupItem value={idx.toString()} id={`tpl-${idx}`} /></RadioGroup><Label htmlFor={`tpl-${idx}`} className="text-[10px] font-bold uppercase text-slate-500">Template {idx + 1}</Label></div>
+                         <div className="flex items-center gap-2"><input type="file" id={`img-${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} /><button onClick={() => document.getElementById(`img-${idx}`)?.click()} className={cn("p-1.5 rounded-lg border text-[10px] font-bold uppercase flex items-center gap-1.5", templateImages[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 border-slate-700")}><Paperclip className="w-3 h-3" /> {templateImages[idx] ? "Attached" : "Attach Image"}</button></div>
                       </div>
-                      <Textarea 
-                        value={templates[idx]} 
-                        onChange={(e) => handleTemplateChange(idx, e.target.value)}
-                        className="bg-transparent border-0 p-0 text-xs min-h-[80px] focus-visible:ring-0 resize-none"
-                        placeholder="Type message template..."
-                      />
+                      <Textarea value={templates[idx]} onChange={(e) => handleTemplateChange(idx, e.target.value)} className="bg-transparent border-0 p-0 text-xs min-h-[80px] focus-visible:ring-0 resize-none" placeholder="Type message template..." />
                     </div>
                   ))}
                 </div>
-
-                <div className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
-                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Metadata Placeholders</p>
-                   <div className="flex flex-wrap gap-1.5">
-                      {['[CustomerName]', '[JobID]', '[Issue]', '[Timestamp]'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded font-code text-[8px]">{p}</span>
-                      ))}
-                   </div>
-                </div>
               </div>
-
             </div>
           </div>
-
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2">
-               {activeTab === 'Inquiry' ? 'Create Inquiry' : editingCall ? 'Update Registry' : 'Create Registry'}
-               <ChevronRight className="w-4 h-4" />
-             </Button>
+             <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-700 px-12 h-12 rounded-xl font-bold flex gap-2">{activeTab === 'Inquiry' ? 'Create Inquiry' : editingCall ? 'Update Registry' : 'Create Registry'}<ChevronRight className="w-4 h-4" /></Button>
           </DialogFooter>
         </Tabs>
       </DialogContent>

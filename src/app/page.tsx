@@ -165,8 +165,7 @@ export default function DashboardPage() {
                       { id: 'pending', label: 'Pending' },
                       { id: 'completed', label: 'Completed' },
                       { id: 'rejected', label: 'Rejected' },
-                      { id: 'exchange', label: 'Exchange/Pur' },
-                      { id: 'warranty', label: 'Warranty Calls' }
+                      { id: 'exchange', label: 'Exchange/Purchase' }
                     ].map((kpi) => (
                       <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                         <Label className="text-sm font-medium">{kpi.label}</Label>
@@ -205,7 +204,7 @@ export default function DashboardPage() {
           </div>
         </header>
         <div className="p-8">
-          {activeTab === 'Repairing' && <RepairingModule store={store} onInvoiceRequest={(call) => { setActiveTab('Billing'); }} />}
+          {activeTab === 'Repairing' && <RepairingModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}

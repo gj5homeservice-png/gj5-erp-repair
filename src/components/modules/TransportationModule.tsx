@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -105,7 +104,7 @@ export function TransportationModule({ store }: { store: any }) {
              .replace('[JobID]', job.id)
              .replace('[CustomerName]', job.customerName)
              .replace('[Address]', job.address)
-             .replace('[Issue]', job.visitHistory?.[job.visitHistory.length - 1]?.issue || 'N/A')
+             .replace('[Issue]', job.visitHistory?.[0]?.issue || 'N/A')
              .replace('[Timestamp]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
     const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
@@ -197,7 +196,7 @@ export function TransportationModule({ store }: { store: any }) {
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
                 <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
                 <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
-                <TableHead className="font-headline text-slate-400">Target Destination</TableHead>
+                <TableHead className="font-headline text-slate-400">Target Destination Address</TableHead>
                 <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
                 <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
               </TableRow>

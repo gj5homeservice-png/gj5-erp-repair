@@ -14,7 +14,6 @@ import {
   Search,
   Tv,
   Printer as PrinterIcon,
-  ShieldCheck,
   NotebookTabs
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,13 +49,12 @@ import { cn } from '@/lib/utils';
 
 interface RepairingModuleProps {
   store: any;
-  onInvoiceRequest?: (call: RepairCall) => void;
 }
 
-type FilterStatus = 'All' | 'Active' | RepairStatus | 'ExchangePurchase' | 'Warranty';
+type FilterStatus = 'All' | 'Active' | RepairStatus | 'ExchangePurchase';
 type ViewMode = 'Repairing' | 'Inquiries';
 
-export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProps) {
+export function RepairingModule({ store }: RepairingModuleProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
@@ -76,12 +74,8 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     const completed = store.calls.filter((c: RepairCall) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: RepairCall) => c.status === 'Rejected').length;
     const exchangePurchase = store.calls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
-    const warranty = store.calls.filter((c: RepairCall) => {
-      if (!c.warrantyExpiry) return false;
-      return new Date(c.warrantyExpiry) > now;
-    }).length;
-    return { totalActive, pending, completed, rejected, exchangePurchase, warranty };
-  }, [store.calls, now]);
+    return { totalActive, pending, completed, rejected, exchangePurchase };
+  }, [store.calls]);
 
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => {
@@ -96,11 +90,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       else if (activeFilter === 'Completed') matchesFilter = c.status === 'Completed';
       else if (activeFilter === 'Rejected') matchesFilter = c.status === 'Rejected';
       else if (activeFilter === 'ExchangePurchase') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
-      else if (activeFilter === 'Warranty') matchesFilter = c.warrantyExpiry && new Date(c.warrantyExpiry) > now;
 
       return (matchesSearch || !searchQuery) && matchesFilter;
     });
-  }, [store.calls, searchQuery, activeFilter, now]);
+  }, [store.calls, searchQuery, activeFilter]);
 
   const filteredInquiries = useMemo(() => {
     return store.inquiries.filter((inq: Inquiry) => 
@@ -163,7 +156,6 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
     { id: 'completed', title: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'bg-emerald-500', active: activeFilter === 'Completed', filter: 'Completed' },
     { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', active: activeFilter === 'Rejected', filter: 'Rejected' },
     { id: 'exchange', title: 'Exchange/Pur', value: stats.exchangePurchase, icon: Tv, color: 'bg-cyan-500', active: activeFilter === 'ExchangePurchase', filter: 'ExchangePurchase' },
-    { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: ShieldCheck, color: 'bg-orange-500', active: activeFilter === 'Warranty', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
   return (
@@ -171,7 +163,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className={cn(
           "grid gap-4 flex-1 w-full",
-          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6"
+          visibleKpis.length <= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-5"
         )}>
           {visibleKpis.map(kpi => (
             <StatCard 
@@ -215,10 +207,10 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Customer Details</TableHead>
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Device Profile</TableHead>
                 <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Log Timestamp</TableHead>
-                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">
-                  {filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase') ? 'Store Location' : 'Warranty Tracker'}
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider text-center">
+                  {(activeFilter === 'ExchangePurchase' || filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase')) ? 'Store Location' : 'Warranty Tracker'}
                 </TableHead>
-                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Status & Aging</TableHead>
+                <TableHead className="font-headline text-slate-400 uppercase text-[11px] tracking-wider">Status</TableHead>
                 <TableHead className="text-right font-headline text-slate-400 uppercase text-[11px] tracking-wider">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -226,6 +218,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
               {filteredCalls.map((call: RepairCall) => {
                 const isExchangePurchase = call.status === 'Exchange' || call.status === 'Purchase';
                 const showWarranty = call.status === 'Pending' || call.status === 'Completed';
+                const isRejected = call.status === 'Rejected';
                 const warrantyLeft = calculateWarrantyLeft(call.warrantyExpiry);
                 
                 return (
@@ -238,9 +231,9 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                       <div className="flex flex-col"><span className="text-sm">{call.brand} {call.model}</span><span className="text-xs text-slate-400">{call.category} • {call.screenSize}" Inch</span></div>
                     </TableCell>
                     <TableCell><div className="text-xs text-slate-400">{format(new Date(call.createdAt), 'dd/MM/yyyy')}<br />{format(new Date(call.createdAt), 'hh:mm a')}</div></TableCell>
-                    <TableCell>
-                       {showWarranty ? (
-                         <div className="flex flex-col gap-2 min-w-[140px]">
+                    <TableCell className="text-center">
+                       {isRejected ? null : (showWarranty ? (
+                         <div className="flex flex-col gap-2 min-w-[140px] items-center">
                             <Select value={call.warrantyDuration || 'No Warranty'} onValueChange={(v) => handleWarrantyChange(call.id, v)}>
                               <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 text-left"><SelectValue /></SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800">
@@ -251,9 +244,12 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                                 <SelectItem value="Custom Duration">Custom Duration</SelectItem>
                               </SelectContent>
                             </Select>
+                            {warrantyLeft !== null && call.status === 'Completed' && (
+                              <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">Warranty Left: {warrantyLeft} Days</div>
+                            )}
                          </div>
                        ) : isExchangePurchase ? (
-                          <div className="flex flex-col gap-2 min-w-[140px]">
+                          <div className="flex flex-col gap-2 min-w-[140px] items-center">
                              <Select value={call.storeLocation || 'GODOWN'} onValueChange={(v) => handleStoreLocationChange(call.id, v)}>
                                <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 text-left"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
@@ -264,35 +260,33 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
                                </SelectContent>
                              </Select>
                           </div>
-                       ) : <div className="h-8"></div>}
+                       ) : null)}
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all", call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" : call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20")}>
-                              {call.status}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-slate-900 border-slate-800">
-                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Exchange')}>Exchange</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        {warrantyLeft !== null && call.status === 'Completed' && (
-                          <div className="text-[10px] text-orange-400 font-bold uppercase animate-pulse">Warranty Left: {warrantyLeft} Days</div>
-                        )}
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all", 
+                            call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border border-yellow-500/20" : 
+                            call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : 
+                            call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : 
+                            "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20")}>
+                            {call.status}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-slate-900 border-slate-800">
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Pending')}>Pending</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Completed')}>Completed</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Rejected')}>Rejected</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Exchange')}>Exchange</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(call.id, 'Purchase')}>Purchase</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openMap(call.address, call.pincode)}><MapPin className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="ghost" className="text-blue-400" onClick={() => onInvoiceRequest?.(call)}><Receipt className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -322,7 +316,7 @@ export function RepairingModule({ store, onInvoiceRequest }: RepairingModuleProp
         </div>
       )}
 
-      <CallModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} editingCall={editingCall} onSave={(data) => { if (editingCall || store.calls.find((c:any) => c.id === data.id)) store.updateCall(data); else store.addCall(data); setModalOpen(false); }} store={store} />
+      <CallModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} editingCall={editingCall} onSave={(data) => { if (editingCall) store.updateCall(data); else store.addCall(data); setModalOpen(false); }} store={store} />
       <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.shopLogo} />
     </div>
   );

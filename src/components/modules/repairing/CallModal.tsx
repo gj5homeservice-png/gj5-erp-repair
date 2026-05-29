@@ -279,7 +279,7 @@ export function CallModal({ isOpen, onClose, editingCall, onSave, store }: CallM
                         <div className="space-y-2"><Label>Screen Size (Inch)</Label><Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                       </div>
                       <div className="space-y-4">
-                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Assignments</Label>
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Technician Field Tags</Label>
                         <div className="flex flex-row gap-2">
                            {TECH_TAGS.map(tag => (
                              <button 

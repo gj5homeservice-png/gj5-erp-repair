@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, Invoice, TransportationLog } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -17,7 +17,6 @@ export interface VisibilitySettings {
     completed: boolean;
     rejected: boolean;
     exchange: boolean;
-    warranty: boolean;
   };
 }
 
@@ -44,8 +43,7 @@ export function useErpStore() {
       pending: true,
       completed: true,
       rejected: true,
-      exchange: true,
-      warranty: true
+      exchange: true
     }
   });
 
@@ -102,8 +100,8 @@ export function useErpStore() {
     const savedInquiries = localStorage.getItem('gj5_inquiries');
     if (savedInquiries) try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
 
-    const savedLogistics = localStorage.getItem('gj5_transportation');
-    if (savedLogistics) try { setTransportation(JSON.parse(savedLogistics)); } catch (e) {}
+    const savedTrans = localStorage.getItem('gj5_transportation');
+    if (savedTrans) try { setTransportation(JSON.parse(savedTrans)); } catch (e) {}
 
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },

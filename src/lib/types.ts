@@ -84,3 +84,17 @@ export interface TransportationLog {
   dispatchTime: string;
   status: LogisticsStatus;
 }
+
+export type VehicleStatus = 'Available' | 'On Route' | 'Maintenance';
+
+export interface Vehicle {
+  id: string;
+  vehicleNumber: string;
+  vehicleType: string;
+  driverName: string;
+  driverMobile: string;
+  fuelType: string;
+  capacity: string;
+  insuranceExpiry: string;
+  status: VehicleStatus;
+}

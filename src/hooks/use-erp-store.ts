@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, Vehicle } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -27,6 +27,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transportation, setTransportation] = useState<TransportationLog[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
 
@@ -100,6 +101,9 @@ export function useErpStore() {
     const savedTrans = localStorage.getItem('gj5_transportation');
     if (savedTrans) try { setTransportation(JSON.parse(savedTrans)); } catch (e) {}
 
+    const savedVehicles = localStorage.getItem('gj5_vehicles');
+    if (savedVehicles) try { setVehicles(JSON.parse(savedVehicles)); } catch (e) {}
+
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
       { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
@@ -117,6 +121,10 @@ export function useErpStore() {
   useEffect(() => {
     localStorage.setItem('gj5_transportation', JSON.stringify(transportation));
   }, [transportation]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_vehicles', JSON.stringify(vehicles));
+  }, [vehicles]);
 
   const handleSetShopLogo = (logo: string | null) => {
     setShopLogo(logo);
@@ -153,6 +161,10 @@ export function useErpStore() {
   const updateTransportationLog = (id: string, status: TransportationLog['status']) => 
     setTransportation(prev => prev.map(l => l.id === id ? { ...l, status } : l));
 
+  const addVehicle = (vehicle: Vehicle) => setVehicles(prev => [vehicle, ...prev]);
+  const updateVehicle = (updatedVehicle: Vehicle) => setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+  const deleteVehicle = (id: string) => setVehicles(prev => prev.filter(v => v.id !== id));
+
   return {
     calls, addCall, updateCall,
     inquiries, addInquiry,
@@ -160,6 +172,7 @@ export function useErpStore() {
     attendance, updateAttendance,
     expenses, addExpense,
     transportation, addTransportationLog, updateTransportationLog,
+    vehicles, addVehicle, updateVehicle, deleteVehicle,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo: handleSetShopLogo,
     visibility, updateVisibility

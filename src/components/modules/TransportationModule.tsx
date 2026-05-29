@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
   Package, 
@@ -9,12 +9,17 @@ import {
   Send,
   MapPin,
   Clock,
-  Search,
   Car,
   CheckCircle,
   Activity,
   Wrench,
-  TrendingUp
+  Plus,
+  Trash2,
+  FileText,
+  Smartphone,
+  User,
+  Fuel,
+  Weight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,14 +43,35 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Vehicle, VehicleStatus } from '@/lib/types';
 
 export function TransportationModule({ store }: { store: any }) {
-  const [formData, setFormData] = useState({
+  const [isVehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [dispatchData, setDispatchData] = useState({
     runnerName: '',
     runnerMobile: '',
     selectedJobId: ''
+  });
+
+  const [newVehicle, setNewVehicle] = useState<Partial<Vehicle>>({
+    vehicleNumber: '',
+    vehicleType: 'Tempo',
+    driverName: '',
+    driverMobile: '',
+    fuelType: 'Diesel',
+    capacity: '',
+    insuranceExpiry: '',
+    status: 'Available'
   });
 
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
@@ -65,42 +91,21 @@ export function TransportationModule({ store }: { store: any }) {
 
   const activeJobs = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected');
 
-  // Mock stats for the requested cards
   const stats = {
-    totalVehicles: 12,
-    available: 8,
-    onRoute: store.transportation.filter((l: any) => l.status === 'In-Transit').length,
-    maintenance: 1
-  };
-
-  const handleTemplateChange = (index: number, value: string) => {
-    const newTemplates = [...templates];
-    newTemplates[index] = value;
-    setTemplates(newTemplates);
-    localStorage.setItem('gj5_transportation_templates', JSON.stringify(newTemplates));
-  };
-
-  const handleAttachment = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newAttachments = [...attachments];
-        newAttachments[index] = reader.result as string;
-        setAttachments(newAttachments);
-      };
-      reader.readAsDataURL(file);
-    }
+    totalVehicles: store.vehicles.length,
+    available: store.vehicles.filter((v: any) => v.status === 'Available').length,
+    onRoute: store.vehicles.filter((v: any) => v.status === 'On Route').length,
+    maintenance: store.vehicles.filter((v: any) => v.status === 'Maintenance').length
   };
 
   const handleDispatch = () => {
-    const job = activeJobs.find((j: any) => j.id === formData.selectedJobId);
-    if (!job || !formData.runnerName || !formData.runnerMobile) return;
+    const job = activeJobs.find((j: any) => j.id === dispatchData.selectedJobId);
+    if (!job || !dispatchData.runnerName || !dispatchData.runnerMobile) return;
 
     const newLog = {
       id: `LOG${Date.now()}`,
-      runnerName: formData.runnerName,
-      runnerMobile: formData.runnerMobile,
+      runnerName: dispatchData.runnerName,
+      runnerMobile: dispatchData.runnerMobile,
       jobId: job.id,
       customerName: job.customerName,
       customerMobile: job.mobile,
@@ -111,139 +116,280 @@ export function TransportationModule({ store }: { store: any }) {
 
     store.addTransportationLog(newLog);
 
-    // WhatsApp Dispatch simulation
     let msg = templates[selectedTemplateIndex];
-    msg = msg.replace('[RunnerName]', formData.runnerName)
+    msg = msg.replace('[RunnerName]', dispatchData.runnerName)
              .replace('[JobID]', job.id)
              .replace('[CustomerName]', job.customerName)
              .replace('[Address]', job.address)
              .replace('[Issue]', job.visitHistory?.[0]?.issue || 'N/A')
              .replace('[Timestamp]', format(new Date(), 'dd/MM/yyyy HH:mm'));
 
-    const url = `https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(msg)}`;
+    const url = `https://web.whatsapp.com/send?phone=91${dispatchData.runnerMobile}&text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
 
-    setFormData({ runnerName: '', runnerMobile: '', selectedJobId: '' });
+    setDispatchData({ runnerName: '', runnerMobile: '', selectedJobId: '' });
+  };
+
+  const handleAddVehicle = () => {
+    if (!newVehicle.vehicleNumber || !newVehicle.driverName) return;
+    
+    const vehicle: Vehicle = {
+      id: `VEH${Date.now()}`,
+      vehicleNumber: newVehicle.vehicleNumber!,
+      vehicleType: newVehicle.vehicleType!,
+      driverName: newVehicle.driverName!,
+      driverMobile: newVehicle.driverMobile!,
+      fuelType: newVehicle.fuelType!,
+      capacity: newVehicle.capacity!,
+      insuranceExpiry: newVehicle.insuranceExpiry!,
+      status: newVehicle.status as VehicleStatus
+    };
+
+    store.addVehicle(vehicle);
+    setVehicleModalOpen(false);
+    setNewVehicle({
+      vehicleNumber: '',
+      vehicleType: 'Tempo',
+      driverName: '',
+      driverMobile: '',
+      fuelType: 'Diesel',
+      capacity: '',
+      insuranceExpiry: '',
+      status: 'Available'
+    });
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* KPI Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Vehicles" 
-          value={stats.totalVehicles} 
-          icon={Car} 
-          color="bg-blue-500" 
-          description="Fleet size"
-        />
-        <StatCard 
-          title="Available" 
-          value={stats.available} 
-          icon={CheckCircle} 
-          color="bg-emerald-500" 
-          description="Ready for dispatch"
-        />
-        <StatCard 
-          title="On Route" 
-          value={stats.onRoute} 
-          icon={Activity} 
-          color="bg-amber-500" 
-          description="Active deliveries"
-        />
-        <StatCard 
-          title="Maintenance" 
-          value={stats.maintenance} 
-          icon={Wrench} 
-          color="bg-rose-500" 
-          description="In service center"
-        />
+        <StatCard title="Total Vehicles" value={stats.totalVehicles} icon={Car} color="bg-blue-500" description="Fleet size" />
+        <StatCard title="Available" value={stats.available} icon={CheckCircle} color="bg-emerald-500" description="Ready for dispatch" />
+        <StatCard title="On Route" value={stats.onRoute} icon={Activity} color="bg-amber-500" description="Active deliveries" />
+        <StatCard title="Maintenance" value={stats.maintenance} icon={Wrench} color="bg-rose-500" description="In service center" />
       </div>
 
-      <Card className="bg-slate-900/40 border-slate-800">
-        <CardHeader className="border-b border-slate-800">
-          <CardTitle className="flex items-center gap-2 font-headline text-xl">
-            <Truck className="w-6 h-6 text-[#0066FF]" />
-            Transportation Dispatch Panel
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
-                  <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} placeholder="e.g. Rahul Patel" className="bg-slate-950 border-slate-800 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile (10-Digit)</Label>
-                  <Input value={formData.runnerMobile} onChange={e => setFormData({...formData, runnerMobile: e.target.value})} placeholder="9988776655" className="bg-slate-950 border-slate-800 h-11" />
-                </div>
-              </div>
-
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <Card className="bg-slate-900/40 border-slate-800">
+          <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 font-headline text-xl">
+              <Truck className="w-6 h-6 text-[#0066FF]" />
+              Dispatch Control
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Job Linker</Label>
-                <Select value={formData.selectedJobId} onValueChange={v => setFormData({...formData, selectedJobId: v})}>
-                  <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-left">
-                    <SelectValue placeholder="Select active job..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800">
-                    {activeJobs.map((job: any) => (
-                      <SelectItem key={job.id} value={job.id}>{job.id} - {job.customerName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
+                <Input 
+                  value={dispatchData.runnerName} 
+                  onChange={e => setDispatchData({...dispatchData, runnerName: e.target.value})} 
+                  placeholder="e.g. Rahul Patel" 
+                  className="bg-slate-950 border-slate-800 h-11" 
+                />
               </div>
-
-              <Button onClick={handleDispatch} disabled={!formData.runnerName || !formData.runnerMobile || !formData.selectedJobId} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase">
-                <Send className="w-5 h-5 mr-2" /> 🚀 Dispatch & Send to Runner
-              </Button>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile</Label>
+                <Input 
+                  value={dispatchData.runnerMobile} 
+                  onChange={e => setDispatchData({...dispatchData, runnerMobile: e.target.value})} 
+                  placeholder="9988776655" 
+                  className="bg-slate-950 border-slate-800 h-11" 
+                />
+              </div>
             </div>
 
-            <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Template Suite
-              </h3>
-              <div className="space-y-4">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="flex gap-4 items-start bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                    <RadioGroup value={selectedTemplateIndex.toString()} onValueChange={(v) => setSelectedTemplateIndex(parseInt(v))}>
-                      <RadioGroupItem value={idx.toString()} id={`trans-tpl-${idx}`} />
-                    </RadioGroup>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-[10px] text-slate-500 font-bold uppercase">Option {idx + 1}</Label>
-                        <div className="flex items-center gap-2">
-                          <input type="file" id={`trans-attach-${idx}`} className="hidden" onChange={(e) => handleAttachment(idx, e)} />
-                          <button onClick={() => document.getElementById(`trans-attach-${idx}`)?.click()} className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase", attachments[idx] ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-500")}>
-                            <Paperclip className="w-3 h-3 mr-1" /> {attachments[idx] ? "Attached" : "Attach Image"}
-                          </button>
-                        </div>
-                      </div>
-                      <Textarea value={templates[idx]} onChange={e => handleTemplateChange(idx, e.target.value)} className="bg-transparent border-0 p-0 text-xs min-h-[50px] focus-visible:ring-0 resize-none leading-relaxed" />
-                    </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Job Linker</Label>
+              <Select value={dispatchData.selectedJobId} onValueChange={v => setDispatchData({...dispatchData, selectedJobId: v})}>
+                <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+                  <SelectValue placeholder="Select active job..." />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  {activeJobs.map((job: any) => (
+                    <SelectItem key={job.id} value={job.id}>{job.id} - {job.customerName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button onClick={handleDispatch} disabled={!dispatchData.runnerName || !dispatchData.selectedJobId} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase">
+              <Send className="w-5 h-5 mr-2" /> Dispatch & Send to Runner
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900/40 border-slate-800">
+          <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 font-headline text-xl">
+              <Car className="w-6 h-6 text-[#FFD700]" />
+              Fleet Management
+            </CardTitle>
+            <Dialog open={isVehicleModalOpen} onOpenChange={setVehicleModalOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-[#0066FF] h-9">
+                  <Plus className="w-4 h-4 mr-2" /> Register Vehicle
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#0F172A] border-slate-800 text-slate-100 max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
+                    <Car className="w-6 h-6 text-[#0066FF]" /> Vehicle Registration
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-6 py-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><FileText className="w-4 h-4" /> Vehicle Number</Label>
+                    <Input 
+                      value={newVehicle.vehicleNumber} 
+                      onChange={e => setNewVehicle({...newVehicle, vehicleNumber: e.target.value})}
+                      placeholder="GJ-05-XX-1234"
+                      className="bg-slate-950 border-slate-800"
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Truck className="w-4 h-4" /> Vehicle Type</Label>
+                    <Select value={newVehicle.vehicleType} onValueChange={v => setNewVehicle({...newVehicle, vehicleType: v})}>
+                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800">
+                        <SelectItem value="Bike">Bike</SelectItem>
+                        <SelectItem value="Car">Car</SelectItem>
+                        <SelectItem value="Tempo">Tempo</SelectItem>
+                        <SelectItem value="Truck">Truck</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><User className="w-4 h-4" /> Driver Name</Label>
+                    <Input 
+                      value={newVehicle.driverName} 
+                      onChange={e => setNewVehicle({...newVehicle, driverName: e.target.value})}
+                      placeholder="Enter driver name"
+                      className="bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> Driver Mobile</Label>
+                    <Input 
+                      value={newVehicle.driverMobile} 
+                      onChange={e => setNewVehicle({...newVehicle, driverMobile: e.target.value})}
+                      placeholder="10-digit number"
+                      className="bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Fuel className="w-4 h-4" /> Fuel Type</Label>
+                    <Select value={newVehicle.fuelType} onValueChange={v => setNewVehicle({...newVehicle, fuelType: v})}>
+                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800">
+                        <SelectItem value="Petrol">Petrol</SelectItem>
+                        <SelectItem value="Diesel">Diesel</SelectItem>
+                        <SelectItem value="CNG">CNG</SelectItem>
+                        <SelectItem value="Electric">Electric</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Weight className="w-4 h-4" /> Capacity (Kg/Litres)</Label>
+                    <Input 
+                      value={newVehicle.capacity} 
+                      onChange={e => setNewVehicle({...newVehicle, capacity: e.target.value})}
+                      placeholder="e.g. 500kg"
+                      className="bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Insurance Expiry</Label>
+                    <Input 
+                      type="date"
+                      value={newVehicle.insuranceExpiry} 
+                      onChange={e => setNewVehicle({...newVehicle, insuranceExpiry: e.target.value})}
+                      className="bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Activity className="w-4 h-4" /> Status</Label>
+                    <Select value={newVehicle.status} onValueChange={v => setNewVehicle({...newVehicle, status: v as VehicleStatus})}>
+                      <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800">
+                        <SelectItem value="Available">Available</SelectItem>
+                        <SelectItem value="On Route">On Route</SelectItem>
+                        <SelectItem value="Maintenance">Maintenance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setVehicleModalOpen(false)}>Cancel</Button>
+                  <Button onClick={handleAddVehicle} className="bg-[#0066FF] hover:bg-blue-600 px-8">Register Vehicle</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
+          <CardContent className="p-0 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-900/60">
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="font-headline text-slate-400">Vehicle</TableHead>
+                  <TableHead className="font-headline text-slate-400">Driver</TableHead>
+                  <TableHead className="font-headline text-slate-400">Status</TableHead>
+                  <TableHead className="text-right font-headline text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {store.vehicles.map((v: Vehicle) => (
+                  <TableRow key={v.id} className="border-slate-800/50 hover:bg-slate-800/20">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-bold">{v.vehicleNumber}</span>
+                        <span className="text-[10px] text-slate-500 uppercase">{v.vehicleType} • {v.fuelType}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{v.driverName}</span>
+                        <span className="text-[10px] text-slate-500">{v.driverMobile}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn(
+                        "text-[9px] uppercase font-bold",
+                        v.status === 'Available' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                        v.status === 'On Route' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                        "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                      )}>
+                        {v.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => store.deleteVehicle(v.id)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                {store.vehicles.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500 italic">No vehicles registered.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-4">
         <h3 className="text-xl font-headline font-bold flex items-center gap-2">
-          <Package className="w-6 h-6 text-[#FFD700]" /> Live Transit Log Directory
+          <Package className="w-6 h-6 text-[#FFD700]" /> Transit Log Directory
         </h3>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
           <Table>
             <TableHeader className="bg-slate-900/60">
               <TableRow className="border-slate-800 hover:bg-transparent">
                 <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
-                <TableHead className="font-headline text-slate-400">Job Tracking ID</TableHead>
-                <TableHead className="font-headline text-slate-400">Customer Profile</TableHead>
-                <TableHead className="font-headline text-slate-400">Target Destination Address</TableHead>
-                <TableHead className="font-headline text-slate-400">Dispatch Time</TableHead>
-                <TableHead className="font-headline text-slate-400">Transit Status</TableHead>
+                <TableHead className="font-headline text-slate-400">Job ID</TableHead>
+                <TableHead className="font-headline text-slate-400">Customer</TableHead>
+                <TableHead className="font-headline text-slate-400">Destination</TableHead>
+                <TableHead className="font-headline text-slate-400">Time</TableHead>
+                <TableHead className="font-headline text-slate-400">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -267,7 +413,7 @@ export function TransportationModule({ store }: { store: any }) {
                 </TableRow>
               ))}
               {store.transportation.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transportation transits.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transits.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

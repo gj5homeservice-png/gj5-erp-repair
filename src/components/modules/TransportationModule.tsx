@@ -1,25 +1,23 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Truck, 
-  Package, 
-  MessageSquare, 
-  Paperclip, 
-  Send,
-  MapPin,
+  Car, 
+  CheckCircle, 
+  Activity, 
+  Wrench, 
+  Plus, 
+  Trash2, 
+  FileText, 
+  Smartphone, 
+  User, 
+  Fuel, 
+  Weight,
   Clock,
-  Car,
-  CheckCircle,
-  Activity,
-  Wrench,
-  Plus,
-  Trash2,
-  FileText,
-  Smartphone,
-  User,
-  Fuel,
-  Weight
+  Package,
+  MapPin,
+  Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,8 +30,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Table, 
   TableBody, 
@@ -57,12 +53,6 @@ import { Vehicle, VehicleStatus } from '@/lib/types';
 
 export function TransportationModule({ store }: { store: any }) {
   const [isVehicleModalOpen, setVehicleModalOpen] = useState(false);
-  const [dispatchData, setDispatchData] = useState({
-    runnerName: '',
-    runnerMobile: '',
-    selectedJobId: ''
-  });
-
   const [newVehicle, setNewVehicle] = useState<Partial<Vehicle>>({
     vehicleNumber: '',
     vehicleType: 'Tempo',
@@ -74,60 +64,11 @@ export function TransportationModule({ store }: { store: any }) {
     status: 'Available'
   });
 
-  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
-  const [templates, setTemplates] = useState<string[]>([
-    "Transportation Dispatch: Dear [RunnerName], please collect device [JobID] from [CustomerName] at [Address]. Issue: [Issue]. Timestamp: [Timestamp].",
-    "Transit Alert: Dear Customer, your device [JobID] is currently in transit with our runner [RunnerName].",
-    "Delivery Complete: Dear [CustomerName], runner [RunnerName] has successfully arrived for the delivery of [JobID]."
-  ]);
-  const [attachments, setAttachments] = useState<(string | null)[]>([null, null, null]);
-
-  useEffect(() => {
-    const savedTemplates = localStorage.getItem('gj5_transportation_templates');
-    if (savedTemplates) {
-      try { setTemplates(JSON.parse(savedTemplates)); } catch (e) { console.error(e); }
-    }
-  }, []);
-
-  const activeJobs = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected');
-
   const stats = {
     totalVehicles: store.vehicles.length,
     available: store.vehicles.filter((v: any) => v.status === 'Available').length,
     onRoute: store.vehicles.filter((v: any) => v.status === 'On Route').length,
     maintenance: store.vehicles.filter((v: any) => v.status === 'Maintenance').length
-  };
-
-  const handleDispatch = () => {
-    const job = activeJobs.find((j: any) => j.id === dispatchData.selectedJobId);
-    if (!job || !dispatchData.runnerName || !dispatchData.runnerMobile) return;
-
-    const newLog = {
-      id: `LOG${Date.now()}`,
-      runnerName: dispatchData.runnerName,
-      runnerMobile: dispatchData.runnerMobile,
-      jobId: job.id,
-      customerName: job.customerName,
-      customerMobile: job.mobile,
-      address: job.address,
-      dispatchTime: new Date().toISOString(),
-      status: 'In-Transit' as const
-    };
-
-    store.addTransportationLog(newLog);
-
-    let msg = templates[selectedTemplateIndex];
-    msg = msg.replace('[RunnerName]', dispatchData.runnerName)
-             .replace('[JobID]', job.id)
-             .replace('[CustomerName]', job.customerName)
-             .replace('[Address]', job.address)
-             .replace('[Issue]', job.visitHistory?.[0]?.issue || 'N/A')
-             .replace('[Timestamp]', format(new Date(), 'dd/MM/yyyy HH:mm'));
-
-    const url = `https://web.whatsapp.com/send?phone=91${dispatchData.runnerMobile}&text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-
-    setDispatchData({ runnerName: '', runnerMobile: '', selectedJobId: '' });
   };
 
   const handleAddVehicle = () => {
@@ -161,6 +102,7 @@ export function TransportationModule({ store }: { store: any }) {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Dashboard KPI Header */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Vehicles" value={stats.totalVehicles} icon={Car} color="bg-blue-500" description="Fleet size" />
         <StatCard title="Available" value={stats.available} icon={CheckCircle} color="bg-emerald-500" description="Ready for dispatch" />
@@ -168,61 +110,12 @@ export function TransportationModule({ store }: { store: any }) {
         <StatCard title="Maintenance" value={stats.maintenance} icon={Wrench} color="bg-rose-500" description="In service center" />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <Card className="bg-slate-900/40 border-slate-800">
-          <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 font-headline text-xl">
-              <Truck className="w-6 h-6 text-[#0066FF]" />
-              Dispatch Control
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
-                <Input 
-                  value={dispatchData.runnerName} 
-                  onChange={e => setDispatchData({...dispatchData, runnerName: e.target.value})} 
-                  placeholder="e.g. Rahul Patel" 
-                  className="bg-slate-950 border-slate-800 h-11" 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile</Label>
-                <Input 
-                  value={dispatchData.runnerMobile} 
-                  onChange={e => setDispatchData({...dispatchData, runnerMobile: e.target.value})} 
-                  placeholder="9988776655" 
-                  className="bg-slate-950 border-slate-800 h-11" 
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Job Linker</Label>
-              <Select value={dispatchData.selectedJobId} onValueChange={v => setDispatchData({...dispatchData, selectedJobId: v})}>
-                <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
-                  <SelectValue placeholder="Select active job..." />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800">
-                  {activeJobs.map((job: any) => (
-                    <SelectItem key={job.id} value={job.id}>{job.id} - {job.customerName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button onClick={handleDispatch} disabled={!dispatchData.runnerName || !dispatchData.selectedJobId} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase">
-              <Send className="w-5 h-5 mr-2" /> Dispatch & Send to Runner
-            </Button>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-8">
         <Card className="bg-slate-900/40 border-slate-800">
           <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 font-headline text-xl">
               <Car className="w-6 h-6 text-[#FFD700]" />
-              Fleet Management
+              Fleet Registry & Management
             </CardTitle>
             <Dialog open={isVehicleModalOpen} onOpenChange={setVehicleModalOpen}>
               <DialogTrigger asChild>
@@ -329,9 +222,9 @@ export function TransportationModule({ store }: { store: any }) {
             <Table>
               <TableHeader className="bg-slate-900/60">
                 <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="font-headline text-slate-400">Vehicle</TableHead>
-                  <TableHead className="font-headline text-slate-400">Driver</TableHead>
-                  <TableHead className="font-headline text-slate-400">Status</TableHead>
+                  <TableHead className="font-headline text-slate-400">Vehicle Info</TableHead>
+                  <TableHead className="font-headline text-slate-400">Driver Profile</TableHead>
+                  <TableHead className="font-headline text-slate-400">Operational Status</TableHead>
                   <TableHead className="text-right font-headline text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -341,7 +234,7 @@ export function TransportationModule({ store }: { store: any }) {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold">{v.vehicleNumber}</span>
-                        <span className="text-[10px] text-slate-500 uppercase">{v.vehicleType} • {v.fuelType}</span>
+                        <span className="text-[10px] text-slate-500 uppercase">{v.vehicleType} • {v.fuelType} • {v.capacity}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -368,56 +261,12 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableRow>
                 ))}
                 {store.vehicles.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500 italic">No vehicles registered.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500 italic">No vehicles registered in fleet.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-xl font-headline font-bold flex items-center gap-2">
-          <Package className="w-6 h-6 text-[#FFD700]" /> Transit Log Directory
-        </h3>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-900/60">
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead className="font-headline text-slate-400">Runner Info</TableHead>
-                <TableHead className="font-headline text-slate-400">Job ID</TableHead>
-                <TableHead className="font-headline text-slate-400">Customer</TableHead>
-                <TableHead className="font-headline text-slate-400">Destination</TableHead>
-                <TableHead className="font-headline text-slate-400">Time</TableHead>
-                <TableHead className="font-headline text-slate-400">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {store.transportation.map((log: any) => (
-                <TableRow key={log.id} className="border-slate-800/50 hover:bg-slate-800/20">
-                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span></div></TableCell>
-                  <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
-                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.customerName}</span><span className="text-[10px] text-slate-500">{log.customerMobile}</span></div></TableCell>
-                  <TableCell><div className="flex items-center gap-2 max-w-[200px] text-xs text-slate-400"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{log.address}</span></div></TableCell>
-                  <TableCell><div className="flex items-center gap-2 text-xs text-slate-500"><Clock className="w-3 h-3" />{format(new Date(log.dispatchTime), 'hh:mm a')}</div></TableCell>
-                  <TableCell>
-                    <Select value={log.status} onValueChange={(v: any) => store.updateTransportationLog(log.id, v)}>
-                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="In-Transit">In-Transit</SelectItem>
-                        <SelectItem value="Collected">Collected</SelectItem>
-                        <SelectItem value="Arrived at Workshop">Arrived at Workshop</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {store.transportation.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transits.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
       </div>
     </div>
   );

@@ -1,5 +1,15 @@
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
+export interface VisitHistoryEntry {
+  id: string;
+  date: string;
+  time: string;
+  complaintDescription: string;
+  technicianNotes: string;
+  status: RepairStatus;
+  resolutionNotes?: string;
+}
+
 export interface RepairCall {
   id: string; // Job ID e.g. TV1001
   customerId: string; // GJ51001
@@ -20,6 +30,8 @@ export interface RepairCall {
   warrantyExpiry?: string;
   storeLocation?: string;
   problemDescription: string;
+  visitHistory: VisitHistoryEntry[];
+  repeatCount: number;
 }
 
 export interface Inquiry {

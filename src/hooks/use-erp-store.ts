@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, TransportEntry } from '@/lib/types';
+import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, TransportEntry, VisibilitySettings as IVisibilitySettings } from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -15,8 +15,10 @@ export interface VisibilitySettings {
     totalActive: boolean;
     pending: boolean;
     completed: boolean;
+    repeat: boolean;
     rejected: boolean;
     exchange: boolean;
+    warranty: boolean;
   };
 }
 
@@ -32,8 +34,10 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
     totalActive: true,
     pending: true,
     completed: true,
+    repeat: true,
     rejected: true,
-    exchange: true
+    exchange: true,
+    warranty: true
   }
 };
 

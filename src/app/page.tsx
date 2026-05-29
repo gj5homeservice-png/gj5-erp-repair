@@ -47,7 +47,6 @@ export default function DashboardPage() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // STRICT SIDEBAR NAVIGATION TREE HARDCODE
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
@@ -163,14 +162,16 @@ export default function DashboardPage() {
                 </div>
                 <Separator className="bg-slate-800" />
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 5-Card Analytics</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 7-Card Analytics</h4>
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       { id: 'totalActive', label: 'Total Active' },
                       { id: 'pending', label: 'Pending' },
                       { id: 'completed', label: 'Completed' },
+                      { id: 'repeat', label: 'Repeat Call' },
                       { id: 'rejected', label: 'Rejected' },
-                      { id: 'exchange', label: 'Exchange/Purchase' }
+                      { id: 'exchange', label: 'Exchange/Purchase' },
+                      { id: 'warranty', label: 'Warranty Tracking' }
                     ].map((kpi) => (
                       <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                         <Label className="text-sm font-medium">{kpi.label}</Label>

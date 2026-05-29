@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -10,7 +11,6 @@ import {
   MessageSquare, 
   Paperclip,
   TrendingUp,
-  CheckCircle2,
   Navigation,
   Package
 } from 'lucide-react';
@@ -25,7 +25,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Table, 
   TableBody, 
@@ -35,6 +34,9 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+
+// Safeguard definition for cn if import fails or is missing
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
@@ -46,8 +48,8 @@ export function TransportationModule({ store }: { store: any }) {
   ]);
 
   const stats = useMemo(() => {
-    const total = store.transportationLogs.length;
-    const inTransit = store.transportationLogs.filter((l: any) => l.status === 'In-Transit').length;
+    const total = store.transportationLogs?.length || 0;
+    const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In-Transit').length || 0;
     return { total, inTransit };
   }, [store.transportationLogs]);
 
@@ -68,7 +70,6 @@ export function TransportationModule({ store }: { store: any }) {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* 5-CARD HEADER REPLICA FOR TRANSPORTATION */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
@@ -138,10 +139,12 @@ export function TransportationModule({ store }: { store: any }) {
         <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
           <Table>
             <TableHeader className="bg-slate-900/60">
-              <TableRow className="border-slate-800"><TableHead>Runner Info</TableHead><TableHead>Job ID</TableHead><TableHead>Destination</TableHead><TableHead>Status</TableHead></TableRow>
+              <TableRow className="border-slate-800 hover:bg-transparent">
+                <TableHead>Runner Info</TableHead><TableHead>Job ID</TableHead><TableHead>Destination</TableHead><TableHead>Status</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
-              {store.transportationLogs.map((log: any) => (
+              {(store.transportationLogs || []).map((log: any) => (
                 <TableRow key={log.id} className="border-slate-800/50">
                   <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-xs text-slate-500">{log.runnerMobile}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
@@ -158,7 +161,7 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {store.transportationLogs.length === 0 && <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
+              {(!store.transportationLogs || store.transportationLogs.length === 0) && <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

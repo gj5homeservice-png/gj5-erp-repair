@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -20,10 +21,12 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { RepairCall, RepairStatus } from '@/lib/types';
-import { MessageSquare, Paperclip, ChevronRight, Notebook } from 'lucide-react';
+import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
+import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-import { cn } from '@/lib/utils';
+
+// Defining cn inline as a safeguard against potential import issues
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
 const BRANDS = ['GJ5 PLUS', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
@@ -32,10 +35,12 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [selectedBrand, setSelectedBrand] = useState('GJ5 PLUS');
   const [activeTpl, setActiveTpl] = useState(0);
+  const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
     category: 'TV', brand: 'GJ5 PLUS', model: '', screenSize: '', techTags: [],
-    status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty'
+    status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
+    visitHistory: [], repeatCount: 0
   });
 
   const [inqData, setInqData] = useState({ name: '', mobile: '', address: '', notes: '' });
@@ -54,15 +59,32 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       setFormData({
         id: nextId, customerId: `GJ5${1001 + store.calls.length}`,
         category: 'TV', brand: 'GJ5 PLUS', techTags: [], status: 'Pending',
-        warrantyDuration: 'No Warranty', storeLocation: 'GODOWN'
+        warrantyDuration: 'No Warranty', storeLocation: 'GODOWN',
+        visitHistory: [], repeatCount: 0
       });
     }
-  }, [editingCall, isOpen]);
+  }, [editingCall, isOpen, store.calls.length]);
 
   const toggleTag = (tag: string) => {
     const tags = formData.techTags || [];
     setFormData({...formData, techTags: tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag]});
   };
+
+  const handleRepeatLookup = () => {
+    const found = store.calls.find((c: any) => c.id.toLowerCase() === repeatSearchQuery.toLowerCase() || c.mobile === repeatSearchQuery);
+    if (found) {
+      setFormData({
+        ...found,
+        status: 'Pending',
+        problemDescription: '',
+      });
+      setSelectedBrand(BRANDS.includes(found.brand) ? found.brand : 'Other');
+      setActiveTab('Registry');
+    }
+  };
+
+  const isExisting = store.calls.some((c: any) => c.id === formData.id);
+  const isLocked = isExisting && !editingCall;
 
   const handleSave = () => {
     if (activeTab === 'Inquiry') {
@@ -85,15 +107,33 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       warrantyExpiry = addMonths(new Date(), months).toISOString();
     }
 
+    let updatedHistory = [...(formData.visitHistory || [])];
+    let finalRepeatCount = formData.repeatCount || 0;
+
+    if (isExisting) {
+      const newHistoryEntry: VisitHistoryEntry = {
+        id: `VST${Date.now()}`,
+        date: format(new Date(), 'dd/MM/yyyy'),
+        time: format(new Date(), 'hh:mm a'),
+        complaintDescription: formData.problemDescription || '',
+        technicianNotes: '',
+        status: formData.status as RepairStatus
+      };
+      updatedHistory.push(newHistoryEntry);
+      finalRepeatCount = updatedHistory.length - 1;
+    }
+
     const finalData = {
       ...formData,
       brand: finalBrand,
       warrantyExpiry,
+      visitHistory: updatedHistory,
+      repeatCount: finalRepeatCount,
       updatedAt: new Date().toISOString(),
-      createdAt: editingCall?.createdAt || new Date().toISOString()
+      createdAt: formData.createdAt || new Date().toISOString()
     } as RepairCall;
 
-    if (editingCall) store.updateCall(finalData);
+    if (isExisting) store.updateCall(finalData);
     else store.addCall(finalData);
     onClose();
   };
@@ -111,6 +151,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
             </DialogTitle>
             <TabsList className="bg-slate-800/50 border border-slate-700">
               <TabsTrigger value="Registry">Main Registry</TabsTrigger>
+              <TabsTrigger value="Repeat">Repeat Search</TabsTrigger>
               <TabsTrigger value="Inquiry">Quick Inquiry</TabsTrigger>
             </TabsList>
           </div>
@@ -121,15 +162,15 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Job ID</Label><Input readOnly value={formData.id} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400 h-11" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label><Input readOnly value={formData.customerId} className="bg-slate-900 border-slate-800 font-code h-11" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Job ID</Label><Input readOnly={isLocked || editingCall} value={formData.id} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400 h-11" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label><Input readOnly={isLocked || editingCall} value={formData.customerId} className="bg-slate-900 border-slate-800 font-code h-11" /></div>
                     </div>
-                    <div className="space-y-1"><Label>Customer Name</Label><Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                    <div className="space-y-1"><Label>Customer Name</Label><Input readOnly={isLocked} value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label>Mobile</Label><Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
-                      <div className="space-y-1"><Label>Pincode</Label><Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                      <div className="space-y-1"><Label>Mobile</Label><Input readOnly={isLocked} value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                      <div className="space-y-1"><Label>Pincode</Label><Input readOnly={isLocked} value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                     </div>
-                    <div className="space-y-1"><Label>Address</Label><Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                    <div className="space-y-1"><Label>Address</Label><Input readOnly={isLocked} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                     <div className="space-y-3">
                        <Label className="text-[10px] uppercase font-bold text-slate-500">Technician Tags</Label>
                        <div className="flex gap-2">
@@ -143,7 +184,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label>Brand (Priority Index 0)</Label>
-                          <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+                          <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
                             <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800">
                                {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
@@ -151,14 +192,20 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                           </Select>
                        </div>
                        {selectedBrand === 'Other' && (
-                         <div className="space-y-1 animate-in slide-in-from-left-2"><Label>Custom Brand</Label><Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                         <div className="space-y-1 animate-in slide-in-from-left-2"><Label>Custom Brand</Label><Input readOnly={isLocked} value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                        )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label>Model No</Label><Input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
-                      <div className="space-y-1"><Label>Size (Inch)</Label><Input value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                      <div className="space-y-1"><Label>Model No</Label><Input readOnly={isLocked} value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
+                      <div className="space-y-1"><Label>Size (Inch)</Label><Input readOnly={isLocked} value={formData.screenSize} onChange={e => setFormData({...formData, screenSize: e.target.value})} className="bg-slate-900 border-slate-800 h-11" /></div>
                     </div>
-                    <div className="space-y-1"><Label>Problem Statement</Label><Textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} className="bg-slate-900 border-slate-800 min-h-[120px]" /></div>
+                    <div className="space-y-1">
+                      <Label className="flex justify-between items-center">
+                        Problem Statement
+                        {formData.repeatCount! > 0 && <span className="text-[10px] text-purple-400 font-bold uppercase">Repeat Entry</span>}
+                      </Label>
+                      <Textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} className="bg-slate-900 border-slate-800 min-h-[120px]" />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                          <Label>Store Location</Label>
@@ -187,6 +234,43 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                     </div>
                   </div>
                 </div>
+              ) : activeTab === 'Repeat' ? (
+                <div className="space-y-6">
+                  <div className="p-8 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-6">
+                    <div className="space-y-2">
+                       <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Search Existing Job / Mobile</Label>
+                       <div className="flex gap-2">
+                          <Input 
+                            value={repeatSearchQuery} 
+                            onChange={e => setRepeatSearchQuery(e.target.value)} 
+                            placeholder="Enter Job ID (e.g. TV1001) or Mobile..." 
+                            className="bg-slate-950 border-slate-800 h-12 text-lg" 
+                          />
+                          <Button onClick={handleRepeatLookup} className="bg-[#0066FF] px-8 h-12"><Search className="w-5 h-5 mr-2" /> Search</Button>
+                       </div>
+                    </div>
+                    <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-3">
+                       <h4 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-2"><History className="w-4 h-4" /> Repeat Call Logic</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">Loading an existing record will lock the Job ID and Customer ID. New visit details will be appended chronologically to the history ledger.</p>
+                    </div>
+                  </div>
+                  {formData.visitHistory!.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-slate-500">Visit Timeline</h4>
+                      <div className="max-h-[300px] overflow-y-auto pr-2 space-y-3">
+                        {formData.visitHistory!.map((v, i) => (
+                          <div key={v.id} className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex items-start gap-4">
+                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-blue-400 shrink-0">{i+1}</div>
+                             <div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase">{v.date} • {v.time}</p>
+                                <p className="text-sm font-medium text-slate-200 mt-1">{v.complaintDescription}</p>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-6 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">
                   <div className="grid grid-cols-2 gap-6">
@@ -198,7 +282,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                 </div>
               )}
             </div>
-            {/* STRICT WHATSAPP TEMPLATE SUITE RESTORATION */}
             <div className="col-span-4 border-l border-slate-800 pl-8 space-y-6">
                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                  <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Templates
@@ -223,7 +306,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
           <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold flex gap-2">
-               {activeTab === 'Inquiry' ? 'Commit Inquiry' : (editingCall ? 'Update Job' : 'Commit Registry')}
+               {activeTab === 'Inquiry' ? 'Commit Inquiry' : (isExisting ? 'Update Job' : 'Commit Registry')}
                <ChevronRight className="w-4 h-4" />
             </Button>
           </DialogFooter>
@@ -232,3 +315,4 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     </Dialog>
   );
 }
+

@@ -41,17 +41,18 @@ import { Separator } from '@/components/ui/separator';
 
 export default function DashboardPage() {
   const store = useErpStore();
-  const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Logistics'>('Repairing');
+  const [activeTab, setActiveTab] = useState<'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Transportation' | 'Logistics'>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Force sidebar sequence: Repairing, Billing, Employees, E-Wallet, Logistics
+  // Force sidebar sequence: Repairing, Billing, Employees, E-Wallet, Transportation, Logistics
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing', visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing', visible: store.visibility.tabs.Billing },
     { name: 'Employees', icon: Users, id: 'Employees', visible: store.visibility.tabs.Employees },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet', visible: store.visibility.tabs['E-Wallet'] },
+    { name: 'Transportation', icon: Truck, id: 'Transportation', visible: store.visibility.tabs.Transportation },
     { name: 'Logistics', icon: Truck, id: 'Logistics', visible: store.visibility.tabs.Logistics },
   ].filter(item => item.visible);
 
@@ -262,7 +263,7 @@ export default function DashboardPage() {
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
-          {activeTab === 'Logistics' && <LogisticsModule store={store} />}
+          {(activeTab === 'Transportation' || activeTab === 'Logistics') && <LogisticsModule store={store} />}
         </div>
       </main>
     </div>

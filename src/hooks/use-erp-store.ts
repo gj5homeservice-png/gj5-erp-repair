@@ -10,6 +10,7 @@ export interface VisibilitySettings {
     Billing: boolean;
     Employees: boolean;
     'E-Wallet': boolean;
+    Transportation: boolean;
     Logistics: boolean;
   };
   kpis: {
@@ -41,7 +42,8 @@ export function useErpStore() {
       Billing: true,
       Employees: true,
       'E-Wallet': true,
-      Logistics: true
+      Transportation: true,
+      Logistics: false
     },
     kpis: {
       totalActive: true,

@@ -59,17 +59,16 @@ export function TransportationModule({ store }: { store: any }) {
   const stats = useMemo(() => {
     const total = store.transportationLogs?.length || 0;
     const pendingPickup = store.transportationLogs?.filter((l: any) => l.status === 'Pending Pickup').length || 0;
-    const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In Transit').length || 0;
-    const delivered = store.transportationLogs?.filter((l: any) => l.status === 'Delivered To Shop').length || 0;
-    const readyForDelivery = store.transportationLogs?.filter((l: any) => l.status === 'Ready For Delivery').length || 0;
+    const okPickup = store.transportationLogs?.filter((l: any) => l.status === 'OK Pickup').length || 0;
+    const pendingDelivery = store.transportationLogs?.filter((l: any) => l.status === 'Pending Delivery').length || 0;
+    const okDelivery = store.transportationLogs?.filter((l: any) => l.status === 'OK Delivery').length || 0;
     
     return { 
       total, 
       pendingPickup, 
-      inTransit, 
-      delivered,
-      readyForDelivery,
-      activeFleet: '100%'
+      okPickup,
+      pendingDelivery,
+      okDelivery
     };
   }, [store.transportationLogs]);
 
@@ -103,7 +102,7 @@ export function TransportationModule({ store }: { store: any }) {
   };
 
   const generateSheet = (type: 'PICKUP' | 'DELIVERY') => {
-    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
+    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
     const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
     if (logs.length === 0) {
@@ -190,7 +189,7 @@ export function TransportationModule({ store }: { store: any }) {
       return;
     }
 
-    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
+    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
     const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
     if (logs.length === 0) {
@@ -250,10 +249,10 @@ export function TransportationModule({ store }: { store: any }) {
 
   const kpis = [
     { id: 'total', label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
-    { id: 'pending', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
-    { id: 'transit', label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-500' },
-    { id: 'ready', label: 'Ready Delivery', value: stats.readyForDelivery, icon: CheckCircleIcon, color: 'bg-emerald-600' },
-    { id: 'delivered', label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-slate-600' }
+    { id: 'pending-pickup', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
+    { id: 'ok-pickup', label: 'OK Pickup', value: stats.okPickup, icon: Navigation, color: 'bg-blue-500' },
+    { id: 'pending-delivery', label: 'Pending Delivery', value: stats.pendingDelivery, icon: CheckCircleIcon, color: 'bg-emerald-600' },
+    { id: 'ok-delivery', label: 'OK Delivery', value: stats.okDelivery, icon: CheckCircleIcon, color: 'bg-slate-600' }
   ];
 
   return (
@@ -437,10 +436,9 @@ export function TransportationModule({ store }: { store: any }) {
                       <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-44"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
-                        <SelectItem value="Picked Up">Picked Up</SelectItem>
-                        <SelectItem value="In Transit">In Transit</SelectItem>
-                        <SelectItem value="Delivered To Shop">Delivered To Shop</SelectItem>
-                        <SelectItem value="Ready For Delivery">Ready For Delivery</SelectItem>
+                        <SelectItem value="OK Pickup">OK Pickup</SelectItem>
+                        <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
+                        <SelectItem value="OK Delivery">OK Delivery</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

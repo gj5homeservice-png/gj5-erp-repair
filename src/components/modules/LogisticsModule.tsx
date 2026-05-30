@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -94,10 +93,10 @@ export function LogisticsModule({ store }: { store: any }) {
       customerMobile: job.mobile,
       address: job.address,
       dispatchTime: new Date().toISOString(),
-      status: 'In-Transit' as const
+      status: 'Pending Pickup' as const
     };
 
-    store.addLogisticsLog(newLog);
+    store.addTransportLog(newLog);
 
     // WhatsApp Dispatch
     let msg = templates[selectedTemplateIndex];
@@ -203,7 +202,7 @@ export function LogisticsModule({ store }: { store: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {store.logistics.map((log: any) => (
+              {store.transportationLogs.map((log: any) => (
                 <TableRow key={log.id} className="border-slate-800/50 hover:bg-slate-800/20">
                   <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
@@ -211,18 +210,19 @@ export function LogisticsModule({ store }: { store: any }) {
                   <TableCell><div className="flex items-center gap-2 max-w-[200px] text-xs text-slate-400"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{log.address}</span></div></TableCell>
                   <TableCell><div className="flex items-center gap-2 text-xs text-slate-500"><Clock className="w-3 h-3" />{format(new Date(log.dispatchTime), 'hh:mm a')}</div></TableCell>
                   <TableCell>
-                    <Select value={log.status} onValueChange={(v: any) => store.updateLogisticsLog(log.id, v)}>
+                    <Select value={log.status} onValueChange={(v: any) => store.updateTransportLogStatus(log.id, v)}>
                       <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="In-Transit">In-Transit</SelectItem>
-                        <SelectItem value="Collected">Collected</SelectItem>
-                        <SelectItem value="Arrived at Workshop">Arrived at Workshop</SelectItem>
+                        <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
+                        <SelectItem value="OK Pickup">OK Pickup</SelectItem>
+                        <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
+                        <SelectItem value="OK Delivery">OK Delivery</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                 </TableRow>
               ))}
-              {store.logistics.length === 0 && (
+              {store.transportationLogs.length === 0 && (
                 <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">No active transportation transits.</TableCell></TableRow>
               )}
             </TableBody>

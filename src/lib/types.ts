@@ -72,7 +72,7 @@ export interface Expense {
   timestamp: string;
 }
 
-export type LogisticsStatus = 'Pending Pickup' | 'Picked Up' | 'In Transit' | 'Delivered To Shop' | 'Ready For Delivery';
+export type LogisticsStatus = 'Pending Pickup' | 'OK Pickup' | 'Pending Delivery' | 'OK Delivery';
 
 export interface TransportationLog {
   id: string;

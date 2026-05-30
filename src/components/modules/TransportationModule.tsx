@@ -161,6 +161,8 @@ export function TransportationModule({ store }: { store: any }) {
         doc.text(`Device Profile: ${job.brand} ${job.model} (${job.screenSize}")`, 30, y);
         y += 5;
         doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
+        y += 5;
+        doc.text(`Tech Tags: ${job.techTags?.join(', ') || 'None'} | Warranty: ${job.warrantyDuration || 'N/A'}`, 30, y);
         
         y += 5;
         doc.setFont('helvetica', 'bold');
@@ -222,7 +224,10 @@ export function TransportationModule({ store }: { store: any }) {
             message += `📟 *Model:* ${fullJob.model}%0A`;
             message += `📏 *Size:* ${fullJob.screenSize}"%0A`;
             message += `🛠️ *Issue:* ${fullJob.problemDescription || 'N/A'}%0A`;
+            message += `🏷️ *Tags:* ${fullJob.techTags?.join(', ') || 'None'}%0A`;
+            message += `🛡️ *Warranty:* ${fullJob.warrantyDuration || 'N/A'}%0A`;
             message += `✅ *Repair Status:* ${fullJob.status}%0A`;
+            message += `⏰ *Logged:* ${format(new Date(fullJob.createdAt), 'dd/MM HH:mm')}%0A`;
           }
           message += `🚚 *Logistics:* ${log.status}%0A`;
           message += `---------------------------%0A`;

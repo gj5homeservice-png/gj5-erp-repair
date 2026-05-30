@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -228,11 +229,14 @@ export function BillingModule({ store }: { store: any }) {
       "7. No warranty on liquid damage.",
       "8. Warranty void if repaired by another technician.",
       "9. Customer should verify TV condition at delivery.",
-      "10. Original invoice required for warranty claim."
+      "10. Original invoice required for warranty claim.",
+      "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
     ];
     terms.forEach(term => {
-      doc.text(term, 15, currentY);
-      currentY += 5;
+      // Use splitTextToSize to handle long disclaimer paragraph
+      const lines = doc.splitTextToSize(term, 180);
+      doc.text(lines, 15, currentY);
+      currentY += (lines.length * 4) + 1;
     });
 
     // Footer
@@ -575,7 +579,7 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
              <ShieldCheck className={cn("w-4 h-4 transition-colors duration-300", theme.text)} /> Terms & Conditions
           </h4>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 gap-y-2">
              {[
                "1. Service charges and delivery charges are non-refundable.",
                "2. TV must be collected within 30 days after repair completion.",
@@ -586,7 +590,8 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
                "7. No warranty on liquid damage.",
                "8. Warranty void if repaired by another technician.",
                "9. Customer should verify TV condition at delivery.",
-               "10. Original invoice required for warranty claim."
+               "10. Original invoice required for warranty claim.",
+               "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
              ].map((term, i) => (
                <p key={`term-${i}`} className="text-[9px] text-slate-500 leading-tight">{term}</p>
              ))}

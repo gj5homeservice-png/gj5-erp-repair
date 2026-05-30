@@ -110,6 +110,7 @@ export interface Invoice {
   model: string;
   hardwareCost: number;
   laborCost: number;
+  deliveryCharge: number;
   additionalCharges: number;
   taxEnabled: boolean;
   subtotal: number;

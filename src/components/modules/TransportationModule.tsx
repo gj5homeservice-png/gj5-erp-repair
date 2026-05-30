@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -14,7 +13,9 @@ import {
   CheckCircle as CheckCircleIcon,
   User,
   FileDown,
-  MessageSquare
+  MessageSquare,
+  FileStack,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { jsPDF } from 'jspdf';
+import { LogisticsStatus } from '@/lib/types';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
@@ -49,12 +51,14 @@ export function TransportationModule({ store }: { store: any }) {
     const pendingPickup = store.transportationLogs?.filter((l: any) => l.status === 'Pending Pickup').length || 0;
     const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In Transit').length || 0;
     const delivered = store.transportationLogs?.filter((l: any) => l.status === 'Delivered To Shop').length || 0;
+    const readyForDelivery = store.transportationLogs?.filter((l: any) => l.status === 'Ready For Delivery').length || 0;
     
     return { 
       total, 
       pendingPickup, 
       inTransit, 
       delivered,
+      readyForDelivery,
       activeFleet: '100%'
     };
   }, [store.transportationLogs]);
@@ -88,98 +92,118 @@ export function TransportationModule({ store }: { store: any }) {
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
   };
 
-  const handleWhatsAppShare = (log: any) => {
-    const job = store.calls.find((c: any) => c.id === log.jobId);
-    if (!job) return;
-
-    const message = `*PICKUP MANIFEST - GJ5 PLUS*%0A%0A` +
-      `*Runner:* ${log.runnerName}%0A` +
-      `*Job ID:* ${job.id}%0A` +
-      `*Customer:* ${job.customerName}%0A` +
-      `*Mobile:* ${job.mobile}%0A` +
-      `*Address:* ${job.address}%0A%0A` +
-      `*Device:* ${job.brand} ${job.model} (${job.screenSize}" )%0A` +
-      `*Problem:* ${job.problemDescription || 'N/A'}%0A%0A` +
-      `*Status:* ${log.status}%0A` +
-      `*Generated:* ${format(new Date(), 'dd/MM HH:mm')}`;
-
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=91${log.runnerMobile}&text=${message}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const handleGeneratePDF = (log: any) => {
-    const job = store.calls.find((c: any) => c.id === log.jobId);
-    if (!job) {
-      alert("Job details not found in database.");
+  const generateSheet = (type: 'PICKUP' | 'DELIVERY') => {
+    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
+    const jobs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
+    
+    if (jobs.length === 0) {
+      alert(`No jobs found with status: ${statusFilter}`);
       return;
     }
 
     const doc = new jsPDF();
     
-    // Branding
+    // Header
     doc.setFontSize(22);
     doc.setTextColor(0, 102, 255);
     doc.text('GJ5 PLUS', 105, 20, { align: 'center' });
     
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('Professional Service & Logistics Hub', 105, 28, { align: 'center' });
-    
-    doc.setDrawColor(200);
-    doc.line(20, 35, 190, 35);
+    doc.text('Enterprise Logistics & Service Management', 105, 26, { align: 'center' });
     
     doc.setFontSize(16);
     doc.setTextColor(0);
-    doc.text('PICKUP MANIFEST SHEET', 105, 45, { align: 'center' });
+    const title = type === 'PICKUP' ? 'DAILY CONSOLIDATED PICKUP SHEET' : 'DAILY CONSOLIDATED DELIVERY SHEET';
+    doc.text(title, 105, 40, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`DATE: ${format(new Date(), 'dd MMM yyyy')}`, 105, 46, { align: 'center' });
 
-    doc.setFontSize(12);
-    let y = 60;
-    const leftX = 25;
-    const valueX = 75;
+    doc.setDrawColor(200);
+    doc.line(20, 52, 190, 52);
 
-    const details = [
-      { label: 'Job ID:', value: job.id },
-      { label: 'Customer Name:', value: job.customerName },
-      { label: 'Mobile Number:', value: job.mobile },
-      { label: 'Address:', value: job.address },
-      { label: 'TV Brand:', value: job.brand },
-      { label: 'Model Number:', value: job.model },
-      { label: 'Problem Statement:', value: job.problemDescription || 'N/A' }
-    ];
+    let y = 65;
+    jobs.forEach((log: any, index: number) => {
+      const job = store.calls.find((c: any) => c.id === log.jobId);
+      
+      // Page Break Check
+      if (y > 250) {
+        doc.addPage();
+        y = 30;
+      }
 
-    details.forEach(detail => {
       doc.setFont('helvetica', 'bold');
-      doc.text(detail.label, leftX, y);
+      doc.setFontSize(11);
+      doc.text(`${index + 1}. JOB ID: ${log.jobId} - ${log.customerName}`, 25, y);
       
       doc.setFont('helvetica', 'normal');
-      const wrappedValue = doc.splitTextToSize(detail.value || 'N/A', 110);
-      doc.text(wrappedValue, valueX, y);
+      doc.setFontSize(9);
+      y += 6;
+      doc.text(`Mobile: ${log.customerMobile} | Address: ${log.address}`, 30, y);
       
-      const lines = wrappedValue.length;
-      y += (lines * 7) + 3;
+      if (type === 'PICKUP' && job) {
+        y += 6;
+        doc.text(`Device: ${job.brand} ${job.model} (${job.screenSize}") | Issue: ${job.problemDescription || 'N/A'}`, 30, y);
+      } else if (type === 'DELIVERY' && job) {
+        y += 6;
+        doc.text(`Device: ${job.brand} ${job.model} (${job.screenSize}") | Status: READY`, 30, y);
+      }
+
+      y += 10;
+      doc.setDrawColor(240);
+      doc.line(25, y - 5, 185, y - 5);
+      y += 5;
     });
 
-    doc.line(20, y + 10, 190, y + 10);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(150);
-    doc.text(`Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 105, 280, { align: 'center' });
-    doc.text('© GJ5 PLUS - Enterprise Logistics System', 105, 287, { align: 'center' });
+    // Footer Summary
+    const totalY = Math.min(y + 10, 270);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(`TOTAL ${type} TVs: ${jobs.length}`, 105, totalY, { align: 'center' });
 
-    doc.save(`Pickup_${job.id}.pdf`);
+    doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
+  };
+
+  const sendWhatsAppManifest = (type: 'PICKUP' | 'DELIVERY') => {
+    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
+    const jobs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
+    
+    if (jobs.length === 0) return;
+
+    // Use the first runner's mobile or prompt (simplified)
+    const runnerMobile = jobs[0].runnerMobile || '';
+
+    let message = `*DAILY ${type} MANIFEST - GJ5 PLUS*%0A`;
+    message += `Date: ${format(new Date(), 'dd/MM/yyyy')}%0A%0A`;
+
+    jobs.forEach((job: any, i: number) => {
+      message += `${i+1}. *${job.jobId}* - ${job.customerName}%0A`;
+      message += `📍 ${job.address}%0A`;
+      message += `📞 ${job.customerMobile}%0A`;
+      if (type === 'PICKUP') {
+        const fullJob = store.calls.find((c: any) => c.id === job.jobId);
+        message += `🛠️ Issue: ${fullJob?.problemDescription || 'N/A'}%0A`;
+      }
+      message += `---------------------------%0A`;
+    });
+
+    message += `%0A*Total ${type} TVs:* ${jobs.length}`;
+
+    const url = `https://web.whatsapp.com/send?phone=91${runnerMobile}&text=${message}`;
+    window.open(url, '_blank');
   };
 
   const kpis = [
     { id: 'total', label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
     { id: 'pending', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
     { id: 'transit', label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-500' },
-    { id: 'delivered', label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-emerald-600' },
-    { id: 'fleet', label: 'Fleet Active', value: stats.activeFleet, icon: TrendingUp, color: 'bg-cyan-600' }
+    { id: 'ready', label: 'Ready Delivery', value: stats.readyForDelivery, icon: CheckCircleIcon, color: 'bg-emerald-600' },
+    { id: 'delivered', label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-slate-600' }
   ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {kpis.map((k) => (
           <Card key={`kpi-${k.id}`} className="bg-slate-900/40 border-slate-800">
             <CardContent className="p-4 flex justify-between items-center">
@@ -193,64 +217,95 @@ export function TransportationModule({ store }: { store: any }) {
         ))}
       </div>
 
-      <Card className="bg-slate-900/40 border-slate-800">
-        <CardHeader className="border-b border-slate-800">
-          <CardTitle className="flex items-center gap-2 font-headline text-xl">
-            <Truck className="w-6 h-6 text-[#0066FF]" /> Runner Assignment Console
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="space-y-4">
-              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Details</Label>
-              <div className="space-y-2">
-                <Label>Runner Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 bg-slate-900/40 border-slate-800">
+          <CardHeader className="border-b border-slate-800">
+            <CardTitle className="flex items-center gap-2 font-headline text-xl">
+              <Truck className="w-6 h-6 text-[#0066FF]" /> Runner Assignment Console
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Details</Label>
+                <div className="space-y-2">
+                  <Label>Runner Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input 
+                      value={formData.runnerName} 
+                      onChange={e => setFormData({...formData, runnerName: e.target.value})} 
+                      className="pl-10 bg-slate-950 border-slate-800 h-11" 
+                      placeholder="Enter Runner Name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Runner Mobile Number</Label>
                   <Input 
-                    value={formData.runnerName} 
-                    onChange={e => setFormData({...formData, runnerName: e.target.value})} 
-                    className="pl-10 bg-slate-950 border-slate-800 h-11" 
-                    placeholder="Enter Runner Name"
+                    value={formData.runnerMobile} 
+                    onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
+                    className="bg-slate-950 border-slate-800 h-11" 
+                    placeholder="10-Digit Mobile"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Runner Mobile Number</Label>
-                <Input 
-                  value={formData.runnerMobile} 
-                  onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
-                  className="bg-slate-950 border-slate-800 h-11" 
-                  placeholder="10-Digit Mobile"
-                />
+
+              <div className="space-y-4">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Association</Label>
+                <div className="space-y-2">
+                  <Label>Link Active Service Job</Label>
+                  <Select value={formData.jobId} onValueChange={v => setFormData({...formData, jobId: v})}>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+                      <SelectValue placeholder="Select Job..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      {store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').map((c: any) => (
+                        <SelectItem key={`job-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="pt-6">
+                  <Button onClick={handleAssignRunner} className="w-full h-11 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
+                    Assign Runner
+                  </Button>
+                </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-4">
-              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Association</Label>
-              <div className="space-y-2">
-                <Label>Link Active Service Job</Label>
-                <Select value={formData.jobId} onValueChange={v => setFormData({...formData, jobId: v})}>
-                  <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
-                    <SelectValue placeholder="Select Job..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    {store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').map((c: any) => (
-                      <SelectItem key={`job-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <Card className="bg-slate-900/40 border-slate-800">
+           <CardHeader className="border-b border-slate-800">
+              <CardTitle className="flex items-center gap-2 font-headline text-lg">
+                 <FileStack className="w-5 h-5 text-emerald-500" />
+                 Bulk Manifest Control
+              </CardTitle>
+           </CardHeader>
+           <CardContent className="p-6 space-y-6">
+              <div className="space-y-3">
+                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Pickup Operations</Label>
+                 <Button onClick={() => generateSheet('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                    <FileDown className="w-4 h-4 mr-3 text-blue-400" /> Generate Pickup Sheet
+                 </Button>
+                 <Button onClick={() => sendWhatsAppManifest('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                    <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Pickup WhatsApp
+                 </Button>
               </div>
-            </div>
 
-            <div className="flex items-end">
-              <Button onClick={handleAssignRunner} className="w-full h-11 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
-                Assign Runner
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-3">
+                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Delivery Operations</Label>
+                 <Button onClick={() => generateSheet('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                    <FileDown className="w-4 h-4 mr-3 text-purple-400" /> Generate Delivery Sheet
+                 </Button>
+                 <Button onClick={() => sendWhatsAppManifest('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                    <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Delivery WhatsApp
+                 </Button>
+              </div>
+           </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -303,36 +358,18 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableCell>
                   <TableCell>
                     <Select value={log.status} onValueChange={v => store.updateTransportLogStatus(log.id, v)}>
-                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-40"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-44"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
                         <SelectItem value="Picked Up">Picked Up</SelectItem>
                         <SelectItem value="In Transit">In Transit</SelectItem>
                         <SelectItem value="Delivered To Shop">Delivered To Shop</SelectItem>
+                        <SelectItem value="Ready For Delivery">Ready For Delivery</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-emerald-400 hover:bg-emerald-500/10"
-                        onClick={() => handleWhatsAppShare(log)}
-                        title="Share Manifest via WhatsApp"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-[#0066FF] hover:bg-blue-500/10"
-                        onClick={() => handleGeneratePDF(log)}
-                        title="Download PDF Manifest"
-                      >
-                        <FileDown className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="sm" className="text-slate-500"><ChevronRight className="w-4 h-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

@@ -212,17 +212,19 @@ export function TransportationModule({ store }: { store: any }) {
             : 'Location not available';
 
           message += `${i+1}. *JOB: ${log.jobId}* (CID: ${fullJob?.customerId || 'N/A'})%0A`;
-          message += `👤 ${log.customerName}%0A`;
-          message += `📞 ${log.customerMobile}%0A`;
-          message += `📍 Address: ${log.address}%0A`;
-          message += `🗺️ Open Location:%0A${mapLink}%0A`;
+          message += `👤 *Name:* ${log.customerName}%0A`;
+          message += `📞 *Mobile:* ${log.customerMobile}%0A`;
+          message += `📍 *Address:* ${log.address}%0A`;
+          message += `🗺️ *Open Location:*%0A${mapLink}%0A`;
           
           if (fullJob) {
-            message += `📺 ${fullJob.brand} ${fullJob.model} (${fullJob.screenSize}")%0A`;
-            message += `🛠️ Issue: ${fullJob.problemDescription || 'N/A'}%0A`;
-            message += `✅ Repair: ${fullJob.status}%0A`;
-            message += `🚚 Transit: ${log.status}%0A`;
+            message += `📺 *Brand:* ${fullJob.brand}%0A`;
+            message += `📟 *Model:* ${fullJob.model}%0A`;
+            message += `📏 *Size:* ${fullJob.screenSize}"%0A`;
+            message += `🛠️ *Issue:* ${fullJob.problemDescription || 'N/A'}%0A`;
+            message += `✅ *Repair Status:* ${fullJob.status}%0A`;
           }
+          message += `🚚 *Logistics:* ${log.status}%0A`;
           message += `---------------------------%0A`;
         });
 

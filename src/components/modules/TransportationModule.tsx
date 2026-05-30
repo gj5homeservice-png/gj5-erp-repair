@@ -17,7 +17,8 @@ import {
   FileStack,
   ChevronRight,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,14 +104,15 @@ export function TransportationModule({ store }: { store: any }) {
 
   const generateSheet = (type: 'PICKUP' | 'DELIVERY') => {
     const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
-    const jobs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
+    const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
-    if (jobs.length === 0) {
+    if (logs.length === 0) {
       alert(`No jobs found with status: ${statusFilter}`);
       return;
     }
 
     const doc = new jsPDF();
+    const timestamp = format(new Date(), 'dd MMM yyyy HH:mm');
     
     // Header
     doc.setFontSize(22);
@@ -126,38 +128,49 @@ export function TransportationModule({ store }: { store: any }) {
     const title = type === 'PICKUP' ? 'DAILY CONSOLIDATED PICKUP SHEET' : 'DAILY CONSOLIDATED DELIVERY SHEET';
     doc.text(title, 105, 40, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`DATE: ${format(new Date(), 'dd MMM yyyy')}`, 105, 46, { align: 'center' });
+    doc.text(`GENERATED ON: ${timestamp}`, 105, 46, { align: 'center' });
 
     doc.setDrawColor(200);
     doc.line(20, 52, 190, 52);
 
     let y = 65;
-    jobs.forEach((log: any, index: number) => {
+    logs.forEach((log: any, index: number) => {
       const job = store.calls.find((c: any) => c.id === log.jobId);
       
-      if (y > 250) {
+      if (y > 230) {
         doc.addPage();
         y = 30;
       }
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text(`${index + 1}. JOB ID: ${log.jobId} - ${log.customerName}`, 25, y);
+      doc.text(`${index + 1}. JOB ID: ${log.jobId} [CUST ID: ${job?.customerId || 'N/A'}]`, 25, y);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       y += 6;
-      doc.text(`Mobile: ${log.customerMobile} | Address: ${log.address}`, 30, y);
+      doc.text(`Customer: ${log.customerName} | Mobile: ${log.customerMobile}`, 30, y);
       
-      if (type === 'PICKUP' && job) {
-        y += 6;
-        doc.text(`Device: ${job.brand} ${job.model} (${job.screenSize}") | Issue: ${job.problemDescription || 'N/A'}`, 30, y);
-      } else if (type === 'DELIVERY' && job) {
-        y += 6;
-        doc.text(`Device: ${job.brand} ${job.model} (${job.screenSize}") | Status: READY`, 30, y);
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Address: ${log.address}`, 30, y);
+      doc.setFont('helvetica', 'normal');
+      
+      if (job) {
+        y += 5;
+        doc.text(`Device Profile: ${job.brand} ${job.model} (${job.screenSize}")`, 30, y);
+        y += 5;
+        doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
+        
+        if (type === 'DELIVERY') {
+          y += 5;
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Repair Status: ${job.status} | Delivery Status: ${log.status}`, 30, y);
+          doc.setFont('helvetica', 'normal');
+        }
       }
 
-      y += 10;
+      y += 12;
       doc.setDrawColor(240);
       doc.line(25, y - 5, 185, y - 5);
       y += 5;
@@ -166,7 +179,7 @@ export function TransportationModule({ store }: { store: any }) {
     const totalY = Math.min(y + 10, 270);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(`TOTAL ${type} TVs: ${jobs.length}`, 105, totalY, { align: 'center' });
+    doc.text(`TOTAL ${type} TVs: ${logs.length}`, 105, totalY, { align: 'center' });
 
     doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
   };
@@ -178,9 +191,9 @@ export function TransportationModule({ store }: { store: any }) {
     }
 
     const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
-    const jobs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
+    const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
-    if (jobs.length === 0) {
+    if (logs.length === 0) {
       alert(`No active ${type.toLowerCase()} jobs to dispatch.`);
       return;
     }
@@ -191,20 +204,27 @@ export function TransportationModule({ store }: { store: any }) {
     setTimeout(() => {
       try {
         let message = `*DAILY ${type} MANIFEST - GJ5 PLUS*%0A`;
-        message += `Date: ${format(new Date(), 'dd/MM/yyyy')}%0A%0A`;
+        message += `Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}%0A%0A`;
 
-        jobs.forEach((job: any, i: number) => {
-          message += `${i+1}. *${job.jobId}* - ${job.customerName}%0A`;
-          message += `📍 ${job.address}%0A`;
-          message += `📞 ${job.customerMobile}%0A`;
-          if (type === 'PICKUP') {
-            const fullJob = store.calls.find((c: any) => c.id === job.jobId);
-            message += `🛠️ Issue: ${fullJob?.problemDescription || 'N/A'}%0A`;
+        logs.forEach((log: any, i: number) => {
+          const fullJob = store.calls.find((c: any) => c.id === log.jobId);
+          message += `${i+1}. *JOB: ${log.jobId}* (CID: ${fullJob?.customerId || 'N/A'})%0A`;
+          message += `👤 ${log.customerName}%0A`;
+          message += `📞 ${log.customerMobile}%0A`;
+          message += `📍 ${log.address}%0A`;
+          
+          if (fullJob) {
+            message += `📺 ${fullJob.brand} ${fullJob.model} (${fullJob.screenSize}")%0A`;
+            message += `🛠️ Issue: ${fullJob.problemDescription || 'N/A'}%0A`;
+            if (type === 'DELIVERY') {
+              message += `✅ Repair: ${fullJob.status}%0A`;
+              message += `🚚 Transit: ${log.status}%0A`;
+            }
           }
           message += `---------------------------%0A`;
         });
 
-        message += `%0A*Total ${type} TVs:* ${jobs.length}`;
+        message += `%0A*Total ${type} TVs:* ${logs.length}`;
 
         const cleanNumber = recipientMobile.replace(/\D/g, '');
         const url = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${message}`;

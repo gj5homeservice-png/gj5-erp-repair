@@ -101,7 +101,7 @@ export function RepairingModule({ store }: { store: any }) {
 
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => {
-      // Category filter
+      // Category filter (stays in logic, but UI button is removed)
       const matchesCategory = selectedProductCategory ? c.category === selectedProductCategory : true;
 
       const matchesSearch = 
@@ -174,8 +174,6 @@ export function RepairingModule({ store }: { store: any }) {
     { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: History, color: 'bg-amber-600', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
-  const currentCategoryLabel = selectedProductCategory || "Product Center";
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -200,26 +198,6 @@ export function RepairingModule({ store }: { store: any }) {
            />
         </div>
         <div className="flex gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl border-slate-700 h-11 bg-slate-900/50 hover:bg-slate-800">
-                <LayoutGrid className="w-4 h-4 mr-2 text-blue-400" /> {currentCategoryLabel}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 min-w-[220px]">
-              <DropdownMenuLabel className="text-[10px] uppercase text-slate-500">Inventory Segments</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setSelectedProductCategory(null)} className="cursor-pointer hover:bg-slate-800">
-                <LayoutGrid className="w-4 h-4 mr-2" /> All Products
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-800" />
-              {PRODUCT_CATEGORIES.map(cat => (
-                <DropdownMenuItem key={cat.id} onClick={() => setSelectedProductCategory(cat.id)} className="cursor-pointer hover:bg-slate-800">
-                  <cat.icon className="w-4 h-4 mr-2" /> {cat.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           <Button variant="outline" className="rounded-xl border-slate-700 h-11" onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
             <NotebookTabs className="w-4 h-4 mr-2" /> {viewMode === 'Repairing' ? "Inquiries" : "Repair Hub"}
           </Button>

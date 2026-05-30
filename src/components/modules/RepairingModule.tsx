@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -16,7 +17,15 @@ import {
   RefreshCw,
   History,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  LayoutGrid,
+  Monitor,
+  Cpu,
+  Package,
+  Wrench,
+  Boxes,
+  ShoppingBag,
+  MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,7 +41,9 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,12 +54,24 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+const PRODUCT_CATEGORIES = [
+  { id: 'TV Repair', name: 'TV Repair', icon: Tv, prefix: 'TV' },
+  { id: 'CCTV', name: 'CCTV', icon: Monitor, prefix: 'CCTV' },
+  { id: 'Computer / Laptop', name: 'Computer / Laptop', icon: Cpu, prefix: 'PC' },
+  { id: 'Wholesale', name: 'Wholesale', icon: Package, prefix: 'WS' },
+  { id: 'Technician', name: 'Technician', icon: Wrench, prefix: 'TECH' },
+  { id: 'Spare Parts', name: 'Spare Parts', icon: Boxes, prefix: 'SP' },
+  { id: 'Accessories', name: 'Accessories', icon: ShoppingBag, prefix: 'ACC' },
+  { id: 'Other Product', name: 'Other Products', icon: MoreHorizontal, prefix: 'OTH' },
+];
+
 export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<any>('Active');
+  const [selectedProductCategory, setSelectedProductCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'Repairing' | 'Inquiries'>('Repairing');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -78,9 +101,13 @@ export function RepairingModule({ store }: { store: any }) {
 
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => {
+      // Category filter
+      const matchesCategory = selectedProductCategory ? c.category === selectedProductCategory : true;
+
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.mobile?.includes(searchQuery);
 
       let matchesFilter = true;
@@ -92,9 +119,9 @@ export function RepairingModule({ store }: { store: any }) {
       else if (activeFilter === 'Exchange') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
       else if (activeFilter === 'Warranty') matchesFilter = c.status === 'Completed' && !!c.warrantyExpiry;
 
-      return (matchesSearch || !searchQuery) && matchesFilter;
+      return matchesCategory && (matchesSearch || !searchQuery) && matchesFilter;
     });
-  }, [store.calls, searchQuery, activeFilter]);
+  }, [store.calls, searchQuery, activeFilter, selectedProductCategory]);
 
   const toggleRowExpansion = (id: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -147,6 +174,8 @@ export function RepairingModule({ store }: { store: any }) {
     { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: History, color: 'bg-amber-600', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
+  const currentCategoryLabel = selectedProductCategory || "Product Center";
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -164,13 +193,33 @@ export function RepairingModule({ store }: { store: any }) {
         <div className="flex-1 w-full md:max-w-md relative">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
            <Input 
-             placeholder="Smart Search Job, Mobile..." 
+             placeholder="Smart Search Job, Mobile, Category..." 
              value={searchQuery} 
              onChange={e => setSearchQuery(e.target.value)} 
              className="pl-10 bg-slate-950 border-slate-800 h-11" 
            />
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="rounded-xl border-slate-700 h-11 bg-slate-900/50 hover:bg-slate-800">
+                <LayoutGrid className="w-4 h-4 mr-2 text-blue-400" /> {currentCategoryLabel}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 min-w-[220px]">
+              <DropdownMenuLabel className="text-[10px] uppercase text-slate-500">Inventory Segments</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setSelectedProductCategory(null)} className="cursor-pointer hover:bg-slate-800">
+                <LayoutGrid className="w-4 h-4 mr-2" /> All Products
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-slate-800" />
+              {PRODUCT_CATEGORIES.map(cat => (
+                <DropdownMenuItem key={cat.id} onClick={() => setSelectedProductCategory(cat.id)} className="cursor-pointer hover:bg-slate-800">
+                  <cat.icon className="w-4 h-4 mr-2" /> {cat.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="outline" className="rounded-xl border-slate-700 h-11" onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
             <NotebookTabs className="w-4 h-4 mr-2" /> {viewMode === 'Repairing' ? "Inquiries" : "Repair Hub"}
           </Button>
@@ -188,7 +237,7 @@ export function RepairingModule({ store }: { store: any }) {
                 <TableHead className="w-[50px]"></TableHead>
                 <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Job ID</TableHead>
                 <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Customer</TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Device Profile</TableHead>
+                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Category / Profile</TableHead>
                 <TableHead className="font-headline text-slate-400 text-[11px] uppercase text-center">
                   {filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase') ? 'STORE LOCATION' : 'WARRANTY TRACKER'}
                 </TableHead>
@@ -223,7 +272,11 @@ export function RepairingModule({ store }: { store: any }) {
                         <div className="flex flex-col"><span className="font-semibold">{call.customerName}</span><span className="text-xs text-slate-500">{call.mobile}</span></div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col"><span className="text-sm">{call.brand} {call.model}</span><span className="text-[10px] text-slate-400 uppercase">{call.category} • {call.screenSize}"</span></div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter mb-0.5">{call.category}</span>
+                          <span className="text-sm">{call.brand} {call.model}</span>
+                          <span className="text-[10px] text-slate-400 uppercase">{call.screenSize && `${call.screenSize}"`}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                          {showWarranty && (

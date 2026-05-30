@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -25,13 +26,24 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
-import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truck } from 'lucide-react';
+import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truck, LayoutGrid } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
+
+const PRODUCT_CATEGORIES = [
+  { id: 'TV Repair', name: 'TV Repair', prefix: 'TV' },
+  { id: 'CCTV', name: 'CCTV', prefix: 'CCTV' },
+  { id: 'Computer / Laptop', name: 'Computer / Laptop', prefix: 'PC' },
+  { id: 'Wholesale', name: 'Wholesale', prefix: 'WS' },
+  { id: 'Technician', name: 'Technician', prefix: 'TECH' },
+  { id: 'Spare Parts', name: 'Spare Parts', prefix: 'SP' },
+  { id: 'Accessories', name: 'Accessories', prefix: 'ACC' },
+  { id: 'Other Product', name: 'Other Products', prefix: 'OTH' },
+];
 
 export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
@@ -49,7 +61,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
-    category: 'TV', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
+    category: 'TV Repair', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
     status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
     visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit'
   });
@@ -73,17 +85,39 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       setFormData(editingCall);
       setSelectedBrand(BRANDS.includes(editingCall.brand) ? editingCall.brand : 'Other');
     } else if (isOpen) {
-      const nextId = `TV${1001 + store.calls.length}`;
-      setFormData({
-        id: nextId, customerId: `GJ5${1001 + store.calls.length}`,
-        category: 'TV', brand: 'GJ5 HOME SERVICE', techTags: [], status: 'Pending',
-        warrantyDuration: 'No Warranty', storeLocation: 'GODOWN',
-        visitHistory: [], repeatCount: 0, customerName: '', mobile: '', address: '', pincode: '', model: '', screenSize: '', problemDescription: '',
-        intakeMode: 'Customer Visit'
-      });
+      // Default initial ID for TV Repair if opening for the first time
+      generateNewId('TV Repair');
       setActiveTpl(null);
     }
-  }, [editingCall, isOpen, store.calls.length]);
+  }, [editingCall, isOpen]);
+
+  const generateNewId = (category: string) => {
+    const catConfig = PRODUCT_CATEGORIES.find(c => c.id === category) || PRODUCT_CATEGORIES[0];
+    const categoryCalls = store.calls.filter((c: any) => c.category === category);
+    const nextNum = 1001 + categoryCalls.length;
+    const nextId = `${catConfig.prefix}${nextNum}`;
+    
+    setFormData(prev => ({
+      ...prev,
+      category: category,
+      id: nextId,
+      customerId: `GJ5${1001 + store.calls.length}`,
+      techTags: [], 
+      status: 'Pending',
+      warrantyDuration: 'No Warranty', 
+      storeLocation: 'GODOWN',
+      visitHistory: [], 
+      repeatCount: 0, 
+      customerName: '', 
+      mobile: '', 
+      address: '', 
+      pincode: '', 
+      model: '', 
+      screenSize: '', 
+      problemDescription: '',
+      intakeMode: 'Customer Visit'
+    }));
+  };
 
   const toggleTag = (tag: string) => {
     const tags = formData.techTags || [];
@@ -219,23 +253,44 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-500">Service Category</Label>
+                        <Select 
+                          disabled={isLocked} 
+                          value={formData.category} 
+                          onValueChange={(v) => generateNewId(v)}
+                        >
+                          <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-blue-400 font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800">
+                            {PRODUCT_CATEGORIES.map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-bold text-slate-500">Job ID</Label>
                         <Input readOnly value={formData.id || ''} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400 h-11" />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label>Customer Name</Label>
+                        <Input 
+                          readOnly={isLocked} 
+                          value={formData.customerName || ''} 
+                          onChange={e => setFormData({...formData, customerName: e.target.value})} 
+                          className="bg-slate-900 border-slate-800 h-11" 
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label>
                         <Input readOnly value={formData.customerId || ''} className="bg-slate-900 border-slate-800 font-code h-11" />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label>Customer Name</Label>
-                      <Input 
-                        readOnly={isLocked} 
-                        value={formData.customerName || ''} 
-                        onChange={e => setFormData({...formData, customerName: e.target.value})} 
-                        className="bg-slate-900 border-slate-800 h-11" 
-                      />
-                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label>Mobile</Label>
@@ -279,26 +334,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                             </button>
                           ))}
                        </div>
-                    </div>
-                    
-                    <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                       <Label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-2">
-                          <Truck className="w-3 h-3 text-blue-400" /> TRANSPORTATION MODE
-                       </Label>
-                       <RadioGroup 
-                         value={formData.intakeMode || 'Customer Visit'} 
-                         onValueChange={(v: any) => setFormData({...formData, intakeMode: v})}
-                         className="flex gap-4"
-                       >
-                         <div className="flex items-center space-x-2 bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 flex-1 cursor-pointer hover:bg-slate-800/50 transition-colors">
-                            <RadioGroupItem value="Customer Visit" id="mode-visit" />
-                            <Label htmlFor="mode-visit" className="cursor-pointer font-medium">Customer Visit</Label>
-                         </div>
-                         <div className="flex items-center space-x-2 bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 flex-1 cursor-pointer hover:bg-slate-800/50 transition-colors">
-                            <RadioGroupItem value="Pickup Required" id="mode-pickup" />
-                            <Label htmlFor="mode-pickup" className="cursor-pointer font-medium">Pickup Required</Label>
-                         </div>
-                       </RadioGroup>
                     </div>
                   </div>
                   <div className="space-y-4">

@@ -13,7 +13,8 @@ import {
   Calendar,
   CheckCircle as CheckCircleIcon,
   User,
-  FileDown
+  FileDown,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,6 +86,25 @@ export function TransportationModule({ store }: { store: any }) {
     });
     
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
+  };
+
+  const handleWhatsAppShare = (log: any) => {
+    const job = store.calls.find((c: any) => c.id === log.jobId);
+    if (!job) return;
+
+    const message = `*PICKUP MANIFEST - GJ5 PLUS*%0A%0A` +
+      `*Runner:* ${log.runnerName}%0A` +
+      `*Job ID:* ${job.id}%0A` +
+      `*Customer:* ${job.customerName}%0A` +
+      `*Mobile:* ${job.mobile}%0A` +
+      `*Address:* ${job.address}%0A%0A` +
+      `*Device:* ${job.brand} ${job.model} (${job.screenSize}" )%0A` +
+      `*Problem:* ${job.problemDescription || 'N/A'}%0A%0A` +
+      `*Status:* ${log.status}%0A` +
+      `*Generated:* ${format(new Date(), 'dd/MM HH:mm')}`;
+
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=91${log.runnerMobile}&text=${message}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const handleGeneratePDF = (log: any) => {
@@ -293,15 +313,26 @@ export function TransportationModule({ store }: { store: any }) {
                     </Select>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="text-[#0066FF] hover:bg-blue-500/10"
-                      onClick={() => handleGeneratePDF(log)}
-                    >
-                      <FileDown className="w-4 h-4 mr-2" />
-                      Generate Pickup PDF
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={() => handleWhatsAppShare(log)}
+                        title="Share Manifest via WhatsApp"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-[#0066FF] hover:bg-blue-500/10"
+                        onClick={() => handleGeneratePDF(log)}
+                        title="Download PDF Manifest"
+                      >
+                        <FileDown className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

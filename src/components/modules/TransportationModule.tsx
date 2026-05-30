@@ -162,12 +162,10 @@ export function TransportationModule({ store }: { store: any }) {
         y += 5;
         doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
         
-        if (type === 'DELIVERY') {
-          y += 5;
-          doc.setFont('helvetica', 'bold');
-          doc.text(`Repair Status: ${job.status} | Delivery Status: ${log.status}`, 30, y);
-          doc.setFont('helvetica', 'normal');
-        }
+        y += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Repair Status: ${job.status} | Logistics: ${log.status}`, 30, y);
+        doc.setFont('helvetica', 'normal');
       }
 
       y += 12;
@@ -208,8 +206,8 @@ export function TransportationModule({ store }: { store: any }) {
 
         logs.forEach((log: any, i: number) => {
           const fullJob = store.calls.find((c: any) => c.id === log.jobId);
-          const encodedAddr = log.address ? encodeURIComponent(log.address) : '';
-          const mapLink = log.address && log.address !== 'N/A' 
+          const encodedAddr = log.address && log.address !== 'N/A' ? encodeURIComponent(log.address) : '';
+          const mapLink = encodedAddr 
             ? `https://www.google.com/maps/search/?api=1&query=${encodedAddr}`
             : 'Location not available';
 
@@ -222,10 +220,8 @@ export function TransportationModule({ store }: { store: any }) {
           if (fullJob) {
             message += `📺 ${fullJob.brand} ${fullJob.model} (${fullJob.screenSize}")%0A`;
             message += `🛠️ Issue: ${fullJob.problemDescription || 'N/A'}%0A`;
-            if (type === 'DELIVERY') {
-              message += `✅ Repair: ${fullJob.status}%0A`;
-              message += `🚚 Transit: ${log.status}%0A`;
-            }
+            message += `✅ Repair: ${fullJob.status}%0A`;
+            message += `🚚 Transit: ${log.status}%0A`;
           }
           message += `---------------------------%0A`;
         });
@@ -313,7 +309,7 @@ export function TransportationModule({ store }: { store: any }) {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                       {store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').map((c: any) => (
-                        <SelectItem key={`job-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
+                        <SelectItem key={`job-linker-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

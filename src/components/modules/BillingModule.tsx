@@ -11,8 +11,9 @@ import {
   QrCode,
   Search,
   FileDown,
-  ImageIcon,
-  Truck
+  Truck,
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function BillingModule({ store }: { store: any }) {
   const [billData, setBillData] = useState({
@@ -32,6 +34,7 @@ export function BillingModule({ store }: { store: any }) {
     address: '',
     brand: '',
     model: '',
+    screenSize: '',
     category: 'TV Repair',
     hardwareCost: 0,
     laborCost: 0,
@@ -39,7 +42,8 @@ export function BillingModule({ store }: { store: any }) {
     additionalCharges: 0,
     taxEnabled: true,
     notes: '',
-    problem: ''
+    problem: '',
+    warrantyStatus: 'No Warranty'
   });
 
   const [activeTemplate, setActiveTemplate] = useState('modern');
@@ -57,8 +61,10 @@ export function BillingModule({ store }: { store: any }) {
           address: job.address,
           brand: job.brand,
           model: job.model,
+          screenSize: job.screenSize || '',
           problem: job.problemDescription || '',
-          category: job.category || 'TV Repair'
+          category: job.category || 'TV Repair',
+          warrantyStatus: job.warrantyDuration || 'No Warranty'
         }));
       }
     }
@@ -73,108 +79,156 @@ export function BillingModule({ store }: { store: any }) {
   const total = subtotal + cgst + sgst;
 
   const handleDownloadPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('p', 'mm', 'a4');
     const timestamp = format(new Date(), 'dd/MM/yyyy HH:mm');
     const filename = `${billData.jobId || 'INV'}_Invoice.pdf`;
 
     // Logo support
     if (store.shopLogo) {
       try {
-        doc.addImage(store.shopLogo, 'PNG', 20, 10, 25, 25);
+        doc.addImage(store.shopLogo, 'PNG', 15, 15, 25, 25);
       } catch (e) {
         console.error("Could not add logo to PDF", e);
       }
     }
 
-    // GJ5 HOME SERVICE Header
+    // Company Branding
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 102, 255);
-    doc.text('GJ5 HOME SERVICE', store.shopLogo ? 50 : 20, 25);
+    doc.text('GJ5 HOME SERVICE', store.shopLogo ? 45 : 15, 25);
     
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Professional Service & Repair Hub', store.shopLogo ? 50 : 20, 31);
-    doc.text('Main Road, Adajan, Surat, Gujarat - 395009', store.shopLogo ? 50 : 20, 36);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    doc.text('Professional Service & Repair Hub', store.shopLogo ? 45 : 15, 31);
+    doc.text('Customer Care: 8866983900', store.shopLogo ? 45 : 15, 36);
 
-    // Invoice Header
-    doc.setFontSize(18);
+    // Invoice Header (Top Right)
+    doc.setFontSize(24);
     doc.setTextColor(0);
-    doc.text('INVOICE', 190, 30, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', 195, 25, { align: 'right' });
+    
     doc.setFontSize(10);
-    doc.text(`#INV-${billData.jobId || 'XXXX'}`, 190, 36, { align: 'right' });
-    doc.text(`DATE: ${timestamp}`, 190, 41, { align: 'right' });
-
-    doc.setDrawColor(200);
-    doc.line(20, 50, 190, 50);
-
-    // Customer & Job Details
-    doc.setFont('helvetica', 'bold');
-    doc.text('BILLED TO:', 20, 60);
     doc.setFont('helvetica', 'normal');
-    doc.text(billData.customerName || 'N/A', 20, 66);
-    doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 20, 71);
-    doc.text(`Address: ${billData.address || 'N/A'}`, 20, 76, { maxWidth: 80 });
+    doc.text(`#INV-${billData.jobId || 'XXXX'}`, 195, 32, { align: 'right' });
+    doc.text(`Date: ${timestamp}`, 195, 38, { align: 'right' });
 
+    doc.setDrawColor(230);
+    doc.line(15, 45, 195, 45);
+
+    // Grid Layout for Customer & Job
+    let currentY = 55;
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('JOB DETAILS:', 110, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, 66);
-    doc.text(`Device: ${billData.brand} ${billData.model}`, 110, 71);
-    doc.text(`Problem: ${billData.problem}`, 110, 76, { maxWidth: 80 });
+    doc.text('CUSTOMER SECTION', 15, currentY);
+    doc.text('JOB DETAILS SECTION', 110, currentY);
 
+    currentY += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    
+    // Customer
+    doc.text(`Name: ${billData.customerName || 'N/A'}`, 15, currentY);
+    doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 15, currentY + 6);
+    doc.text(`Customer ID: ${billData.customerId || 'N/A'}`, 15, currentY + 12);
+    doc.text(`Address: ${billData.address || 'N/A'}`, 15, currentY + 18, { maxWidth: 80 });
+
+    // Job Details
+    doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, currentY);
+    doc.text(`Device: ${billData.brand} ${billData.model} (${billData.screenSize}")`, 110, currentY + 6);
+    doc.text(`Warranty: ${billData.warrantyStatus}`, 110, currentY + 12);
+    doc.text(`Problem: ${billData.problem}`, 110, currentY + 18, { maxWidth: 80 });
+
+    currentY += 35;
+    
     // Table Header
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, 95, 170, 10, 'F');
+    doc.setFillColor(245, 245, 245);
+    doc.rect(15, currentY, 180, 10, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', 25, 102);
-    doc.text('AMOUNT', 185, 102, { align: 'right' });
+    doc.setTextColor(0);
+    doc.text('DESCRIPTION', 20, currentY + 6);
+    doc.text('AMOUNT (INR)', 190, currentY + 6, { align: 'right' });
 
-    // Table Content
-    let y = 112;
-    const items = [
+    currentY += 10;
+    
+    // Table Rows
+    const charges = [
       { desc: 'Hardware Parts Replacement', amt: billData.hardwareCost },
-      { desc: 'Technician Labor / Service', amt: billData.laborCost },
+      { desc: 'Labor / Technician Service', amt: billData.laborCost },
       { desc: 'Delivery Charges', amt: billData.deliveryCharge },
-      { desc: 'Additional / Misc Charges', amt: billData.additionalCharges }
-    ].filter(i => i.amt > 0);
+      { desc: 'Additional Charges', amt: billData.additionalCharges }
+    ];
 
-    items.forEach(item => {
+    charges.forEach(item => {
       doc.setFont('helvetica', 'normal');
-      doc.text(item.desc, 25, y);
-      doc.text(`INR ${item.amt.toFixed(2)}`, 185, y, { align: 'right' });
-      y += 10;
+      doc.text(item.desc, 20, currentY + 8);
+      doc.text(item.amt.toFixed(2), 190, currentY + 8, { align: 'right' });
+      currentY += 10;
+      doc.setDrawColor(245);
+      doc.line(15, currentY, 195, currentY);
     });
 
-    if (y < 112) y = 112; // Min height
-    doc.line(20, y, 190, y);
-    y += 10;
-
-    // Totals
+    currentY += 5;
+    
+    // Calculation Section
     doc.setFont('helvetica', 'normal');
-    doc.text('SUBTOTAL:', 140, y);
-    doc.text(`INR ${subtotal.toFixed(2)}`, 185, y, { align: 'right' });
-    y += 7;
+    doc.text('Subtotal:', 140, currentY);
+    doc.text(subtotal.toFixed(2), 190, currentY, { align: 'right' });
+    currentY += 7;
 
     if (billData.taxEnabled) {
-      doc.text('CGST (9%):', 140, y);
-      doc.text(`INR ${cgst.toFixed(2)}`, 185, y, { align: 'right' });
-      y += 7;
-      doc.text('SGST (9%):', 140, y);
-      doc.text(`INR ${sgst.toFixed(2)}`, 185, y, { align: 'right' });
-      y += 7;
+      doc.text('CGST (9%):', 140, currentY);
+      doc.text(cgst.toFixed(2), 190, currentY, { align: 'right' });
+      currentY += 7;
+      doc.text('SGST (9%):', 140, currentY);
+      doc.text(sgst.toFixed(2), 190, currentY, { align: 'right' });
+      currentY += 7;
     }
 
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('GRAND TOTAL:', 140, y + 5);
-    doc.text(`INR ${total.toFixed(2)}`, 185, y + 5, { align: 'right' });
+    doc.text('GRAND TOTAL:', 140, currentY + 5);
+    doc.setTextColor(0, 102, 255);
+    doc.text(`INR ${total.toFixed(2)}`, 190, currentY + 5, { align: 'right' });
+
+    // Terms & Conditions
+    currentY += 25;
+    doc.setFontSize(9);
+    doc.setTextColor(0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TERMS & CONDITIONS', 15, currentY);
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    const terms = [
+      "1. Service charges and delivery charges are non-refundable.",
+      "2. TV must be collected within 30 days of repair completion.",
+      "3. After 30 days, storage charges may apply.",
+      "4. No warranty on software updates, settings issues or customer data loss.",
+      "5. Warranty applies only to replaced parts mentioned in the invoice.",
+      "6. Physical damage, liquid damage, panel damage and burn marks are not covered under warranty.",
+      "7. Warranty becomes void if the TV is opened or repaired by another technician.",
+      "8. Customer must verify TV condition at the time of delivery.",
+      "9. GJ5 HOME SERVICE is not responsible for manufacturer defects after delivery.",
+      "10. Original invoice is required for warranty claims."
+    ];
+    terms.forEach(term => {
+      doc.text(term, 15, currentY);
+      currentY += 5;
+    });
 
     // Footer
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 255);
+    doc.text('Thank you for choosing GJ5 HOME SERVICE.', 105, 275, { align: 'center' });
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(150);
-    doc.text('Note: This is a computer-generated invoice. No signature required.', 105, 280, { align: 'center' });
+    doc.text('All electronics repair jobs come with a standard 30-day service warranty unless specified.', 105, 280, { align: 'center' });
 
     doc.save(filename);
 
@@ -212,7 +266,7 @@ export function BillingModule({ store }: { store: any }) {
              </div>
              <div>
                 <h2 className="text-xl font-headline font-bold">Fast Billing Console</h2>
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">TV Repair Shop Edition</p>
+                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">GJ5 HOME SERVICE EDITION</p>
              </div>
           </div>
 
@@ -233,6 +287,7 @@ export function BillingModule({ store }: { store: any }) {
                 <Input 
                   value={billData.customerName} 
                   readOnly
+                  placeholder="Auto-fetched..."
                   className="bg-slate-950/50 border-slate-800 h-10 text-slate-400" 
                 />
              </div>
@@ -287,7 +342,7 @@ export function BillingModule({ store }: { store: any }) {
              <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
                 <div className="flex items-center gap-2">
                    <Label className="text-sm font-bold">Apply 18% GST</Label>
-                   <p className="text-[10px] text-slate-500">CGST+SGST</p>
+                   <p className="text-[10px] text-slate-500">CGST (9%) + SGST (9%)</p>
                 </div>
                 <Switch 
                   checked={billData.taxEnabled}
@@ -319,14 +374,14 @@ export function BillingModule({ store }: { store: any }) {
                value={billData.notes}
                onChange={e => setBillData({...billData, notes: e.target.value})}
                className="bg-slate-950 border-slate-800 h-10" 
-               placeholder="Add special warranty details..."
+               placeholder="Add special warranty or payment details..."
              />
           </div>
         </div>
 
         <div className="flex gap-4">
            <Button onClick={() => window.print()} variant="outline" className="flex-1 border-slate-700 h-11">
-              <Printer className="w-4 h-4 mr-2" /> Print
+              <Printer className="w-4 h-4 mr-2" /> Direct Print
            </Button>
            <Button onClick={handleDownloadPDF} className="flex-1 bg-[#0066FF] hover:bg-blue-600 h-11 shadow-lg shadow-blue-500/20">
               <FileDown className="w-4 h-4 mr-2" /> Download PDF
@@ -337,230 +392,181 @@ export function BillingModule({ store }: { store: any }) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
            <h3 className="text-lg font-headline font-bold uppercase tracking-tight">Invoice Preview</h3>
-           <Tabs value={activeTemplate} onValueChange={setActiveTemplate} className="bg-slate-900 border border-slate-800 rounded-lg p-1">
-              <TabsList className="bg-transparent border-0 h-8">
-                 <TabsTrigger value="modern" className="text-[10px] px-3"><Monitor className="w-3 h-3 mr-1" /> Modern</TabsTrigger>
-                 <TabsTrigger value="retail" className="text-[10px] px-3"><Layout className="w-3 h-3 mr-1" /> Retail</TabsTrigger>
-                 <TabsTrigger value="thermal" className="text-[10px] px-3"><StretchVertical className="w-3 h-3 mr-1" /> Thermal</TabsTrigger>
-              </TabsList>
-           </Tabs>
+           <div className="flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[10px] text-slate-400">
+              <Monitor className="w-3 h-3" /> A4 Professional Preview
+           </div>
         </div>
 
-        <Card className="bg-white text-black min-h-[600px] overflow-hidden rounded-xl shadow-2xl relative">
-          <CardContent className="p-0">
-             {activeTemplate === 'modern' && <ModernTemplate data={billData} total={total} cgst={cgst} sgst={sgst} subtotal={subtotal} logo={store.shopLogo} />}
-             {activeTemplate === 'retail' && <RetailTemplate data={billData} total={total} cgst={cgst} sgst={sgst} subtotal={subtotal} logo={store.shopLogo} />}
-             {activeTemplate === 'thermal' && <ThermalTemplate data={billData} total={total} />}
-          </CardContent>
-        </Card>
+        <div className="bg-white text-black min-h-[1123px] w-full max-w-[794px] mx-auto overflow-hidden rounded-sm shadow-2xl relative print:shadow-none print:m-0 print:p-0">
+          <div className="p-0">
+             <A4ProfessionalTemplate 
+                data={billData} 
+                total={total} 
+                cgst={cgst} 
+                sgst={sgst} 
+                subtotal={subtotal} 
+                logo={store.shopLogo} 
+             />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function ModernTemplate({ data, total, cgst, sgst, subtotal, logo }: any) {
+function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any) {
   return (
-    <div className="p-10 font-sans h-full flex flex-col">
-       <div className="flex justify-between items-start border-b-4 border-black pb-8">
+    <div id="invoice-to-print" className="p-10 font-sans h-full flex flex-col bg-white">
+       {/* Header */}
+       <div className="flex justify-between items-start border-b-2 border-slate-100 pb-8">
           <div className="flex items-center gap-4">
-             {logo && (
-               <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
-                  <img src={logo} className="w-full h-full object-cover" alt="Logo" />
+             {logo ? (
+               <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 p-2">
+                  <img src={logo} className="w-full h-full object-contain" alt="Logo" />
+               </div>
+             ) : (
+               <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 border-dashed">
+                  <Receipt className="w-8 h-8 text-slate-300" />
                </div>
              )}
              <div>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">GJ5 HOME SERVICE</h1>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">Professional Repair Hub</p>
+                <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none text-[#0066FF]">GJ5 HOME SERVICE</h1>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-1">Professional Service & Repair Hub</p>
+                <p className="text-[11px] font-bold text-slate-400 mt-1">Customer Care: 8866983900</p>
              </div>
           </div>
           <div className="text-right">
-             <h2 className="text-2xl font-bold uppercase">Invoice</h2>
-             <p className="font-mono text-sm">#INV-{data.jobId || 'XXXX'}</p>
-             <p className="text-[10px] uppercase font-bold text-slate-400">{new Date().toLocaleDateString()}</p>
+             <h2 className="text-4xl font-black uppercase text-slate-800">INVOICE</h2>
+             <p className="font-mono text-sm text-slate-600 mt-1">#INV-{data.jobId || 'XXXX'}</p>
+             <p className="text-[11px] uppercase font-bold text-slate-400 mt-1">Date: {new Date().toLocaleDateString()}</p>
           </div>
        </div>
 
-       <div className="grid grid-cols-2 gap-10 py-10">
-          <div>
-             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Billed To</p>
-             <h3 className="text-xl font-bold">{data.customerName || 'Customer Name'}</h3>
-             <p className="text-sm text-slate-600 font-mono">ID: {data.customerId}</p>
-             <p className="text-sm text-slate-600">Mob: {data.mobile}</p>
+       {/* Customer & Job Info */}
+       <div className="grid grid-cols-2 gap-10 py-10 border-b border-slate-50">
+          <div className="space-y-4">
+             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
+                <Receipt className="w-3 h-3" /> Customer Section
+             </div>
+             <div className="space-y-1">
+                <h3 className="text-xl font-black text-slate-900">{data.customerName || 'N/A'}</h3>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">Mobile: {data.mobile || 'N/A'}</p>
+                <p className="text-xs text-slate-400 font-mono">Customer ID: {data.customerId || 'N/A'}</p>
+                <div className="pt-2 text-xs text-slate-600 leading-relaxed">
+                   <p className="font-bold uppercase text-[10px] text-slate-400 mb-1">Address</p>
+                   {data.address || 'N/A'}
+                </div>
+             </div>
           </div>
-          <div className="text-right">
-             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Device Profile</p>
-             <h3 className="text-xl font-bold">{data.brand} {data.model}</h3>
-             <p className="text-sm text-slate-600 uppercase font-bold">{data.category}</p>
+          <div className="space-y-4">
+             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
+                <Info className="w-3 h-3" /> Job Details Section
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Job ID</p>
+                   <p className="text-xs font-black text-blue-500">{data.jobId || 'XXXX'}</p>
+                </div>
+                <div className="space-y-1">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Warranty Status</p>
+                   <p className="text-xs font-bold text-slate-800">{data.warrantyStatus}</p>
+                </div>
+                <div className="space-y-1 col-span-2">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Device Profile</p>
+                   <p className="text-xs font-bold text-slate-900">{data.brand} {data.model} ({data.screenSize}")</p>
+                </div>
+                <div className="space-y-1 col-span-2">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Problem Statement</p>
+                   <p className="text-xs text-slate-600 leading-relaxed">{data.problem || 'N/A'}</p>
+                </div>
+             </div>
           </div>
        </div>
 
-       <div className="flex-1">
+       {/* Charges Table */}
+       <div className="mt-8 flex-1">
           <table className="w-full text-left">
-             <thead className="bg-slate-100 border-y border-slate-200">
+             <thead className="bg-slate-50 border-y border-slate-100">
                 <tr>
-                   <th className="py-2 px-4 text-[10px] font-bold uppercase">Description</th>
-                   <th className="py-2 px-4 text-[10px] font-bold uppercase text-right">Amount</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Description</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-slate-500 text-right">Amount (INR)</th>
                 </tr>
              </thead>
-             <tbody className="divide-y divide-slate-100">
-                {data.hardwareCost > 0 && (
-                  <tr>
-                     <td className="py-3 px-4 text-sm font-medium">Hardware Parts Replacement</td>
-                     <td className="py-3 px-4 text-sm font-mono text-right">₹{data.hardwareCost.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.laborCost > 0 && (
-                  <tr>
-                     <td className="py-3 px-4 text-sm font-medium">Technician Service & Labor</td>
-                     <td className="py-3 px-4 text-sm font-mono text-right">₹{data.laborCost.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.deliveryCharge > 0 && (
-                  <tr>
-                     <td className="py-3 px-4 text-sm font-medium">Delivery Charges</td>
-                     <td className="py-3 px-4 text-sm font-mono text-right">₹{data.deliveryCharge.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.additionalCharges > 0 && (
-                  <tr>
-                    <td className="py-3 px-4 text-sm font-medium">Additional / Misc Charges</td>
-                    <td className="py-3 px-4 text-sm font-mono text-right">₹{data.additionalCharges.toFixed(2)}</td>
-                  </tr>
-                )}
+             <tbody className="divide-y divide-slate-50">
+                <tr>
+                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Hardware Parts Replacement</td>
+                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.hardwareCost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Labor / Technician Service</td>
+                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.laborCost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Delivery Charges</td>
+                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.deliveryCharge.toFixed(2)}</td>
+                </tr>
+                <tr>
+                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Additional Charges</td>
+                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.additionalCharges.toFixed(2)}</td>
+                </tr>
              </tbody>
           </table>
        </div>
 
-       <div className="mt-6 pt-6 border-t-2 border-slate-100 flex justify-end">
-          <div className="w-64 space-y-2">
-             <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+       {/* Totals */}
+       <div className="mt-8 pt-8 border-t-2 border-slate-50 flex justify-end">
+          <div className="w-72 space-y-2">
+             <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
                 <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+                <span className="font-mono">₹{subtotal.toFixed(2)}</span>
              </div>
              {data.taxEnabled && (
                <>
-                 <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                 <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
                     <span>CGST (9%)</span>
-                    <span>₹{cgst.toFixed(2)}</span>
+                    <span className="font-mono">₹{cgst.toFixed(2)}</span>
                  </div>
-                 <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                 <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
                     <span>SGST (9%)</span>
-                    <span>₹{sgst.toFixed(2)}</span>
+                    <span className="font-mono">₹{sgst.toFixed(2)}</span>
                  </div>
                </>
              )}
-             <div className="flex justify-between items-center pt-3 border-t-4 border-black">
-                <span className="font-black text-xl italic uppercase">Total</span>
-                <span className="font-black text-2xl italic">₹{total.toFixed(2)}</span>
+             <div className="flex justify-between items-center pt-4 border-t-4 border-slate-900 mt-4">
+                <span className="font-black text-2xl italic uppercase text-slate-900">Total</span>
+                <span className="font-black text-3xl italic text-[#0066FF]">₹{total.toFixed(2)}</span>
              </div>
           </div>
        </div>
 
-       <div className="mt-8 bg-slate-50 p-4 rounded text-[9px] text-slate-500 leading-relaxed uppercase border border-slate-100">
-          {data.notes || 'Note: Standard 30-day service warranty on repairs. Physical damage or burnout cases not covered. Delivery only against original job card.'}
+       {/* Terms & Conditions */}
+       <div className="mt-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
+          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+             <ShieldCheck className="w-4 h-4 text-emerald-500" /> Terms & Conditions
+          </h4>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+             {[
+               "1. Service charges and delivery charges are non-refundable.",
+               "2. TV must be collected within 30 days of repair completion.",
+               "3. After 30 days, storage charges may apply.",
+               "4. No warranty on software updates, settings issues or customer data loss.",
+               "5. Warranty applies only to replaced parts mentioned in the invoice.",
+               "6. Physical damage, liquid damage, panel damage and burn marks are not covered under warranty.",
+               "7. Warranty becomes void if the TV is opened or repaired by another technician.",
+               "8. Customer must verify TV condition at the time of delivery.",
+               "9. GJ5 HOME SERVICE is not responsible for manufacturer defects after delivery.",
+               "10. Original invoice is required for warranty claims."
+             ].map((term, i) => (
+               <p key={`term-${i}`} className="text-[9px] text-slate-500 leading-tight">{term}</p>
+             ))}
+          </div>
        </div>
-    </div>
-  );
-}
 
-function RetailTemplate({ data, total, cgst, sgst, subtotal, logo }: any) {
-  return (
-    <div className="p-10 font-serif h-full flex flex-col">
-       <div className="text-center border-b pb-6 flex flex-col items-center">
-          {logo && <img src={logo} className="w-12 h-12 mb-2 object-contain" alt="Logo" />}
-          <h1 className="text-3xl font-bold uppercase tracking-tighter">GJ5 HOME SERVICE</h1>
-          <p className="text-xs uppercase tracking-widest font-bold text-slate-600 mt-1">Main Road, Adajan, Surat, Gujarat - 395009</p>
-          <p className="text-[10px] font-bold">Contact: +91 9988776655 | GSTIN: 24AAABC1234D1Z5</p>
-       </div>
-       <div className="py-6 border-b flex justify-between uppercase text-[10px] font-bold">
-          <div>
-             <p>Bill No: {data.jobId || 'XXXX'}</p>
-             <p>Date: {new Date().toLocaleDateString()}</p>
-          </div>
-          <div className="text-right">
-             <p>Customer: {data.customerName}</p>
-             <p>ID: {data.customerId}</p>
-          </div>
-       </div>
-       <div className="flex-1 py-6">
-          <table className="w-full border-collapse">
-             <thead>
-                <tr className="border-b-2 border-black">
-                   <th className="py-2 text-left text-[10px] uppercase font-black">Item Description</th>
-                   <th className="py-2 text-right text-[10px] uppercase font-black">Total</th>
-                </tr>
-             </thead>
-             <tbody>
-                {data.hardwareCost > 0 && (
-                  <tr className="border-b">
-                     <td className="py-3 text-xs">Spare Parts Replacement ({data.brand})</td>
-                     <td className="py-3 text-right text-xs font-mono">₹{data.hardwareCost.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.laborCost > 0 && (
-                  <tr className="border-b">
-                     <td className="py-3 text-xs">Labor & Service Charges</td>
-                     <td className="py-3 text-right text-xs font-mono">₹{data.laborCost.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.deliveryCharge > 0 && (
-                  <tr className="border-b">
-                     <td className="py-3 text-xs font-bold uppercase">Delivery Service Charge</td>
-                     <td className="py-3 text-right text-xs font-mono">₹{data.deliveryCharge.toFixed(2)}</td>
-                  </tr>
-                )}
-                {data.additionalCharges > 0 && (
-                  <tr className="border-b">
-                    <td className="py-3 text-xs">Misc / Additional Charges</td>
-                    <td className="py-3 text-right text-xs font-mono">₹{data.additionalCharges.toFixed(2)}</td>
-                  </tr>
-                )}
-             </tbody>
-          </table>
-       </div>
-       <div className="flex justify-end pt-6 space-y-1">
-          <div className="w-64 uppercase text-[10px] font-bold">
-             <div className="flex justify-between"><span>Subtotal:</span><span>₹{subtotal.toFixed(2)}</span></div>
-             {data.taxEnabled && (
-               <>
-                 <div className="flex justify-between"><span>CGST 9%:</span><span>₹{cgst.toFixed(2)}</span></div>
-                 <div className="flex justify-between"><span>SGST 9%:</span><span>₹{sgst.toFixed(2)}</span></div>
-               </>
-             )}
-             <div className="flex justify-between font-black border-t-2 border-black pt-2 mt-2 text-sm"><span>Grand Total:</span><span>₹{total.toFixed(2)}</span></div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
-function ThermalTemplate({ data, total }: any) {
-  return (
-    <div className="p-4 font-mono w-[280px] mx-auto bg-white border border-dashed border-slate-300">
-       <div className="text-center border-b border-dashed pb-2 mb-2">
-          <h1 className="text-sm font-bold uppercase">GJ5 HOME SERVICE</h1>
-          <p className="text-[7px] uppercase">Main Road, Adajan, Surat</p>
-       </div>
-       <div className="text-[9px] space-y-0.5 mb-3 uppercase font-bold">
-          <p>DATE: {new Date().toLocaleDateString()}</p>
-          <p>JOB: {data.jobId}</p>
-          <p>CUST: {data.customerName}</p>
-       </div>
-       <div className="border-y border-dashed py-2 mb-2">
-          <div className="flex justify-between text-[9px] font-bold uppercase">
-             <span>Repair Total</span>
-             <span>{total.toFixed(2)}</span>
-          </div>
-       </div>
-       <div className="text-center space-y-2">
-          <p className="text-[12px] font-black uppercase">Grand Total: ₹{total.toFixed(2)}</p>
-          <div className="flex justify-center py-2">
-             <QrCode className="w-12 h-12" />
-          </div>
-          <p className="text-[7px] uppercase font-bold">Scan to Pay via UPI</p>
-       </div>
-       <div className="mt-4 text-center">
-          <p className="text-[7px] italic font-bold uppercase">Thank You for your visit!</p>
+       {/* Footer */}
+       <div className="mt-12 text-center space-y-2">
+          <p className="text-sm font-black text-[#0066FF] uppercase italic">Thank you for choosing GJ5 HOME SERVICE.</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">We value your trust and support.</p>
+          <p className="text-[9px] text-slate-300 italic pt-2">All electronics repair jobs come with a standard 30-day service warranty unless specified.</p>
        </div>
     </div>
   );

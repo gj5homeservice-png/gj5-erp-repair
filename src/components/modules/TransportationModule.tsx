@@ -35,7 +35,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-// Safeguard definition for cn if import fails or is missing
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
 export function TransportationModule({ store }: { store: any }) {
@@ -46,12 +45,22 @@ export function TransportationModule({ store }: { store: any }) {
     "Transit Update: Item [JobID] is currently in-transit.",
     "Delivered: Item [JobID] reached workshop successfully."
   ]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const stats = useMemo(() => {
     const total = store.transportationLogs?.length || 0;
     const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In-Transit').length || 0;
     return { total, inTransit };
   }, [store.transportationLogs]);
+
+  const filteredLogs = useMemo(() => {
+    return (store.transportationLogs || []).filter((log: any) => {
+      const matchesSearch = 
+        log.runnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.jobId.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [store.transportationLogs, searchQuery]);
 
   const handleDispatch = () => {
     if (!formData.runnerName || !formData.jobId) return;
@@ -96,8 +105,22 @@ export function TransportationModule({ store }: { store: any }) {
           <div className="grid grid-cols-12 gap-10">
             <div className="col-span-7 space-y-6">
               <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2"><Label>Runner Name</Label><Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" /></div>
-                <div className="space-y-2"><Label>Runner Mobile</Label><Input value={formData.runnerMobile} onChange={e => setFormData({...formData, runnerMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11" /></div>
+                <div className="space-y-2">
+                  <Label>Runner Name</Label>
+                  <Input 
+                    value={formData.runnerName} 
+                    onChange={e => setFormData({...formData, runnerName: e.target.value})} 
+                    className="bg-slate-950 border-slate-800 h-11" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Runner Mobile</Label>
+                  <Input 
+                    value={formData.runnerMobile} 
+                    onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
+                    className="bg-slate-950 border-slate-800 h-11" 
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Active Job Linker</Label>
@@ -113,7 +136,7 @@ export function TransportationModule({ store }: { store: any }) {
                 </Select>
               </div>
               <Button onClick={handleDispatch} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
-                <Send className="w-5 h-5 mr-2" /> 🚀 Dispatch & Send to Runner
+                <Navigation className="w-5 h-5 mr-2" /> 🚀 Dispatch & Send to Runner
               </Button>
             </div>
             <div className="col-span-5 space-y-4 bg-slate-950 p-6 rounded-2xl border border-slate-800">
@@ -135,7 +158,18 @@ export function TransportationModule({ store }: { store: any }) {
       </Card>
 
       <div className="space-y-4">
-        <h3 className="text-xl font-headline font-bold flex items-center gap-2"><Clock className="w-6 h-6 text-emerald-500" /> Live Transit Directory</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-headline font-bold flex items-center gap-2"><Clock className="w-6 h-6 text-emerald-500" /> Live Transit Directory</h3>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Input 
+              placeholder="Filter by Runner or Job..." 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              className="pl-10 h-10 bg-slate-950 border-slate-800" 
+            />
+          </div>
+        </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
           <Table>
             <TableHeader className="bg-slate-900/60">
@@ -144,7 +178,7 @@ export function TransportationModule({ store }: { store: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(store.transportationLogs || []).map((log: any) => (
+              {filteredLogs.map((log: any) => (
                 <TableRow key={log.id} className="border-slate-800/50">
                   <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-xs text-slate-500">{log.runnerMobile}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
@@ -161,7 +195,7 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!store.transportationLogs || store.transportationLogs.length === 0) && <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
+              {filteredLogs.length === 0 && <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -41,7 +42,8 @@ import { RepairCall, RepairStatus, Inquiry } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import { cn } from '@/lib/utils';
+
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
 export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -57,7 +59,7 @@ export function RepairingModule({ store }: { store: any }) {
     const pending = store.calls.filter((c: any) => c.status === 'Pending').length;
     const completed = store.calls.filter((c: any) => c.status === 'Completed').length;
     const rejected = store.calls.filter((c: any) => c.status === 'Rejected').length;
-    const repeat = store.calls.filter((c: any) => c.repeatCount > 0).length;
+    const repeat = store.calls.filter((c: any) => (c.repeatCount || 0) > 0).length;
     const exchange = store.calls.filter((c: any) => c.status === 'Exchange' || c.status === 'Purchase').length;
     const warranty = store.calls.filter((c: any) => c.status === 'Completed' && c.warrantyExpiry).length;
     return { totalActive, pending, completed, rejected, exchange, repeat, warranty };
@@ -122,7 +124,12 @@ export function RepairingModule({ store }: { store: any }) {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
         <div className="flex-1 w-full md:max-w-md relative">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-           <Input placeholder="Smart Search Job, Mobile..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-slate-950 border-slate-800 h-11" />
+           <Input 
+             placeholder="Smart Search Job, Mobile..." 
+             value={searchQuery} 
+             onChange={e => setSearchQuery(e.target.value)} 
+             className="pl-10 bg-slate-950 border-slate-800 h-11" 
+           />
         </div>
         <div className="flex gap-4">
           <Button variant="outline" className="rounded-xl border-slate-700 h-11" onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
@@ -161,7 +168,7 @@ export function RepairingModule({ store }: { store: any }) {
                   <React.Fragment key={call.id}>
                     <TableRow className="border-slate-800/50 hover:bg-slate-800/20">
                       <TableCell>
-                        {(call.visitHistory?.length > 0) && (
+                        {(call.visitHistory && call.visitHistory.length > 0) && (
                           <button onClick={() => toggleRowExpansion(call.id)} className="p-1 hover:bg-slate-700 rounded-md transition-colors">
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </button>
@@ -170,7 +177,7 @@ export function RepairingModule({ store }: { store: any }) {
                       <TableCell className="font-code font-bold text-blue-400">
                         <div className="flex flex-col gap-1">
                           {call.id}
-                          {(call.repeatCount > 0) && <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[9px] w-fit uppercase font-black">Visits: {call.repeatCount + 1}</Badge>}
+                          {((call.repeatCount || 0) > 0) && <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[9px] w-fit uppercase font-black">Visits: {(call.repeatCount || 0) + 1}</Badge>}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -209,7 +216,7 @@ export function RepairingModule({ store }: { store: any }) {
                          </div>
                       </TableCell>
                     </TableRow>
-                    {isExpanded && (
+                    {isExpanded && call.visitHistory && (
                       <TableRow className="bg-slate-950/50 hover:bg-slate-950/50 border-slate-800">
                         <TableCell colSpan={7} className="p-0">
                           <div className="px-12 py-6 space-y-4">

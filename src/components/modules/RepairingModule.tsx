@@ -98,6 +98,23 @@ export function RepairingModule({ store }: { store: any }) {
     return diff > 0 ? diff : 0;
   };
 
+  const handleStatusChange = (call: RepairCall, newStatus: RepairStatus) => {
+    store.updateCall({ 
+      ...call, 
+      status: newStatus, 
+      updatedAt: new Date().toISOString() 
+    });
+  };
+
+  const handleMapClick = (address: string) => {
+    if (!address || address.trim() === '') {
+      alert("Address not available");
+      return;
+    }
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    window.open(url, '_blank');
+  };
+
   const visibleKpis = [
     { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', filter: 'Active' },
     { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', filter: 'Pending' },
@@ -200,17 +217,42 @@ export function RepairingModule({ store }: { store: any }) {
                          )}
                       </TableCell>
                       <TableCell>
-                         <Badge className={cn("text-[10px] font-bold uppercase border", 
-                           call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border-yellow-500/20" : 
-                           call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
-                           call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : 
-                           "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                         )}>
-                           {call.status}
-                         </Badge>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <button className="outline-none">
+                               <Badge className={cn("text-[10px] font-bold uppercase border cursor-pointer hover:opacity-80 transition-opacity", 
+                                 call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border-yellow-500/20" : 
+                                 call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+                                 call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : 
+                                 "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                               )}>
+                                 {call.status}
+                               </Badge>
+                             </button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
+                             {['Pending', 'Completed', 'Rejected', 'Exchange', 'Purchase'].map((s) => (
+                               <DropdownMenuItem 
+                                 key={s} 
+                                 onClick={() => handleStatusChange(call, s as RepairStatus)}
+                                 className="text-xs uppercase font-bold hover:bg-slate-800 cursor-pointer"
+                               >
+                                 {s}
+                               </DropdownMenuItem>
+                             ))}
+                           </DropdownMenuContent>
+                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-2">
+                           <Button 
+                             size="sm" 
+                             variant="ghost" 
+                             className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                             onClick={() => handleMapClick(call.address)}
+                           >
+                             <MapPin className="w-4 h-4" />
+                           </Button>
                            <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-4 h-4" /></Button>
                            <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-4 h-4" /></Button>
                          </div>

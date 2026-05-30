@@ -21,11 +21,13 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
 import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+import { cn } from '@/lib/utils';
 
 const BRANDS = ['GJ5 PLUS', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
@@ -33,8 +35,17 @@ const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [selectedBrand, setSelectedBrand] = useState('GJ5 PLUS');
-  const [activeTpl, setActiveTpl] = useState(0);
+  const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
+  
+  // WhatsApp State
+  const [sendWhatsApp, setSendWhatsApp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('gj5_whatsapp_enabled') === 'true';
+    }
+    return false;
+  });
+
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
     category: 'TV', brand: 'GJ5 PLUS', model: '', screenSize: '', techTags: [],
@@ -53,6 +64,10 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const isLocked = isExisting && !editingCall;
 
   useEffect(() => {
+    sessionStorage.setItem('gj5_whatsapp_enabled', sendWhatsApp.toString());
+  }, [sendWhatsApp]);
+
+  useEffect(() => {
     if (editingCall) {
       setFormData(editingCall);
       setSelectedBrand(BRANDS.includes(editingCall.brand) ? editingCall.brand : 'Other');
@@ -64,6 +79,8 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
         warrantyDuration: 'No Warranty', storeLocation: 'GODOWN',
         visitHistory: [], repeatCount: 0, customerName: '', mobile: '', address: '', pincode: '', model: '', screenSize: '', problemDescription: ''
       });
+      // Default to no template selected for new entries
+      setActiveTpl(null);
     }
   }, [editingCall, isOpen, store.calls.length]);
 
@@ -100,6 +117,18 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     }
 
     const finalBrand = selectedBrand === 'Other' ? (formData.brand === 'Other' ? 'Unknown' : formData.brand) : selectedBrand;
+    
+    // WhatsApp Execution
+    if (activeTab === 'Registry' && sendWhatsApp && activeTpl !== null) {
+      let msg = templates[activeTpl];
+      msg = msg.replace('[Name]', formData.customerName || 'Customer')
+               .replace('[JobID]', formData.id || 'Job')
+               .replace('[Brand]', finalBrand || 'Device');
+      
+      const whatsappUrl = `https://web.whatsapp.com/send?phone=91${formData.mobile}&text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, '_blank');
+    }
+
     let warrantyExpiry = undefined;
     if (formData.status === 'Completed' && formData.warrantyDuration !== 'No Warranty') {
       const months = parseInt(formData.warrantyDuration || '0');
@@ -382,7 +411,20 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                 </div>
               )}
             </div>
+            
             <div className="col-span-4 border-l border-slate-800 pl-8 space-y-6">
+               <div className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
+                  <div className="space-y-1">
+                     <Label className="text-xs font-bold">Send WhatsApp Notification</Label>
+                     <div className="flex items-center gap-2">
+                        <Badge className={cn("text-[9px] uppercase px-1.5 h-4", sendWhatsApp ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20")}>
+                           {sendWhatsApp ? "WhatsApp Enabled" : "WhatsApp Disabled"}
+                        </Badge>
+                     </div>
+                  </div>
+                  <Switch checked={sendWhatsApp} onCheckedChange={setSendWhatsApp} />
+               </div>
+
                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                  <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Templates
                </h3>
@@ -397,7 +439,14 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                       onChange={e => { const t = [...templates]; t[idx] = e.target.value; setTemplates(t); }} 
                       className="bg-transparent border-0 p-0 text-xs min-h-[70px] focus-visible:ring-0 resize-none leading-relaxed" 
                     />
-                    {activeTpl !== idx && <Button variant="ghost" size="sm" className="w-full text-[9px] h-6 uppercase font-bold" onClick={() => setActiveTpl(idx)}>Use Template</Button>}
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/50">
+                       <Checkbox 
+                         id={`tpl-check-${idx}`} 
+                         checked={activeTpl === idx}
+                         onCheckedChange={() => setActiveTpl(idx)}
+                       />
+                       <label htmlFor={`tpl-check-${idx}`} className="text-[10px] font-bold text-slate-400 cursor-pointer select-none">Use This Template</label>
+                    </div>
                  </div>
                ))}
             </div>

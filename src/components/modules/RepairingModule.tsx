@@ -9,7 +9,6 @@ import {
   XCircle, 
   MapPin, 
   Edit, 
-  MessageCircle,
   TrendingUp,
   Search,
   Tv,
@@ -38,12 +37,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { RepairCall, RepairStatus, Inquiry } from '@/lib/types';
+import { RepairCall, RepairStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
-import { format, differenceInDays, parseISO } from 'date-fns';
-
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+import { differenceInDays, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -108,7 +106,6 @@ export function RepairingModule({ store }: { store: any }) {
 
   const handleMapClick = (address: string) => {
     if (!address || address.trim() === '') {
-      alert("Address not available");
       return;
     }
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -233,7 +230,7 @@ export function RepairingModule({ store }: { store: any }) {
                            <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
                              {['Pending', 'Completed', 'Rejected', 'Exchange', 'Purchase'].map((s) => (
                                <DropdownMenuItem 
-                                 key={s} 
+                                 key={`status-${call.id}-${s}`} 
                                  onClick={() => handleStatusChange(call, s as RepairStatus)}
                                  className="text-xs uppercase font-bold hover:bg-slate-800 cursor-pointer"
                                >
@@ -277,7 +274,7 @@ export function RepairingModule({ store }: { store: any }) {
                                 </TableHeader>
                                 <TableBody>
                                   {call.visitHistory.map((v, i) => (
-                                    <TableRow key={v.id} className="border-slate-800 bg-slate-900/30">
+                                    <TableRow key={v.id || `visit-${call.id}-${i}`} className="border-slate-800 bg-slate-900/30">
                                       <TableCell className="font-code text-slate-500">{i + 1}</TableCell>
                                       <TableCell className="text-xs">
                                         <p className="font-bold">{v.date}</p>
@@ -314,7 +311,7 @@ export function RepairingModule({ store }: { store: any }) {
               <TableBody>
                 {store.inquiries.map((inq: any) => (
                   <TableRow key={inq.id} className="border-slate-800/50">
-                    <TableCell className="text-xs text-slate-500">{format(new Date(inq.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
+                    <TableCell className="text-xs text-slate-500">{inq.createdAt ? new Date(inq.createdAt).toLocaleString() : 'N/A'}</TableCell>
                     <TableCell><div className="flex flex-col"><span className="font-bold">{inq.customerName}</span><span className="text-xs text-blue-400">{inq.mobile}</span></div></TableCell>
                     <TableCell className="text-sm italic text-slate-300">"{inq.notes}"</TableCell>
                   </TableRow>

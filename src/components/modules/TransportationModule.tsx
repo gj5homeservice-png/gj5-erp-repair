@@ -1,9 +1,9 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
 import { 
   Truck, 
-  Send, 
   MapPin, 
   Clock, 
   Search, 
@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Navigation,
   Package,
-  Calendar
+  Calendar,
+  CheckCircle as CheckCircleIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,8 +36,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+import { cn } from '@/lib/utils';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
@@ -92,17 +92,19 @@ export function TransportationModule({ store }: { store: any }) {
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
   };
 
+  const kpis = [
+    { id: 'total', label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
+    { id: 'pending', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
+    { id: 'transit', label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-50' },
+    { id: 'delivered', label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-emerald-600' },
+    { id: 'fleet', label: 'Fleet Active', value: stats.activeFleet, icon: TrendingUp, color: 'bg-cyan-600' }
+  ];
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
-          { label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
-          { label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-500' },
-          { label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-emerald-600' },
-          { label: 'Fleet Active', value: stats.activeFleet, icon: TrendingUp, color: 'bg-cyan-600' }
-        ].map((k, i) => (
-          <Card key={i} className="bg-slate-900/40 border-slate-800">
+        {kpis.map((k) => (
+          <Card key={`kpi-${k.id}`} className="bg-slate-900/40 border-slate-800">
             <CardContent className="p-4 flex justify-between items-center">
               <div><p className="text-[10px] font-bold text-slate-500 uppercase">{k.label}</p><h3 className="text-xl font-headline font-bold">{k.value}</h3></div>
               <div className={cn("p-2 rounded-xl text-white", k.color)}><k.icon className="w-4 h-4" /></div>
@@ -146,7 +148,7 @@ export function TransportationModule({ store }: { store: any }) {
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800">
                     {store.calls.filter((c: any) => c.status !== 'Completed').map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>{c.id} - {c.customerName}</SelectItem>
+                      <SelectItem key={`job-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -160,7 +162,7 @@ export function TransportationModule({ store }: { store: any }) {
                  <MessageSquare className="w-5 h-5 text-emerald-500" /> Dispatch Templates
                </h3>
                {templates.map((t, i) => (
-                 <div key={i} className={cn("p-4 rounded-xl border cursor-pointer transition-all", activeTpl === i ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")} onClick={() => setActiveTpl(i)}>
+                 <div key={`tpl-${i}`} className={cn("p-4 rounded-xl border cursor-pointer transition-all", activeTpl === i ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")} onClick={() => setActiveTpl(i)}>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Tpl {i+1}</span>
                       <Paperclip className="w-3 h-3 text-slate-600" />
@@ -218,7 +220,7 @@ export function TransportationModule({ store }: { store: any }) {
                   <TableCell>
                     <div className="flex items-center gap-2 text-[10px] text-slate-500">
                        <Calendar className="w-3 h-3" />
-                       {format(new Date(log.dispatchTime), 'dd/MM HH:mm')}
+                       {log.dispatchTime ? format(new Date(log.dispatchTime), 'dd/MM HH:mm') : 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -241,24 +243,4 @@ export function TransportationModule({ store }: { store: any }) {
       </div>
     </div>
   );
-}
-
-function CheckCircleIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  )
 }

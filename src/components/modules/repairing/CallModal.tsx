@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -162,7 +163,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     if (isExisting) store.updateCall(finalData);
     else store.addCall(finalData);
 
-    // Automation for Transportation if Pickup is Required
     if (formData.intakeMode === 'Pickup Required' && !isExisting) {
       store.addTransportLog({
         id: `LOG${Date.now()}`,
@@ -256,7 +256,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                        <div className="flex gap-2">
                           {TECH_TAGS.map(tag => (
                             <button 
-                              key={tag} 
+                              key={`tag-${tag}`} 
                               disabled={isLocked}
                               onClick={() => toggleTag(tag)} 
                               className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border transition-all", formData.techTags?.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-400 border-slate-800")}
@@ -294,7 +294,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                           <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
                             <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800">
-                               {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                               {BRANDS.map(b => <SelectItem key={`brand-opt-${b}`} value={b}>{b}</SelectItem>)}
                             </SelectContent>
                           </Select>
                        </div>
@@ -447,7 +447,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                  <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Templates
                </h3>
                {[0, 1, 2].map(idx => (
-                 <div key={idx} className={cn("p-4 rounded-xl border transition-all space-y-3", activeTpl === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
+                 <div key={`whatsapp-tpl-pane-${idx}`} className={cn("p-4 rounded-xl border transition-all space-y-3", activeTpl === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
                     <div className="flex justify-between items-center">
                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Option {idx + 1}</Label>
                        <button className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"><Paperclip className="w-3 h-3" /></button>

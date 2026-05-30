@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -24,32 +24,91 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
-import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truck, LayoutGrid } from 'lucide-react';
+import { 
+  MessageSquare, 
+  Paperclip, 
+  ChevronRight, 
+  Notebook, 
+  History, 
+  Search, 
+  X,
+  Plus
+} from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
 
-const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
+const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Canon', 'Epson', 'Hikvision', 'CP Plus', 'Dahua', 'Other'];
+
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 
 const PRODUCT_CATEGORIES = [
   { id: 'TV Repair', name: 'TV Repair', prefix: 'TV' },
-  { id: 'CCTV', name: 'CCTV', prefix: 'CCTV' },
-  { id: 'Computer / Laptop', name: 'Computer / Laptop', prefix: 'PC' },
-  { id: 'Wholesale', name: 'Wholesale', prefix: 'WS' },
-  { id: 'Technician', name: 'Technician', prefix: 'TECH' },
-  { id: 'Spare Parts', name: 'Spare Parts', prefix: 'SP' },
-  { id: 'Accessories', name: 'Accessories', prefix: 'ACC' },
-  { id: 'Other Product', name: 'Other Products', prefix: 'OTH' },
+  { id: 'LED TV', name: 'LED TV', prefix: 'TV' },
+  { id: 'LCD TV', name: 'LCD TV', prefix: 'TV' },
+  { id: 'Smart TV', name: 'Smart TV', prefix: 'TV' },
+  { id: 'Android TV', name: 'Android TV', prefix: 'TV' },
+  { id: 'CCTV Camera', name: 'CCTV Camera', prefix: 'CCTV' },
+  { id: 'DVR / NVR', name: 'DVR / NVR', prefix: 'CCTV' },
+  { id: 'Computer', name: 'Computer', prefix: 'PC' },
+  { id: 'Laptop', name: 'Laptop', prefix: 'PC' },
+  { id: 'Printer', name: 'Printer', prefix: 'PRN' },
+  { id: 'Monitor', name: 'Monitor', prefix: 'MON' },
+  { id: 'Home Theatre', name: 'Home Theatre', prefix: 'HT' },
+  { id: 'Speaker System', name: 'Speaker System', prefix: 'SPK' },
+  { id: 'Amplifier', name: 'Amplifier', prefix: 'AMP' },
+  { id: 'Set Top Box', name: 'Set Top Box', prefix: 'STB' },
+  { id: 'Projector', name: 'Projector', prefix: 'PROJ' },
+  { id: 'Gaming Console', name: 'Gaming Console', prefix: 'GAME' },
+  { id: 'WiFi Router', name: 'WiFi Router', prefix: 'WIFI' },
+  { id: 'Network Device', name: 'Network Device', prefix: 'NET' },
+  { id: 'Mobile Phone', name: 'Mobile Phone', prefix: 'MOB' },
+  { id: 'Tablet', name: 'Tablet', prefix: 'TAB' },
+  { id: 'Power Supply', name: 'Power Supply', prefix: 'PWR' },
+  { id: 'Motherboard Repair', name: 'Motherboard Repair', prefix: 'MB' },
+  { id: 'Other Electronics', name: 'Other Electronics', prefix: 'OTH' },
 ];
+
+const COMMON_PROBLEMS: Record<string, string[]> = {
+  'TV': [
+    'No Power', 'Dead', 'Panel Damage', 'Display Line', 'Backlight Issue', 
+    'No Display', 'Sound Problem', 'HDMI Not Working', 'Remote Issue', 
+    'Software Issue', 'Android Hang', 'WiFi Not Working', 'Restart Loop', 
+    'Color Problem', 'Screen Flickering', 'Water Damage', 'Burn Issue', 
+    'Motherboard Fault', 'Power Supply Fault', 'T-Con Fault'
+  ],
+  'CCTV': [
+    'Camera Dead', 'No Video', 'DVR Not Recording', 'HDD Failure', 'Power Issue', 
+    'Night Vision Not Working', 'Network Issue', 'Password Reset', 
+    'Camera Blur', 'Cable Fault', 'Water Damage'
+  ],
+  'PC': [
+    'Dead', 'No Display', 'Windows Issue', 'Software Installation', 'Slow Performance', 
+    'SSD Upgrade', 'RAM Upgrade', 'Keyboard Fault', 'Battery Issue', 
+    'Charging Problem', 'Motherboard Fault', 'Heating Issue', 'Fan Noise', 
+    'Virus Problem', 'Data Recovery', 'Blue Screen Error'
+  ],
+  'PRN': [
+    'Paper Jam', 'Cartridge Problem', 'Ink Issue', 'Print Quality Issue', 
+    'Not Printing', 'Scanner Fault', 'USB Connection Issue'
+  ],
+  'MOB': [
+    'Display Damage', 'Touch Issue', 'Battery Problem', 'Charging Issue', 
+    'Speaker Fault', 'Mic Fault', 'Software Issue', 'Dead', 'Water Damage', 'Camera Fault'
+  ],
+  'OTH': [
+    'No Power', 'Dead', 'Not Working', 'Water Damage', 'Physical Damage', 'Short Circuit'
+  ]
+};
 
 export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [selectedBrand, setSelectedBrand] = useState('GJ5 HOME SERVICE');
   const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
+  const [problemSearch, setProblemSearch] = useState('');
+  const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
   const { toast } = useToast();
   
   const [sendWhatsApp, setSendWhatsApp] = useState(() => {
@@ -70,7 +129,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [templates, setTemplates] = useState<string[]>([
     "Registry: Hello [Name], Job [JobID] logged for [Brand].",
     "Estimate: Dear [Name], your repair quote for [JobID] is ready.",
-    "Ready: [Name], your [Brand] TV is ready for pickup."
+    "Ready: [Name], your [Brand] device is ready for pickup."
   ]);
 
   const isExisting = store.calls.some((c: any) => c.id === formData.id);
@@ -84,12 +143,34 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     if (editingCall) {
       setFormData(editingCall);
       setSelectedBrand(BRANDS.includes(editingCall.brand) ? editingCall.brand : 'Other');
+      if (editingCall.problemDescription) {
+        setSelectedProblems(editingCall.problemDescription.split(', ').filter((p: string) => p));
+      }
     } else if (isOpen) {
-      // Default initial ID for TV Repair if opening for the first time
       generateNewId('TV Repair');
       setActiveTpl(null);
+      setSelectedProblems([]);
+      setProblemSearch('');
     }
   }, [editingCall, isOpen]);
+
+  const getProblemCategory = (cat: string) => {
+    if (cat.includes('TV')) return 'TV';
+    if (cat.includes('CCTV') || cat.includes('DVR')) return 'CCTV';
+    if (cat.includes('Computer') || cat.includes('Laptop') || cat.includes('Motherboard')) return 'PC';
+    if (cat.includes('Printer')) return 'PRN';
+    if (cat.includes('Mobile') || cat.includes('Tablet')) return 'MOB';
+    return 'OTH';
+  };
+
+  const currentSuggestedProblems = useMemo(() => {
+    const key = getProblemCategory(formData.category || 'TV Repair');
+    return COMMON_PROBLEMS[key] || COMMON_PROBLEMS['OTH'];
+  }, [formData.category]);
+
+  const filteredSuggestions = currentSuggestedProblems.filter(p => 
+    p.toLowerCase().includes(problemSearch.toLowerCase()) && !selectedProblems.includes(p)
+  );
 
   const generateNewId = (category: string) => {
     const catConfig = PRODUCT_CATEGORIES.find(c => c.id === category) || PRODUCT_CATEGORIES[0];
@@ -101,7 +182,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       ...prev,
       category: category,
       id: nextId,
-      customerId: `GJ5${1001 + store.calls.length}`,
+      customerId: prev.customerId || `GJ5${1001 + store.calls.length}`,
       techTags: [], 
       status: 'Pending',
       warrantyDuration: 'No Warranty', 
@@ -117,11 +198,25 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       problemDescription: '',
       intakeMode: 'Customer Visit'
     }));
+    setSelectedProblems([]);
   };
 
   const toggleTag = (tag: string) => {
     const tags = formData.techTags || [];
     setFormData({...formData, techTags: tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag]});
+  };
+
+  const handleProblemToggle = (prob: string) => {
+    setSelectedProblems(prev => 
+      prev.includes(prob) ? prev.filter(p => p !== prob) : [...prev, prob]
+    );
+  };
+
+  const handleAddCustomProblem = () => {
+    if (problemSearch.trim() && !selectedProblems.includes(problemSearch.trim())) {
+      setSelectedProblems(prev => [...prev, problemSearch.trim()]);
+      setProblemSearch('');
+    }
   };
 
   const handleRepeatLookup = () => {
@@ -133,6 +228,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
         problemDescription: '',
       });
       setSelectedBrand(BRANDS.includes(found.brand) ? found.brand : 'Other');
+      if (found.problemDescription) {
+        setSelectedProblems(found.problemDescription.split(', ').filter((p: string) => p));
+      }
       setActiveTab('Registry');
     }
   };
@@ -152,7 +250,8 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     }
 
     const finalBrand = selectedBrand === 'Other' ? (formData.brand === 'Other' ? 'Unknown' : formData.brand) : selectedBrand;
-    
+    const problemStr = selectedProblems.join(', ');
+
     if (activeTab === 'Registry' && sendWhatsApp && activeTpl !== null) {
       let msg = templates[activeTpl];
       msg = msg.replace('[Name]', formData.customerName || 'Customer')
@@ -162,12 +261,8 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       const whatsappUrl = `https://web.whatsapp.com/send?phone=91${formData.mobile}&text=${encodeURIComponent(msg)}`;
       
       try {
-        const win = window.open(whatsappUrl, '_blank');
-        if (!win || win.closed || typeof win.closed === 'undefined') {
-          throw new Error("Pop-up blocked");
-        }
+        window.open(whatsappUrl, '_blank');
       } catch (e) {
-        console.warn("WhatsApp pop-up blocked", e);
         toast({
           variant: "destructive",
           title: "Pop-up Blocked",
@@ -190,7 +285,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
         id: `VST${Date.now()}`,
         date: format(new Date(), 'dd/MM/yyyy'),
         time: format(new Date(), 'hh:mm a'),
-        complaintDescription: formData.problemDescription || '',
+        complaintDescription: problemStr,
         technicianNotes: '',
         status: formData.status as RepairStatus
       };
@@ -201,6 +296,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     const finalData = {
       ...formData,
       brand: finalBrand,
+      problemDescription: problemStr,
       warrantyExpiry,
       visitHistory: updatedHistory,
       repeatCount: finalRepeatCount,
@@ -210,20 +306,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
     if (isExisting) store.updateCall(finalData);
     else store.addCall(finalData);
-
-    if (formData.intakeMode === 'Pickup Required' && !isExisting) {
-      store.addTransportLog({
-        id: `LOG${Date.now()}`,
-        runnerName: 'Unassigned',
-        runnerMobile: '',
-        jobId: finalData.id,
-        customerName: finalData.customerName,
-        customerMobile: finalData.mobile,
-        address: finalData.address,
-        dispatchTime: new Date().toISOString(),
-        status: 'Pending Pickup'
-      });
-    }
 
     onClose();
   };
@@ -262,7 +344,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-blue-400 font-bold">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800">
+                          <SelectContent className="bg-slate-900 border-slate-800 h-[300px] overflow-y-auto">
                             {PRODUCT_CATEGORIES.map(cat => (
                               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                             ))}
@@ -342,7 +424,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                           <Label>Brand</Label>
                           <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
                             <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800">
+                            <SelectContent className="bg-slate-900 border-slate-800 max-h-[300px]">
                                {BRANDS.map(b => <SelectItem key={`brand-opt-${b}`} value={b}>{b}</SelectItem>)}
                             </SelectContent>
                           </Select>
@@ -379,17 +461,75 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="flex justify-between items-center">
-                        Problem Statement
+
+                    {/* Smart Problem Selector */}
+                    <div className="space-y-3">
+                      <Label className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
+                        Smart Problem Selector
                         {(formData.repeatCount || 0) > 0 && <span className="text-[10px] text-purple-400 font-bold uppercase">Repeat Entry</span>}
                       </Label>
-                      <Textarea 
-                        value={formData.problemDescription || ''} 
-                        onChange={e => setFormData({...formData, problemDescription: e.target.value})} 
-                        className="bg-slate-900 border-slate-800 min-h-[120px]" 
-                      />
+                      <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
+                        <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                           {selectedProblems.map(p => (
+                             <Badge key={`sel-prob-${p}`} className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-1.5 py-1.5">
+                               {p}
+                               <X className="w-3 h-3 cursor-pointer" onClick={() => handleProblemToggle(p)} />
+                             </Badge>
+                           ))}
+                           {selectedProblems.length === 0 && <span className="text-xs text-slate-600 italic">No problems selected yet...</span>}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                           <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                              <Input 
+                                placeholder="Search or Add Custom Problem..."
+                                value={problemSearch}
+                                onChange={e => setProblemSearch(e.target.value)}
+                                className="pl-9 h-9 bg-slate-950 border-slate-800 text-xs"
+                              />
+                           </div>
+                           <Button size="sm" onClick={handleAddCustomProblem} className="bg-emerald-600 hover:bg-emerald-700 h-9">
+                              <Plus className="w-4 h-4" />
+                           </Button>
+                        </div>
+
+                        {problemSearch && filteredSuggestions.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2 animate-in fade-in duration-300">
+                             {filteredSuggestions.slice(0, 8).map(p => (
+                               <button 
+                                 key={`suggest-${p}`} 
+                                 onClick={() => handleProblemToggle(p)}
+                                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-full transition-colors border border-slate-700"
+                               >
+                                 + {p}
+                               </button>
+                             ))}
+                          </div>
+                        )}
+                        
+                        {!problemSearch && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                             <span className="w-full text-[9px] font-bold text-slate-600 uppercase mb-1">Common Issues for {formData.category}</span>
+                             {currentSuggestedProblems.slice(0, 10).map(p => (
+                               <button 
+                                 key={`suggest-default-${p}`} 
+                                 onClick={() => handleProblemToggle(p)}
+                                 className={cn(
+                                   "px-3 py-1 text-[10px] font-bold rounded-full transition-all border",
+                                   selectedProblems.includes(p) 
+                                     ? "bg-blue-500/10 border-blue-500 text-blue-400" 
+                                     : "bg-slate-800/40 border-slate-800 text-slate-500 hover:text-slate-300"
+                                 )}
+                               >
+                                 {p}
+                               </button>
+                             ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                          <Label>Store Location</Label>

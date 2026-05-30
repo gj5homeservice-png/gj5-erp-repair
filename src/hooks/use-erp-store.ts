@@ -1,7 +1,16 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { RepairCall, Inquiry, Employee, AttendanceRecord, Expense, TransportationLog, TransportEntry, VisibilitySettings as IVisibilitySettings } from '@/lib/types';
+import { 
+  RepairCall, 
+  Inquiry, 
+  Employee, 
+  AttendanceRecord, 
+  Expense, 
+  TransportationLog, 
+  Invoice,
+  VisibilitySettings as IVisibilitySettings 
+} from '@/lib/types';
 
 export interface VisibilitySettings {
   tabs: {
@@ -48,6 +57,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
@@ -84,6 +94,11 @@ export function useErpStore() {
       try { setTransportationLogs(JSON.parse(savedLogs)); } catch (e) {}
     }
 
+    const savedInvoices = localStorage.getItem('gj5_invoices');
+    if (savedInvoices) {
+      try { setInvoices(JSON.parse(savedInvoices)); } catch (e) {}
+    }
+
     setEmployees([
       { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
       { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
@@ -102,6 +117,10 @@ export function useErpStore() {
     localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs));
   }, [transportationLogs]);
 
+  useEffect(() => {
+    localStorage.setItem('gj5_invoices', JSON.stringify(invoices));
+  }, [invoices]);
+
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
     localStorage.setItem('gj5_visibility_settings', JSON.stringify(newSettings));
@@ -116,6 +135,8 @@ export function useErpStore() {
     setExpenses(prev => [expense, ...prev]);
     setWalletBalance(prev => prev - expense.amount);
   };
+
+  const addInvoice = (invoice: Invoice) => setInvoices(prev => [invoice, ...prev]);
 
   const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
   const updateTransportLogStatus = (id: string, status: any) => {
@@ -139,6 +160,7 @@ export function useErpStore() {
     attendance, updateAttendance,
     expenses, addExpense,
     transportationLogs, addTransportLog, updateTransportLogStatus,
+    invoices, addInvoice,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo,
     visibility, updateVisibility

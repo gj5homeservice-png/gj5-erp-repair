@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Printer, 
   Download, 
@@ -10,7 +10,10 @@ import {
   Monitor,
   Layout,
   StretchVertical,
-  QrCode
+  QrCode,
+  Search,
+  CheckCircle2,
+  FileDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,24 +21,174 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { jsPDF } from 'jspdf';
+import { format } from 'date-fns';
 
 export function BillingModule({ store }: { store: any }) {
   const [billData, setBillData] = useState({
-    customerName: '',
     jobId: '',
-    category: '',
+    customerId: '',
+    customerName: '',
+    mobile: '',
+    address: '',
+    brand: '',
+    model: '',
+    category: 'TV Repair',
     hardwareCost: 0,
     laborCost: 0,
+    additionalCharges: 0,
     taxEnabled: true,
-    notes: ''
+    notes: '',
+    problem: ''
   });
 
   const [activeTemplate, setActiveTemplate] = useState('modern');
 
-  const subtotal = billData.hardwareCost + billData.laborCost;
+  // Auto-fetch data when Job ID is entered
+  useEffect(() => {
+    if (billData.jobId) {
+      const job = store.calls.find((c: any) => c.id.toUpperCase() === billData.jobId.toUpperCase());
+      if (job) {
+        setBillData(prev => ({
+          ...prev,
+          customerId: job.customerId,
+          customerName: job.customerName,
+          mobile: job.mobile,
+          address: job.address,
+          brand: job.brand,
+          model: job.model,
+          problem: job.problemDescription || '',
+          category: job.category || 'TV Repair'
+        }));
+      }
+    }
+  }, [billData.jobId, store.calls]);
+
+  const subtotal = useMemo(() => {
+    return billData.hardwareCost + billData.laborCost + billData.additionalCharges;
+  }, [billData.hardwareCost, billData.laborCost, billData.additionalCharges]);
+
   const cgst = billData.taxEnabled ? subtotal * 0.09 : 0;
   const sgst = billData.taxEnabled ? subtotal * 0.09 : 0;
   const total = subtotal + cgst + sgst;
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const timestamp = format(new Date(), 'dd/MM/yyyy HH:mm');
+    const filename = `${billData.jobId || 'INV'}_Invoice.pdf`;
+
+    // GJ5 HOME SERVICE Header
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 255);
+    doc.text('GJ5 HOME SERVICE', 20, 30);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Professional Service & Repair Hub', 20, 36);
+    doc.text('Main Road, Adajan, Surat, Gujarat - 395009', 20, 41);
+
+    // Invoice Header
+    doc.setFontSize(18);
+    doc.setTextColor(0);
+    doc.text('INVOICE', 190, 30, { align: 'right' });
+    doc.setFontSize(10);
+    doc.text(`#INV-${billData.jobId || 'XXXX'}`, 190, 36, { align: 'right' });
+    doc.text(`DATE: ${timestamp}`, 190, 41, { align: 'right' });
+
+    doc.setDrawColor(200);
+    doc.line(20, 50, 190, 50);
+
+    // Customer & Job Details
+    doc.setFont('helvetica', 'bold');
+    doc.text('BILLED TO:', 20, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(billData.customerName || 'N/A', 20, 66);
+    doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 20, 71);
+    doc.text(`Address: ${billData.address || 'N/A'}`, 20, 76, { maxWidth: 80 });
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('JOB DETAILS:', 110, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, 66);
+    doc.text(`Device: ${billData.brand} ${billData.model}`, 110, 71);
+    doc.text(`Problem: ${billData.problem}`, 110, 76, { maxWidth: 80 });
+
+    // Table Header
+    doc.setFillColor(240, 240, 240);
+    doc.rect(20, 95, 170, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.text('DESCRIPTION', 25, 102);
+    doc.text('AMOUNT', 185, 102, { align: 'right' });
+
+    // Table Content
+    let y = 112;
+    const items = [
+      { desc: 'Hardware Parts Replacement', amt: billData.hardwareCost },
+      { desc: 'Technician Labor / Service', amt: billData.laborCost },
+      { desc: 'Additional / Misc Charges', amt: billData.additionalCharges }
+    ];
+
+    items.forEach(item => {
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.desc, 25, y);
+      doc.text(`INR ${item.amt.toFixed(2)}`, 185, y, { align: 'right' });
+      y += 10;
+    });
+
+    doc.line(20, y, 190, y);
+    y += 10;
+
+    // Totals
+    doc.setFont('helvetica', 'normal');
+    doc.text('SUBTOTAL:', 140, y);
+    doc.text(`INR ${subtotal.toFixed(2)}`, 185, y, { align: 'right' });
+    y += 7;
+
+    if (billData.taxEnabled) {
+      doc.text('CGST (9%):', 140, y);
+      doc.text(`INR ${cgst.toFixed(2)}`, 185, y, { align: 'right' });
+      y += 7;
+      doc.text('SGST (9%):', 140, y);
+      doc.text(`INR ${sgst.toFixed(2)}`, 185, y, { align: 'right' });
+      y += 7;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GRAND TOTAL:', 140, y + 5);
+    doc.text(`INR ${total.toFixed(2)}`, 185, y + 5, { align: 'right' });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(150);
+    doc.text('Note: This is a computer-generated invoice. No signature required.', 105, 280, { align: 'center' });
+
+    doc.save(filename);
+
+    // Save invoice to store
+    store.addInvoice({
+      id: `INV${Date.now()}`,
+      jobId: billData.jobId,
+      customerId: billData.customerId,
+      customerName: billData.customerName,
+      mobile: billData.mobile,
+      address: billData.address,
+      brand: billData.brand,
+      model: billData.model,
+      hardwareCost: billData.hardwareCost,
+      laborCost: billData.laborCost,
+      additionalCharges: billData.additionalCharges,
+      taxEnabled: billData.taxEnabled,
+      subtotal,
+      cgst,
+      sgst,
+      total,
+      notes: billData.notes,
+      timestamp: new Date().toISOString()
+    });
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in duration-500">
@@ -53,20 +206,23 @@ export function BillingModule({ store }: { store: any }) {
 
           <div className="grid grid-cols-2 gap-6">
              <div className="space-y-2">
-                <Label>Job ID</Label>
+                <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                  <Search className="w-3 h-3" /> Job ID Lookup
+                </Label>
                 <Input 
                   value={billData.jobId} 
                   onChange={e => setBillData({...billData, jobId: e.target.value})}
-                  className="bg-slate-950 border-slate-800 font-code font-bold text-blue-400" 
+                  className="bg-slate-950 border-slate-800 font-code font-bold text-blue-400 h-11" 
                   placeholder="TV1001"
                 />
              </div>
              <div className="space-y-2">
-                <Label>Customer Name</Label>
+                <Label className="text-xs font-bold text-slate-500 uppercase">Customer Name</Label>
                 <Input 
                   value={billData.customerName} 
+                  readOnly={!!billData.jobId && !!billData.customerName}
                   onChange={e => setBillData({...billData, customerName: e.target.value})}
-                  className="bg-slate-950 border-slate-800" 
+                  className="bg-slate-950 border-slate-800 h-11" 
                 />
              </div>
           </div>
@@ -76,23 +232,32 @@ export function BillingModule({ store }: { store: any }) {
                <Calculator className="w-5 h-5 text-[#0066FF]" />
                Calculation Engine
              </h3>
-             <div className="grid grid-cols-2 gap-6">
+             <div className="grid grid-cols-3 gap-6">
                 <div className="space-y-2">
-                   <Label>Hardware Parts Replacement Cost</Label>
+                   <Label className="text-[10px] font-bold text-slate-500 uppercase">Parts Cost</Label>
                    <Input 
                      type="number"
                      value={billData.hardwareCost}
                      onChange={e => setBillData({...billData, hardwareCost: Number(e.target.value)})}
-                     className="bg-slate-950 border-slate-800 text-right font-code" 
+                     className="bg-slate-950 border-slate-800 text-right font-code h-11" 
                    />
                 </div>
                 <div className="space-y-2">
-                   <Label>Technician Labor / Service</Label>
+                   <Label className="text-[10px] font-bold text-slate-500 uppercase">Labor Cost</Label>
                    <Input 
                      type="number"
                      value={billData.laborCost}
                      onChange={e => setBillData({...billData, laborCost: Number(e.target.value)})}
-                     className="bg-slate-950 border-slate-800 text-right font-code" 
+                     className="bg-slate-950 border-slate-800 text-right font-code h-11" 
+                   />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-bold text-slate-500 uppercase">Additional</Label>
+                   <Input 
+                     type="number"
+                     value={billData.additionalCharges}
+                     onChange={e => setBillData({...billData, additionalCharges: Number(e.target.value)})}
+                     className="bg-slate-950 border-slate-800 text-right font-code h-11" 
                    />
                 </div>
              </div>
@@ -144,20 +309,20 @@ export function BillingModule({ store }: { store: any }) {
         </div>
 
         <div className="flex gap-4">
-           <Button className="flex-1 bg-[#0066FF] hover:bg-[#0052CC] h-12 text-lg font-headline rounded-xl shadow-lg shadow-blue-500/20">
+           <Button onClick={() => window.print()} className="flex-1 bg-slate-800 hover:bg-slate-700 h-12 text-lg font-headline rounded-xl border border-slate-700">
               <Printer className="w-5 h-5 mr-2" />
-              Print Invoice
+              Direct Print
            </Button>
-           <Button variant="outline" className="flex-1 border-slate-700 bg-slate-800/50 hover:bg-slate-700 h-12 text-lg font-headline rounded-xl">
-              <Download className="w-5 h-5 mr-2" />
-              Save as PDF
+           <Button onClick={handleDownloadPDF} className="flex-1 bg-[#0066FF] hover:bg-blue-600 h-12 text-lg font-headline rounded-xl shadow-lg shadow-blue-500/20">
+              <FileDown className="w-5 h-5 mr-2" />
+              Download PDF
            </Button>
         </div>
       </div>
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-           <h3 className="text-xl font-headline font-bold">Live Preview Panel</h3>
+           <h3 className="text-xl font-headline font-bold">Invoice Preview</h3>
            <Tabs value={activeTemplate} onValueChange={setActiveTemplate} className="bg-slate-900 border border-slate-800 rounded-lg p-1">
               <TabsList className="bg-transparent border-0">
                  <TabsTrigger value="modern" className="data-[state=active]:bg-slate-800"><Monitor className="w-4 h-4 mr-2" /> Modern</TabsTrigger>
@@ -198,12 +363,13 @@ function ModernTemplate({ data, total, cgst, sgst, subtotal }: any) {
           <div>
              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Billed To</p>
              <h3 className="text-xl font-bold">{data.customerName || 'Customer Name'}</h3>
-             <p className="text-sm text-slate-600">Job ID: {data.jobId}</p>
+             <p className="text-sm text-slate-600">ID: {data.customerId}</p>
+             <p className="text-sm text-slate-600">Mob: {data.mobile}</p>
           </div>
           <div className="text-right">
-             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Service Details</p>
-             <h3 className="text-xl font-bold">{data.category || 'Repair Service'}</h3>
-             <p className="text-sm text-slate-600">Professional Repair & Maintenance</p>
+             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Device Details</p>
+             <h3 className="text-xl font-bold">{data.brand} {data.model}</h3>
+             <p className="text-sm text-slate-600">{data.category}</p>
           </div>
        </div>
 
@@ -224,6 +390,12 @@ function ModernTemplate({ data, total, cgst, sgst, subtotal }: any) {
                    <td className="py-4 px-4 text-sm font-medium">Technician Service & Labor</td>
                    <td className="py-4 px-4 text-sm font-mono text-right">₹{data.laborCost.toFixed(2)}</td>
                 </tr>
+                {data.additionalCharges > 0 && (
+                  <tr>
+                    <td className="py-4 px-4 text-sm font-medium">Additional / Misc Charges</td>
+                    <td className="py-4 px-4 text-sm font-mono text-right">₹{data.additionalCharges.toFixed(2)}</td>
+                  </tr>
+                )}
              </tbody>
           </table>
        </div>
@@ -275,7 +447,7 @@ function RetailTemplate({ data, total, cgst, sgst, subtotal }: any) {
           </div>
           <div>
              <p className="text-sm"><b>Customer:</b> {data.customerName}</p>
-             <p className="text-sm"><b>ID:</b> GJ51XXX</p>
+             <p className="text-sm"><b>ID:</b> {data.customerId}</p>
           </div>
        </div>
        <div className="flex-1 py-6">
@@ -288,13 +460,19 @@ function RetailTemplate({ data, total, cgst, sgst, subtotal }: any) {
              </thead>
              <tbody>
                 <tr className="border-b">
-                   <td className="py-4 text-sm">Spare Parts Replacement ({data.category})</td>
+                   <td className="py-4 text-sm">Spare Parts Replacement ({data.brand})</td>
                    <td className="py-4 text-right text-sm">₹{data.hardwareCost.toFixed(2)}</td>
                 </tr>
                 <tr className="border-b">
                    <td className="py-4 text-sm">Labor & Service Charges</td>
                    <td className="py-4 text-right text-sm">₹{data.laborCost.toFixed(2)}</td>
                 </tr>
+                {data.additionalCharges > 0 && (
+                  <tr className="border-b">
+                    <td className="py-4 text-sm">Misc / Additional Charges</td>
+                    <td className="py-4 text-right text-sm">₹{data.additionalCharges.toFixed(2)}</td>
+                  </tr>
+                )}
              </tbody>
           </table>
        </div>

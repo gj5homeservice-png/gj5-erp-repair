@@ -98,3 +98,24 @@ export interface TransportEntry {
   status: 'Available' | 'On Route' | 'Maintenance' | 'Completed';
   createdAt: string;
 }
+
+export interface Invoice {
+  id: string;
+  jobId: string;
+  customerId: string;
+  customerName: string;
+  mobile: string;
+  address: string;
+  brand: string;
+  model: string;
+  hardwareCost: number;
+  laborCost: number;
+  additionalCharges: number;
+  taxEnabled: boolean;
+  subtotal: number;
+  cgst: number;
+  sgst: number;
+  total: number;
+  notes: string;
+  timestamp: string;
+}

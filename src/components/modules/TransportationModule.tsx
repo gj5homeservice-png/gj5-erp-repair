@@ -7,13 +7,12 @@ import {
   MapPin, 
   Clock, 
   Search, 
-  MessageSquare, 
-  Paperclip,
   TrendingUp,
   Navigation,
   Package,
   Calendar,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,12 +39,6 @@ import { cn } from '@/lib/utils';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
-  const [activeTpl, setActiveTpl] = useState(0);
-  const [templates] = useState([
-    "Dispatch Alert: Runner [Runner] assigned to Job [JobID].",
-    "Transit Update: Item [JobID] is currently in-transit.",
-    "Delivered: Item [JobID] reached workshop successfully."
-  ]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const stats = useMemo(() => {
@@ -73,7 +66,7 @@ export function TransportationModule({ store }: { store: any }) {
     });
   }, [store.transportationLogs, searchQuery]);
 
-  const handleDispatch = () => {
+  const handleAssignRunner = () => {
     if (!formData.runnerName || !formData.jobId) return;
     const job = store.calls.find((c: any) => c.id === formData.jobId);
     
@@ -83,19 +76,19 @@ export function TransportationModule({ store }: { store: any }) {
       runnerMobile: formData.runnerMobile,
       jobId: formData.jobId,
       customerName: job?.customerName || 'Unknown',
+      customerMobile: job?.mobile || '',
       address: job?.address || 'N/A',
       dispatchTime: new Date().toISOString(),
       status: 'Pending Pickup'
     });
     
-    window.open(`https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(templates[activeTpl].replace('[Runner]', formData.runnerName).replace('[JobID]', formData.jobId))}`, '_blank');
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
   };
 
   const kpis = [
     { id: 'total', label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
     { id: 'pending', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
-    { id: 'transit', label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-50' },
+    { id: 'transit', label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-500' },
     { id: 'delivered', label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-emerald-600' },
     { id: 'fleet', label: 'Fleet Active', value: stats.activeFleet, icon: TrendingUp, color: 'bg-cyan-600' }
   ];
@@ -106,7 +99,10 @@ export function TransportationModule({ store }: { store: any }) {
         {kpis.map((k) => (
           <Card key={`kpi-${k.id}`} className="bg-slate-900/40 border-slate-800">
             <CardContent className="p-4 flex justify-between items-center">
-              <div><p className="text-[10px] font-bold text-slate-500 uppercase">{k.label}</p><h3 className="text-xl font-headline font-bold">{k.value}</h3></div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">{k.label}</p>
+                <h3 className="text-xl font-headline font-bold">{k.value}</h3>
+              </div>
               <div className={cn("p-2 rounded-xl text-white", k.color)}><k.icon className="w-4 h-4" /></div>
             </CardContent>
           </Card>
@@ -116,60 +112,57 @@ export function TransportationModule({ store }: { store: any }) {
       <Card className="bg-slate-900/40 border-slate-800">
         <CardHeader className="border-b border-slate-800">
           <CardTitle className="flex items-center gap-2 font-headline text-xl">
-            <Truck className="w-6 h-6 text-[#0066FF]" /> Runner Transit Initializer
+            <Truck className="w-6 h-6 text-[#0066FF]" /> Runner Assignment Console
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8">
-          <div className="grid grid-cols-12 gap-10">
-            <div className="col-span-7 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Runner Name</Label>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="space-y-4">
+              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Details</Label>
+              <div className="space-y-2">
+                <Label>Runner Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input 
                     value={formData.runnerName} 
                     onChange={e => setFormData({...formData, runnerName: e.target.value})} 
-                    className="bg-slate-950 border-slate-800 h-11" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Runner Mobile</Label>
-                  <Input 
-                    value={formData.runnerMobile} 
-                    onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
-                    className="bg-slate-950 border-slate-800 h-11" 
+                    className="pl-10 bg-slate-950 border-slate-800 h-11" 
+                    placeholder="Enter Runner Name"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Active Job Linker</Label>
+                <Label>Runner Mobile Number</Label>
+                <Input 
+                  value={formData.runnerMobile} 
+                  onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
+                  className="bg-slate-950 border-slate-800 h-11" 
+                  placeholder="10-Digit Mobile"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Association</Label>
+              <div className="space-y-2">
+                <Label>Link Active Service Job</Label>
                 <Select value={formData.jobId} onValueChange={v => setFormData({...formData, jobId: v})}>
                   <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
-                    <SelectValue placeholder="Link active service job..." />
+                    <SelectValue placeholder="Select Job..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800">
-                    {store.calls.filter((c: any) => c.status !== 'Completed').map((c: any) => (
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    {store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').map((c: any) => (
                       <SelectItem key={`job-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleDispatch} className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
-                <Navigation className="w-5 h-5 mr-2" /> 🚀 Dispatch & Send to Runner
-              </Button>
             </div>
-            <div className="col-span-5 space-y-4 bg-slate-950 p-6 rounded-2xl border border-slate-800">
-               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                 <MessageSquare className="w-5 h-5 text-emerald-500" /> Dispatch Templates
-               </h3>
-               {templates.map((t, i) => (
-                 <div key={`tpl-${i}`} className={cn("p-4 rounded-xl border cursor-pointer transition-all", activeTpl === i ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")} onClick={() => setActiveTpl(i)}>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Tpl {i+1}</span>
-                      <Paperclip className="w-3 h-3 text-slate-600" />
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">{t}</p>
-                 </div>
-               ))}
+
+            <div className="flex items-end">
+              <Button onClick={handleAssignRunner} className="w-full h-11 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
+                Assign Runner
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -177,11 +170,13 @@ export function TransportationModule({ store }: { store: any }) {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-headline font-bold flex items-center gap-2"><Clock className="w-6 h-6 text-emerald-500" /> Live Transit Directory</h3>
+          <h3 className="text-xl font-headline font-bold flex items-center gap-2">
+            <Clock className="w-6 h-6 text-emerald-500" /> Active Assignment Log
+          </h3>
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input 
-              placeholder="Filter Runner, Job, Customer..." 
+              placeholder="Filter Assignments..." 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
               className="pl-10 h-10 bg-slate-950 border-slate-800" 
@@ -216,7 +211,12 @@ export function TransportationModule({ store }: { store: any }) {
                       <span className="text-[10px] text-blue-400">{log.customerMobile}</span>
                     </div>
                   </TableCell>
-                  <TableCell><div className="flex items-center gap-2 text-xs text-slate-400"><MapPin className="w-3 h-3" /><span className="truncate max-w-[150px]">{log.address}</span></div></TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate max-w-[150px]">{log.address}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-[10px] text-slate-500">
                        <Calendar className="w-3 h-3" />
@@ -226,7 +226,7 @@ export function TransportationModule({ store }: { store: any }) {
                   <TableCell>
                     <Select value={log.status} onValueChange={v => store.updateTransportLogStatus(log.id, v)}>
                       <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-40"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800">
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
                         <SelectItem value="Picked Up">Picked Up</SelectItem>
                         <SelectItem value="In Transit">In Transit</SelectItem>
@@ -236,7 +236,11 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredLogs.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
+              {filteredLogs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-slate-500">No runner assignments found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

@@ -118,5 +118,6 @@ export interface Invoice {
   sgst: number;
   total: number;
   notes: string;
+  themeUsed: string;
   timestamp: string;
 }

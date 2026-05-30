@@ -13,7 +13,9 @@ import {
   FileDown,
   Truck,
   ShieldCheck,
-  Info
+  Info,
+  Palette,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +27,15 @@ import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+const INVOICE_THEMES = [
+  { id: 'classic-blue', name: 'Classic Blue', primary: '#0066FF', secondary: '#E6F0FF', text: 'text-[#0066FF]', bg: 'bg-[#0066FF]' },
+  { id: 'modern-yellow', name: 'Modern Yellow', primary: '#F59E0B', secondary: '#FEF3C7', text: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]' },
+  { id: 'corporate-red', name: 'Corporate Red', primary: '#EF4444', secondary: '#FEE2E2', text: 'text-[#EF4444]', bg: 'bg-[#EF4444]' },
+  { id: 'premium-indigo', name: 'Premium Indigo', primary: '#4F46E5', secondary: '#E0E7FF', text: 'text-[#4F46E5]', bg: 'bg-[#4F46E5]' },
+];
+
 export function BillingModule({ store }: { store: any }) {
+  const [activeThemeId, setActiveThemeId] = useState('classic-blue');
   const [billData, setBillData] = useState({
     jobId: '',
     customerId: '',
@@ -46,7 +56,9 @@ export function BillingModule({ store }: { store: any }) {
     warrantyStatus: 'No Warranty'
   });
 
-  const [activeTemplate, setActiveTemplate] = useState('modern');
+  const activeTheme = useMemo(() => 
+    INVOICE_THEMES.find(t => t.id === activeThemeId) || INVOICE_THEMES[0]
+  , [activeThemeId]);
 
   // Auto-fetch data when Job ID is entered
   useEffect(() => {
@@ -82,6 +94,8 @@ export function BillingModule({ store }: { store: any }) {
     const doc = new jsPDF('p', 'mm', 'a4');
     const timestamp = format(new Date(), 'dd/MM/yyyy HH:mm');
     const filename = `${billData.jobId || 'INV'}_Invoice.pdf`;
+    const themeColor = activeTheme.primary;
+    const themeRGB = hexToRgb(themeColor);
 
     // Logo support
     if (store.shopLogo) {
@@ -95,7 +109,7 @@ export function BillingModule({ store }: { store: any }) {
     // Company Branding
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 102, 255);
+    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
     doc.text('GJ5 HOME SERVICE', store.shopLogo ? 45 : 15, 25);
     
     doc.setFontSize(10);
@@ -145,10 +159,10 @@ export function BillingModule({ store }: { store: any }) {
     currentY += 35;
     
     // Table Header
-    doc.setFillColor(245, 245, 245);
+    doc.setFillColor(themeRGB.r, themeRGB.g, themeRGB.b);
     doc.rect(15, currentY, 180, 10, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0);
+    doc.setTextColor(255);
     doc.text('DESCRIPTION', 20, currentY + 6);
     doc.text('AMOUNT (INR)', 190, currentY + 6, { align: 'right' });
 
@@ -164,6 +178,7 @@ export function BillingModule({ store }: { store: any }) {
 
     charges.forEach(item => {
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0);
       doc.text(item.desc, 20, currentY + 8);
       doc.text(item.amt.toFixed(2), 190, currentY + 8, { align: 'right' });
       currentY += 10;
@@ -191,7 +206,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('GRAND TOTAL:', 140, currentY + 5);
-    doc.setTextColor(0, 102, 255);
+    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
     doc.text(`INR ${total.toFixed(2)}`, 190, currentY + 5, { align: 'right' });
 
     // Terms & Conditions
@@ -205,15 +220,15 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(100);
     const terms = [
       "1. Service charges and delivery charges are non-refundable.",
-      "2. TV must be collected within 30 days of repair completion.",
-      "3. After 30 days, storage charges may apply.",
-      "4. No warranty on software updates, settings issues or customer data loss.",
-      "5. Warranty applies only to replaced parts mentioned in the invoice.",
-      "6. Physical damage, liquid damage, panel damage and burn marks are not covered under warranty.",
-      "7. Warranty becomes void if the TV is opened or repaired by another technician.",
-      "8. Customer must verify TV condition at the time of delivery.",
-      "9. GJ5 HOME SERVICE is not responsible for manufacturer defects after delivery.",
-      "10. Original invoice is required for warranty claims."
+      "2. TV must be collected within 30 days after repair completion.",
+      "3. After 30 days storage charges may apply.",
+      "4. No warranty on software updates.",
+      "5. Warranty applies only to replaced parts.",
+      "6. No warranty on panel damage.",
+      "7. No warranty on liquid damage.",
+      "8. Warranty void if repaired by another technician.",
+      "9. Customer should verify TV condition at delivery.",
+      "10. Original invoice required for warranty claim."
     ];
     terms.forEach(term => {
       doc.text(term, 15, currentY);
@@ -223,12 +238,12 @@ export function BillingModule({ store }: { store: any }) {
     // Footer
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 102, 255);
-    doc.text('Thank you for choosing GJ5 HOME SERVICE.', 105, 275, { align: 'center' });
+    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
+    doc.text('Thank You For Choosing GJ5 HOME SERVICE', 105, 275, { align: 'center' });
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(150);
-    doc.text('All electronics repair jobs come with a standard 30-day service warranty unless specified.', 105, 280, { align: 'center' });
+    doc.text('All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.', 105, 280, { align: 'center' });
 
     doc.save(filename);
 
@@ -251,9 +266,19 @@ export function BillingModule({ store }: { store: any }) {
       cgst,
       sgst,
       total,
+      themeUsed: activeTheme.name,
       notes: billData.notes,
       timestamp: new Date().toISOString()
     });
+  };
+
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 0, g: 102, b: 255 };
   };
 
   return (
@@ -261,7 +286,7 @@ export function BillingModule({ store }: { store: any }) {
       <div className="space-y-6">
         <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 space-y-6">
           <div className="flex items-center gap-4">
-             <div className="p-3 rounded-xl bg-[#0066FF] text-white">
+             <div className={cn("p-3 rounded-xl text-white transition-colors duration-300", activeTheme.bg)}>
                 <Receipt className="w-6 h-6" />
              </div>
              <div>
@@ -273,12 +298,12 @@ export function BillingModule({ store }: { store: any }) {
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-2">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                  <Search className="w-3 h-3" /> Job ID
+                  <Search className="w-3 h-3" /> Job ID Lookup
                 </Label>
                 <Input 
                   value={billData.jobId} 
                   onChange={e => setBillData({...billData, jobId: e.target.value})}
-                  className="bg-slate-950 border-slate-800 font-code font-bold text-blue-400 h-10" 
+                  className={cn("bg-slate-950 border-slate-800 font-code font-bold h-10 transition-colors", activeTheme.text)} 
                   placeholder="TV1001"
                 />
              </div>
@@ -295,7 +320,7 @@ export function BillingModule({ store }: { store: any }) {
 
           <div className="space-y-4 pt-4 border-t border-slate-800">
              <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
-               <Calculator className="w-4 h-4 text-[#0066FF]" />
+               <Calculator className={cn("w-4 h-4", activeTheme.text)} />
                Simple Billing Mode
              </h3>
              <div className="grid grid-cols-2 gap-4">
@@ -350,7 +375,7 @@ export function BillingModule({ store }: { store: any }) {
                 />
              </div>
 
-             <div className="p-4 bg-[#0066FF]/5 rounded-2xl border border-[#0066FF]/20 space-y-2">
+             <div className={cn("p-4 rounded-2xl border transition-all space-y-2", activeTheme.bg + "/5", "border-" + activeTheme.id)}>
                 <div className="flex justify-between text-xs">
                    <span className="text-slate-400 uppercase font-bold">Subtotal</span>
                    <span className="font-code font-bold">₹{subtotal.toFixed(2)}</span>
@@ -363,19 +388,9 @@ export function BillingModule({ store }: { store: any }) {
                 )}
                 <div className="flex justify-between pt-2 border-t border-slate-800">
                    <span className="font-headline font-bold text-sm uppercase">Grand Total</span>
-                   <span className="font-code font-bold text-xl text-[#0066FF]">₹{total.toFixed(2)}</span>
+                   <span className={cn("font-code font-bold text-xl", activeTheme.text)}>₹{total.toFixed(2)}</span>
                 </div>
              </div>
-          </div>
-
-          <div className="space-y-2">
-             <Label className="text-[10px] font-bold text-slate-500 uppercase">Manual Notes</Label>
-             <Input 
-               value={billData.notes}
-               onChange={e => setBillData({...billData, notes: e.target.value})}
-               className="bg-slate-950 border-slate-800 h-10" 
-               placeholder="Add special warranty or payment details..."
-             />
           </div>
         </div>
 
@@ -383,7 +398,7 @@ export function BillingModule({ store }: { store: any }) {
            <Button onClick={() => window.print()} variant="outline" className="flex-1 border-slate-700 h-11">
               <Printer className="w-4 h-4 mr-2" /> Direct Print
            </Button>
-           <Button onClick={handleDownloadPDF} className="flex-1 bg-[#0066FF] hover:bg-blue-600 h-11 shadow-lg shadow-blue-500/20">
+           <Button onClick={handleDownloadPDF} className={cn("flex-1 h-11 shadow-lg text-white font-bold", activeTheme.bg, activeTheme.bg + "/20")}>
               <FileDown className="w-4 h-4 mr-2" /> Download PDF
            </Button>
         </div>
@@ -391,21 +406,37 @@ export function BillingModule({ store }: { store: any }) {
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-           <h3 className="text-lg font-headline font-bold uppercase tracking-tight">Invoice Preview</h3>
-           <div className="flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[10px] text-slate-400">
-              <Monitor className="w-3 h-3" /> A4 Professional Preview
+           <h3 className="text-lg font-headline font-bold uppercase tracking-tight flex items-center gap-2">
+             <Monitor className="w-5 h-5 text-slate-500" /> Invoice Preview
+           </h3>
+           <div className="flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-lg">
+              {INVOICE_THEMES.map(theme => (
+                <button
+                  key={theme.id}
+                  onClick={() => setActiveThemeId(theme.id)}
+                  title={theme.name}
+                  className={cn(
+                    "w-8 h-8 rounded-md transition-all flex items-center justify-center border-2",
+                    activeThemeId === theme.id ? "border-white scale-110" : "border-transparent opacity-60 hover:opacity-100",
+                    theme.bg
+                  )}
+                >
+                  {activeThemeId === theme.id && <Check className="w-4 h-4 text-white" />}
+                </button>
+              ))}
            </div>
         </div>
 
         <div className="bg-white text-black min-h-[1123px] w-full max-w-[794px] mx-auto overflow-hidden rounded-sm shadow-2xl relative print:shadow-none print:m-0 print:p-0">
           <div className="p-0">
-             <A4ProfessionalTemplate 
+             <A4MultiThemeTemplate 
                 data={billData} 
                 total={total} 
                 cgst={cgst} 
                 sgst={sgst} 
                 subtotal={subtotal} 
                 logo={store.shopLogo} 
+                theme={activeTheme}
              />
           </div>
         </div>
@@ -414,7 +445,7 @@ export function BillingModule({ store }: { store: any }) {
   );
 }
 
-function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any) {
+function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }: any) {
   return (
     <div id="invoice-to-print" className="p-10 font-sans h-full flex flex-col bg-white">
        {/* Header */}
@@ -430,7 +461,7 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
                </div>
              )}
              <div>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none text-[#0066FF]">GJ5 HOME SERVICE</h1>
+                <h1 className={cn("text-3xl font-black italic tracking-tighter uppercase leading-none transition-colors duration-300", theme.text)}>GJ5 HOME SERVICE</h1>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-1">Professional Service & Repair Hub</p>
                 <p className="text-[11px] font-bold text-slate-400 mt-1">Customer Care: 8866983900</p>
              </div>
@@ -446,7 +477,7 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
        <div className="grid grid-cols-2 gap-10 py-10 border-b border-slate-50">
           <div className="space-y-4">
              <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-                <Receipt className="w-3 h-3" /> Customer Section
+                <Receipt className="w-3 h-3" /> Customer Details
              </div>
              <div className="space-y-1">
                 <h3 className="text-xl font-black text-slate-900">{data.customerName || 'N/A'}</h3>
@@ -465,7 +496,7 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                    <p className="text-[10px] font-bold text-slate-400 uppercase">Job ID</p>
-                   <p className="text-xs font-black text-blue-500">{data.jobId || 'XXXX'}</p>
+                   <p className={cn("text-xs font-black transition-colors duration-300", theme.text)}>{data.jobId || 'XXXX'}</p>
                 </div>
                 <div className="space-y-1">
                    <p className="text-[10px] font-bold text-slate-400 uppercase">Warranty Status</p>
@@ -486,10 +517,10 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
        {/* Charges Table */}
        <div className="mt-8 flex-1">
           <table className="w-full text-left">
-             <thead className="bg-slate-50 border-y border-slate-100">
+             <thead className={cn("border-y border-slate-100 transition-colors duration-300", theme.bg)}>
                 <tr>
-                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Description</th>
-                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-slate-500 text-right">Amount (INR)</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-white">Description</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-white text-right">Amount (INR)</th>
                 </tr>
              </thead>
              <tbody className="divide-y divide-slate-50">
@@ -534,7 +565,7 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
              )}
              <div className="flex justify-between items-center pt-4 border-t-4 border-slate-900 mt-4">
                 <span className="font-black text-2xl italic uppercase text-slate-900">Total</span>
-                <span className="font-black text-3xl italic text-[#0066FF]">₹{total.toFixed(2)}</span>
+                <span className={cn("font-black text-3xl italic transition-colors duration-300", theme.text)}>₹{total.toFixed(2)}</span>
              </div>
           </div>
        </div>
@@ -542,20 +573,20 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
        {/* Terms & Conditions */}
        <div className="mt-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-             <ShieldCheck className="w-4 h-4 text-emerald-500" /> Terms & Conditions
+             <ShieldCheck className={cn("w-4 h-4 transition-colors duration-300", theme.text)} /> Terms & Conditions
           </h4>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
              {[
                "1. Service charges and delivery charges are non-refundable.",
-               "2. TV must be collected within 30 days of repair completion.",
-               "3. After 30 days, storage charges may apply.",
-               "4. No warranty on software updates, settings issues or customer data loss.",
-               "5. Warranty applies only to replaced parts mentioned in the invoice.",
-               "6. Physical damage, liquid damage, panel damage and burn marks are not covered under warranty.",
-               "7. Warranty becomes void if the TV is opened or repaired by another technician.",
-               "8. Customer must verify TV condition at the time of delivery.",
-               "9. GJ5 HOME SERVICE is not responsible for manufacturer defects after delivery.",
-               "10. Original invoice is required for warranty claims."
+               "2. TV must be collected within 30 days after repair completion.",
+               "3. After 30 days storage charges may apply.",
+               "4. No warranty on software updates.",
+               "5. Warranty applies only to replaced parts.",
+               "6. No warranty on panel damage.",
+               "7. No warranty on liquid damage.",
+               "8. Warranty void if repaired by another technician.",
+               "9. Customer should verify TV condition at delivery.",
+               "10. Original invoice required for warranty claim."
              ].map((term, i) => (
                <p key={`term-${i}`} className="text-[9px] text-slate-500 leading-tight">{term}</p>
              ))}
@@ -564,10 +595,32 @@ function A4ProfessionalTemplate({ data, total, cgst, sgst, subtotal, logo }: any
 
        {/* Footer */}
        <div className="mt-12 text-center space-y-2">
-          <p className="text-sm font-black text-[#0066FF] uppercase italic">Thank you for choosing GJ5 HOME SERVICE.</p>
+          <p className={cn("text-sm font-black uppercase italic transition-colors duration-300", theme.text)}>Thank You For Choosing GJ5 HOME SERVICE</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">We value your trust and support.</p>
-          <p className="text-[9px] text-slate-300 italic pt-2">All electronics repair jobs come with a standard 30-day service warranty unless specified.</p>
+          <p className="text-[9px] text-slate-300 italic pt-2">All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.</p>
        </div>
+
+       <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+            background: white !important;
+          }
+          #invoice-to-print, #invoice-to-print * {
+            visibility: visible;
+          }
+          #invoice-to-print {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 210mm;
+            height: 297mm;
+            margin: 0 !important;
+            padding: 10mm !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -67,8 +67,14 @@ export interface AttendanceRecord {
 export interface Expense {
   id: string;
   amount: number;
-  category: 'Chai Nasta' | 'Stationery' | 'Tools & Consumables' | 'Miscellaneous / Other';
-  description: string;
+  category: string;
+  customCategory?: string;
+  quantity?: string;
+  vendorName?: string;
+  billNumber?: string;
+  paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
+  date: string;
+  notes?: string;
   timestamp: string;
 }
 
@@ -120,4 +126,23 @@ export interface Invoice {
   notes: string;
   themeUsed: string;
   timestamp: string;
+}
+
+export interface VisibilitySettings {
+  tabs: {
+    Repairing: boolean;
+    Billing: boolean;
+    Employees: boolean;
+    'E-Wallet': boolean;
+    Transportation: boolean;
+  };
+  kpis: {
+    totalActive: boolean;
+    pending: boolean;
+    completed: boolean;
+    repeat: boolean;
+    rejected: boolean;
+    exchange: boolean;
+    warranty: boolean;
+  };
 }

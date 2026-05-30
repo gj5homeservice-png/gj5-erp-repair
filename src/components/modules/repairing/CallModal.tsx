@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -24,8 +23,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
-import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search } from 'lucide-react';
+import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truck } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +38,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   
-  // WhatsApp State
   const [sendWhatsApp, setSendWhatsApp] = useState(() => {
     if (typeof window !== 'undefined') {
       return sessionStorage.getItem('gj5_whatsapp_enabled') === 'true';
@@ -50,7 +49,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
     category: 'TV', brand: 'GJ5 PLUS', model: '', screenSize: '', techTags: [],
     status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
-    visitHistory: [], repeatCount: 0
+    visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit'
   });
 
   const [inqData, setInqData] = useState({ name: '', mobile: '', address: '', notes: '' });
@@ -77,9 +76,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
         id: nextId, customerId: `GJ5${1001 + store.calls.length}`,
         category: 'TV', brand: 'GJ5 PLUS', techTags: [], status: 'Pending',
         warrantyDuration: 'No Warranty', storeLocation: 'GODOWN',
-        visitHistory: [], repeatCount: 0, customerName: '', mobile: '', address: '', pincode: '', model: '', screenSize: '', problemDescription: ''
+        visitHistory: [], repeatCount: 0, customerName: '', mobile: '', address: '', pincode: '', model: '', screenSize: '', problemDescription: '',
+        intakeMode: 'Customer Visit'
       });
-      // Default to no template selected for new entries
       setActiveTpl(null);
     }
   }, [editingCall, isOpen, store.calls.length]);
@@ -118,7 +117,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
     const finalBrand = selectedBrand === 'Other' ? (formData.brand === 'Other' ? 'Unknown' : formData.brand) : selectedBrand;
     
-    // WhatsApp Execution
     if (activeTab === 'Registry' && sendWhatsApp && activeTpl !== null) {
       let msg = templates[activeTpl];
       msg = msg.replace('[Name]', formData.customerName || 'Customer')
@@ -163,6 +161,22 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
     if (isExisting) store.updateCall(finalData);
     else store.addCall(finalData);
+
+    // Automation for Transportation if Pickup is Required
+    if (formData.intakeMode === 'Pickup Required' && !isExisting) {
+      store.addTransportLog({
+        id: `LOG${Date.now()}`,
+        runnerName: 'Unassigned',
+        runnerMobile: '',
+        jobId: finalData.id,
+        customerName: finalData.customerName,
+        customerMobile: finalData.mobile,
+        address: finalData.address,
+        dispatchTime: new Date().toISOString(),
+        status: 'Pending Pickup'
+      });
+    }
+
     onClose();
   };
 
@@ -252,11 +266,31 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                           ))}
                        </div>
                     </div>
+                    
+                    <div className="space-y-3 pt-4 border-t border-slate-800/50">
+                       <Label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-2">
+                          <Truck className="w-3 h-3 text-blue-400" /> Transportation Mode
+                       </Label>
+                       <RadioGroup 
+                         value={formData.intakeMode || 'Customer Visit'} 
+                         onValueChange={(v: any) => setFormData({...formData, intakeMode: v})}
+                         className="flex gap-4"
+                       >
+                         <div className="flex items-center space-x-2 bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 flex-1 cursor-pointer hover:bg-slate-800/50 transition-colors">
+                            <RadioGroupItem value="Customer Visit" id="mode-visit" />
+                            <Label htmlFor="mode-visit" className="cursor-pointer font-medium">Customer Visit</Label>
+                         </div>
+                         <div className="flex items-center space-x-2 bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 flex-1 cursor-pointer hover:bg-slate-800/50 transition-colors">
+                            <RadioGroupItem value="Pickup Required" id="mode-pickup" />
+                            <Label htmlFor="mode-pickup" className="cursor-pointer font-medium">Pickup Required</Label>
+                         </div>
+                       </RadioGroup>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1">
-                          <Label>Brand (Priority Index 0)</Label>
+                          <Label>Brand</Label>
                           <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
                             <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800">
@@ -266,7 +300,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                        </div>
                        {selectedBrand === 'Other' && (
                          <div className="space-y-1 animate-in slide-in-from-left-2">
-                           <Label>Custom Brand</Label>
+                           <Label>Enter Brand Name</Label>
                            <Input 
                              readOnly={isLocked} 
                              value={formData.brand || ''} 
@@ -355,22 +389,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                        <p className="text-xs text-slate-400 leading-relaxed">Loading an existing record will lock the Job ID and Customer ID. New visit details will be appended chronologically to the history ledger.</p>
                     </div>
                   </div>
-                  {formData.visitHistory && formData.visitHistory.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-slate-500">Visit Timeline</h4>
-                      <div className="max-h-[300px] overflow-y-auto pr-2 space-y-3">
-                        {formData.visitHistory.map((v, i) => (
-                          <div key={v.id} className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex items-start gap-4">
-                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-blue-400 shrink-0">{i+1}</div>
-                             <div>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">{v.date} • {v.time}</p>
-                                <p className="text-sm font-medium text-slate-200 mt-1">{v.complaintDescription}</p>
-                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-6 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">

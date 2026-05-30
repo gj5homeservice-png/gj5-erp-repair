@@ -22,7 +22,7 @@ export interface RepairCall {
   model: string;
   screenSize: string;
   techTags: string[];
-  intakeMode: 'Customer Walk-In' | 'Logistics Dispatch';
+  intakeMode: 'Customer Visit' | 'Pickup Required';
   createdAt: string;
   updatedAt: string;
   status: RepairStatus;
@@ -72,7 +72,7 @@ export interface Expense {
   timestamp: string;
 }
 
-export type LogisticsStatus = 'In-Transit' | 'Collected' | 'Arrived at Workshop';
+export type LogisticsStatus = 'Pending Pickup' | 'Picked Up' | 'In Transit' | 'Delivered To Shop';
 
 export interface TransportationLog {
   id: string;

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -12,7 +11,8 @@ import {
   Paperclip,
   TrendingUp,
   Navigation,
-  Package
+  Package,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
@@ -49,15 +50,25 @@ export function TransportationModule({ store }: { store: any }) {
 
   const stats = useMemo(() => {
     const total = store.transportationLogs?.length || 0;
-    const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In-Transit').length || 0;
-    return { total, inTransit };
+    const pendingPickup = store.transportationLogs?.filter((l: any) => l.status === 'Pending Pickup').length || 0;
+    const inTransit = store.transportationLogs?.filter((l: any) => l.status === 'In Transit').length || 0;
+    const delivered = store.transportationLogs?.filter((l: any) => l.status === 'Delivered To Shop').length || 0;
+    
+    return { 
+      total, 
+      pendingPickup, 
+      inTransit, 
+      delivered,
+      activeFleet: '100%'
+    };
   }, [store.transportationLogs]);
 
   const filteredLogs = useMemo(() => {
     return (store.transportationLogs || []).filter((log: any) => {
       const matchesSearch = 
         log.runnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.jobId.toLowerCase().includes(searchQuery.toLowerCase());
+        log.jobId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.customerName.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     });
   }, [store.transportationLogs, searchQuery]);
@@ -65,26 +76,31 @@ export function TransportationModule({ store }: { store: any }) {
   const handleDispatch = () => {
     if (!formData.runnerName || !formData.jobId) return;
     const job = store.calls.find((c: any) => c.id === formData.jobId);
+    
     store.addTransportLog({
       id: `LOG${Date.now()}`,
-      ...formData,
+      runnerName: formData.runnerName,
+      runnerMobile: formData.runnerMobile,
+      jobId: formData.jobId,
       customerName: job?.customerName || 'Unknown',
       address: job?.address || 'N/A',
       dispatchTime: new Date().toISOString(),
-      status: 'In-Transit'
+      status: 'Pending Pickup'
     });
-    window.open(`https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(templates[activeTpl])}`, '_blank');
+    
+    window.open(`https://web.whatsapp.com/send?phone=91${formData.runnerMobile}&text=${encodeURIComponent(templates[activeTpl].replace('[Runner]', formData.runnerName).replace('[JobID]', formData.jobId))}`, '_blank');
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
-          { label: 'In-Transit', value: stats.inTransit, icon: Navigation, color: 'bg-yellow-600' },
-          { label: 'Fleet Active', value: '100%', icon: TrendingUp, color: 'bg-emerald-600' },
-          { label: 'Avg Arrival', value: '25m', icon: Clock, color: 'bg-cyan-600' }
+          { label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
+          { label: 'In Transit', value: stats.inTransit, icon: Navigation, color: 'bg-blue-500' },
+          { label: 'Delivered', value: stats.delivered, icon: CheckCircleIcon, color: 'bg-emerald-600' },
+          { label: 'Fleet Active', value: stats.activeFleet, icon: TrendingUp, color: 'bg-cyan-600' }
         ].map((k, i) => (
           <Card key={i} className="bg-slate-900/40 border-slate-800">
             <CardContent className="p-4 flex justify-between items-center">
@@ -163,7 +179,7 @@ export function TransportationModule({ store }: { store: any }) {
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input 
-              placeholder="Filter by Runner or Job..." 
+              placeholder="Filter Runner, Job, Customer..." 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
               className="pl-10 h-10 bg-slate-950 border-slate-800" 
@@ -174,32 +190,75 @@ export function TransportationModule({ store }: { store: any }) {
           <Table>
             <TableHeader className="bg-slate-900/60">
               <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead>Runner Info</TableHead><TableHead>Job ID</TableHead><TableHead>Destination</TableHead><TableHead>Status</TableHead>
+                <TableHead>Runner Info</TableHead>
+                <TableHead>Job ID</TableHead>
+                <TableHead>Customer Profile</TableHead>
+                <TableHead>Destination</TableHead>
+                <TableHead>Dispatch Time</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLogs.map((log: any) => (
                 <TableRow key={log.id} className="border-slate-800/50">
-                  <TableCell><div className="flex flex-col"><span className="font-bold">{log.runnerName}</span><span className="text-xs text-slate-500">{log.runnerMobile}</span></div></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-bold">{log.runnerName}</span>
+                      <span className="text-xs text-slate-500">{log.runnerMobile || 'No Mobile'}</span>
+                    </div>
+                  </TableCell>
                   <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
-                  <TableCell><div className="flex items-center gap-2 text-xs text-slate-400"><MapPin className="w-3 h-3" /><span className="truncate max-w-[200px]">{log.address}</span></div></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm">{log.customerName}</span>
+                      <span className="text-[10px] text-blue-400">{log.customerMobile}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell><div className="flex items-center gap-2 text-xs text-slate-400"><MapPin className="w-3 h-3" /><span className="truncate max-w-[150px]">{log.address}</span></div></TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                       <Calendar className="w-3 h-3" />
+                       {format(new Date(log.dispatchTime), 'dd/MM HH:mm')}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Select value={log.status} onValueChange={v => store.updateTransportLogStatus(log.id, v)}>
-                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-32"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-40"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800">
-                        <SelectItem value="In-Transit">In-Transit</SelectItem>
-                        <SelectItem value="Collected">Collected</SelectItem>
-                        <SelectItem value="Arrived at Workshop">Arrived at Workshop</SelectItem>
+                        <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
+                        <SelectItem value="Picked Up">Picked Up</SelectItem>
+                        <SelectItem value="In Transit">In Transit</SelectItem>
+                        <SelectItem value="Delivered To Shop">Delivered To Shop</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredLogs.length === 0 && <TableRow><TableCell colSpan={4} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
+              {filteredLogs.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-slate-500">No active transits logged.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
       </div>
     </div>
   );
+}
+
+function CheckCircleIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  )
 }

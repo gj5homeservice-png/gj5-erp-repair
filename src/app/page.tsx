@@ -98,7 +98,7 @@ export default function DashboardPage() {
           <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
             {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
           </div>
-          {isSidebarOpen && <span className="font-headline font-bold text-xl tracking-tight">GJ5 PLUS</span>}
+          {isSidebarOpen && <span className="font-headline font-bold text-xl tracking-tight">GJ5 HOME SERVICE</span>}
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">

@@ -116,7 +116,7 @@ export function TransportationModule({ store }: { store: any }) {
     // Header
     doc.setFontSize(22);
     doc.setTextColor(0, 102, 255);
-    doc.text('GJ5 PLUS', 105, 20, { align: 'center' });
+    doc.text('GJ5 HOME SERVICE', 105, 20, { align: 'center' });
     
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -202,7 +202,7 @@ export function TransportationModule({ store }: { store: any }) {
 
     setTimeout(() => {
       try {
-        let message = `*DAILY ${type} MANIFEST - GJ5 PLUS*%0A`;
+        let message = `*DAILY ${type} MANIFEST - GJ5 HOME SERVICE*%0A`;
         message += `Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}%0A%0A`;
 
         logs.forEach((log: any, i: number) => {

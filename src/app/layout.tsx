@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'GJ5 PLUS | Admin Console',
+  title: 'GJ5 HOME SERVICE | Admin Console',
   description: 'Enterprise ERP for Service & Repair Management',
 };
 

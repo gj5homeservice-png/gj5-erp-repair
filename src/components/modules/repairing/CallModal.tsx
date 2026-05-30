@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -30,12 +29,12 @@ import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truc
 import { format, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-const BRANDS = ['GJ5 PLUS', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
+const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 
 export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
-  const [selectedBrand, setSelectedBrand] = useState('GJ5 PLUS');
+  const [selectedBrand, setSelectedBrand] = useState('GJ5 HOME SERVICE');
   const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   
@@ -48,7 +47,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
-    category: 'TV', brand: 'GJ5 PLUS', model: '', screenSize: '', techTags: [],
+    category: 'TV', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
     status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
     visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit'
   });
@@ -75,7 +74,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       const nextId = `TV${1001 + store.calls.length}`;
       setFormData({
         id: nextId, customerId: `GJ5${1001 + store.calls.length}`,
-        category: 'TV', brand: 'GJ5 PLUS', techTags: [], status: 'Pending',
+        category: 'TV', brand: 'GJ5 HOME SERVICE', techTags: [], status: 'Pending',
         warrantyDuration: 'No Warranty', storeLocation: 'GODOWN',
         visitHistory: [], repeatCount: 0, customerName: '', mobile: '', address: '', pincode: '', model: '', screenSize: '', problemDescription: '',
         intakeMode: 'Customer Visit'
@@ -269,7 +268,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                     
                     <div className="space-y-3 pt-4 border-t border-slate-800/50">
                        <Label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-2">
-                          <Truck className="w-3 h-3 text-blue-400" /> Transportation Mode
+                          <Truck className="w-3 h-3 text-blue-400" /> TRANSPORTATION MODE
                        </Label>
                        <RadioGroup 
                          value={formData.intakeMode || 'Customer Visit'} 

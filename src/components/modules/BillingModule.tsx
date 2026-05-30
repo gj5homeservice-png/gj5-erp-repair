@@ -184,7 +184,7 @@ function ModernTemplate({ data, total, cgst, sgst, subtotal }: any) {
     <div className="p-10 font-sans h-full flex flex-col">
        <div className="flex justify-between items-start border-b-4 border-black pb-8">
           <div>
-             <h1 className="text-4xl font-black italic tracking-tighter">GJ5 PLUS</h1>
+             <h1 className="text-4xl font-black italic tracking-tighter">GJ5 HOME SERVICE</h1>
              <p className="text-sm font-bold uppercase tracking-widest text-slate-500">Service & Repair Hub</p>
           </div>
           <div className="text-right">
@@ -264,7 +264,7 @@ function RetailTemplate({ data, total, cgst, sgst, subtotal }: any) {
   return (
     <div className="p-10 font-serif h-full flex flex-col">
        <div className="text-center border-b pb-6">
-          <h1 className="text-3xl font-bold uppercase">GJ5 PLUS</h1>
+          <h1 className="text-3xl font-bold uppercase">GJ5 HOME SERVICE</h1>
           <p className="text-sm">Main Road, Adajan, Surat, Gujarat - 395009</p>
           <p className="text-sm">Contact: +91 9988776655 | GSTIN: 24AAABC1234D1Z5</p>
        </div>
@@ -318,7 +318,7 @@ function ThermalTemplate({ data, total }: any) {
   return (
     <div className="p-4 font-mono w-[300px] mx-auto bg-white border border-dashed border-slate-300">
        <div className="text-center border-b border-dashed pb-2 mb-2">
-          <h1 className="text-xl font-bold">GJ5 PLUS</h1>
+          <h1 className="text-xl font-bold">GJ5 HOME SERVICE</h1>
           <p className="text-[8px]">ADAJAN, SURAT</p>
        </div>
        <div className="text-[10px] space-y-1 mb-4">

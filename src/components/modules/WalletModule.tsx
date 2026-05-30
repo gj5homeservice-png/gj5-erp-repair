@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils';
 import { format, isToday, isSameWeek, isSameMonth, parseISO } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { useToast } from '@/hooks/use-toast';
 
 const EXPENSE_CATEGORIES = [
   { name: 'TV Purchase', icon: Box, color: '#3B82F6' },
@@ -96,6 +97,7 @@ export function WalletModule({ store }: { store: any }) {
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const { toast } = useToast();
 
   const stats = useMemo(() => {
     const expenses = store.expenses || [];
@@ -151,7 +153,6 @@ export function WalletModule({ store }: { store: any }) {
 
     store.addExpense(newExpense);
     
-    // Reset form but keep date and payment mode
     setExpense(prev => ({
       ...prev,
       amount: 0,
@@ -165,79 +166,96 @@ export function WalletModule({ store }: { store: any }) {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text('Business Expense Report - GJ5 HOME SERVICE', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.text(`Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, 30, { align: 'center' });
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text('Business Expense Report - GJ5 HOME SERVICE', 105, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text(`Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, 30, { align: 'center' });
 
-    doc.setFontSize(14);
-    doc.text('SUMMARY STATISTICS', 20, 45);
-    doc.setFontSize(10);
-    doc.text(`Today's Spending: INR ${stats.today}`, 20, 55);
-    doc.text(`Weekly Spending: INR ${stats.week}`, 20, 60);
-    doc.text(`Monthly Spending: INR ${stats.month}`, 20, 65);
-    doc.text(`Total Spending: INR ${stats.total}`, 20, 70);
+      doc.setFontSize(14);
+      doc.text('SUMMARY STATISTICS', 20, 45);
+      doc.setFontSize(10);
+      doc.text(`Today's Spending: INR ${stats.today}`, 20, 55);
+      doc.text(`Weekly Spending: INR ${stats.week}`, 20, 60);
+      doc.text(`Monthly Spending: INR ${stats.month}`, 20, 65);
+      doc.text(`Total Spending: INR ${stats.total}`, 20, 70);
 
-    let y = 85;
-    doc.setFontSize(14);
-    doc.text('RECENT TRANSACTIONS', 20, y);
-    y += 10;
-    
-    doc.setFontSize(8);
-    doc.text('DATE', 20, y);
-    doc.text('CATEGORY', 45, y);
-    doc.text('VENDOR', 85, y);
-    doc.text('QTY', 125, y);
-    doc.text('MODE', 155, y);
-    doc.text('AMOUNT', 185, y, { align: 'right' });
-    
-    y += 5;
-    doc.line(20, y, 190, y);
-    y += 5;
+      let y = 85;
+      doc.setFontSize(14);
+      doc.text('RECENT TRANSACTIONS', 20, y);
+      y += 10;
+      
+      doc.setFontSize(8);
+      doc.text('DATE', 20, y);
+      doc.text('CATEGORY', 45, y);
+      doc.text('VENDOR', 85, y);
+      doc.text('QTY', 125, y);
+      doc.text('MODE', 155, y);
+      doc.text('AMOUNT', 185, y, { align: 'right' });
+      
+      y += 5;
+      doc.line(20, y, 190, y);
+      y += 5;
 
-    filteredExpenses.slice(0, 20).forEach((e: any) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(e.date, 20, y);
-      doc.text(e.category, 45, y);
-      doc.text(e.vendorName || '-', 85, y);
-      doc.text(e.quantity || '-', 125, y);
-      doc.text(e.paymentMode, 155, y);
-      doc.text(Number(e.amount).toFixed(2), 185, y, { align: 'right' });
-      y += 7;
-    });
+      filteredExpenses.slice(0, 20).forEach((e: any) => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(e.date, 20, y);
+        doc.text(e.category, 45, y);
+        doc.text(e.vendorName || '-', 85, y);
+        doc.text(e.quantity || '-', 125, y);
+        doc.text(e.paymentMode, 155, y);
+        doc.text(Number(e.amount).toFixed(2), 185, y, { align: 'right' });
+        y += 7;
+      });
 
-    doc.save(`Expense_Report_${format(new Date(), 'ddMMyy')}.pdf`);
+      doc.save(`Expense_Report_${format(new Date(), 'ddMMyy')}.pdf`);
+    } catch (err: any) {
+      console.warn("PDF Export Blocked", err.name);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Your browser prevented the PDF report download."
+      });
+    }
   };
 
   const exportExcel = () => {
-    const headers = ['Date', 'Category', 'Vendor', 'Quantity', 'Bill Number', 'Payment Mode', 'Amount', 'Notes'];
-    const rows = filteredExpenses.map((e: any) => [
-      e.date,
-      e.category === 'Other' ? e.customCategory : e.category,
-      e.vendorName || '-',
-      e.quantity || '-',
-      e.billNumber || '-',
-      e.paymentMode,
-      e.amount,
-      e.notes || '-'
-    ]);
+    try {
+      const headers = ['Date', 'Category', 'Vendor', 'Quantity', 'Bill Number', 'Payment Mode', 'Amount', 'Notes'];
+      const rows = filteredExpenses.map((e: any) => [
+        e.date,
+        e.category === 'Other' ? e.customCategory : e.category,
+        e.vendorName || '-',
+        e.quantity || '-',
+        e.billNumber || '-',
+        e.paymentMode,
+        e.amount,
+        e.notes || '-'
+      ]);
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Expenses_GJ5_${format(new Date(), 'ddMMyy')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Expenses_GJ5_${format(new Date(), 'ddMMyy')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      console.warn("CSV Export Blocked", err.name);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Could not export CSV file."
+      });
+    }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Top Wallet Balance & Quick Stats */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-2 bg-[#0066FF] p-8 rounded-3xl text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden">
            <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -276,7 +294,6 @@ export function WalletModule({ store }: { store: any }) {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
-           {/* Business Expense Manager Form */}
            <Card className="bg-slate-900/40 border-slate-800 shadow-xl overflow-hidden">
               <CardHeader className="border-b border-slate-800 bg-slate-900/20">
                  <CardTitle className="font-headline font-bold text-xl flex items-center gap-2">
@@ -402,7 +419,6 @@ export function WalletModule({ store }: { store: any }) {
               </CardContent>
            </Card>
 
-           {/* Expense Ledger Table */}
            <div className="space-y-4">
               <div className="flex items-center justify-between">
                  <h3 className="text-xl font-headline font-bold flex items-center gap-2">
@@ -481,7 +497,6 @@ export function WalletModule({ store }: { store: any }) {
         </div>
 
         <div className="space-y-8">
-           {/* Overhead Charts */}
            <Card className="bg-slate-900/40 border-slate-800 sticky top-24">
               <CardHeader className="border-b border-slate-800">
                  <CardTitle className="font-headline font-bold text-lg flex items-center gap-2">

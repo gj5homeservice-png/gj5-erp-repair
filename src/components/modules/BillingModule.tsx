@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -27,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const INVOICE_THEMES = [
   { id: 'classic-blue', name: 'Classic Blue', primary: '#0066FF', secondary: '#E6F0FF', text: 'text-[#0066FF]', bg: 'bg-[#0066FF]' },
@@ -57,11 +57,12 @@ export function BillingModule({ store }: { store: any }) {
     warrantyStatus: 'No Warranty'
   });
 
+  const { toast } = useToast();
+
   const activeTheme = useMemo(() => 
     INVOICE_THEMES.find(t => t.id === activeThemeId) || INVOICE_THEMES[0]
   , [activeThemeId]);
 
-  // Auto-fetch data when Job ID is entered
   useEffect(() => {
     if (billData.jobId) {
       const job = store.calls.find((c: any) => c.id.toUpperCase() === billData.jobId.toUpperCase());
@@ -92,188 +93,192 @@ export function BillingModule({ store }: { store: any }) {
   const total = subtotal + cgst + sgst;
 
   const handleDownloadPDF = () => {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const timestamp = format(new Date(), 'dd/MM/yyyy HH:mm');
-    const filename = `${billData.jobId || 'INV'}_Invoice.pdf`;
-    const themeColor = activeTheme.primary;
-    const themeRGB = hexToRgb(themeColor);
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const timestamp = format(new Date(), 'dd/MM/yyyy HH:mm');
+      const filename = `${billData.jobId || 'INV'}_Invoice.pdf`;
+      const themeColor = activeTheme.primary;
+      const themeRGB = hexToRgb(themeColor);
 
-    // Logo support
-    if (store.shopLogo) {
-      try {
-        doc.addImage(store.shopLogo, 'PNG', 15, 15, 25, 25);
-      } catch (e) {
-        console.error("Could not add logo to PDF", e);
+      if (store.shopLogo) {
+        try {
+          doc.addImage(store.shopLogo, 'PNG', 15, 15, 25, 25);
+        } catch (e) {
+          console.warn("Could not add logo to PDF", e);
+        }
       }
-    }
 
-    // Company Branding
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
-    doc.text('GJ5 HOME SERVICE', store.shopLogo ? 45 : 15, 25);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80);
-    doc.text('Professional Service & Repair Hub', store.shopLogo ? 45 : 15, 31);
-    doc.text('Customer Care: 8866983900', store.shopLogo ? 45 : 15, 36);
-
-    // Invoice Header (Top Right)
-    doc.setFontSize(24);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 195, 25, { align: 'right' });
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`#INV-${billData.jobId || 'XXXX'}`, 195, 32, { align: 'right' });
-    doc.text(`Date: ${timestamp}`, 195, 38, { align: 'right' });
-
-    doc.setDrawColor(230);
-    doc.line(15, 45, 195, 45);
-
-    // Grid Layout for Customer & Job
-    let currentY = 55;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CUSTOMER SECTION', 15, currentY);
-    doc.text('JOB DETAILS SECTION', 110, currentY);
-
-    currentY += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(60);
-    
-    // Customer
-    doc.text(`Name: ${billData.customerName || 'N/A'}`, 15, currentY);
-    doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 15, currentY + 6);
-    doc.text(`Customer ID: ${billData.customerId || 'N/A'}`, 15, currentY + 12);
-    doc.text(`Address: ${billData.address || 'N/A'}`, 15, currentY + 18, { maxWidth: 80 });
-
-    // Job Details
-    doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, currentY);
-    doc.text(`Device: ${billData.brand} ${billData.model} (${billData.screenSize}")`, 110, currentY + 6);
-    doc.text(`Warranty: ${billData.warrantyStatus}`, 110, currentY + 12);
-    doc.text(`Problem: ${billData.problem}`, 110, currentY + 18, { maxWidth: 80 });
-
-    currentY += 35;
-    
-    // Table Header
-    doc.setFillColor(themeRGB.r, themeRGB.g, themeRGB.b);
-    doc.rect(15, currentY, 180, 10, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255);
-    doc.text('DESCRIPTION', 20, currentY + 6);
-    doc.text('AMOUNT (INR)', 190, currentY + 6, { align: 'right' });
-
-    currentY += 10;
-    
-    // Table Rows
-    const charges = [
-      { desc: 'Hardware Parts Replacement', amt: billData.hardwareCost },
-      { desc: 'Labor / Technician Service', amt: billData.laborCost },
-      { desc: 'Delivery Charges', amt: billData.deliveryCharge },
-      { desc: 'Additional Charges', amt: billData.additionalCharges }
-    ];
-
-    charges.forEach(item => {
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
+      doc.text('GJ5 HOME SERVICE', store.shopLogo ? 45 : 15, 25);
+      
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80);
+      doc.text('Professional Service & Repair Hub', store.shopLogo ? 45 : 15, 31);
+      doc.text('Customer Care: 8866983900', store.shopLogo ? 45 : 15, 36);
+
+      doc.setFontSize(24);
       doc.setTextColor(0);
-      doc.text(item.desc, 20, currentY + 8);
-      doc.text(item.amt.toFixed(2), 190, currentY + 8, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('INVOICE', 195, 25, { align: 'right' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`#INV-${billData.jobId || 'XXXX'}`, 195, 32, { align: 'right' });
+      doc.text(`Date: ${timestamp}`, 195, 38, { align: 'right' });
+
+      doc.setDrawColor(230);
+      doc.line(15, 45, 195, 45);
+
+      let currentY = 55;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CUSTOMER SECTION', 15, currentY);
+      doc.text('JOB DETAILS SECTION', 110, currentY);
+
+      currentY += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      
+      doc.text(`Name: ${billData.customerName || 'N/A'}`, 15, currentY);
+      doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 15, currentY + 6);
+      doc.text(`Customer ID: ${billData.customerId || 'N/A'}`, 15, currentY + 12);
+      doc.text(`Address: ${billData.address || 'N/A'}`, 15, currentY + 18, { maxWidth: 80 });
+
+      doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, currentY);
+      doc.text(`Device: ${billData.brand} ${billData.model} (${billData.screenSize}")`, 110, currentY + 6);
+      doc.text(`Warranty: ${billData.warrantyStatus}`, 110, currentY + 12);
+      doc.text(`Problem: ${billData.problem}`, 110, currentY + 18, { maxWidth: 80 });
+
+      currentY += 35;
+      
+      doc.setFillColor(themeRGB.r, themeRGB.g, themeRGB.b);
+      doc.rect(15, currentY, 180, 10, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255);
+      doc.text('DESCRIPTION', 20, currentY + 6);
+      doc.text('AMOUNT (INR)', 190, currentY + 6, { align: 'right' });
+
       currentY += 10;
-      doc.setDrawColor(245);
-      doc.line(15, currentY, 195, currentY);
-    });
+      
+      const charges = [
+        { desc: 'Hardware Parts Replacement', amt: billData.hardwareCost },
+        { desc: 'Labor / Technician Service', amt: billData.laborCost },
+        { desc: 'Delivery Charges', amt: billData.deliveryCharge },
+        { desc: 'Additional Charges', amt: billData.additionalCharges }
+      ];
 
-    currentY += 5;
-    
-    // Calculation Section
-    doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', 140, currentY);
-    doc.text(subtotal.toFixed(2), 190, currentY, { align: 'right' });
-    currentY += 7;
+      charges.forEach(item => {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        doc.text(item.desc, 20, currentY + 8);
+        doc.text(item.amt.toFixed(2), 190, currentY + 8, { align: 'right' });
+        currentY += 10;
+        doc.setDrawColor(245);
+        doc.line(15, currentY, 195, currentY);
+      });
 
-    if (billData.taxEnabled) {
-      doc.text('CGST (9%):', 140, currentY);
-      doc.text(cgst.toFixed(2), 190, currentY, { align: 'right' });
+      currentY += 5;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal:', 140, currentY);
+      doc.text(subtotal.toFixed(2), 190, currentY, { align: 'right' });
       currentY += 7;
-      doc.text('SGST (9%):', 140, currentY);
-      doc.text(sgst.toFixed(2), 190, currentY, { align: 'right' });
-      currentY += 7;
+
+      if (billData.taxEnabled) {
+        doc.text('CGST (9%):', 140, currentY);
+        doc.text(cgst.toFixed(2), 190, currentY, { align: 'right' });
+        currentY += 7;
+        doc.text('SGST (9%):', 140, currentY);
+        doc.text(sgst.toFixed(2), 190, currentY, { align: 'right' });
+        currentY += 7;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('GRAND TOTAL:', 140, currentY + 5);
+      doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
+      doc.text(`INR ${total.toFixed(2)}`, 190, currentY + 5, { align: 'right' });
+
+      currentY += 25;
+      doc.setFontSize(9);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TERMS & CONDITIONS', 15, currentY);
+      currentY += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      const terms = [
+        "1. Service charges and delivery charges are non-refundable.",
+        "2. TV must be collected within 30 days after repair completion.",
+        "3. After 30 days storage charges may apply.",
+        "4. No warranty on software updates.",
+        "5. Warranty applies only to replaced parts.",
+        "6. No warranty on panel damage.",
+        "7. No warranty on liquid damage.",
+        "8. Warranty void if repaired by another technician.",
+        "9. Customer should verify TV condition at delivery.",
+        "10. Original invoice required for warranty claim.",
+        "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
+      ];
+      terms.forEach(term => {
+        const lines = doc.splitTextToSize(term, 180);
+        doc.text(lines, 15, currentY);
+        currentY += (lines.length * 4) + 1;
+      });
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
+      doc.text('Thank You For Choosing GJ5 HOME SERVICE', 105, 275, { align: 'center' });
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(150);
+      doc.text('All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.', 105, 280, { align: 'center' });
+
+      doc.save(filename);
+      
+      store.addInvoice({
+        id: `INV${Date.now()}`,
+        jobId: billData.jobId,
+        customerId: billData.customerId,
+        customerName: billData.customerName,
+        mobile: billData.mobile,
+        address: billData.address,
+        brand: billData.brand,
+        model: billData.model,
+        hardwareCost: billData.hardwareCost,
+        laborCost: billData.laborCost,
+        deliveryCharge: billData.deliveryCharge,
+        additionalCharges: billData.additionalCharges,
+        taxEnabled: billData.taxEnabled,
+        subtotal,
+        cgst,
+        sgst,
+        total,
+        themeUsed: activeTheme.name,
+        notes: billData.notes,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err: any) {
+      console.warn("PDF Generation Error", err.name);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Your browser blocked the PDF download. Please check your pop-up or download settings."
+      });
     }
+  };
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('GRAND TOTAL:', 140, currentY + 5);
-    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
-    doc.text(`INR ${total.toFixed(2)}`, 190, currentY + 5, { align: 'right' });
-
-    // Terms & Conditions
-    currentY += 25;
-    doc.setFontSize(9);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TERMS & CONDITIONS', 15, currentY);
-    currentY += 6;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    const terms = [
-      "1. Service charges and delivery charges are non-refundable.",
-      "2. TV must be collected within 30 days after repair completion.",
-      "3. After 30 days storage charges may apply.",
-      "4. No warranty on software updates.",
-      "5. Warranty applies only to replaced parts.",
-      "6. No warranty on panel damage.",
-      "7. No warranty on liquid damage.",
-      "8. Warranty void if repaired by another technician.",
-      "9. Customer should verify TV condition at delivery.",
-      "10. Original invoice required for warranty claim.",
-      "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
-    ];
-    terms.forEach(term => {
-      // Use splitTextToSize to handle long disclaimer paragraph
-      const lines = doc.splitTextToSize(term, 180);
-      doc.text(lines, 15, currentY);
-      currentY += (lines.length * 4) + 1;
-    });
-
-    // Footer
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
-    doc.text('Thank You For Choosing GJ5 HOME SERVICE', 105, 275, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(150);
-    doc.text('All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.', 105, 280, { align: 'center' });
-
-    doc.save(filename);
-
-    // Save invoice to store
-    store.addInvoice({
-      id: `INV${Date.now()}`,
-      jobId: billData.jobId,
-      customerId: billData.customerId,
-      customerName: billData.customerName,
-      mobile: billData.mobile,
-      address: billData.address,
-      brand: billData.brand,
-      model: billData.model,
-      hardwareCost: billData.hardwareCost,
-      laborCost: billData.laborCost,
-      deliveryCharge: billData.deliveryCharge,
-      additionalCharges: billData.additionalCharges,
-      taxEnabled: billData.taxEnabled,
-      subtotal,
-      cgst,
-      sgst,
-      total,
-      themeUsed: activeTheme.name,
-      notes: billData.notes,
-      timestamp: new Date().toISOString()
-    });
+  const handlePrint = () => {
+    try {
+      window.print();
+    } catch (e) {
+      console.warn("Print action dismissed", e);
+    }
   };
 
   const hexToRgb = (hex: string) => {
@@ -399,7 +404,7 @@ export function BillingModule({ store }: { store: any }) {
         </div>
 
         <div className="flex gap-4">
-           <Button onClick={() => window.print()} variant="outline" className="flex-1 border-slate-700 h-11">
+           <Button onClick={handlePrint} variant="outline" className="flex-1 border-slate-700 h-11">
               <Printer className="w-4 h-4 mr-2" /> Direct Print
            </Button>
            <Button onClick={handleDownloadPDF} className={cn("flex-1 h-11 shadow-lg text-white font-bold", activeTheme.bg, activeTheme.bg + "/20")}>
@@ -452,7 +457,6 @@ export function BillingModule({ store }: { store: any }) {
 function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }: any) {
   return (
     <div id="invoice-to-print" className="p-10 font-sans h-full flex flex-col bg-white">
-       {/* Header */}
        <div className="flex justify-between items-start border-b-2 border-slate-100 pb-8">
           <div className="flex items-center gap-4">
              {logo ? (
@@ -477,7 +481,6 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           </div>
        </div>
 
-       {/* Customer & Job Info */}
        <div className="grid grid-cols-2 gap-10 py-10 border-b border-slate-50">
           <div className="space-y-4">
              <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
@@ -518,7 +521,6 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           </div>
        </div>
 
-       {/* Charges Table */}
        <div className="mt-8 flex-1">
           <table className="w-full text-left">
              <thead className={cn("border-y border-slate-100 transition-colors duration-300", theme.bg)}>
@@ -548,7 +550,6 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           </table>
        </div>
 
-       {/* Totals */}
        <div className="mt-8 pt-8 border-t-2 border-slate-50 flex justify-end">
           <div className="w-72 space-y-2">
              <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
@@ -574,7 +575,6 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           </div>
        </div>
 
-       {/* Terms & Conditions */}
        <div className="mt-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
              <ShieldCheck className={cn("w-4 h-4 transition-colors duration-300", theme.text)} /> Terms & Conditions
@@ -598,7 +598,6 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
           </div>
        </div>
 
-       {/* Footer */}
        <div className="mt-12 text-center space-y-2">
           <p className={cn("text-sm font-black uppercase italic transition-colors duration-300", theme.text)}>Thank You For Choosing GJ5 HOME SERVICE</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">We value your trust and support.</p>

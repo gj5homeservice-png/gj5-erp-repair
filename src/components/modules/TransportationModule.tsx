@@ -43,13 +43,14 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { jsPDF } from 'jspdf';
-import { LogisticsStatus } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [recipientMobile, setRecipientMobile] = useState('');
   const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
+  const { toast } = useToast();
 
   useEffect(() => {
     const saved = localStorage.getItem('gj5_whatsapp_recipient');
@@ -102,90 +103,106 @@ export function TransportationModule({ store }: { store: any }) {
   };
 
   const generateSheet = (type: 'PICKUP' | 'DELIVERY') => {
-    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
-    const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
-    
-    if (logs.length === 0) {
-      alert(`No jobs found with status: ${statusFilter}`);
-      return;
-    }
-
-    const doc = new jsPDF();
-    const timestamp = format(new Date(), 'dd MMM yyyy HH:mm');
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(0, 102, 255);
-    doc.text('GJ5 HOME SERVICE', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Enterprise Logistics & Service Management', 105, 26, { align: 'center' });
-    
-    doc.setFontSize(16);
-    doc.setTextColor(0);
-    const title = type === 'PICKUP' ? 'DAILY CONSOLIDATED PICKUP SHEET' : 'DAILY CONSOLIDATED DELIVERY SHEET';
-    doc.text(title, 105, 40, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(`GENERATED ON: ${timestamp}`, 105, 46, { align: 'center' });
-
-    doc.setDrawColor(200);
-    doc.line(20, 52, 190, 52);
-
-    let y = 65;
-    logs.forEach((log: any, index: number) => {
-      const job = store.calls.find((c: any) => c.id === log.jobId);
+    try {
+      const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
+      const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
       
-      if (y > 230) {
-        doc.addPage();
-        y = 30;
+      if (logs.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "No Data",
+          description: `No jobs found with status: ${statusFilter}`
+        });
+        return;
       }
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(`${index + 1}. JOB ID: ${log.jobId} [CUST ID: ${job?.customerId || 'N/A'}]`, 25, y);
+      const doc = new jsPDF();
+      const timestamp = format(new Date(), 'dd MMM yyyy HH:mm');
       
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      y += 6;
-      doc.text(`Customer: ${log.customerName} | Mobile: ${log.customerMobile}`, 30, y);
+      doc.setFontSize(22);
+      doc.setTextColor(0, 102, 255);
+      doc.text('GJ5 HOME SERVICE', 105, 20, { align: 'center' });
       
-      y += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Address: ${log.address}`, 30, y);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Enterprise Logistics & Service Management', 105, 26, { align: 'center' });
       
-      if (job) {
-        y += 5;
-        doc.text(`Device Profile: ${job.brand} ${job.model} (${job.screenSize}")`, 30, y);
-        y += 5;
-        doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
-        y += 5;
-        doc.text(`Tech Tags: ${job.techTags?.join(', ') || 'None'} | Warranty: ${job.warrantyDuration || 'N/A'}`, 30, y);
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      const title = type === 'PICKUP' ? 'DAILY CONSOLIDATED PICKUP SHEET' : 'DAILY CONSOLIDATED DELIVERY SHEET';
+      doc.text(title, 105, 40, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`GENERATED ON: ${timestamp}`, 105, 46, { align: 'center' });
+
+      doc.setDrawColor(200);
+      doc.line(20, 52, 190, 52);
+
+      let y = 65;
+      logs.forEach((log: any, index: number) => {
+        const job = store.calls.find((c: any) => c.id === log.jobId);
+        
+        if (y > 230) {
+          doc.addPage();
+          y = 30;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(`${index + 1}. JOB ID: ${log.jobId} [CUST ID: ${job?.customerId || 'N/A'}]`, 25, y);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        y += 6;
+        doc.text(`Customer: ${log.customerName} | Mobile: ${log.customerMobile}`, 30, y);
         
         y += 5;
         doc.setFont('helvetica', 'bold');
-        doc.text(`Repair Status: ${job.status} | Logistics: ${log.status}`, 30, y);
+        doc.text(`Address: ${log.address}`, 30, y);
         doc.setFont('helvetica', 'normal');
-      }
+        
+        if (job) {
+          y += 5;
+          doc.text(`Device Profile: ${job.brand} ${job.model} (${job.screenSize}")`, 30, y);
+          y += 5;
+          doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
+          y += 5;
+          doc.text(`Tech Tags: ${job.techTags?.join(', ') || 'None'} | Warranty: ${job.warrantyDuration || 'N/A'}`, 30, y);
+          
+          y += 5;
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Repair Status: ${job.status} | Logistics: ${log.status}`, 30, y);
+          doc.setFont('helvetica', 'normal');
+        }
 
-      y += 12;
-      doc.setDrawColor(240);
-      doc.line(25, y - 5, 185, y - 5);
-      y += 5;
-    });
+        y += 12;
+        doc.setDrawColor(240);
+        doc.line(25, y - 5, 185, y - 5);
+        y += 5;
+      });
 
-    const totalY = Math.min(y + 10, 270);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text(`TOTAL ${type} TVs: ${logs.length}`, 105, totalY, { align: 'center' });
+      const totalY = Math.min(y + 10, 270);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(`TOTAL ${type} TVs: ${logs.length}`, 105, totalY, { align: 'center' });
 
-    doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
+      doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
+    } catch (err: any) {
+      console.warn("PDF Manifest Error", err.name);
+      toast({
+        variant: "destructive",
+        title: "Download Blocked",
+        description: "Your browser prevented the manifest download. Please allow downloads."
+      });
+    }
   };
 
   const handleWhatsAppDispatch = (type: 'PICKUP' | 'DELIVERY') => {
     if (!recipientMobile || recipientMobile.trim().length < 10) {
-      alert("Please enter a valid recipient WhatsApp number (minimum 10 digits)");
+      toast({
+        variant: "destructive",
+        title: "Missing Recipient",
+        description: "Please enter a valid recipient WhatsApp number (minimum 10 digits)"
+      });
       return;
     }
 
@@ -193,7 +210,10 @@ export function TransportationModule({ store }: { store: any }) {
     const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
     if (logs.length === 0) {
-      alert(`No active ${type.toLowerCase()} jobs to dispatch.`);
+      toast({
+        title: "No Jobs",
+        description: `No active ${type.toLowerCase()} jobs to dispatch.`
+      });
       return;
     }
 
@@ -236,9 +256,23 @@ export function TransportationModule({ store }: { store: any }) {
 
         const cleanNumber = recipientMobile.replace(/\D/g, '');
         const url = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${message}`;
-        window.open(url, '_blank');
         
-        setSendStatus('success');
+        try {
+          const win = window.open(url, '_blank');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+             throw new Error("Pop-up blocked");
+          }
+          setSendStatus('success');
+        } catch (e) {
+          console.warn("Pop-up blocked for WhatsApp", e);
+          setSendStatus('failed');
+          toast({
+            variant: "destructive",
+            title: "Pop-up Blocked",
+            description: "Please allow pop-ups for this site to open WhatsApp."
+          });
+        }
+        
         setTimeout(() => setSendStatus('idle'), 3000);
       } catch (err) {
         setSendStatus('failed');

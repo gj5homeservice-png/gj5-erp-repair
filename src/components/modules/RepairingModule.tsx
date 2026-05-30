@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Clock, 
@@ -42,6 +41,7 @@ import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -51,6 +51,19 @@ export function RepairingModule({ store }: { store: any }) {
   const [activeFilter, setActiveFilter] = useState<any>('Active');
   const [viewMode, setViewMode] = useState<'Repairing' | 'Inquiries'>('Repairing');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      if ("Notification" in window) {
+        if (Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {});
+        }
+      }
+    } catch (e) {
+      // Silently catch permission request errors
+    }
+  }, []);
 
   const stats = useMemo(() => {
     const totalActive = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').length;
@@ -109,7 +122,19 @@ export function RepairingModule({ store }: { store: any }) {
       return;
     }
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-    window.open(url, '_blank');
+    try {
+      const win = window.open(url, '_blank');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        throw new Error("Pop-up blocked");
+      }
+    } catch (e) {
+      console.warn("Map pop-up blocked", e);
+      toast({
+        variant: "destructive",
+        title: "Pop-up Blocked",
+        description: "Your browser prevented opening the map. Please allow pop-ups."
+      });
+    }
   };
 
   const visibleKpis = [

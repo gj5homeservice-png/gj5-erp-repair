@@ -28,6 +28,7 @@ import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
 import { MessageSquare, Paperclip, ChevronRight, Notebook, History, Search, Truck } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Other'];
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
@@ -37,6 +38,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [selectedBrand, setSelectedBrand] = useState('GJ5 HOME SERVICE');
   const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
+  const { toast } = useToast();
   
   const [sendWhatsApp, setSendWhatsApp] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -124,7 +126,20 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                .replace('[Brand]', finalBrand || 'Device');
       
       const whatsappUrl = `https://web.whatsapp.com/send?phone=91${formData.mobile}&text=${encodeURIComponent(msg)}`;
-      window.open(whatsappUrl, '_blank');
+      
+      try {
+        const win = window.open(whatsappUrl, '_blank');
+        if (!win || win.closed || typeof win.closed === 'undefined') {
+          throw new Error("Pop-up blocked");
+        }
+      } catch (e) {
+        console.warn("WhatsApp pop-up blocked", e);
+        toast({
+          variant: "destructive",
+          title: "Pop-up Blocked",
+          description: "Please allow pop-ups to open WhatsApp for notifications."
+        });
+      }
     }
 
     let warrantyExpiry = undefined;

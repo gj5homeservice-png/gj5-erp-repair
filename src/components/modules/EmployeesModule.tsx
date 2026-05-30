@@ -24,24 +24,33 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export function EmployeesModule({ store }: { store: any }) {
   const [isCameraActive, setCameraActive] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<string | null>(null);
   const [attendanceType, setAttendanceType] = useState<'IN' | 'OUT' | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
 
   const startCamera = async (type: 'IN' | 'OUT') => {
     if (!selectedStaff) return;
     setAttendanceType(type);
-    setCameraActive(true);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-    } catch (err) {
-      console.error("Camera access denied", err);
+    } catch (err: any) {
+      console.warn("Camera access denied or unavailable", err.name);
+      setCameraActive(false);
+      toast({
+        variant: "destructive",
+        title: "Camera Access Denied",
+        description: "Please allow camera permissions in your browser settings to use Face-Sync."
+      });
     }
   };
 
@@ -61,17 +70,21 @@ export function EmployeesModule({ store }: { store: any }) {
     };
 
     store.updateAttendance(record);
+    stopCamera();
+  };
+
+  const stopCamera = () => {
     setCameraActive(false);
-    
-    // Stop stream
-    const stream = videoRef.current?.srcObject as MediaStream;
-    stream?.getTracks().forEach(track => track.stop());
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Attendance Controls */}
         <Card className="lg:col-span-1 bg-slate-900/40 border-slate-800">
           <CardHeader className="border-b border-slate-800">
              <CardTitle className="flex items-center gap-2 font-headline text-lg">
@@ -129,7 +142,7 @@ export function EmployeesModule({ store }: { store: any }) {
                   <Button onClick={capturePhoto} className="w-full h-12 bg-[#0066FF] hover:bg-[#0052CC] rounded-xl font-headline font-bold uppercase">
                      Verify & Punch
                   </Button>
-                  <Button variant="ghost" onClick={() => setCameraActive(false)} className="w-full text-slate-500">Cancel</Button>
+                  <Button variant="ghost" onClick={stopCamera} className="w-full text-slate-500">Cancel</Button>
                </div>
              )}
 
@@ -145,7 +158,6 @@ export function EmployeesModule({ store }: { store: any }) {
           </CardContent>
         </Card>
 
-        {/* Staff Table */}
         <Card className="lg:col-span-2 bg-slate-900/40 border-slate-800">
            <CardHeader className="border-b border-slate-800 flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-headline text-lg">

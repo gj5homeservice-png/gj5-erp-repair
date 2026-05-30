@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Truck, 
   MapPin, 
@@ -15,7 +15,9 @@ import {
   FileDown,
   MessageSquare,
   FileStack,
-  ChevronRight
+  ChevronRight,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +47,13 @@ import { LogisticsStatus } from '@/lib/types';
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [recipientMobile, setRecipientMobile] = useState('');
+  const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('gj5_whatsapp_recipient');
+    if (saved) setRecipientMobile(saved);
+  }, []);
 
   const stats = useMemo(() => {
     const total = store.transportationLogs?.length || 0;
@@ -126,7 +135,6 @@ export function TransportationModule({ store }: { store: any }) {
     jobs.forEach((log: any, index: number) => {
       const job = store.calls.find((c: any) => c.id === log.jobId);
       
-      // Page Break Check
       if (y > 250) {
         doc.addPage();
         y = 30;
@@ -155,7 +163,6 @@ export function TransportationModule({ store }: { store: any }) {
       y += 5;
     });
 
-    // Footer Summary
     const totalY = Math.min(y + 10, 270);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
@@ -164,33 +171,52 @@ export function TransportationModule({ store }: { store: any }) {
     doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
   };
 
-  const sendWhatsAppManifest = (type: 'PICKUP' | 'DELIVERY') => {
+  const handleWhatsAppDispatch = (type: 'PICKUP' | 'DELIVERY') => {
+    if (!recipientMobile || recipientMobile.trim().length < 10) {
+      alert("Please enter a valid recipient WhatsApp number (minimum 10 digits)");
+      return;
+    }
+
     const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Ready For Delivery';
     const jobs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
     
-    if (jobs.length === 0) return;
+    if (jobs.length === 0) {
+      alert(`No active ${type.toLowerCase()} jobs to dispatch.`);
+      return;
+    }
 
-    // Use the first runner's mobile or prompt (simplified)
-    const runnerMobile = jobs[0].runnerMobile || '';
+    setSendStatus('sending');
+    localStorage.setItem('gj5_whatsapp_recipient', recipientMobile);
 
-    let message = `*DAILY ${type} MANIFEST - GJ5 PLUS*%0A`;
-    message += `Date: ${format(new Date(), 'dd/MM/yyyy')}%0A%0A`;
+    setTimeout(() => {
+      try {
+        let message = `*DAILY ${type} MANIFEST - GJ5 PLUS*%0A`;
+        message += `Date: ${format(new Date(), 'dd/MM/yyyy')}%0A%0A`;
 
-    jobs.forEach((job: any, i: number) => {
-      message += `${i+1}. *${job.jobId}* - ${job.customerName}%0A`;
-      message += `📍 ${job.address}%0A`;
-      message += `📞 ${job.customerMobile}%0A`;
-      if (type === 'PICKUP') {
-        const fullJob = store.calls.find((c: any) => c.id === job.jobId);
-        message += `🛠️ Issue: ${fullJob?.problemDescription || 'N/A'}%0A`;
+        jobs.forEach((job: any, i: number) => {
+          message += `${i+1}. *${job.jobId}* - ${job.customerName}%0A`;
+          message += `📍 ${job.address}%0A`;
+          message += `📞 ${job.customerMobile}%0A`;
+          if (type === 'PICKUP') {
+            const fullJob = store.calls.find((c: any) => c.id === job.jobId);
+            message += `🛠️ Issue: ${fullJob?.problemDescription || 'N/A'}%0A`;
+          }
+          message += `---------------------------%0A`;
+        });
+
+        message += `%0A*Total ${type} TVs:* ${jobs.length}`;
+
+        const cleanNumber = recipientMobile.replace(/\D/g, '');
+        const url = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${message}`;
+        window.open(url, '_blank');
+        
+        setSendStatus('success');
+        setTimeout(() => setSendStatus('idle'), 3000);
+      } catch (err) {
+        setSendStatus('failed');
+        setTimeout(() => setSendStatus('idle'), 3000);
       }
-      message += `---------------------------%0A`;
-    });
-
-    message += `%0A*Total ${type} TVs:* ${jobs.length}`;
-
-    const url = `https://web.whatsapp.com/send?phone=91${runnerMobile}&text=${message}`;
-    window.open(url, '_blank');
+    }, 800);
   };
 
   const kpis = [
@@ -284,22 +310,43 @@ export function TransportationModule({ store }: { store: any }) {
               </CardTitle>
            </CardHeader>
            <CardContent className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Recipient Mobile Number</Label>
+                  <div className="relative">
+                    <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input 
+                      value={recipientMobile}
+                      onChange={e => setRecipientMobile(e.target.value)}
+                      placeholder="+919876543210"
+                      className="pl-10 bg-slate-950 border-slate-800 h-10 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 h-6">
+                  {sendStatus === 'sending' && <div className="flex items-center gap-2 text-xs text-blue-400 animate-pulse"><Clock className="w-3 h-3" /> Sending...</div>}
+                  {sendStatus === 'success' && <div className="flex items-center gap-2 text-xs text-emerald-400"><CheckCircle2 className="w-3 h-3" /> Sent Successfully</div>}
+                  {sendStatus === 'failed' && <div className="flex items-center gap-2 text-xs text-rose-400"><AlertCircle className="w-3 h-3" /> Failed</div>}
+                </div>
+              </div>
+
               <div className="space-y-3">
                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Pickup Operations</Label>
-                 <Button onClick={() => generateSheet('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                 <Button onClick={() => generateSheet('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
                     <FileDown className="w-4 h-4 mr-3 text-blue-400" /> Generate Pickup Sheet
                  </Button>
-                 <Button onClick={() => sendWhatsAppManifest('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                 <Button onClick={() => handleWhatsAppDispatch('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
                     <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Pickup WhatsApp
                  </Button>
               </div>
 
               <div className="space-y-3">
                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Delivery Operations</Label>
-                 <Button onClick={() => generateSheet('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                 <Button onClick={() => generateSheet('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
                     <FileDown className="w-4 h-4 mr-3 text-purple-400" /> Generate Delivery Sheet
                  </Button>
-                 <Button onClick={() => sendWhatsAppManifest('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-12">
+                 <Button onClick={() => handleWhatsAppDispatch('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
                     <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Delivery WhatsApp
                  </Button>
               </div>

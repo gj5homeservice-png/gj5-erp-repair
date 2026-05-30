@@ -12,7 +12,8 @@ import {
   Package,
   Calendar,
   CheckCircle as CheckCircleIcon,
-  User
+  User,
+  FileDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { jsPDF } from 'jspdf';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
@@ -83,6 +85,68 @@ export function TransportationModule({ store }: { store: any }) {
     });
     
     setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
+  };
+
+  const handleGeneratePDF = (log: any) => {
+    const job = store.calls.find((c: any) => c.id === log.jobId);
+    if (!job) {
+      alert("Job details not found in database.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Branding
+    doc.setFontSize(22);
+    doc.setTextColor(0, 102, 255);
+    doc.text('GJ5 PLUS', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text('Professional Service & Logistics Hub', 105, 28, { align: 'center' });
+    
+    doc.setDrawColor(200);
+    doc.line(20, 35, 190, 35);
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text('PICKUP MANIFEST SHEET', 105, 45, { align: 'center' });
+
+    doc.setFontSize(12);
+    let y = 60;
+    const leftX = 25;
+    const valueX = 75;
+
+    const details = [
+      { label: 'Job ID:', value: job.id },
+      { label: 'Customer Name:', value: job.customerName },
+      { label: 'Mobile Number:', value: job.mobile },
+      { label: 'Address:', value: job.address },
+      { label: 'TV Brand:', value: job.brand },
+      { label: 'Model Number:', value: job.model },
+      { label: 'Problem Statement:', value: job.problemDescription || 'N/A' }
+    ];
+
+    details.forEach(detail => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(detail.label, leftX, y);
+      
+      doc.setFont('helvetica', 'normal');
+      const wrappedValue = doc.splitTextToSize(detail.value || 'N/A', 110);
+      doc.text(wrappedValue, valueX, y);
+      
+      const lines = wrappedValue.length;
+      y += (lines * 7) + 3;
+    });
+
+    doc.line(20, y + 10, 190, y + 10);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text(`Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 105, 280, { align: 'center' });
+    doc.text('© GJ5 PLUS - Enterprise Logistics System', 105, 287, { align: 'center' });
+
+    doc.save(`Pickup_${job.id}.pdf`);
   };
 
   const kpis = [
@@ -190,9 +254,9 @@ export function TransportationModule({ store }: { store: any }) {
                 <TableHead>Runner Info</TableHead>
                 <TableHead>Job ID</TableHead>
                 <TableHead>Customer Profile</TableHead>
-                <TableHead>Destination</TableHead>
                 <TableHead>Dispatch Time</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -212,12 +276,6 @@ export function TransportationModule({ store }: { store: any }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate max-w-[150px]">{log.address}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
                     <div className="flex items-center gap-2 text-[10px] text-slate-500">
                        <Calendar className="w-3 h-3" />
                        {log.dispatchTime ? format(new Date(log.dispatchTime), 'dd/MM HH:mm') : 'N/A'}
@@ -233,6 +291,17 @@ export function TransportationModule({ store }: { store: any }) {
                         <SelectItem value="Delivered To Shop">Delivered To Shop</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="text-[#0066FF] hover:bg-blue-500/10"
+                      onClick={() => handleGeneratePDF(log)}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Generate Pickup PDF
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

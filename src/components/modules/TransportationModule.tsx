@@ -208,10 +208,16 @@ export function TransportationModule({ store }: { store: any }) {
 
         logs.forEach((log: any, i: number) => {
           const fullJob = store.calls.find((c: any) => c.id === log.jobId);
+          const encodedAddr = log.address ? encodeURIComponent(log.address) : '';
+          const mapLink = log.address && log.address !== 'N/A' 
+            ? `https://www.google.com/maps/search/?api=1&query=${encodedAddr}`
+            : 'Location not available';
+
           message += `${i+1}. *JOB: ${log.jobId}* (CID: ${fullJob?.customerId || 'N/A'})%0A`;
           message += `👤 ${log.customerName}%0A`;
           message += `📞 ${log.customerMobile}%0A`;
-          message += `📍 ${log.address}%0A`;
+          message += `📍 Address: ${log.address}%0A`;
+          message += `🗺️ Open Location:%0A${mapLink}%0A`;
           
           if (fullJob) {
             message += `📺 ${fullJob.brand} ${fullJob.model} (${fullJob.screenSize}")%0A`;

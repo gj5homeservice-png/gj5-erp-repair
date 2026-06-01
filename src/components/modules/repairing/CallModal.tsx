@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -301,7 +302,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       } else if (formData.warrantyDuration === '1 Year') {
         warrantyExpiry = addMonths(new Date(), 12).toISOString();
       }
-      // For Custom/Customer, we use the manually picked warrantyExpiry if set
     }
 
     let updatedHistory = [...(formData.visitHistory || [])];
@@ -342,9 +342,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-          <div className="px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[100dvh] md:h-auto md:max-h-[90vh] flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
+          <div className="px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
             <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-3">
                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
                   {activeTab === 'Inquiry' ? <Notebook className="w-4 h-4 md:w-5 md:h-5" /> : <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />}
@@ -358,13 +358,12 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8">
                 {activeTab === 'Registry' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-4">
-                      {/* Old Entry Toggle */}
                       <div className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
                         <div className="flex flex-col gap-0.5">
                           <Label className="text-xs font-bold text-slate-100">Old Entry Mode</Label>
@@ -474,6 +473,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                          <div className="flex gap-2">
                             {TECH_TAGS.map(tag => (
                               <button 
+                                type="button"
                                 key={`tag-${tag}`} 
                                 disabled={isLocked}
                                 onClick={() => toggleTag(tag)} 
@@ -529,7 +529,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         </div>
                       </div>
 
-                      {/* Smart Problem Selector */}
                       <div className="space-y-3">
                         <Label className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
                           Smart Problem Selector
@@ -556,7 +555,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                                   className="pl-9 h-8 md:h-9 bg-slate-950 border-slate-800 text-[10px] md:text-xs"
                                 />
                              </div>
-                             <Button size="sm" onClick={handleAddCustomProblem} className="bg-emerald-600 hover:bg-emerald-700 h-8 md:h-9">
+                             <Button size="sm" type="button" onClick={handleAddCustomProblem} className="bg-emerald-600 hover:bg-emerald-700 h-8 md:h-9">
                                 <Plus className="w-3 h-3 md:w-4 h-4" />
                              </Button>
                           </div>
@@ -565,6 +564,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                             <div className="flex flex-wrap gap-1.5 md:gap-2 pt-2 animate-in fade-in duration-300">
                                {filteredSuggestions.slice(0, 8).map(p => (
                                  <button 
+                                   type="button"
                                    key={`suggest-${p}`} 
                                    onClick={() => handleProblemToggle(p)}
                                    className="px-2 md:px-3 py-0.5 md:py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[9px] md:text-[10px] font-bold rounded-full transition-colors border border-slate-700"
@@ -580,6 +580,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                                <span className="w-full text-[8px] md:text-[9px] font-bold text-slate-600 uppercase mb-1">Common Issues</span>
                                {currentSuggestedProblems.slice(0, 10).map(p => (
                                  <button 
+                                   type="button"
                                    key={`suggest-default-${p}`} 
                                    onClick={() => handleProblemToggle(p)}
                                    className={cn(
@@ -646,7 +647,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                               placeholder="Job ID or Mobile..." 
                               className="bg-slate-950 border-slate-800 h-11 md:h-12 text-base md:text-lg" 
                             />
-                            <Button onClick={handleRepeatLookup} className="bg-[#0066FF] px-8 h-11 md:h-12"><Search className="w-4 h-4 mr-2" /> Search</Button>
+                            <Button type="button" onClick={handleRepeatLookup} className="bg-[#0066FF] px-8 h-11 md:h-12"><Search className="w-4 h-4 mr-2" /> Search</Button>
                          </div>
                       </div>
                       <div className="p-4 md:p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-3">
@@ -715,7 +716,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                    <div key={`whatsapp-tpl-pane-${idx}`} className={cn("p-3 md:p-4 rounded-xl border transition-all space-y-3", activeTpl === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
                       <div className="flex justify-between items-center">
                          <Label className="text-[10px] font-bold text-slate-500 uppercase">Option {idx + 1}</Label>
-                         <button className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"><Paperclip className="w-3 h-3" /></button>
+                         <button type="button" className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"><Paperclip className="w-3 h-3" /></button>
                       </div>
                       <Textarea 
                         value={templates[idx]} 
@@ -736,9 +737,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
             </div>
           </div>
 
-          <DialogFooter className="p-4 md:p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-3">
+          <DialogFooter className="p-4 md:p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-3 shrink-0">
             <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto order-2 sm:order-1">Cancel</Button>
-            <Button onClick={handleSave} className="w-full sm:w-auto bg-[#0066FF] hover:bg-blue-600 px-8 md:px-12 h-11 md:h-12 rounded-xl font-bold flex gap-2 order-1 sm:order-2">
+            <Button type="button" onClick={handleSave} className="w-full sm:w-auto bg-[#0066FF] hover:bg-blue-600 px-8 md:px-12 h-11 md:h-12 rounded-xl font-bold flex gap-2 order-1 sm:order-2">
                {activeTab === 'Inquiry' ? 'Commit Inquiry' : (isExisting ? 'Update Job' : 'Commit Registry')}
                <ChevronRight className="w-4 h-4" />
             </Button>

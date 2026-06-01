@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -142,7 +143,6 @@ export function RepairingModule({ store }: { store: any }) {
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
-      {/* KPI Cards Grid - Responsive columns */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
         {visibleKpis.map(kpi => (
           <Card key={kpi.id} onClick={() => { setViewMode('Repairing'); setActiveFilter(kpi.filter); }} className={cn("bg-slate-900/40 border-slate-800 cursor-pointer transition-all h-full", activeFilter === kpi.filter ? "ring-2 ring-blue-500 bg-slate-800/60" : "hover:bg-slate-800/60")}>
@@ -157,7 +157,6 @@ export function RepairingModule({ store }: { store: any }) {
         ))}
       </div>
 
-      {/* Action Bar - Stacks on mobile */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 md:p-6 rounded-2xl border border-slate-800">
         <div className="flex-1 w-full md:max-w-md relative">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -182,7 +181,6 @@ export function RepairingModule({ store }: { store: any }) {
         </div>
       </div>
 
-      {/* Main Table / View - overflow-x-auto handles responsive table data */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
         <div className="overflow-x-auto w-full">
           {viewMode === 'Repairing' ? (
@@ -201,7 +199,6 @@ export function RepairingModule({ store }: { store: any }) {
               <TableBody>
                 {filteredCalls.map((call) => {
                   const isExpanded = expandedRows.has(call.id);
-                  const isExPur = call.status === 'Exchange' || call.status === 'Purchase';
                   const wDays = calculateWarrantyLeft(call.warrantyExpiry);
                   
                   return (

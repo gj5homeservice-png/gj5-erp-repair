@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -54,39 +53,15 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-const PRODUCT_CATEGORIES = [
-  { id: 'TV Repair', name: 'TV Repair', icon: Tv, prefix: 'TV' },
-  { id: 'CCTV', name: 'CCTV', icon: Monitor, prefix: 'CCTV' },
-  { id: 'Computer / Laptop', name: 'Computer / Laptop', icon: Cpu, prefix: 'PC' },
-  { id: 'Wholesale', name: 'Wholesale', icon: Package, prefix: 'WS' },
-  { id: 'Technician', name: 'Technician', icon: Wrench, prefix: 'TECH' },
-  { id: 'Spare Parts', name: 'Spare Parts', icon: Boxes, prefix: 'SP' },
-  { id: 'Accessories', name: 'Accessories', icon: ShoppingBag, prefix: 'ACC' },
-  { id: 'Other Product', name: 'Other Products', icon: MoreHorizontal, prefix: 'OTH' },
-];
-
 export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<any>('Active');
-  const [selectedProductCategory, setSelectedProductCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'Repairing' | 'Inquiries'>('Repairing');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-
-  useEffect(() => {
-    try {
-      if ("Notification" in window) {
-        if (Notification.permission === "default") {
-          Notification.requestPermission().catch(() => {});
-        }
-      }
-    } catch (e) {
-      // Silently catch permission request errors
-    }
-  }, []);
 
   const stats = useMemo(() => {
     const totalActive = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').length;
@@ -101,9 +76,6 @@ export function RepairingModule({ store }: { store: any }) {
 
   const filteredCalls = useMemo(() => {
     return store.calls.filter((c: RepairCall) => {
-      // Category filter (stays in logic, but UI button is removed)
-      const matchesCategory = selectedProductCategory ? c.category === selectedProductCategory : true;
-
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,9 +91,9 @@ export function RepairingModule({ store }: { store: any }) {
       else if (activeFilter === 'Exchange') matchesFilter = c.status === 'Exchange' || c.status === 'Purchase';
       else if (activeFilter === 'Warranty') matchesFilter = c.status === 'Completed' && !!c.warrantyExpiry;
 
-      return matchesCategory && (matchesSearch || !searchQuery) && matchesFilter;
+      return (matchesSearch || !searchQuery) && matchesFilter;
     });
-  }, [store.calls, searchQuery, activeFilter, selectedProductCategory]);
+  }, [store.calls, searchQuery, activeFilter]);
 
   const toggleRowExpansion = (id: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -145,238 +117,240 @@ export function RepairingModule({ store }: { store: any }) {
   };
 
   const handleMapClick = (address: string) => {
-    if (!address || address.trim() === '') {
-      return;
-    }
+    if (!address || address.trim() === '') return;
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     try {
-      const win = window.open(url, '_blank');
-      if (!win || win.closed || typeof win.closed === 'undefined') {
-        throw new Error("Pop-up blocked");
-      }
+      window.open(url, '_blank');
     } catch (e) {
-      console.warn("Map pop-up blocked", e);
       toast({
         variant: "destructive",
         title: "Pop-up Blocked",
-        description: "Your browser prevented opening the map. Please allow pop-ups."
+        description: "Please allow pop-ups to open the map."
       });
     }
   };
 
   const visibleKpis = [
-    { id: 'totalActive', title: 'Total Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', filter: 'Active' },
+    { id: 'totalActive', title: 'Active', value: stats.totalActive, icon: TrendingUp, color: 'bg-[#0066FF]', filter: 'Active' },
     { id: 'pending', title: 'Pending', value: stats.pending, icon: Clock, color: 'bg-[#FFD700]', textColor: 'text-black', filter: 'Pending' },
-    { id: 'completed', title: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'bg-emerald-500', filter: 'Completed' },
-    { id: 'repeat', title: 'Repeat Call', value: stats.repeat, icon: RefreshCw, color: 'bg-purple-500', filter: 'Repeat' },
-    { id: 'rejected', title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', filter: 'Rejected' },
-    { id: 'exchange', title: 'Exchange/Pur', value: stats.exchange, icon: Tv, color: 'bg-cyan-500', filter: 'Exchange' },
-    { id: 'warranty', title: 'Warranty Calls', value: stats.warranty, icon: History, color: 'bg-amber-600', filter: 'Warranty' },
+    { id: 'completed', title: 'Done', value: stats.completed, icon: CheckCircle2, color: 'bg-emerald-500', filter: 'Completed' },
+    { id: 'repeat', title: 'Repeat', value: stats.repeat, icon: RefreshCw, color: 'bg-purple-500', filter: 'Repeat' },
+    { id: 'rejected', title: 'Reject', value: stats.rejected, icon: XCircle, color: 'bg-[#FF3366]', filter: 'Rejected' },
+    { id: 'exchange', title: 'Ex/Pur', value: stats.exchange, icon: Tv, color: 'bg-cyan-500', filter: 'Exchange' },
+    { id: 'warranty', title: 'Warranty', value: stats.warranty, icon: History, color: 'bg-amber-600', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
         {visibleKpis.map(kpi => (
-          <Card key={kpi.id} onClick={() => { setViewMode('Repairing'); setActiveFilter(kpi.filter); }} className={cn("bg-slate-900/40 border-slate-800 cursor-pointer transition-all", activeFilter === kpi.filter ? "ring-2 ring-blue-500" : "hover:bg-slate-800/60")}>
-            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-               <div className={cn("p-2 rounded-xl", kpi.color, kpi.textColor || "text-white")}><kpi.icon className="w-4 h-4" /></div>
-               <div><p className="text-slate-400 text-[10px] uppercase font-bold">{kpi.title}</p><h3 className="text-xl font-headline font-bold">{kpi.value}</h3></div>
+          <Card key={kpi.id} onClick={() => { setViewMode('Repairing'); setActiveFilter(kpi.filter); }} className={cn("bg-slate-900/40 border-slate-800 cursor-pointer transition-all h-full", activeFilter === kpi.filter ? "ring-2 ring-blue-500 bg-slate-800/60" : "hover:bg-slate-800/60")}>
+            <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
+               <div className={cn("p-1.5 md:p-2 rounded-xl", kpi.color, kpi.textColor || "text-white")}><kpi.icon className="w-3.5 h-3.5 md:w-4 h-4" /></div>
+               <div>
+                 <p className="text-slate-400 text-[9px] md:text-[10px] uppercase font-bold truncate">{kpi.title}</p>
+                 <h3 className="text-lg md:text-xl font-headline font-bold">{kpi.value}</h3>
+               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 md:p-6 rounded-2xl border border-slate-800">
         <div className="flex-1 w-full md:max-w-md relative">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
            <Input 
-             placeholder="Smart Search Job, Mobile, Category..." 
+             placeholder="Search Jobs, Mobile, Category..." 
              value={searchQuery} 
              onChange={e => setSearchQuery(e.target.value)} 
-             className="pl-10 bg-slate-950 border-slate-800 h-11" 
+             className="pl-10 bg-slate-950 border-slate-800 h-11 w-full" 
            />
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="rounded-xl border-slate-700 h-11" onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
-            <NotebookTabs className="w-4 h-4 mr-2" /> {viewMode === 'Repairing' ? "Inquiries" : "Repair Hub"}
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none rounded-xl border-slate-700 h-11 px-3 md:px-4" onClick={() => setViewMode(viewMode === 'Repairing' ? 'Inquiries' : 'Repairing')}>
+            <NotebookTabs className="w-4 h-4 mr-2" /> 
+            <span className="hidden xs:inline">{viewMode === 'Repairing' ? "Inquiries" : "Repair Hub"}</span>
+            <span className="xs:hidden">Inq</span>
           </Button>
-          <Button className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 shadow-lg shadow-blue-500/20" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
-            <Plus className="w-5 h-5 mr-2" /> Log New Case
+          <Button className="flex-1 sm:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 shadow-lg shadow-blue-500/20 px-3 md:px-4" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
+            <Plus className="w-5 h-5 mr-2" /> 
+            <span className="hidden xs:inline">Log New Case</span>
+            <span className="xs:hidden">New</span>
           </Button>
         </div>
       </div>
 
-      {viewMode === 'Repairing' ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-900/60">
-              <TableRow className="border-slate-800">
-                <TableHead className="w-[50px]"></TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Job ID</TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Customer</TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Category / Profile</TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase text-center">
-                  {filteredCalls.some(c => c.status === 'Exchange' || c.status === 'Purchase') ? 'STORE LOCATION' : 'WARRANTY TRACKER'}
-                </TableHead>
-                <TableHead className="font-headline text-slate-400 text-[11px] uppercase">Status</TableHead>
-                <TableHead className="text-right font-headline text-slate-400 text-[11px] uppercase">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCalls.map((call) => {
-                const isExpanded = expandedRows.has(call.id);
-                const isExPur = call.status === 'Exchange' || call.status === 'Purchase';
-                const showWarranty = call.status === 'Pending' || call.status === 'Completed';
-                const wDays = calculateWarrantyLeft(call.warrantyExpiry);
-                
-                return (
-                  <React.Fragment key={call.id}>
-                    <TableRow className="border-slate-800/50 hover:bg-slate-800/20">
-                      <TableCell>
-                        {(call.visitHistory && call.visitHistory.length > 0) && (
-                          <button onClick={() => toggleRowExpansion(call.id)} className="p-1 hover:bg-slate-700 rounded-md transition-colors">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-code font-bold text-blue-400">
-                        <div className="flex flex-col gap-1">
-                          {call.id}
-                          {((call.repeatCount || 0) > 0) && <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[9px] w-fit uppercase font-black">Visits: {(call.repeatCount || 0) + 1}</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col"><span className="font-semibold">{call.customerName}</span><span className="text-xs text-slate-500">{call.mobile}</span></div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter mb-0.5">{call.category}</span>
-                          <span className="text-sm">{call.brand} {call.model}</span>
-                          <span className="text-[10px] text-slate-400 uppercase">{call.screenSize && `${call.screenSize}"`}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                         {showWarranty && (
-                           <div className="flex flex-col gap-1 items-center">
-                              <span className="text-[10px] text-slate-400">{call.warrantyDuration || 'No Warranty'}</span>
-                              {call.status === 'Completed' && wDays !== null && (
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase animate-pulse">Left: {wDays} Days</span>
-                              )}
-                           </div>
-                         )}
-                         {isExPur && (
-                           <span className="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold text-cyan-400 uppercase">{call.storeLocation || 'GODOWN'}</span>
-                         )}
-                      </TableCell>
-                      <TableCell>
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <button className="outline-none">
-                               <Badge className={cn("text-[10px] font-bold uppercase border cursor-pointer hover:opacity-80 transition-opacity", 
-                                 call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border-yellow-500/20" : 
-                                 call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
-                                 call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : 
-                                 "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                               )}>
-                                 {call.status}
-                               </Badge>
-                             </button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
-                             {['Pending', 'Completed', 'Rejected', 'Exchange', 'Purchase'].map((s) => (
-                               <DropdownMenuItem 
-                                 key={`status-${call.id}-${s}`} 
-                                 onClick={() => handleStatusChange(call, s as RepairStatus)}
-                                 className="text-xs uppercase font-bold hover:bg-slate-800 cursor-pointer"
-                               >
-                                 {s}
-                               </DropdownMenuItem>
-                             ))}
-                           </DropdownMenuContent>
-                         </DropdownMenu>
-                      </TableCell>
-                      <TableCell className="text-right">
-                         <div className="flex justify-end gap-2">
-                           <Button 
-                             size="sm" 
-                             variant="ghost" 
-                             className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                             onClick={() => handleMapClick(call.address)}
-                           >
-                             <MapPin className="w-4 h-4" />
-                           </Button>
-                           <Button size="sm" variant="ghost" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-4 h-4" /></Button>
-                           <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-4 h-4" /></Button>
-                         </div>
-                      </TableCell>
-                    </TableRow>
-                    {isExpanded && call.visitHistory && (
-                      <TableRow className="bg-slate-950/50 hover:bg-slate-950/50 border-slate-800">
-                        <TableCell colSpan={7} className="p-0">
-                          <div className="px-12 py-6 space-y-4">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                              <History className="w-4 h-4" /> Chronological History Ledger
-                            </h4>
-                            <div className="rounded-xl border border-slate-800 overflow-hidden">
-                              <Table>
-                                <TableHeader className="bg-slate-900">
-                                  <TableRow className="border-slate-800">
-                                    <TableHead className="text-[10px] font-bold uppercase">#</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase">Date & Time</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase">Complaint / Notes</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase text-right">Status</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {call.visitHistory.map((v, i) => (
-                                    <TableRow key={v.id || `visit-${call.id}-${i}`} className="border-slate-800 bg-slate-900/30">
-                                      <TableCell className="font-code text-slate-500">{i + 1}</TableCell>
-                                      <TableCell className="text-xs">
-                                        <p className="font-bold">{v.date}</p>
-                                        <p className="text-[10px] text-slate-500">{v.time}</p>
-                                      </TableCell>
-                                      <TableCell className="text-xs">
-                                        <p className="font-medium text-slate-200">{v.complaintDescription}</p>
-                                        {v.technicianNotes && <p className="text-[10px] italic text-slate-500 mt-1">Tech: {v.technicianNotes}</p>}
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        <Badge variant="outline" className="text-[9px] uppercase border-slate-700">{v.status}</Badge>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
+      {/* Main Table / View */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          {viewMode === 'Repairing' ? (
+            <Table>
+              <TableHeader className="bg-slate-900/60">
+                <TableRow className="border-slate-800">
+                  <TableHead className="w-[40px] px-2"></TableHead>
+                  <TableHead className="font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2">Job ID</TableHead>
+                  <TableHead className="font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2">Customer</TableHead>
+                  <TableHead className="font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2">Category</TableHead>
+                  <TableHead className="font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2 text-center">Warranty</TableHead>
+                  <TableHead className="font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2">Status</TableHead>
+                  <TableHead className="text-right font-headline text-slate-400 text-[10px] md:text-[11px] uppercase whitespace-nowrap px-2">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCalls.map((call) => {
+                  const isExpanded = expandedRows.has(call.id);
+                  const isExPur = call.status === 'Exchange' || call.status === 'Purchase';
+                  const wDays = calculateWarrantyLeft(call.warrantyExpiry);
+                  
+                  return (
+                    <React.Fragment key={call.id}>
+                      <TableRow className="border-slate-800/50 hover:bg-slate-800/20">
+                        <TableCell className="px-2">
+                          {(call.visitHistory && call.visitHistory.length > 0) && (
+                            <button onClick={() => toggleRowExpansion(call.id)} className="p-1 hover:bg-slate-700 rounded-md transition-colors">
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-code font-bold text-blue-400 text-xs md:text-sm px-2">
+                          <div className="flex flex-col gap-0.5">
+                            {call.id}
+                            {((call.repeatCount || 0) > 0) && <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[8px] md:text-[9px] w-fit uppercase font-black px-1.5 py-0">{call.repeatCount + 1}nd Visit</Badge>}
                           </div>
                         </TableCell>
+                        <TableCell className="px-2">
+                          <div className="flex flex-col"><span className="font-semibold text-xs md:text-sm">{call.customerName}</span><span className="text-[10px] md:text-xs text-slate-500">{call.mobile}</span></div>
+                        </TableCell>
+                        <TableCell className="px-2">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] md:text-[10px] font-bold text-blue-500 uppercase tracking-tighter">{call.category}</span>
+                            <span className="text-xs md:text-sm truncate max-w-[120px]">{call.brand} {call.model}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center px-2">
+                           <div className="flex flex-col gap-0.5 items-center">
+                              <span className="text-[9px] md:text-[10px] text-slate-400 whitespace-nowrap">{call.warrantyDuration || 'No Warranty'}</span>
+                              {call.status === 'Completed' && wDays !== null && (
+                                <span className="text-[8px] md:text-[9px] font-bold text-emerald-400 uppercase">L: {wDays}D</span>
+                              )}
+                           </div>
+                        </TableCell>
+                        <TableCell className="px-2">
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <button className="outline-none">
+                                 <Badge className={cn("text-[9px] md:text-[10px] font-bold uppercase border whitespace-nowrap", 
+                                   call.status === 'Pending' ? "bg-yellow-500/10 text-[#FFD700] border-yellow-500/20" : 
+                                   call.status === 'Completed' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+                                   call.status === 'Rejected' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : 
+                                   "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                 )}>
+                                   {call.status}
+                                 </Badge>
+                               </button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
+                               {['Pending', 'Completed', 'Rejected', 'Exchange', 'Purchase'].map((s) => (
+                                 <DropdownMenuItem 
+                                   key={`status-${call.id}-${s}`} 
+                                   onClick={() => handleStatusChange(call, s as RepairStatus)}
+                                   className="text-xs uppercase font-bold hover:bg-slate-800 cursor-pointer"
+                                 >
+                                   {s}
+                                 </DropdownMenuItem>
+                               ))}
+                             </DropdownMenuContent>
+                           </DropdownMenu>
+                        </TableCell>
+                        <TableCell className="text-right px-2">
+                           <div className="flex justify-end gap-1 md:gap-2">
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-blue-400" onClick={() => handleMapClick(call.address)}><MapPin className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
+                           </div>
+                        </TableCell>
                       </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <h3 className="text-xl font-headline font-bold">Walk-In Inquiry Directory</h3>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+                      {isExpanded && call.visitHistory && (
+                        <TableRow className="bg-slate-950/50 hover:bg-slate-950/50 border-slate-800">
+                          <TableCell colSpan={7} className="p-0">
+                            <div className="px-4 py-4 md:px-12 md:py-6 space-y-4">
+                              <h4 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <History className="w-3.5 h-3.5" /> Visit Ledger
+                              </h4>
+                              <div className="rounded-xl border border-slate-800 overflow-hidden overflow-x-auto">
+                                <Table>
+                                  <TableHeader className="bg-slate-900">
+                                    <TableRow className="border-slate-800">
+                                      <TableHead className="text-[9px] font-bold uppercase whitespace-nowrap">Date</TableHead>
+                                      <TableHead className="text-[9px] font-bold uppercase">Complaint</TableHead>
+                                      <TableHead className="text-[9px] font-bold uppercase text-right">Status</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {call.visitHistory.map((v, i) => (
+                                      <TableRow key={v.id || `visit-${call.id}-${i}`} className="border-slate-800 bg-slate-900/30">
+                                        <TableCell className="text-[10px] whitespace-nowrap">
+                                          <p className="font-bold">{v.date}</p>
+                                          <p className="text-[9px] text-slate-500">{v.time}</p>
+                                        </TableCell>
+                                        <TableCell className="text-[10px] min-w-[150px]">
+                                          <p className="font-medium text-slate-200 line-clamp-2">{v.complaintDescription}</p>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <Badge variant="outline" className="text-[8px] uppercase border-slate-700 px-1 py-0">{v.status}</Badge>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {filteredCalls.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center text-slate-500 italic">No job records found matching criteria.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
             <Table>
-              <TableHeader className="bg-slate-900/60"><TableRow className="border-slate-800"><TableHead>Date</TableHead><TableHead>Customer</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
+              <TableHeader className="bg-slate-900/60">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-[10px] md:text-[11px] uppercase">Date</TableHead>
+                  <TableHead className="text-[10px] md:text-[11px] uppercase">Customer</TableHead>
+                  <TableHead className="text-[10px] md:text-[11px] uppercase">Notes</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {store.inquiries.map((inq: any) => (
                   <TableRow key={inq.id} className="border-slate-800/50">
-                    <TableCell className="text-xs text-slate-500">{inq.createdAt ? new Date(inq.createdAt).toLocaleString() : 'N/A'}</TableCell>
-                    <TableCell><div className="flex flex-col"><span className="font-bold">{inq.customerName}</span><span className="text-xs text-blue-400">{inq.mobile}</span></div></TableCell>
-                    <TableCell className="text-sm italic text-slate-300">"{inq.notes}"</TableCell>
+                    <TableCell className="text-[10px] text-slate-500 whitespace-nowrap">
+                      {inq.createdAt ? format(parseISO(inq.createdAt), 'dd/MM HH:mm') : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col"><span className="font-bold text-xs md:text-sm">{inq.customerName}</span><span className="text-[10px] text-blue-400">{inq.mobile}</span></div>
+                    </TableCell>
+                    <TableCell className="text-[11px] md:text-sm italic text-slate-300 line-clamp-2">"{inq.notes}"</TableCell>
                   </TableRow>
                 ))}
+                {store.inquiries.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-32 text-center text-slate-500 italic">No inquiries registered.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <CallModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} editingCall={editingCall} store={store} />
       <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.shopLogo} />

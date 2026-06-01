@@ -42,262 +42,42 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { jsPDF } from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [recipientMobile, setRecipientMobile] = useState('');
-  const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
   const { toast } = useToast();
 
-  useEffect(() => {
-    const saved = localStorage.getItem('gj5_whatsapp_recipient');
-    if (saved) setRecipientMobile(saved);
-  }, []);
-
   const stats = useMemo(() => {
-    const total = store.transportationLogs?.length || 0;
-    const pendingPickup = store.transportationLogs?.filter((l: any) => l.status === 'Pending Pickup').length || 0;
-    const okPickup = store.transportationLogs?.filter((l: any) => l.status === 'OK Pickup').length || 0;
-    const pendingDelivery = store.transportationLogs?.filter((l: any) => l.status === 'Pending Delivery').length || 0;
-    const okDelivery = store.transportationLogs?.filter((l: any) => l.status === 'OK Delivery').length || 0;
-    
+    const logs = store.transportationLogs || [];
     return { 
-      total, 
-      pendingPickup, 
-      okPickup,
-      pendingDelivery,
-      okDelivery
+      total: logs.length,
+      pPickup: logs.filter((l: any) => l.status === 'Pending Pickup').length,
+      pDelivery: logs.filter((l: any) => l.status === 'Pending Delivery').length,
     };
   }, [store.transportationLogs]);
 
   const filteredLogs = useMemo(() => {
-    return (store.transportationLogs || []).filter((log: any) => {
-      const matchesSearch = 
-        log.runnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.jobId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.customerName.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
-    });
+    return (store.transportationLogs || []).filter((log: any) => 
+      log.runnerName.toLowerCase().includes(searchQuery.toLowerCase()) || log.jobId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [store.transportationLogs, searchQuery]);
 
-  const handleAssignRunner = () => {
-    if (!formData.runnerName || !formData.jobId) return;
-    const job = store.calls.find((c: any) => c.id === formData.jobId);
-    
-    store.addTransportLog({
-      id: `LOG${Date.now()}`,
-      runnerName: formData.runnerName,
-      runnerMobile: formData.runnerMobile,
-      jobId: formData.jobId,
-      customerName: job?.customerName || 'Unknown',
-      customerMobile: job?.mobile || '',
-      address: job?.address || 'N/A',
-      dispatchTime: new Date().toISOString(),
-      status: 'Pending Pickup'
-    });
-    
-    setFormData({ runnerName: '', runnerMobile: '', jobId: '' });
-  };
-
-  const generateSheet = (type: 'PICKUP' | 'DELIVERY') => {
-    try {
-      const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
-      const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
-      
-      if (logs.length === 0) {
-        toast({
-          variant: "destructive",
-          title: "No Data",
-          description: `No jobs found with status: ${statusFilter}`
-        });
-        return;
-      }
-
-      const doc = new jsPDF();
-      const timestamp = format(new Date(), 'dd MMM yyyy HH:mm');
-      
-      doc.setFontSize(22);
-      doc.setTextColor(0, 102, 255);
-      doc.text('GJ5 HOME SERVICE', 105, 20, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Enterprise Logistics & Service Management', 105, 26, { align: 'center' });
-      
-      doc.setFontSize(16);
-      doc.setTextColor(0);
-      const title = type === 'PICKUP' ? 'DAILY CONSOLIDATED PICKUP SHEET' : 'DAILY CONSOLIDATED DELIVERY SHEET';
-      doc.text(title, 105, 40, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(`GENERATED ON: ${timestamp}`, 105, 46, { align: 'center' });
-
-      doc.setDrawColor(200);
-      doc.line(20, 52, 190, 52);
-
-      let y = 65;
-      logs.forEach((log: any, index: number) => {
-        const job = store.calls.find((c: any) => c.id === log.jobId);
-        
-        if (y > 230) {
-          doc.addPage();
-          y = 30;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text(`${index + 1}. JOB ID: ${log.jobId} [CUST ID: ${job?.customerId || 'N/A'}]`, 25, y);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        y += 6;
-        doc.text(`Customer: ${log.customerName} | Mobile: ${log.customerMobile}`, 30, y);
-        
-        y += 5;
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Address: ${log.address}`, 30, y);
-        doc.setFont('helvetica', 'normal');
-        
-        if (job) {
-          y += 5;
-          doc.text(`Device Profile: ${job.brand} ${job.model} (${job.screenSize}")`, 30, y);
-          y += 5;
-          doc.text(`Problem Statement: ${job.problemDescription || 'N/A'}`, 30, y);
-          y += 5;
-          doc.text(`Tech Tags: ${job.techTags?.join(', ') || 'None'} | Warranty: ${job.warrantyDuration || 'N/A'}`, 30, y);
-          
-          y += 5;
-          doc.setFont('helvetica', 'bold');
-          doc.text(`Repair Status: ${job.status} | Logistics: ${log.status}`, 30, y);
-          doc.setFont('helvetica', 'normal');
-        }
-
-        y += 12;
-        doc.setDrawColor(240);
-        doc.line(25, y - 5, 185, y - 5);
-        y += 5;
-      });
-
-      const totalY = Math.min(y + 10, 270);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text(`TOTAL ${type} TVs: ${logs.length}`, 105, totalY, { align: 'center' });
-
-      doc.save(`${type}_Sheet_${format(new Date(), 'ddMMyy')}.pdf`);
-    } catch (err: any) {
-      console.warn("PDF Manifest Error", err.name);
-      toast({
-        variant: "destructive",
-        title: "Download Blocked",
-        description: "Your browser prevented the manifest download. Please allow downloads."
-      });
-    }
-  };
-
-  const handleWhatsAppDispatch = (type: 'PICKUP' | 'DELIVERY') => {
-    if (!recipientMobile || recipientMobile.trim().length < 10) {
-      toast({
-        variant: "destructive",
-        title: "Missing Recipient",
-        description: "Please enter a valid recipient WhatsApp number (minimum 10 digits)"
-      });
-      return;
-    }
-
-    const statusFilter = type === 'PICKUP' ? 'Pending Pickup' : 'Pending Delivery';
-    const logs = store.transportationLogs?.filter((l: any) => l.status === statusFilter) || [];
-    
-    if (logs.length === 0) {
-      toast({
-        title: "No Jobs",
-        description: `No active ${type.toLowerCase()} jobs to dispatch.`
-      });
-      return;
-    }
-
-    setSendStatus('sending');
-    localStorage.setItem('gj5_whatsapp_recipient', recipientMobile);
-
-    setTimeout(() => {
-      try {
-        let message = `*DAILY ${type} MANIFEST - GJ5 HOME SERVICE*%0A`;
-        message += `Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}%0A%0A`;
-
-        logs.forEach((log: any, i: number) => {
-          const fullJob = store.calls.find((c: any) => c.id === log.jobId);
-          const encodedAddr = log.address && log.address !== 'N/A' ? encodeURIComponent(log.address) : '';
-          const mapLink = encodedAddr 
-            ? `https://www.google.com/maps/search/?api=1&query=${encodedAddr}`
-            : 'Location not available';
-
-          message += `${i+1}. *JOB: ${log.jobId}* (CID: ${fullJob?.customerId || 'N/A'})%0A`;
-          message += `👤 *Name:* ${log.customerName}%0A`;
-          message += `📞 *Mobile:* ${log.customerMobile}%0A`;
-          message += `📍 *Address:* ${log.address}%0A`;
-          message += `🗺️ *Open Location:*%0A${mapLink}%0A`;
-          
-          if (fullJob) {
-            message += `📺 *Brand:* ${fullJob.brand}%0A`;
-            message += `📟 *Model:* ${fullJob.model}%0A`;
-            message += `📏 *Size:* ${fullJob.screenSize}"%0A`;
-            message += `🛠️ *Issue:* ${fullJob.problemDescription || 'N/A'}%0A`;
-            message += `🏷️ *Tags:* ${fullJob.techTags?.join(', ') || 'None'}%0A`;
-            message += `🛡️ *Warranty:* ${fullJob.warrantyDuration || 'N/A'}%0A`;
-            message += `✅ *Repair Status:* ${fullJob.status}%0A`;
-            message += `⏰ *Logged:* ${format(new Date(fullJob.createdAt), 'dd/MM HH:mm')}%0A`;
-          }
-          message += `🚚 *Logistics:* ${log.status}%0A`;
-          message += `---------------------------%0A`;
-        });
-
-        message += `%0A*Total ${type} TVs:* ${logs.length}`;
-
-        const cleanNumber = recipientMobile.replace(/\D/g, '');
-        const url = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${message}`;
-        
-        try {
-          const win = window.open(url, '_blank');
-          if (!win || win.closed || typeof win.closed === 'undefined') {
-             throw new Error("Pop-up blocked");
-          }
-          setSendStatus('success');
-        } catch (e) {
-          console.warn("Pop-up blocked for WhatsApp", e);
-          setSendStatus('failed');
-          toast({
-            variant: "destructive",
-            title: "Pop-up Blocked",
-            description: "Please allow pop-ups for this site to open WhatsApp."
-          });
-        }
-        
-        setTimeout(() => setSendStatus('idle'), 3000);
-      } catch (err) {
-        setSendStatus('failed');
-        setTimeout(() => setSendStatus('idle'), 3000);
-      }
-    }, 800);
-  };
-
-  const kpis = [
-    { id: 'total', label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
-    { id: 'pending-pickup', label: 'Pending Pickup', value: stats.pendingPickup, icon: Clock, color: 'bg-amber-600' },
-    { id: 'ok-pickup', label: 'OK Pickup', value: stats.okPickup, icon: Navigation, color: 'bg-blue-500' },
-    { id: 'pending-delivery', label: 'Pending Delivery', value: stats.pendingDelivery, icon: CheckCircleIcon, color: 'bg-emerald-600' },
-    { id: 'ok-delivery', label: 'OK Delivery', value: stats.okDelivery, icon: CheckCircleIcon, color: 'bg-slate-600' }
-  ];
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {kpis.map((k) => (
-          <Card key={`kpi-${k.id}`} className="bg-slate-900/40 border-slate-800">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        {[
+          { label: 'Total Logs', value: stats.total, icon: Package, color: 'bg-blue-600' },
+          { label: 'Pending Pickup', value: stats.pPickup, icon: Clock, color: 'bg-amber-600' },
+          { label: 'Pending Delivery', value: stats.pDelivery, icon: CheckCircleIcon, color: 'bg-emerald-600' }
+        ].map((k, i) => (
+          <Card key={i} className="bg-slate-900/40 border-slate-800">
             <CardContent className="p-4 flex justify-between items-center">
               <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase">{k.label}</p>
-                <h3 className="text-xl font-headline font-bold">{k.value}</h3>
+                <h3 className="text-lg md:text-xl font-headline font-bold">{k.value}</h3>
               </div>
               <div className={cn("p-2 rounded-xl text-white", k.color)}><k.icon className="w-4 h-4" /></div>
             </CardContent>
@@ -305,189 +85,88 @@ export function TransportationModule({ store }: { store: any }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <Card className="lg:col-span-2 bg-slate-900/40 border-slate-800">
-          <CardHeader className="border-b border-slate-800">
-            <CardTitle className="flex items-center gap-2 font-headline text-xl">
-              <Truck className="w-6 h-6 text-[#0066FF]" /> Runner Assignment Console
+          <CardHeader className="border-b border-slate-800 p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 font-headline text-base md:text-xl">
+              <Truck className="w-5 h-5 md:w-6 h-6 text-[#0066FF]" /> Runner Assignment
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Details</Label>
-                <div className="space-y-2">
-                  <Label>Runner Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input 
-                      value={formData.runnerName} 
-                      onChange={e => setFormData({...formData, runnerName: e.target.value})} 
-                      className="pl-10 bg-slate-950 border-slate-800 h-11" 
-                      placeholder="Enter Runner Name"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Runner Mobile Number</Label>
-                  <Input 
-                    value={formData.runnerMobile} 
-                    onChange={e => setFormData({...formData, runnerMobile: e.target.value})} 
-                    className="bg-slate-950 border-slate-800 h-11" 
-                    placeholder="10-Digit Mobile"
-                  />
-                </div>
+          <CardContent className="p-4 md:p-8 space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase">Runner Name</Label>
+                <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11" placeholder="Runner Name" />
               </div>
-
-              <div className="space-y-4">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Association</Label>
-                <div className="space-y-2">
-                  <Label>Link Active Service Job</Label>
-                  <Select value={formData.jobId} onValueChange={v => setFormData({...formData, jobId: v})}>
-                    <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
-                      <SelectValue placeholder="Select Job..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').map((c: any) => (
-                        <SelectItem key={`job-linker-${c.id}`} value={c.id}>{c.id} - {c.customerName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="pt-6">
-                  <Button onClick={handleAssignRunner} className="w-full h-11 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase shadow-lg shadow-blue-500/20">
-                    Assign Runner
-                  </Button>
-                </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase">Link Active Job</Label>
+                <Select value={formData.jobId} onValueChange={v => setFormData({...formData, jobId: v})}>
+                  <SelectTrigger className="bg-slate-950 border-slate-800 h-10 md:h-11"><SelectValue placeholder="Select Job" /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    {store.calls.filter((c: any) => c.status !== 'Completed').map((c: any) => <SelectItem key={c.id} value={c.id}>{c.id}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+            <Button onClick={() => store.addTransportLog({id: `LOG${Date.now()}`, runnerName: formData.runnerName, jobId: formData.jobId, dispatchTime: new Date().toISOString(), status: 'Pending Pickup'})} className="w-full h-11 bg-[#0066FF] font-bold uppercase text-xs md:text-sm">Assign Runner</Button>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-900/40 border-slate-800">
-           <CardHeader className="border-b border-slate-800">
-              <CardTitle className="flex items-center gap-2 font-headline text-lg">
-                 <FileStack className="w-5 h-5 text-emerald-500" />
-                 Bulk Manifest Control
+           <CardHeader className="border-b border-slate-800 p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 font-headline text-base md:text-lg">
+                 <FileStack className="w-5 h-5 text-emerald-500" /> Manifest Control
               </CardTitle>
            </CardHeader>
-           <CardContent className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Recipient Mobile Number</Label>
-                  <div className="relative">
-                    <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input 
-                      value={recipientMobile}
-                      onChange={e => setRecipientMobile(e.target.value)}
-                      placeholder="+919876543210"
-                      className="pl-10 bg-slate-950 border-slate-800 h-10 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 h-6">
-                  {sendStatus === 'sending' && <div className="flex items-center gap-2 text-xs text-blue-400 animate-pulse"><Clock className="w-3 h-3" /> Sending...</div>}
-                  {sendStatus === 'success' && <div className="flex items-center gap-2 text-xs text-emerald-400"><CheckCircle2 className="w-3 h-3" /> Sent Successfully</div>}
-                  {sendStatus === 'failed' && <div className="flex items-center gap-2 text-xs text-rose-400"><AlertCircle className="w-3 h-3" /> Failed</div>}
-                </div>
+           <CardContent className="p-4 md:p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[9px] font-bold text-slate-500 uppercase">Dispatch Mobile</Label>
+                <Input value={recipientMobile} onChange={e => setRecipientMobile(e.target.value)} placeholder="9876543210" className="bg-slate-950 border-slate-800 h-10 text-xs" />
               </div>
-
-              <div className="space-y-3">
-                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Pickup Operations</Label>
-                 <Button onClick={() => generateSheet('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
-                    <FileDown className="w-4 h-4 mr-3 text-blue-400" /> Generate Pickup Sheet
-                 </Button>
-                 <Button onClick={() => handleWhatsAppDispatch('PICKUP')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
-                    <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Pickup WhatsApp
-                 </Button>
-              </div>
-
-              <div className="space-y-3">
-                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Delivery Operations</Label>
-                 <Button onClick={() => generateSheet('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
-                    <FileDown className="w-4 h-4 mr-3 text-purple-400" /> Generate Delivery Sheet
-                 </Button>
-                 <Button onClick={() => handleWhatsAppDispatch('DELIVERY')} variant="outline" className="w-full justify-start border-slate-800 bg-slate-950 hover:bg-slate-800 h-10 text-sm">
-                    <MessageSquare className="w-4 h-4 mr-3 text-emerald-400" /> Send Delivery WhatsApp
-                 </Button>
+              <div className="grid grid-cols-1 gap-2">
+                 <Button variant="outline" className="h-10 text-xs border-slate-800 justify-start"><FileDown className="w-4 h-4 mr-2" /> Download Pickup</Button>
+                 <Button variant="outline" className="h-10 text-xs border-slate-800 justify-start"><FileDown className="w-4 h-4 mr-2" /> Download Delivery</Button>
               </div>
            </CardContent>
         </Card>
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-headline font-bold flex items-center gap-2">
-            <Clock className="w-6 h-6 text-emerald-500" /> Active Assignment Log
-          </h3>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <Input 
-              placeholder="Filter Assignments..." 
-              value={searchQuery} 
-              onChange={e => setSearchQuery(e.target.value)} 
-              className="pl-10 h-10 bg-slate-950 border-slate-800" 
-            />
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h3 className="text-lg md:text-xl font-headline font-bold flex items-center gap-2"><Clock className="w-5 h-5 text-emerald-500" /> Transit Log</h3>
+          <Input placeholder="Filter Logs..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-9 bg-slate-950 border-slate-800 w-full sm:w-64 text-xs" />
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-900/60">
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead>Runner Info</TableHead>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Customer Profile</TableHead>
-                <TableHead>Dispatch Time</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log: any) => (
-                <TableRow key={log.id} className="border-slate-800/50">
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold">{log.runnerName}</span>
-                      <span className="text-xs text-slate-500">{log.runnerMobile || 'No Mobile'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell><Badge variant="outline" className="font-code">{log.jobId}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-sm">{log.customerName}</span>
-                      <span className="text-[10px] text-blue-400">{log.customerMobile}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                       <Calendar className="w-3 h-3" />
-                       {log.dispatchTime ? format(new Date(log.dispatchTime), 'dd/MM HH:mm') : 'N/A'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select value={log.status} onValueChange={v => store.updateTransportLogStatus(log.id, v)}>
-                      <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-44"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
-                        <SelectItem value="OK Pickup">OK Pickup</SelectItem>
-                        <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
-                        <SelectItem value="OK Delivery">OK Delivery</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-slate-500"><ChevronRight className="w-4 h-4" /></Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-900/60">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-[10px] md:text-xs">Runner</TableHead>
+                  <TableHead className="text-[10px] md:text-xs">Job</TableHead>
+                  <TableHead className="text-[10px] md:text-xs">Status</TableHead>
                 </TableRow>
-              ))}
-              {filteredLogs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-slate-500">No runner assignments found.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log: any) => (
+                  <TableRow key={log.id} className="border-slate-800/50">
+                    <TableCell className="font-bold text-xs whitespace-nowrap">{log.runnerName}</TableCell>
+                    <TableCell><Badge variant="outline" className="font-code text-[10px]">{log.jobId}</Badge></TableCell>
+                    <TableCell>
+                      <Select value={log.status} onValueChange={v => store.updateTransportLogStatus(log.id, v)}>
+                        <SelectTrigger className="h-8 text-[9px] bg-slate-950 border-slate-800 w-28 md:w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800">
+                          <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
+                          <SelectItem value="OK Pickup">OK Pickup</SelectItem>
+                          <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
+                          <SelectItem value="OK Delivery">OK Delivery</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </div>

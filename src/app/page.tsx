@@ -34,6 +34,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -44,6 +49,7 @@ export default function DashboardPage() {
   const store = useErpStore();
   const [activeTab, setActiveTab] = useState<ActiveTab>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -88,101 +94,60 @@ export default function DashboardPage() {
     }
   };
 
+  const NavItems = ({ isMobile = false }) => (
+    <nav className={cn("space-y-2", isMobile ? "px-0" : "px-4")}>
+      {navigation.map((item) => item.visible && (
+        <button 
+          key={item.id} 
+          onClick={() => {
+            setActiveTab(item.id);
+            if (isMobile) setIsMobileMenuOpen(false);
+          }} 
+          className={cn(
+            "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", 
+            activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
+          )}
+        >
+          <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
+          {(isSidebarOpen || isMobile) && <span className="font-medium">{item.name}</span>}
+        </button>
+      ))}
+    </nav>
+  );
+
+  const SettingsTrigger = ({ isMobile = false }) => (
+    <button 
+      onClick={() => {
+        setSettingsOpen(true);
+        if (isMobile) setIsMobileMenuOpen(false);
+      }}
+      className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all"
+    >
+      <SettingsIcon className="w-5 h-5" />
+      {(isSidebarOpen || isMobile) && <span className="font-medium">System Settings</span>}
+    </button>
+  );
+
   return (
-    <div className="flex min-h-screen bg-[#0B0F19] text-slate-100">
+    <div className="flex min-h-screen bg-[#0B0F19] text-slate-100 overflow-x-hidden">
+      {/* Desktop Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 border-r border-slate-800 bg-[#0B0F19]",
+        "fixed inset-y-0 left-0 z-50 hidden lg:flex flex-col transition-all duration-300 border-r border-slate-800 bg-[#0B0F19]",
         isSidebarOpen ? "w-64" : "w-20"
       )}>
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
+          <div className="w-10 h-10 min-w-[40px] rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
             {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
           </div>
-          {isSidebarOpen && <span className="font-headline font-bold text-xl tracking-tight">GJ5 HOME SERVICE</span>}
+          {isSidebarOpen && <span className="font-headline font-bold text-lg xl:text-xl tracking-tight truncate">GJ5 HOME SERVICE</span>}
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          {navigation.map((item) => item.visible && (
-            <button 
-              key={item.id} 
-              onClick={() => setActiveTab(item.id)} 
-              className={cn(
-                "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", 
-                activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
-              {isSidebarOpen && <span className="font-medium">{item.name}</span>}
-            </button>
-          ))}
-        </nav>
+        <div className="flex-1 overflow-y-auto mt-4">
+          <NavItems />
+        </div>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
-          <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
-            <DialogTrigger asChild>
-              <button className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
-                <SettingsIcon className="w-5 h-5" />
-                {isSidebarOpen && <span className="font-medium">System Settings</span>}
-              </button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-2">
-                  <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6 py-4 overflow-y-auto max-h-[70vh] pr-2">
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding</h4>
-                  <div className="flex items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
-                    <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
-                      {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Shop Logo" /> : <ImageIcon className="w-8 h-8 text-slate-700" />}
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      <p className="text-sm font-medium text-slate-300">Logo Asset</p>
-                      <div className="flex gap-2">
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                        <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600"><Upload className="w-4 h-4 mr-2" /> Upload</Button>
-                        {store.shopLogo && <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <Separator className="bg-slate-800" />
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Toggles</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.keys(store.visibility.tabs).map((tab) => (
-                      <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                        <Label className="text-sm font-medium">{tab}</Label>
-                        <Switch checked={store.visibility.tabs[tab as keyof VisibilitySettings['tabs']]} onCheckedChange={() => handleToggleTab(tab as keyof VisibilitySettings['tabs'])} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Separator className="bg-slate-800" />
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 7-Card Analytics</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { id: 'totalActive', label: 'Total Active' },
-                      { id: 'pending', label: 'Pending' },
-                      { id: 'completed', label: 'Completed' },
-                      { id: 'repeat', label: 'Repeat Call' },
-                      { id: 'rejected', label: 'Rejected' },
-                      { id: 'exchange', label: 'Exchange/Purchase' },
-                      { id: 'warranty', label: 'Warranty Tracking' }
-                    ].map((kpi) => (
-                      <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                        <Label className="text-sm font-medium">{kpi.label}</Label>
-                        <Switch checked={store.visibility.kpis[kpi.id as keyof VisibilitySettings['kpis']]} onCheckedChange={() => handleToggleKpi(kpi.id as keyof VisibilitySettings['kpis'])} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <SettingsTrigger />
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
             {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             {isSidebarOpen && <span className="font-medium">Collapse</span>}
@@ -190,18 +155,46 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className={cn("flex-1 flex flex-col transition-all duration-300", isSidebarOpen ? "ml-64" : "ml-20")}>
-        <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 bg-[#0B0F19]/80 backdrop-blur-md z-40">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-             <div className="relative w-full">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-               <Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11" />
-             </div>
+      {/* Main Content */}
+      <main className={cn(
+        "flex-1 flex flex-col transition-all duration-300 w-full", 
+        isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
+      )}>
+        <header className="h-20 border-b border-slate-800 px-4 md:px-8 flex items-center justify-between sticky top-0 bg-[#0B0F19]/80 backdrop-blur-md z-40">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
+            {/* Mobile Menu Trigger */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0B0F19] border-r border-slate-800 p-0 w-72">
+                <div className="p-6 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
+                    {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
+                  </div>
+                  <span className="font-headline font-bold text-xl tracking-tight">GJ5 HOME SERVICE</span>
+                </div>
+                <div className="mt-8 flex-1">
+                  <NavItems isMobile />
+                </div>
+                <div className="absolute bottom-0 left-0 w-full p-4 border-t border-slate-800">
+                  <SettingsTrigger isMobile />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
+            </div>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col items-end mr-4">
+
+          <div className="flex items-center gap-3 md:gap-6 ml-4">
+            <div className="hidden sm:flex flex-col items-end mr-2">
               <span className="text-sm font-semibold">Admin Console</span>
-              <span className="text-xs text-slate-500 tracking-widest font-code">v2.5.0</span>
+              <span className="text-[10px] text-slate-500 tracking-widest font-code">v2.5.0</span>
             </div>
             <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
               <Bell className="w-5 h-5" />
@@ -209,7 +202,8 @@ export default function DashboardPage() {
             </button>
           </div>
         </header>
-        <div className="p-8">
+
+        <div className="p-4 md:p-8 max-w-full overflow-hidden">
           {activeTab === 'Repairing' && <RepairingModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
@@ -217,6 +211,67 @@ export default function DashboardPage() {
           {activeTab === 'Transportation' && <TransportationModule store={store} />}
         </div>
       </main>
+
+      {/* Settings Modal (Global) */}
+      <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl p-0 md:p-6 overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-6 border-b border-slate-800 md:p-0 md:border-0">
+            <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-2">
+              <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-6 md:p-0 space-y-6">
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding</h4>
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                <div className="w-24 h-24 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                  {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Shop Logo" /> : <ImageIcon className="w-8 h-8 text-slate-700" />}
+                </div>
+                <div className="flex-1 space-y-3 w-full text-center sm:text-left">
+                  <p className="text-sm font-medium text-slate-300">Logo Asset</p>
+                  <div className="flex gap-2 justify-center sm:justify-start">
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                    <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600"><Upload className="w-4 h-4 mr-2" /> Upload</Button>
+                    {store.shopLogo && <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Separator className="bg-slate-800" />
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Toggles</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.keys(store.visibility.tabs).map((tab) => (
+                  <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <Label className="text-sm font-medium">{tab}</Label>
+                    <Switch checked={store.visibility.tabs[tab as keyof VisibilitySettings['tabs']]} onCheckedChange={() => handleToggleTab(tab as keyof VisibilitySettings['tabs'])} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Separator className="bg-slate-800" />
+            <div className="space-y-4 pb-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 7-Card Analytics</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { id: 'totalActive', label: 'Total Active' },
+                  { id: 'pending', label: 'Pending' },
+                  { id: 'completed', label: 'Completed' },
+                  { id: 'repeat', label: 'Repeat Call' },
+                  { id: 'rejected', label: 'Rejected' },
+                  { id: 'exchange', label: 'Exchange/Purchase' },
+                  { id: 'warranty', label: 'Warranty Tracking' }
+                ].map((kpi) => (
+                  <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <Label className="text-sm font-medium">{kpi.label}</Label>
+                    <Switch checked={store.visibility.kpis[kpi.id as keyof VisibilitySettings['kpis']]} onCheckedChange={() => handleToggleKpi(kpi.id as keyof VisibilitySettings['kpis'])} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

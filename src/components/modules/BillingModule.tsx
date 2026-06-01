@@ -103,9 +103,7 @@ export function BillingModule({ store }: { store: any }) {
       if (store.shopLogo) {
         try {
           doc.addImage(store.shopLogo, 'PNG', 15, 15, 25, 25);
-        } catch (e) {
-          console.warn("Could not add logo to PDF", e);
-        }
+        } catch (e) { console.warn("Logo error", e); }
       }
 
       doc.setFontSize(22);
@@ -125,7 +123,6 @@ export function BillingModule({ store }: { store: any }) {
       doc.text('INVOICE', 195, 25, { align: 'right' });
       
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
       doc.text(`#INV-${billData.jobId || 'XXXX'}`, 195, 32, { align: 'right' });
       doc.text(`Date: ${timestamp}`, 195, 38, { align: 'right' });
 
@@ -182,8 +179,6 @@ export function BillingModule({ store }: { store: any }) {
       });
 
       currentY += 5;
-      
-      doc.setFont('helvetica', 'normal');
       doc.text('Subtotal:', 140, currentY);
       doc.text(subtotal.toFixed(2), 190, currentY, { align: 'right' });
       currentY += 7;
@@ -206,7 +201,6 @@ export function BillingModule({ store }: { store: any }) {
       currentY += 25;
       doc.setFontSize(9);
       doc.setTextColor(0);
-      doc.setFont('helvetica', 'bold');
       doc.text('TERMS & CONDITIONS', 15, currentY);
       currentY += 6;
       doc.setFont('helvetica', 'normal');
@@ -222,7 +216,7 @@ export function BillingModule({ store }: { store: any }) {
         "8. Warranty void if repaired by another technician.",
         "9. Customer should verify TV condition at delivery.",
         "10. Original invoice required for warranty claim.",
-        "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
+        "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all activities are performed at their own risk."
       ];
       terms.forEach(term => {
         const lines = doc.splitTextToSize(term, 180);
@@ -230,81 +224,32 @@ export function BillingModule({ store }: { store: any }) {
         currentY += (lines.length * 4) + 1;
       });
 
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(themeRGB.r, themeRGB.g, themeRGB.b);
-      doc.text('Thank You For Choosing GJ5 HOME SERVICE', 105, 275, { align: 'center' });
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(150);
-      doc.text('All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.', 105, 280, { align: 'center' });
-
       doc.save(filename);
-      
-      store.addInvoice({
-        id: `INV${Date.now()}`,
-        jobId: billData.jobId,
-        customerId: billData.customerId,
-        customerName: billData.customerName,
-        mobile: billData.mobile,
-        address: billData.address,
-        brand: billData.brand,
-        model: billData.model,
-        hardwareCost: billData.hardwareCost,
-        laborCost: billData.laborCost,
-        deliveryCharge: billData.deliveryCharge,
-        additionalCharges: billData.additionalCharges,
-        taxEnabled: billData.taxEnabled,
-        subtotal,
-        cgst,
-        sgst,
-        total,
-        themeUsed: activeTheme.name,
-        notes: billData.notes,
-        timestamp: new Date().toISOString()
-      });
-    } catch (err: any) {
-      console.warn("PDF Generation Error", err.name);
-      toast({
-        variant: "destructive",
-        title: "Download Failed",
-        description: "Your browser blocked the PDF download. Please check your pop-up or download settings."
-      });
-    }
-  };
-
-  const handlePrint = () => {
-    try {
-      window.print();
-    } catch (e) {
-      console.warn("Print action dismissed", e);
+    } catch (err) {
+      toast({ variant: "destructive", title: "Download Failed", description: "Browser blocked the download." });
     }
   };
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 0, g: 102, b: 255 };
+    return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 102, b: 255 };
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in duration-500">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 animate-in fade-in duration-500">
       <div className="space-y-6">
-        <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 space-y-6">
+        <div className="bg-slate-900/40 p-5 md:p-6 rounded-2xl border border-slate-800 space-y-6">
           <div className="flex items-center gap-4">
-             <div className={cn("p-3 rounded-xl text-white transition-colors duration-300", activeTheme.bg)}>
-                <Receipt className="w-6 h-6" />
+             <div className={cn("p-2.5 md:p-3 rounded-xl text-white", activeTheme.bg)}>
+                <Receipt className="w-5 h-5 md:w-6 h-6" />
              </div>
              <div>
-                <h2 className="text-xl font-headline font-bold">Fast Billing Console</h2>
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">GJ5 HOME SERVICE EDITION</p>
+                <h2 className="text-lg md:text-xl font-headline font-bold">Fast Billing Console</h2>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">GJ5 HOME SERVICE EDITION</p>
              </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div className="space-y-2">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
                   <Search className="w-3 h-3" /> Job ID Lookup
@@ -328,11 +273,11 @@ export function BillingModule({ store }: { store: any }) {
           </div>
 
           <div className="space-y-4 pt-4 border-t border-slate-800">
-             <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+             <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
                <Calculator className={cn("w-4 h-4", activeTheme.text)} />
-               Simple Billing Mode
+               Charges Registry
              </h3>
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-1">
                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Parts Cost</Label>
                    <Input 
@@ -353,7 +298,7 @@ export function BillingModule({ store }: { store: any }) {
                 </div>
                 <div className="space-y-1">
                    <Label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                     <Truck className="w-3 h-3" /> Delivery Charge
+                     <Truck className="w-3 h-3" /> Delivery
                    </Label>
                    <Input 
                      type="number"
@@ -374,7 +319,7 @@ export function BillingModule({ store }: { store: any }) {
              </div>
 
              <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col">
                    <Label className="text-sm font-bold">Apply 18% GST</Label>
                    <p className="text-[10px] text-slate-500">CGST (9%) + SGST (9%)</p>
                 </div>
@@ -385,69 +330,71 @@ export function BillingModule({ store }: { store: any }) {
              </div>
 
              <div className={cn("p-4 rounded-2xl border transition-all space-y-2", activeTheme.bg + "/5", "border-" + activeTheme.id)}>
-                <div className="flex justify-between text-xs">
+                <div className="flex justify-between text-[10px] md:text-xs">
                    <span className="text-slate-400 uppercase font-bold">Subtotal</span>
                    <span className="font-code font-bold">₹{subtotal.toFixed(2)}</span>
                 </div>
                 {billData.taxEnabled && (
-                  <div className="flex justify-between text-xs">
+                  <div className="flex justify-between text-[10px] md:text-xs">
                      <span className="text-slate-400 uppercase font-bold">Total GST (18%)</span>
                      <span className="font-code font-bold">₹{(cgst + sgst).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-2 border-t border-slate-800">
                    <span className="font-headline font-bold text-sm uppercase">Grand Total</span>
-                   <span className={cn("font-code font-bold text-xl", activeTheme.text)}>₹{total.toFixed(2)}</span>
+                   <span className={cn("font-code font-bold text-lg md:text-xl", activeTheme.text)}>₹{total.toFixed(2)}</span>
                 </div>
              </div>
           </div>
         </div>
 
-        <div className="flex gap-4">
-           <Button onClick={handlePrint} variant="outline" className="flex-1 border-slate-700 h-11">
+        <div className="flex flex-col sm:flex-row gap-3">
+           <Button onClick={() => window.print()} variant="outline" className="flex-1 border-slate-700 h-11">
               <Printer className="w-4 h-4 mr-2" /> Direct Print
            </Button>
-           <Button onClick={handleDownloadPDF} className={cn("flex-1 h-11 shadow-lg text-white font-bold", activeTheme.bg, activeTheme.bg + "/20")}>
+           <Button onClick={handleDownloadPDF} className={cn("flex-1 h-11 shadow-lg text-white font-bold", activeTheme.bg)}>
               <FileDown className="w-4 h-4 mr-2" /> Download PDF
            </Button>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-           <h3 className="text-lg font-headline font-bold uppercase tracking-tight flex items-center gap-2">
+           <h3 className="text-base md:text-lg font-headline font-bold uppercase tracking-tight flex items-center gap-2">
              <Monitor className="w-5 h-5 text-slate-500" /> Invoice Preview
            </h3>
-           <div className="flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-lg">
+           <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-lg">
               {INVOICE_THEMES.map(theme => (
                 <button
                   key={theme.id}
                   onClick={() => setActiveThemeId(theme.id)}
-                  title={theme.name}
                   className={cn(
-                    "w-8 h-8 rounded-md transition-all flex items-center justify-center border-2",
-                    activeThemeId === theme.id ? "border-white scale-110" : "border-transparent opacity-60 hover:opacity-100",
+                    "w-7 h-7 md:w-8 md:h-8 rounded-md transition-all flex items-center justify-center border-2",
+                    activeThemeId === theme.id ? "border-white" : "border-transparent opacity-60",
                     theme.bg
                   )}
                 >
-                  {activeThemeId === theme.id && <Check className="w-4 h-4 text-white" />}
+                  {activeThemeId === theme.id && <Check className="w-3 h-3 md:w-4 h-4 text-white" />}
                 </button>
               ))}
            </div>
         </div>
 
-        <div className="bg-white text-black min-h-[1123px] w-full max-w-[794px] mx-auto overflow-hidden rounded-sm shadow-2xl relative print:shadow-none print:m-0 print:p-0">
-          <div className="p-0">
-             <A4MultiThemeTemplate 
-                data={billData} 
-                total={total} 
-                cgst={cgst} 
-                sgst={sgst} 
-                subtotal={subtotal} 
-                logo={store.shopLogo} 
-                theme={activeTheme}
-             />
-          </div>
+        {/* Invoice Preview Container with Scaling for Mobile */}
+        <div className="w-full overflow-x-auto bg-slate-950 rounded-xl p-2 md:p-4 border border-slate-800">
+           <div className="origin-top scale-[0.45] xs:scale-[0.55] sm:scale-[0.75] md:scale-[0.85] lg:scale-100 min-w-[794px]">
+              <div className="bg-white text-black min-h-[1123px] w-[794px] mx-auto shadow-2xl">
+                 <A4MultiThemeTemplate 
+                    data={billData} 
+                    total={total} 
+                    cgst={cgst} 
+                    sgst={sgst} 
+                    subtotal={subtotal} 
+                    logo={store.shopLogo} 
+                    theme={activeTheme}
+                 />
+              </div>
+           </div>
         </div>
       </div>
     </div>
@@ -459,63 +406,46 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
     <div id="invoice-to-print" className="p-10 font-sans h-full flex flex-col bg-white">
        <div className="flex justify-between items-start border-b-2 border-slate-100 pb-8">
           <div className="flex items-center gap-4">
-             {logo ? (
+             {logo && (
                <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 p-2">
                   <img src={logo} className="w-full h-full object-contain" alt="Logo" />
                </div>
-             ) : (
-               <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 border-dashed">
-                  <Receipt className="w-8 h-8 text-slate-300" />
-               </div>
              )}
              <div>
-                <h1 className={cn("text-3xl font-black italic tracking-tighter uppercase leading-none transition-colors duration-300", theme.text)}>GJ5 HOME SERVICE</h1>
+                <h1 className={cn("text-3xl font-black italic tracking-tighter uppercase leading-none", theme.text)}>GJ5 HOME SERVICE</h1>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-1">Professional Service & Repair Hub</p>
-                <p className="text-[11px] font-bold text-slate-400 mt-1">Customer Care: 8866983900</p>
+                <p className="text-[11px] font-bold text-slate-400 mt-1">Care: 8866983900</p>
              </div>
           </div>
           <div className="text-right">
              <h2 className="text-4xl font-black uppercase text-slate-800">INVOICE</h2>
-             <p className="font-mono text-sm text-slate-600 mt-1">#INV-{data.jobId || 'XXXX'}</p>
-             <p className="text-[11px] uppercase font-bold text-slate-400 mt-1">Date: {new Date().toLocaleDateString()}</p>
+             <p className="font-mono text-sm text-slate-600">#INV-{data.jobId || 'XXXX'}</p>
           </div>
        </div>
 
        <div className="grid grid-cols-2 gap-10 py-10 border-b border-slate-50">
           <div className="space-y-4">
-             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-                <Receipt className="w-3 h-3" /> Customer Details
-             </div>
+             <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Customer Details</div>
              <div className="space-y-1">
                 <h3 className="text-xl font-black text-slate-900">{data.customerName || 'N/A'}</h3>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">Mobile: {data.mobile || 'N/A'}</p>
-                <p className="text-xs text-slate-400 font-mono">Customer ID: {data.customerId || 'N/A'}</p>
-                <div className="pt-2 text-xs text-slate-600 leading-relaxed">
-                   <p className="font-bold uppercase text-[10px] text-slate-400 mb-1">Address</p>
-                   {data.address || 'N/A'}
-                </div>
+                <p className="text-xs text-slate-500 font-bold uppercase">Mobile: {data.mobile || 'N/A'}</p>
+                <p className="text-xs text-slate-600 leading-relaxed max-w-[200px]">{data.address || 'N/A'}</p>
              </div>
           </div>
           <div className="space-y-4">
-             <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-                <Info className="w-3 h-3" /> Job Details Section
-             </div>
+             <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Job Context</div>
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                    <p className="text-[10px] font-bold text-slate-400 uppercase">Job ID</p>
-                   <p className={cn("text-xs font-black transition-colors duration-300", theme.text)}>{data.jobId || 'XXXX'}</p>
+                   <p className={cn("text-xs font-black", theme.text)}>{data.jobId || 'XXXX'}</p>
                 </div>
                 <div className="space-y-1">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Warranty Status</p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Warranty</p>
                    <p className="text-xs font-bold text-slate-800">{data.warrantyStatus}</p>
                 </div>
                 <div className="space-y-1 col-span-2">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Device Profile</p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase">Device</p>
                    <p className="text-xs font-bold text-slate-900">{data.brand} {data.model} ({data.screenSize}")</p>
-                </div>
-                <div className="space-y-1 col-span-2">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Problem Statement</p>
-                   <p className="text-xs text-slate-600 leading-relaxed">{data.problem || 'N/A'}</p>
                 </div>
              </div>
           </div>
@@ -523,108 +453,70 @@ function A4MultiThemeTemplate({ data, total, cgst, sgst, subtotal, logo, theme }
 
        <div className="mt-8 flex-1">
           <table className="w-full text-left">
-             <thead className={cn("border-y border-slate-100 transition-colors duration-300", theme.bg)}>
+             <thead className={cn("transition-colors duration-300", theme.bg)}>
                 <tr>
-                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-white">Description</th>
-                   <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-white text-right">Amount (INR)</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase text-white">Description</th>
+                   <th className="py-3 px-4 text-[11px] font-black uppercase text-white text-right">Amount (INR)</th>
                 </tr>
              </thead>
              <tbody className="divide-y divide-slate-50">
-                <tr>
-                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Hardware Parts Replacement</td>
-                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.hardwareCost.toFixed(2)}</td>
-                </tr>
-                <tr>
-                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Labor / Technician Service</td>
-                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.laborCost.toFixed(2)}</td>
-                </tr>
-                <tr>
-                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Delivery Charges</td>
-                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.deliveryCharge.toFixed(2)}</td>
-                </tr>
-                <tr>
-                   <td className="py-4 px-4 text-sm font-bold text-slate-700">Additional Charges</td>
-                   <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{data.additionalCharges.toFixed(2)}</td>
-                </tr>
+                {[
+                  { d: 'Hardware Parts Replacement', a: data.hardwareCost },
+                  { d: 'Labor / Technician Service', a: data.laborCost },
+                  { d: 'Delivery Charges', a: data.deliveryCharge },
+                  { d: 'Additional Charges', a: data.additionalCharges }
+                ].map((item, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-4 text-sm font-bold text-slate-700">{item.d}</td>
+                    <td className="py-4 px-4 text-sm font-mono text-right text-slate-900">₹{item.a.toFixed(2)}</td>
+                  </tr>
+                ))}
              </tbody>
           </table>
        </div>
 
        <div className="mt-8 pt-8 border-t-2 border-slate-50 flex justify-end">
-          <div className="w-72 space-y-2">
+          <div className="w-64 space-y-2">
              <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
                 <span>Subtotal</span>
-                <span className="font-mono">₹{subtotal.toFixed(2)}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
              </div>
              {data.taxEnabled && (
                <>
-                 <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
+                 <div className="flex justify-between text-xs text-slate-500 uppercase">
                     <span>CGST (9%)</span>
-                    <span className="font-mono">₹{cgst.toFixed(2)}</span>
+                    <span>₹{cgst.toFixed(2)}</span>
                  </div>
-                 <div className="flex justify-between text-xs text-slate-500 font-bold uppercase">
+                 <div className="flex justify-between text-xs text-slate-500 uppercase">
                     <span>SGST (9%)</span>
-                    <span className="font-mono">₹{sgst.toFixed(2)}</span>
+                    <span>₹{sgst.toFixed(2)}</span>
                  </div>
                </>
              )}
              <div className="flex justify-between items-center pt-4 border-t-4 border-slate-900 mt-4">
-                <span className="font-black text-2xl italic uppercase text-slate-900">Total</span>
-                <span className={cn("font-black text-3xl italic transition-colors duration-300", theme.text)}>₹{total.toFixed(2)}</span>
+                <span className="font-black text-xl uppercase">Total</span>
+                <span className={cn("font-black text-2xl italic", theme.text)}>₹{total.toFixed(2)}</span>
              </div>
           </div>
        </div>
 
-       <div className="mt-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
-          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-             <ShieldCheck className={cn("w-4 h-4 transition-colors duration-300", theme.text)} /> Terms & Conditions
-          </h4>
-          <div className="grid grid-cols-1 gap-y-2">
+       <div className="mt-10 bg-slate-50 p-6 rounded-xl">
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-3">Terms & Conditions</h4>
+          <div className="grid grid-cols-1 gap-y-1.5">
              {[
                "1. Service charges and delivery charges are non-refundable.",
                "2. TV must be collected within 30 days after repair completion.",
-               "3. After 30 days storage charges may apply.",
-               "4. No warranty on software updates.",
-               "5. Warranty applies only to replaced parts.",
-               "6. No warranty on panel damage.",
-               "7. No warranty on liquid damage.",
-               "8. Warranty void if repaired by another technician.",
-               "9. Customer should verify TV condition at delivery.",
-               "10. Original invoice required for warranty claim.",
-               "11. Transportation & Repair Risk Disclaimer: The customer understands and agrees that all transportation, pickup, delivery, inspection, testing, dismantling, and repair activities are performed at the customer's own risk. Any physical damage, panel damage, display damage, internal fault, hidden defect, liquid damage, handling damage, transportation damage, loading/unloading damage, or additional issues discovered before, during, or after the repair process shall remain the sole responsibility of the customer. GJ5 HOME SERVICE, its technicians, delivery staff, runners, and representatives shall not be held liable for any such damage, loss, or non-repairable condition."
+               "11. Transportation & Repair Risk Disclaimer applies as per company policy."
              ].map((term, i) => (
-               <p key={`term-${i}`} className="text-[9px] text-slate-500 leading-tight">{term}</p>
+               <p key={i} className="text-[8.5px] text-slate-500 leading-tight">{term}</p>
              ))}
           </div>
        </div>
 
-       <div className="mt-12 text-center space-y-2">
-          <p className={cn("text-sm font-black uppercase italic transition-colors duration-300", theme.text)}>Thank You For Choosing GJ5 HOME SERVICE</p>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">We value your trust and support.</p>
-          <p className="text-[9px] text-slate-300 italic pt-2">All Electronics Repair Jobs Include Standard Service Warranty Unless Specified.</p>
+       <div className="mt-10 text-center space-y-1">
+          <p className={cn("text-sm font-black uppercase italic", theme.text)}>Thank You For Choosing GJ5 HOME SERVICE</p>
+          <p className="text-[9px] text-slate-400">Professional Electronics Service & Repair Management</p>
        </div>
-
-       <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-            background: white !important;
-          }
-          #invoice-to-print, #invoice-to-print * {
-            visibility: visible;
-          }
-          #invoice-to-print {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 210mm;
-            height: 297mm;
-            margin: 0 !important;
-            padding: 10mm !important;
-            box-shadow: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

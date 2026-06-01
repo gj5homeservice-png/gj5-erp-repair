@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -312,356 +311,358 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="px-8 pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-            <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
-                  {activeTab === 'Inquiry' ? <Notebook className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+      <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+          <div className="px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-3">
+               <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
+                  {activeTab === 'Inquiry' ? <Notebook className="w-4 h-4 md:w-5 md:h-5" /> : <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />}
                </div>
-               {activeTab === 'Inquiry' ? 'Walk-In Inquiry' : 'Service Registry Portal'}
+               <span className="truncate">{activeTab === 'Inquiry' ? 'Walk-In Inquiry' : 'Service Registry'}</span>
             </DialogTitle>
-            <TabsList className="bg-slate-800/50 border border-slate-700">
-              <TabsTrigger value="Registry">Main Registry</TabsTrigger>
-              <TabsTrigger value="Repeat">Repeat Search</TabsTrigger>
-              <TabsTrigger value="Inquiry">Quick Inquiry</TabsTrigger>
+            <TabsList className="bg-slate-800/50 border border-slate-700 h-9 md:h-10">
+              <TabsTrigger value="Registry" className="text-xs md:text-sm">Registry</TabsTrigger>
+              <TabsTrigger value="Repeat" className="text-xs md:text-sm">Repeat</TabsTrigger>
+              <TabsTrigger value="Inquiry" className="text-xs md:text-sm">Inquiry</TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="p-8 grid grid-cols-12 gap-8">
-            <div className="col-span-8">
-              {activeTab === 'Registry' ? (
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-500">Service Category</Label>
-                        <Select 
-                          disabled={isLocked} 
-                          value={formData.category} 
-                          onValueChange={(v) => generateNewId(v)}
-                        >
-                          <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-blue-400 font-bold">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800 h-[300px] overflow-y-auto">
-                            {PRODUCT_CATEGORIES.map(cat => (
-                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-8">
+                {activeTab === 'Registry' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-slate-500">Service Category</Label>
+                          <Select 
+                            disabled={isLocked} 
+                            value={formData.category} 
+                            onValueChange={(v) => generateNewId(v)}
+                          >
+                            <SelectTrigger className="bg-slate-950 border-slate-800 h-10 md:h-11 text-blue-400 font-bold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 h-[300px] overflow-y-auto">
+                              {PRODUCT_CATEGORIES.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-slate-500">Job ID</Label>
+                          <Input readOnly value={formData.id || ''} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400 h-10 md:h-11" />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label>Customer Name</Label>
+                          <Input 
+                            readOnly={isLocked} 
+                            value={formData.customerName || ''} 
+                            onChange={e => setFormData({...formData, customerName: e.target.value})} 
+                            className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label>
+                          <Input readOnly value={formData.customerId || ''} className="bg-slate-900 border-slate-800 font-code h-10 md:h-11" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label>Mobile</Label>
+                          <Input 
+                            readOnly={isLocked} 
+                            value={formData.mobile || ''} 
+                            onChange={e => setFormData({...formData, mobile: e.target.value})} 
+                            className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Pincode</Label>
+                          <Input 
+                            readOnly={isLocked} 
+                            value={formData.pincode || ''} 
+                            onChange={e => setFormData({...formData, pincode: e.target.value})} 
+                            className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-500">Job ID</Label>
-                        <Input readOnly value={formData.id || ''} className="bg-slate-900 border-slate-800 font-code font-bold text-blue-400 h-11" />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label>Customer Name</Label>
+                        <Label>Address</Label>
                         <Input 
                           readOnly={isLocked} 
-                          value={formData.customerName || ''} 
-                          onChange={e => setFormData({...formData, customerName: e.target.value})} 
-                          className="bg-slate-900 border-slate-800 h-11" 
+                          value={formData.address || ''} 
+                          onChange={e => setFormData({...formData, address: e.target.value})} 
+                          className="bg-slate-900 border-slate-800 h-10 md:h-11" 
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label>
-                        <Input readOnly value={formData.customerId || ''} className="bg-slate-900 border-slate-800 font-code h-11" />
+                      <div className="space-y-3">
+                         <Label className="text-[10px] uppercase font-bold text-slate-500">Technician Tags</Label>
+                         <div className="flex gap-2">
+                            {TECH_TAGS.map(tag => (
+                              <button 
+                                key={`tag-${tag}`} 
+                                disabled={isLocked}
+                                onClick={() => toggleTag(tag)} 
+                                className={cn("flex-1 py-2.5 md:py-3 rounded-xl text-[10px] font-bold border transition-all", formData.techTags?.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-400 border-slate-800")}
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                         </div>
                       </div>
                     </div>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                            <Label>Brand</Label>
+                            <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
+                              <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800 max-h-[300px]">
+                                 {BRANDS.map(b => <SelectItem key={`brand-opt-${b}`} value={b}>{b}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                         </div>
+                         {selectedBrand === 'Other' && (
+                           <div className="space-y-1 animate-in slide-in-from-left-2">
+                             <Label>Enter Brand Name</Label>
+                             <Input 
+                               readOnly={isLocked} 
+                               value={formData.brand || ''} 
+                               onChange={e => setFormData({...formData, brand: e.target.value})} 
+                               className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                             />
+                           </div>
+                         )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label>Model No</Label>
+                          <Input 
+                            readOnly={isLocked} 
+                            value={formData.model || ''} 
+                            onChange={e => setFormData({...formData, model: e.target.value})} 
+                            className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Size (Inch)</Label>
+                          <Input 
+                            readOnly={isLocked} 
+                            value={formData.screenSize || ''} 
+                            onChange={e => setFormData({...formData, screenSize: e.target.value})} 
+                            className="bg-slate-900 border-slate-800 h-10 md:h-11" 
+                          />
+                        </div>
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                      {/* Smart Problem Selector */}
+                      <div className="space-y-3">
+                        <Label className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
+                          Smart Problem Selector
+                          {(formData.repeatCount || 0) > 0 && <span className="text-[10px] text-purple-400 font-bold uppercase">Repeat Entry</span>}
+                        </Label>
+                        <div className="p-3 md:p-4 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
+                          <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                             {selectedProblems.map(p => (
+                               <Badge key={`sel-prob-${p}`} className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-1.5 py-1 md:py-1.5">
+                                 {p}
+                                 <X className="w-3 h-3 cursor-pointer" onClick={() => handleProblemToggle(p)} />
+                               </Badge>
+                             ))}
+                             {selectedProblems.length === 0 && <span className="text-[10px] md:text-xs text-slate-600 italic">No problems selected...</span>}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                             <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                                <Input 
+                                  placeholder="Search or Add..."
+                                  value={problemSearch}
+                                  onChange={e => setProblemSearch(e.target.value)}
+                                  className="pl-9 h-8 md:h-9 bg-slate-950 border-slate-800 text-[10px] md:text-xs"
+                                />
+                             </div>
+                             <Button size="sm" onClick={handleAddCustomProblem} className="bg-emerald-600 hover:bg-emerald-700 h-8 md:h-9">
+                                <Plus className="w-3 h-3 md:w-4 h-4" />
+                             </Button>
+                          </div>
+
+                          {problemSearch && filteredSuggestions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 md:gap-2 pt-2 animate-in fade-in duration-300">
+                               {filteredSuggestions.slice(0, 8).map(p => (
+                                 <button 
+                                   key={`suggest-${p}`} 
+                                   onClick={() => handleProblemToggle(p)}
+                                   className="px-2 md:px-3 py-0.5 md:py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[9px] md:text-[10px] font-bold rounded-full transition-colors border border-slate-700"
+                                 >
+                                   + {p}
+                                 </button>
+                               ))}
+                            </div>
+                          )}
+                          
+                          {!problemSearch && (
+                            <div className="flex flex-wrap gap-1.5 md:gap-2 pt-2">
+                               <span className="w-full text-[8px] md:text-[9px] font-bold text-slate-600 uppercase mb-1">Common Issues</span>
+                               {currentSuggestedProblems.slice(0, 10).map(p => (
+                                 <button 
+                                   key={`suggest-default-${p}`} 
+                                   onClick={() => handleProblemToggle(p)}
+                                   className={cn(
+                                     "px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] font-bold rounded-full transition-all border",
+                                     selectedProblems.includes(p) 
+                                       ? "bg-blue-500/10 border-blue-500 text-blue-400" 
+                                       : "bg-slate-800/40 border-slate-800 text-slate-500 hover:text-slate-300"
+                                   )}
+                                 >
+                                   {p}
+                                 </button>
+                               ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                           <Label>Store Location</Label>
+                           <Select value={formData.storeLocation} onValueChange={v => setFormData({...formData, storeLocation: v})}>
+                              <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800">
+                                 <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
+                                 <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
+                                 <SelectItem value="GODOWN">GODOWN</SelectItem>
+                                 <SelectItem value="OTHER">OTHER</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+                        <div className="space-y-1">
+                           <Label>Warranty Duration</Label>
+                           <Select value={formData.warrantyDuration} onValueChange={v => setFormData({...formData, warrantyDuration: v})}>
+                              <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800">
+                                 <SelectItem value="No Warranty">No Warranty</SelectItem>
+                                 <SelectItem value="1 Month">1 Month</SelectItem>
+                                 <SelectItem value="3 Months">3 Months</SelectItem>
+                                 <SelectItem value="6 Months">6 Months</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : activeTab === 'Repeat' ? (
+                  <div className="space-y-6">
+                    <div className="p-4 md:p-8 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-6">
+                      <div className="space-y-2">
+                         <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Search Existing Job / Mobile</Label>
+                         <div className="flex flex-col sm:flex-row gap-2">
+                            <Input 
+                              value={repeatSearchQuery} 
+                              onChange={e => setRepeatSearchQuery(e.target.value)} 
+                              placeholder="Job ID or Mobile..." 
+                              className="bg-slate-950 border-slate-800 h-11 md:h-12 text-base md:text-lg" 
+                            />
+                            <Button onClick={handleRepeatLookup} className="bg-[#0066FF] px-8 h-11 md:h-12"><Search className="w-4 h-4 mr-2" /> Search</Button>
+                         </div>
+                      </div>
+                      <div className="p-4 md:p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-3">
+                         <h4 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-2"><History className="w-4 h-4" /> Repeat Logic</h4>
+                         <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">Loading an existing record will lock the Job ID and Customer ID. New visit details will be appended chronologically to the history ledger.</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 bg-slate-900/40 p-4 md:p-8 rounded-2xl border border-slate-800">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-1">
+                        <Label>Visitor Name</Label>
+                        <Input 
+                          value={inqData.name} 
+                          onChange={e => setInqData({...inqData, name: e.target.value})} 
+                          className="bg-slate-950 border-slate-800 h-10 md:h-12" 
+                        />
+                      </div>
                       <div className="space-y-1">
                         <Label>Mobile</Label>
                         <Input 
-                          readOnly={isLocked} 
-                          value={formData.mobile || ''} 
-                          onChange={e => setFormData({...formData, mobile: e.target.value})} 
-                          className="bg-slate-900 border-slate-800 h-11" 
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Pincode</Label>
-                        <Input 
-                          readOnly={isLocked} 
-                          value={formData.pincode || ''} 
-                          onChange={e => setFormData({...formData, pincode: e.target.value})} 
-                          className="bg-slate-900 border-slate-800 h-11" 
+                          value={inqData.mobile} 
+                          onChange={e => setInqData({...inqData, mobile: e.target.value})} 
+                          className="bg-slate-950 border-slate-800 h-10 md:h-12" 
                         />
                       </div>
                     </div>
                     <div className="space-y-1">
                       <Label>Address</Label>
                       <Input 
-                        readOnly={isLocked} 
-                        value={formData.address || ''} 
-                        onChange={e => setFormData({...formData, address: e.target.value})} 
-                        className="bg-slate-900 border-slate-800 h-11" 
-                      />
-                    </div>
-                    <div className="space-y-3">
-                       <Label className="text-[10px] uppercase font-bold text-slate-500">Technician Tags</Label>
-                       <div className="flex gap-2">
-                          {TECH_TAGS.map(tag => (
-                            <button 
-                              key={`tag-${tag}`} 
-                              disabled={isLocked}
-                              onClick={() => toggleTag(tag)} 
-                              className={cn("flex-1 py-3 rounded-xl text-[10px] font-bold border transition-all", formData.techTags?.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-400 border-slate-800")}
-                            >
-                              {tag}
-                            </button>
-                          ))}
-                       </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-1">
-                          <Label>Brand</Label>
-                          <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800 max-h-[300px]">
-                               {BRANDS.map(b => <SelectItem key={`brand-opt-${b}`} value={b}>{b}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                       </div>
-                       {selectedBrand === 'Other' && (
-                         <div className="space-y-1 animate-in slide-in-from-left-2">
-                           <Label>Enter Brand Name</Label>
-                           <Input 
-                             readOnly={isLocked} 
-                             value={formData.brand || ''} 
-                             onChange={e => setFormData({...formData, brand: e.target.value})} 
-                             className="bg-slate-900 border-slate-800 h-11" 
-                           />
-                         </div>
-                       )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label>Model No</Label>
-                        <Input 
-                          readOnly={isLocked} 
-                          value={formData.model || ''} 
-                          onChange={e => setFormData({...formData, model: e.target.value})} 
-                          className="bg-slate-900 border-slate-800 h-11" 
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Size (Inch)</Label>
-                        <Input 
-                          readOnly={isLocked} 
-                          value={formData.screenSize || ''} 
-                          onChange={e => setFormData({...formData, screenSize: e.target.value})} 
-                          className="bg-slate-900 border-slate-800 h-11" 
-                        />
-                      </div>
-                    </div>
-
-                    {/* Smart Problem Selector */}
-                    <div className="space-y-3">
-                      <Label className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
-                        Smart Problem Selector
-                        {(formData.repeatCount || 0) > 0 && <span className="text-[10px] text-purple-400 font-bold uppercase">Repeat Entry</span>}
-                      </Label>
-                      <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
-                        <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
-                           {selectedProblems.map(p => (
-                             <Badge key={`sel-prob-${p}`} className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-1.5 py-1.5">
-                               {p}
-                               <X className="w-3 h-3 cursor-pointer" onClick={() => handleProblemToggle(p)} />
-                             </Badge>
-                           ))}
-                           {selectedProblems.length === 0 && <span className="text-xs text-slate-600 italic">No problems selected yet...</span>}
-                        </div>
-                        
-                        <div className="flex gap-2">
-                           <div className="relative flex-1">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                              <Input 
-                                placeholder="Search or Add Custom Problem..."
-                                value={problemSearch}
-                                onChange={e => setProblemSearch(e.target.value)}
-                                className="pl-9 h-9 bg-slate-950 border-slate-800 text-xs"
-                              />
-                           </div>
-                           <Button size="sm" onClick={handleAddCustomProblem} className="bg-emerald-600 hover:bg-emerald-700 h-9">
-                              <Plus className="w-4 h-4" />
-                           </Button>
-                        </div>
-
-                        {problemSearch && filteredSuggestions.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-2 animate-in fade-in duration-300">
-                             {filteredSuggestions.slice(0, 8).map(p => (
-                               <button 
-                                 key={`suggest-${p}`} 
-                                 onClick={() => handleProblemToggle(p)}
-                                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-full transition-colors border border-slate-700"
-                               >
-                                 + {p}
-                               </button>
-                             ))}
-                          </div>
-                        )}
-                        
-                        {!problemSearch && (
-                          <div className="flex flex-wrap gap-2 pt-2">
-                             <span className="w-full text-[9px] font-bold text-slate-600 uppercase mb-1">Common Issues for {formData.category}</span>
-                             {currentSuggestedProblems.slice(0, 10).map(p => (
-                               <button 
-                                 key={`suggest-default-${p}`} 
-                                 onClick={() => handleProblemToggle(p)}
-                                 className={cn(
-                                   "px-3 py-1 text-[10px] font-bold rounded-full transition-all border",
-                                   selectedProblems.includes(p) 
-                                     ? "bg-blue-500/10 border-blue-500 text-blue-400" 
-                                     : "bg-slate-800/40 border-slate-800 text-slate-500 hover:text-slate-300"
-                                 )}
-                               >
-                                 {p}
-                               </button>
-                             ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                         <Label>Store Location</Label>
-                         <Select value={formData.storeLocation} onValueChange={v => setFormData({...formData, storeLocation: v})}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800">
-                               <SelectItem value="SHOWROOM">SHOWROOM</SelectItem>
-                               <SelectItem value="SERVICE CENTER">SERVICE CENTER</SelectItem>
-                               <SelectItem value="GODOWN">GODOWN</SelectItem>
-                               <SelectItem value="OTHER">OTHER</SelectItem>
-                            </SelectContent>
-                         </Select>
-                      </div>
-                      <div className="space-y-1">
-                         <Label>Warranty Duration</Label>
-                         <Select value={formData.warrantyDuration} onValueChange={v => setFormData({...formData, warrantyDuration: v})}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800">
-                               <SelectItem value="No Warranty">No Warranty</SelectItem>
-                               <SelectItem value="1 Month">1 Month</SelectItem>
-                               <SelectItem value="3 Months">3 Months</SelectItem>
-                               <SelectItem value="6 Months">6 Months</SelectItem>
-                            </SelectContent>
-                         </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : activeTab === 'Repeat' ? (
-                <div className="space-y-6">
-                  <div className="p-8 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-6">
-                    <div className="space-y-2">
-                       <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Search Existing Job / Mobile</Label>
-                       <div className="flex gap-2">
-                          <Input 
-                            value={repeatSearchQuery} 
-                            onChange={e => setRepeatSearchQuery(e.target.value)} 
-                            placeholder="Enter Job ID (e.g. TV1001) or Mobile..." 
-                            className="bg-slate-950 border-slate-800 h-12 text-lg" 
-                          />
-                          <Button onClick={handleRepeatLookup} className="bg-[#0066FF] px-8 h-12"><Search className="w-5 h-5 mr-2" /> Search</Button>
-                       </div>
-                    </div>
-                    <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-3">
-                       <h4 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-2"><History className="w-4 h-4" /> Repeat Call Logic</h4>
-                       <p className="text-xs text-slate-400 leading-relaxed">Loading an existing record will lock the Job ID and Customer ID. New visit details will be appended chronologically to the history ledger.</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6 bg-slate-900/40 p-8 rounded-2xl border border-slate-800">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <Label>Visitor Name</Label>
-                      <Input 
-                        value={inqData.name} 
-                        onChange={e => setInqData({...inqData, name: e.target.value})} 
-                        className="bg-slate-950 border-slate-800 h-12" 
+                        value={inqData.address} 
+                        onChange={e => setInqData({...inqData, address: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 h-10 md:h-12" 
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label>Mobile</Label>
-                      <Input 
-                        value={inqData.mobile} 
-                        onChange={e => setInqData({...inqData, mobile: e.target.value})} 
-                        className="bg-slate-950 border-slate-800 h-12" 
+                      <Label>Inquiry Details</Label>
+                      <Textarea 
+                        value={inqData.notes} 
+                        onChange={e => setInqData({...inqData, notes: e.target.value})} 
+                        className="bg-slate-950 border-slate-800 min-h-[150px] md:min-h-[200px]" 
                       />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label>Address</Label>
-                    <Input 
-                      value={inqData.address} 
-                      onChange={e => setInqData({...inqData, address: e.target.value})} 
-                      className="bg-slate-950 border-slate-800 h-12" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Inquiry Details</Label>
-                    <Textarea 
-                      value={inqData.notes} 
-                      onChange={e => setInqData({...inqData, notes: e.target.value})} 
-                      className="bg-slate-950 border-slate-800 min-h-[200px]" 
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="col-span-4 border-l border-slate-800 pl-8 space-y-6">
-               <div className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
-                  <div className="space-y-1">
-                     <Label className="text-xs font-bold">Send WhatsApp Notification</Label>
-                     <div className="flex items-center gap-2">
-                        <Badge className={cn("text-[9px] uppercase px-1.5 h-4", sendWhatsApp ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20")}>
-                           {sendWhatsApp ? "WhatsApp Enabled" : "WhatsApp Disabled"}
-                        </Badge>
-                     </div>
-                  </div>
-                  <Switch checked={sendWhatsApp} onCheckedChange={setSendWhatsApp} />
-               </div>
-
-               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                 <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Templates
-               </h3>
-               {[0, 1, 2].map(idx => (
-                 <div key={`whatsapp-tpl-pane-${idx}`} className={cn("p-4 rounded-xl border transition-all space-y-3", activeTpl === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
-                    <div className="flex justify-between items-center">
-                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Option {idx + 1}</Label>
-                       <button className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"><Paperclip className="w-3 h-3" /></button>
+                )}
+              </div>
+              
+              <div className="lg:col-span-4 lg:border-l border-slate-800 lg:pl-8 space-y-6">
+                 <div className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
+                    <div className="space-y-1">
+                       <Label className="text-xs font-bold">WhatsApp Notice</Label>
+                       <div className="flex items-center gap-2">
+                          <Badge className={cn("text-[8px] md:text-[9px] uppercase px-1.5 h-4", sendWhatsApp ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20")}>
+                             {sendWhatsApp ? "Active" : "Disabled"}
+                          </Badge>
+                       </div>
                     </div>
-                    <Textarea 
-                      value={templates[idx]} 
-                      onChange={e => { const t = [...templates]; t[idx] = e.target.value; setTemplates(t); }} 
-                      className="bg-transparent border-0 p-0 text-xs min-h-[70px] focus-visible:ring-0 resize-none leading-relaxed" 
-                    />
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/50">
-                       <Checkbox 
-                         id={`tpl-check-${idx}`} 
-                         checked={activeTpl === idx}
-                         onCheckedChange={() => setActiveTpl(idx)}
-                       />
-                       <label htmlFor={`tpl-check-${idx}`} className="text-[10px] font-bold text-slate-400 cursor-pointer select-none">Use This Template</label>
-                    </div>
+                    <Switch checked={sendWhatsApp} onCheckedChange={setSendWhatsApp} />
                  </div>
-               ))}
+
+                 <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                   <MessageSquare className="w-4 h-4 text-emerald-500" /> Templates
+                 </h3>
+                 {[0, 1, 2].map(idx => (
+                   <div key={`whatsapp-tpl-pane-${idx}`} className={cn("p-3 md:p-4 rounded-xl border transition-all space-y-3", activeTpl === idx ? "bg-emerald-500/5 border-emerald-500/40" : "bg-slate-900/40 border-slate-800")}>
+                      <div className="flex justify-between items-center">
+                         <Label className="text-[10px] font-bold text-slate-500 uppercase">Option {idx + 1}</Label>
+                         <button className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"><Paperclip className="w-3 h-3" /></button>
+                      </div>
+                      <Textarea 
+                        value={templates[idx]} 
+                        onChange={e => { const t = [...templates]; t[idx] = e.target.value; setTemplates(t); }} 
+                        className="bg-transparent border-0 p-0 text-[10px] md:text-xs min-h-[60px] md:min-h-[70px] focus-visible:ring-0 resize-none leading-relaxed" 
+                      />
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/50">
+                         <Checkbox 
+                           id={`tpl-check-${idx}`} 
+                           checked={activeTpl === idx}
+                           onCheckedChange={() => setActiveTpl(idx)}
+                         />
+                         <label htmlFor={`tpl-check-${idx}`} className="text-[10px] font-bold text-slate-400 cursor-pointer select-none">Select This</label>
+                      </div>
+                   </div>
+                 ))}
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold flex gap-2">
+          <DialogFooter className="p-4 md:p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-3">
+            <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto order-2 sm:order-1">Cancel</Button>
+            <Button onClick={handleSave} className="w-full sm:w-auto bg-[#0066FF] hover:bg-blue-600 px-8 md:px-12 h-11 md:h-12 rounded-xl font-bold flex gap-2 order-1 sm:order-2">
                {activeTab === 'Inquiry' ? 'Commit Inquiry' : (isExisting ? 'Update Job' : 'Commit Registry')}
                <ChevronRight className="w-4 h-4" />
             </Button>

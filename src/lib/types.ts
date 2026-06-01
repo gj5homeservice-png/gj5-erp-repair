@@ -32,6 +32,10 @@ export interface RepairCall {
   problemDescription: string;
   visitHistory: VisitHistoryEntry[];
   repeatCount: number;
+  // Old Entry Mode Fields
+  isOldEntry?: boolean;
+  entryDate?: string;
+  receivedDate?: string;
 }
 
 export interface Inquiry {

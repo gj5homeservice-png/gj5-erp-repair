@@ -31,9 +31,11 @@ import {
   History, 
   Search, 
   X,
-  Plus
+  Plus,
+  Calendar,
+  Clock
 } from 'lucide-react';
-import { format, addMonths } from 'date-fns';
+import { format, addMonths, parseISO, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
@@ -101,6 +103,16 @@ const COMMON_PROBLEMS: Record<string, string[]> = {
   ]
 };
 
+const WARRANTY_OPTIONS = [
+  'No Warranty',
+  'Customer Warranty',
+  '30 Days',
+  '90 Days',
+  '180 Days',
+  '1 Year',
+  'Custom Warranty'
+];
+
 export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [selectedBrand, setSelectedBrand] = useState('GJ5 HOME SERVICE');
@@ -108,6 +120,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [problemSearch, setProblemSearch] = useState('');
   const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
+  const [isOldEntry, setIsOldEntry] = useState(false);
   const { toast } = useToast();
   
   const [sendWhatsApp, setSendWhatsApp] = useState(() => {
@@ -121,7 +134,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
     category: 'TV Repair', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
     status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
-    visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit'
+    visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit', isOldEntry: false,
+    entryDate: format(new Date(), 'yyyy-MM-dd'), receivedDate: format(new Date(), 'yyyy-MM-dd'),
+    warrantyExpiry: ''
   });
 
   const [inqData, setInqData] = useState({ name: '', mobile: '', address: '', notes: '' });
@@ -142,6 +157,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     if (editingCall) {
       setFormData(editingCall);
       setSelectedBrand(BRANDS.includes(editingCall.brand) ? editingCall.brand : 'Other');
+      setIsOldEntry(editingCall.isOldEntry || false);
       if (editingCall.problemDescription) {
         setSelectedProblems(editingCall.problemDescription.split(', ').filter((p: string) => p));
       }
@@ -150,6 +166,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       setActiveTpl(null);
       setSelectedProblems([]);
       setProblemSearch('');
+      setIsOldEntry(false);
     }
   }, [editingCall, isOpen]);
 
@@ -195,7 +212,10 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       model: '', 
       screenSize: '', 
       problemDescription: '',
-      intakeMode: 'Customer Visit'
+      intakeMode: 'Customer Visit',
+      entryDate: format(new Date(), 'yyyy-MM-dd'),
+      receivedDate: format(new Date(), 'yyyy-MM-dd'),
+      warrantyExpiry: ''
     }));
     setSelectedProblems([]);
   };
@@ -270,10 +290,18 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       }
     }
 
-    let warrantyExpiry = undefined;
-    if (formData.status === 'Completed' && formData.warrantyDuration !== 'No Warranty') {
-      const months = parseInt(formData.warrantyDuration || '0');
-      warrantyExpiry = addMonths(new Date(), months).toISOString();
+    let warrantyExpiry = formData.warrantyExpiry;
+    if (formData.status === 'Completed') {
+      if (formData.warrantyDuration === '30 Days') {
+        warrantyExpiry = addMonths(new Date(), 1).toISOString();
+      } else if (formData.warrantyDuration === '90 Days') {
+        warrantyExpiry = addMonths(new Date(), 3).toISOString();
+      } else if (formData.warrantyDuration === '180 Days') {
+        warrantyExpiry = addMonths(new Date(), 6).toISOString();
+      } else if (formData.warrantyDuration === '1 Year') {
+        warrantyExpiry = addMonths(new Date(), 12).toISOString();
+      }
+      // For Custom/Customer, we use the manually picked warrantyExpiry if set
     }
 
     let updatedHistory = [...(formData.visitHistory || [])];
@@ -299,8 +327,9 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
       warrantyExpiry,
       visitHistory: updatedHistory,
       repeatCount: finalRepeatCount,
+      isOldEntry,
       updatedAt: new Date().toISOString(),
-      createdAt: formData.createdAt || new Date().toISOString()
+      createdAt: isOldEntry && formData.entryDate ? new Date(formData.entryDate).toISOString() : (formData.createdAt || new Date().toISOString())
     } as RepairCall;
 
     if (isExisting) store.updateCall(finalData);
@@ -308,6 +337,8 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
 
     onClose();
   };
+
+  const showCustomWarrantyPicker = formData.warrantyDuration === 'Custom Warranty' || formData.warrantyDuration === 'Customer Warranty';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -333,6 +364,42 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                 {activeTab === 'Registry' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-4">
+                      {/* Old Entry Toggle */}
+                      <div className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
+                        <div className="flex flex-col gap-0.5">
+                          <Label className="text-xs font-bold text-slate-100">Old Entry Mode</Label>
+                          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Manual History Archive</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <span className={cn("text-[10px] font-black uppercase transition-colors", !isOldEntry ? "text-blue-500" : "text-slate-600")}>New</span>
+                           <Switch checked={isOldEntry} onCheckedChange={setIsOldEntry} />
+                           <span className={cn("text-[10px] font-black uppercase transition-colors", isOldEntry ? "text-amber-500" : "text-slate-600")}>Old</span>
+                        </div>
+                      </div>
+
+                      {isOldEntry && (
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl animate-in slide-in-from-top-2">
+                           <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-amber-500/80 flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Entry Date</Label>
+                              <Input 
+                                type="date" 
+                                value={formData.entryDate} 
+                                onChange={e => setFormData({...formData, entryDate: e.target.value})}
+                                className="bg-slate-950 border-amber-500/20 h-10 text-xs" 
+                              />
+                           </div>
+                           <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-amber-500/80 flex items-center gap-1.5"><Clock className="w-3 h-3" /> Received Date</Label>
+                              <Input 
+                                type="date" 
+                                value={formData.receivedDate} 
+                                onChange={e => setFormData({...formData, receivedDate: e.target.value})}
+                                className="bg-slate-950 border-amber-500/20 h-10 text-xs" 
+                              />
+                           </div>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-500">Service Category</Label>
@@ -548,14 +615,23 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                            <Select value={formData.warrantyDuration} onValueChange={v => setFormData({...formData, warrantyDuration: v})}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800">
-                                 <SelectItem value="No Warranty">No Warranty</SelectItem>
-                                 <SelectItem value="1 Month">1 Month</SelectItem>
-                                 <SelectItem value="3 Months">3 Months</SelectItem>
-                                 <SelectItem value="6 Months">6 Months</SelectItem>
+                                 {WARRANTY_OPTIONS.map(opt => <SelectItem key={`warranty-opt-${opt}`} value={opt}>{opt}</SelectItem>)}
                               </SelectContent>
                            </Select>
                         </div>
                       </div>
+
+                      {showCustomWarrantyPicker && (
+                         <div className="space-y-1 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl animate-in slide-in-from-top-2">
+                            <Label className="text-[10px] uppercase font-bold text-blue-400">Manual Warranty Expiry Date</Label>
+                            <Input 
+                              type="date" 
+                              value={formData.warrantyExpiry?.split('T')[0] || ''} 
+                              onChange={e => setFormData({...formData, warrantyExpiry: e.target.value ? new Date(e.target.value).toISOString() : ''})}
+                              className="bg-slate-950 border-blue-500/20 h-11 text-sm font-code" 
+                            />
+                         </div>
+                      )}
                     </div>
                   </div>
                 ) : activeTab === 'Repeat' ? (

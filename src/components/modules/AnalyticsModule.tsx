@@ -48,12 +48,13 @@ export function AnalyticsModule({ store }: { store: any }) {
     const invoices = store.invoices || [];
     const expenses = store.expenses || [];
     
-    const calculateTotals = (items: any[], type: 'inv' | 'exp') => {
+    const calculateTotals = (itemsList: any[], type: 'inv' | 'exp') => {
       let revenue = 0;
       let cost = 0;
       let count = 0;
 
-      items.forEach(item => {
+      itemsList.forEach(item => {
+        if (!item || (!item.timestamp && !item.date)) return;
         const date = parseISO(item.timestamp || item.date);
         let match = false;
         if (timeRange === 'Today') match = isToday(date);
@@ -62,10 +63,12 @@ export function AnalyticsModule({ store }: { store: any }) {
 
         if (match) {
           if (type === 'inv') {
-            revenue += item.total;
-            cost += item.items.reduce((acc: number, curr: any) => acc + (curr.purchasePrice * curr.quantity), 0);
+            revenue += (item.total || 0);
+            const subItems = Array.isArray(item.items) ? item.items : [];
+            cost += subItems.reduce((acc: number, curr: any) => 
+              acc + (Number(curr.purchasePrice || 0) * Number(curr.quantity || 0)), 0);
           } else {
-            revenue += item.amount;
+            revenue += (item.amount || 0);
           }
           count++;
         }
@@ -94,14 +97,15 @@ export function AnalyticsModule({ store }: { store: any }) {
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'MMM dd');
+      const dateIso = format(date, 'yyyy-MM-dd');
       
-      const dayRevenue = store.invoices
-        .filter((inv: any) => format(parseISO(inv.timestamp), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
-        .reduce((acc: number, curr: any) => acc + curr.total, 0);
+      const dayRevenue = (store.invoices || [])
+        .filter((inv: any) => inv?.timestamp && format(parseISO(inv.timestamp), 'yyyy-MM-dd') === dateIso)
+        .reduce((acc: number, curr: any) => acc + (curr.total || 0), 0);
         
-      const dayExpense = store.expenses
-        .filter((exp: any) => exp.date === format(date, 'yyyy-MM-dd'))
-        .reduce((acc: number, curr: any) => acc + curr.amount, 0);
+      const dayExpense = (store.expenses || [])
+        .filter((exp: any) => exp?.date === dateIso)
+        .reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0);
 
       data.push({ name: dateStr, revenue: dayRevenue, expense: dayExpense, profit: dayRevenue - dayExpense });
     }
@@ -118,8 +122,8 @@ export function AnalyticsModule({ store }: { store: any }) {
       { Metric: 'Total Job Units', Value: financialStats.jobsCount }
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(store.invoices), "Invoices");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(store.expenses), "Expenses");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(store.invoices || []), "Invoices");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(store.expenses || []), "Expenses");
     XLSX.writeFile(wb, `GJ5_Report_${format(new Date(), 'dd_MMM')}.xlsx`);
   };
 
@@ -214,8 +218,9 @@ export function AnalyticsModule({ store }: { store: any }) {
         <Card className="bg-slate-900/40 border-slate-800">
           <CardHeader className="border-b border-slate-800"><CardTitle className="text-sm font-headline font-bold">Top Performing Categories</CardTitle></CardHeader>
           <CardContent className="p-4 space-y-4">
-             {Object.entries(store.invoices.reduce((acc: any, curr: any) => {
-               acc[curr.brand] = (acc[curr.brand] || 0) + curr.total;
+             {Object.entries((store.invoices || []).reduce((acc: any, curr: any) => {
+               const brand = curr.brand || 'Other';
+               acc[brand] = (acc[brand] || 0) + (curr.total || 0);
                return acc;
              }, {})).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5).map(([brand, val], i) => (
                <div key={i} className="flex justify-between items-center text-xs">
@@ -229,8 +234,9 @@ export function AnalyticsModule({ store }: { store: any }) {
         <Card className="bg-slate-900/40 border-slate-800">
           <CardHeader className="border-b border-slate-800"><CardTitle className="text-sm font-headline font-bold">Major Expense Drivers</CardTitle></CardHeader>
           <CardContent className="p-4 space-y-4">
-             {Object.entries(store.expenses.reduce((acc: any, curr: any) => {
-               acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+             {Object.entries((store.expenses || []).reduce((acc: any, curr: any) => {
+               const cat = curr.category || 'Other';
+               acc[cat] = (acc[cat] || 0) + (curr.amount || 0);
                return acc;
              }, {})).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5).map(([cat, val], i) => (
                <div key={i} className="flex justify-between items-center text-xs">

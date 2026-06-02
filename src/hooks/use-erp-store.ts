@@ -16,6 +16,18 @@ import {
   StockMovement
 } from '@/lib/types';
 
+const DEFAULT_NAV_ORDER = [
+  'Repairing',
+  'CRM Leads',
+  'Billing',
+  'Invoice History',
+  'Stock',
+  'Analytics',
+  'Employees',
+  'E-Wallet',
+  'Transportation'
+];
+
 const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: {
     Repairing: true,
@@ -90,6 +102,7 @@ export function useErpStore() {
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
+  const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
 
   // Persistence Key Identifiers
   const KEYS = {
@@ -105,7 +118,8 @@ export function useErpStore() {
     STOCK: 'gj5_stock_v3',
     BALANCE: 'gj5_wallet_balance_v3',
     LOGO: 'gj5_shop_logo_v3',
-    VISIBILITY: 'gj5_visibility_settings_v3'
+    VISIBILITY: 'gj5_visibility_settings_v3',
+    NAV_ORDER: 'gj5_nav_order_v3'
   };
 
   useEffect(() => {
@@ -119,6 +133,7 @@ export function useErpStore() {
 
     safeGet(KEYS.LOGO, setShopLogo);
     safeGet(KEYS.VISIBILITY, setVisibility, DEFAULT_VISIBILITY);
+    safeGet(KEYS.NAV_ORDER, setNavOrder, DEFAULT_NAV_ORDER);
     safeGet(KEYS.CALLS, setCalls);
     safeGet(KEYS.INQUIRIES, setInquiries);
     safeGet(KEYS.TRANS_LOGS, setTransportationLogs);
@@ -145,12 +160,15 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem(KEYS.AUDIT, JSON.stringify(auditLogs)); }, [auditLogs]);
   useEffect(() => { localStorage.setItem(KEYS.STOCK, JSON.stringify(stock)); }, [stock]);
   useEffect(() => { localStorage.setItem(KEYS.BALANCE, walletBalance.toString()); }, [walletBalance]);
-  useEffect(() => { if (shopLogo) localStorage.setItem(KEYS.LOGO, shopLogo); }, [shopLogo]);
+  useEffect(() => { if (shopLogo) localStorage.setItem(KEYS.LOGO, JSON.stringify(shopLogo)); }, [shopLogo]);
+  useEffect(() => { localStorage.setItem(KEYS.NAV_ORDER, JSON.stringify(navOrder)); }, [navOrder]);
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
     localStorage.setItem(KEYS.VISIBILITY, JSON.stringify(newSettings));
   };
+
+  const resetNavOrder = () => setNavOrder(DEFAULT_NAV_ORDER);
 
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
   const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
@@ -345,6 +363,7 @@ export function useErpStore() {
     if (data.stock) setStock(data.stock);
     if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
     if (data.shopLogo) setShopLogo(data.shopLogo);
+    if (data.navOrder) setNavOrder(data.navOrder);
   };
 
   return {
@@ -358,6 +377,7 @@ export function useErpStore() {
     invoices, addInvoice, deleteInvoice, updateInvoice,
     stock, updateStockItem, deleteStockItem,
     auditLogs, walletBalance, setWalletBalance, shopLogo, setShopLogo,
-    visibility, updateVisibility, importAllData
+    visibility, updateVisibility, importAllData,
+    navOrder, setNavOrder, resetNavOrder
   };
 }

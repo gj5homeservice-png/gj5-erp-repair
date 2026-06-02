@@ -23,7 +23,14 @@ import {
   History,
   TrendingUp,
   Receipt,
-  UserPlus
+  UserPlus,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown,
+  GripVertical,
+  Download,
+  FileJson
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,11 +65,13 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { isToday, isSameMonth, parseISO } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<ActiveTab>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -81,6 +90,14 @@ export default function DashboardPage() {
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
 
+  const sortedNavigation = useMemo(() => {
+    return [...navigation].sort((a, b) => {
+      const indexA = store.navOrder.indexOf(a.id);
+      const indexB = store.navOrder.indexOf(b.id);
+      return indexA - indexB;
+    });
+  }, [store.navOrder, store.visibility.tabs]);
+
   const dashboardStats = useMemo(() => {
     const totalInvoices = store.invoices.length;
     const todayBilling = store.invoices
@@ -94,13 +111,13 @@ export default function DashboardPage() {
     return { totalInvoices, todayBilling, monthlyBilling, totalRevenue };
   }, [store.invoices]);
 
-  const visibleNavigation = navigation.filter(item => item.visible);
+  const visibleNavigation = sortedNavigation.filter(item => item.visible);
 
   useEffect(() => {
     if (visibleNavigation.length > 0 && !visibleNavigation.find(n => n.id === activeTab)) {
       setActiveTab(visibleNavigation[0].id as ActiveTab);
     }
-  }, [store.visibility.tabs]);
+  }, [store.visibility.tabs, sortedNavigation]);
 
   const handleToggleTab = (tab: keyof VisibilitySettings['tabs']) => {
     const newSettings = {
@@ -127,9 +144,52 @@ export default function DashboardPage() {
     }
   };
 
+  const reorderNav = (index: number, direction: 'UP' | 'DOWN' | 'TOP' | 'BOTTOM') => {
+    const newOrder = [...store.navOrder];
+    const item = newOrder[index];
+    newOrder.splice(index, 1);
+
+    if (direction === 'UP') newOrder.splice(Math.max(0, index - 1), 0, item);
+    else if (direction === 'DOWN') newOrder.splice(Math.min(newOrder.length, index + 1), 0, item);
+    else if (direction === 'TOP') newOrder.splice(0, 0, item);
+    else if (direction === 'BOTTOM') newOrder.push(item);
+
+    store.setNavOrder(newOrder);
+  };
+
+  const exportNavLayout = () => {
+    const data = JSON.stringify({ navOrder: store.navOrder }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `GJ5_Sidebar_Layout.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Layout Exported", description: "Sidebar sequence JSON downloaded." });
+  };
+
+  const importNavLayout = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = JSON.parse(event.target?.result as string);
+        if (content.navOrder) {
+          store.setNavOrder(content.navOrder);
+          toast({ title: "Layout Imported", description: "Navigation sequence updated." });
+        }
+      } catch (err) {
+        toast({ variant: "destructive", title: "Import Error", description: "Invalid layout file." });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const NavItems = ({ isMobile = false }) => (
     <nav className={cn("space-y-2", isMobile ? "px-0" : "px-4")}>
-      {navigation.map((item) => item.visible && (
+      {sortedNavigation.map((item) => item.visible && (
         <button 
           key={item.id} 
           onClick={() => {
@@ -161,7 +221,7 @@ export default function DashboardPage() {
           {isSidebarOpen && <span className="font-headline font-bold text-lg xl:text-xl tracking-tight truncate">GJ5 HOME SERVICE</span>}
         </div>
 
-        <div className="flex-1 overflow-y-auto mt-4">
+        <div className="flex-1 overflow-y-auto mt-4 custom-scrollbar">
           <NavItems />
         </div>
 
@@ -305,22 +365,50 @@ export default function DashboardPage() {
             <Separator className="bg-slate-800" />
 
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
-              <BackupCenter store={store} />
+               <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Layout Manager</h4>
+                  <div className="flex gap-2">
+                     <input type="file" id="import-nav" className="hidden" accept=".json" onChange={importNavLayout} />
+                     <Button variant="outline" size="sm" onClick={() => document.getElementById('import-nav')?.click()} className="h-8 text-[9px] uppercase border-slate-700"><FileJson className="w-3 h-3 mr-1.5" /> Import</Button>
+                     <Button variant="outline" size="sm" onClick={exportNavLayout} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Export</Button>
+                     <Button variant="ghost" size="sm" onClick={() => store.resetNavOrder()} className="h-8 text-[9px] uppercase text-slate-500 hover:text-white">Reset Default</Button>
+                  </div>
+               </div>
+               <div className="bg-slate-950/50 rounded-2xl border border-slate-800 overflow-hidden">
+                  <div className="divide-y divide-slate-800">
+                     {store.navOrder.map((id, idx) => {
+                        const item = navigation.find(n => n.id === id);
+                        if (!item) return null;
+                        return (
+                          <div key={id} className="flex items-center p-3 hover:bg-slate-900/50 group">
+                             <div className="flex items-center gap-3 flex-1">
+                                <GripVertical className="w-4 h-4 text-slate-700 group-hover:text-slate-500" />
+                                <div className={cn("p-2 rounded-lg bg-slate-900", item.visible ? "text-blue-400" : "text-slate-600")}>
+                                   <item.icon className="w-4 h-4" />
+                                </div>
+                                <span className={cn("text-xs font-bold", item.visible ? "text-slate-100" : "text-slate-500")}>{item.name}</span>
+                             </div>
+                             <div className="flex items-center gap-4">
+                                <Switch checked={store.visibility.tabs[id as keyof VisibilitySettings['tabs']]} onCheckedChange={() => handleToggleTab(id as keyof VisibilitySettings['tabs'])} />
+                                <div className="flex gap-1 border-l border-slate-800 pl-4">
+                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'TOP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ChevronsUp className="w-3.5 h-3.5" /></Button>
+                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'UP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ArrowUp className="w-3.5 h-3.5" /></Button>
+                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'DOWN')} disabled={idx === store.navOrder.length - 1} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ArrowDown className="w-3.5 h-3.5" /></Button>
+                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'BOTTOM')} disabled={idx === store.navOrder.length - 1} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ChevronsDown className="w-3.5 h-3.5" /></Button>
+                                </div>
+                             </div>
+                          </div>
+                        );
+                     })}
+                  </div>
+               </div>
             </div>
 
             <Separator className="bg-slate-800" />
 
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Toggles</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.keys(store.visibility.tabs).map((tab) => (
-                  <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <Label className="text-sm font-medium">{tab}</Label>
-                    <Switch checked={store.visibility.tabs[tab as keyof VisibilitySettings['tabs']]} onCheckedChange={() => handleToggleTab(tab as keyof VisibilitySettings['tabs'])} />
-                  </div>
-                ))}
-              </div>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
+              <BackupCenter store={store} />
             </div>
 
             <Separator className="bg-slate-800" />

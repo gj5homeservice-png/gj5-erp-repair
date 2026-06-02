@@ -147,9 +147,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     "Ready: [Name], your [Brand] device is ready for pickup."
   ]);
 
-  const isExisting = store.calls.some((c: any) => c.id === formData.id);
-  const isLocked = isExisting && !editingCall;
-
   useEffect(() => {
     sessionStorage.setItem('gj5_whatsapp_enabled', sendWhatsApp.toString());
   }, [sendWhatsApp]);
@@ -307,6 +304,8 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     let updatedHistory = [...(formData.visitHistory || [])];
     let finalRepeatCount = formData.repeatCount || 0;
 
+    const isExisting = store.calls.some((c: any) => c.id === formData.id);
+
     if (isExisting) {
       const newHistoryEntry: VisitHistoryEntry = {
         id: `VST${Date.now()}`,
@@ -403,7 +402,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-500">Service Category</Label>
                           <Select 
-                            disabled={isLocked} 
                             value={formData.category} 
                             onValueChange={(v) => generateNewId(v)}
                           >
@@ -427,7 +425,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label>Customer Name</Label>
                           <Input 
-                            readOnly={isLocked} 
                             value={formData.customerName || ''} 
                             onChange={e => setFormData({...formData, customerName: e.target.value})} 
                             className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -443,7 +440,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label>Mobile</Label>
                           <Input 
-                            readOnly={isLocked} 
                             value={formData.mobile || ''} 
                             onChange={e => setFormData({...formData, mobile: e.target.value})} 
                             className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -452,7 +448,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label>Pincode</Label>
                           <Input 
-                            readOnly={isLocked} 
                             value={formData.pincode || ''} 
                             onChange={e => setFormData({...formData, pincode: e.target.value})} 
                             className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -462,7 +457,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                       <div className="space-y-1">
                         <Label>Address</Label>
                         <Input 
-                          readOnly={isLocked} 
                           value={formData.address || ''} 
                           onChange={e => setFormData({...formData, address: e.target.value})} 
                           className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -475,7 +469,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                               <button 
                                 type="button"
                                 key={`tag-${tag}`} 
-                                disabled={isLocked}
                                 onClick={() => toggleTag(tag)} 
                                 className={cn("flex-1 py-2.5 md:py-3 rounded-xl text-[10px] font-bold border transition-all", formData.techTags?.includes(tag) ? "bg-[#0066FF] text-white border-[#0066FF]" : "bg-slate-900 text-slate-400 border-slate-800")}
                               >
@@ -489,7 +482,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                          <div className="space-y-1">
                             <Label>Brand</Label>
-                            <Select disabled={isLocked} value={selectedBrand} onValueChange={setSelectedBrand}>
+                            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
                               <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800 max-h-[300px]">
                                  {BRANDS.map(b => <SelectItem key={`brand-opt-${b}`} value={b}>{b}</SelectItem>)}
@@ -500,7 +493,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                            <div className="space-y-1 animate-in slide-in-from-left-2">
                              <Label>Enter Brand Name</Label>
                              <Input 
-                               readOnly={isLocked} 
                                value={formData.brand || ''} 
                                onChange={e => setFormData({...formData, brand: e.target.value})} 
                                className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -512,7 +504,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label>Model No</Label>
                           <Input 
-                            readOnly={isLocked} 
                             value={formData.model || ''} 
                             onChange={e => setFormData({...formData, model: e.target.value})} 
                             className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -521,7 +512,6 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
                         <div className="space-y-1">
                           <Label>Size (Inch)</Label>
                           <Input 
-                            readOnly={isLocked} 
                             value={formData.screenSize || ''} 
                             onChange={e => setFormData({...formData, screenSize: e.target.value})} 
                             className="bg-slate-900 border-slate-800 h-10 md:h-11" 
@@ -740,7 +730,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
           <DialogFooter className="p-4 md:p-8 border-t border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row gap-3 shrink-0">
             <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto order-2 sm:order-1">Cancel</Button>
             <Button type="button" onClick={handleSave} className="w-full sm:w-auto bg-[#0066FF] hover:bg-blue-600 px-8 md:px-12 h-11 md:h-12 rounded-xl font-bold flex gap-2 order-1 sm:order-2">
-               {activeTab === 'Inquiry' ? 'Commit Inquiry' : (isExisting ? 'Update Job' : 'Commit Registry')}
+               {activeTab === 'Inquiry' ? 'Commit Inquiry' : (formData.id && store.calls.some((c: any) => c.id === formData.id) ? 'Update Job' : 'Commit Registry')}
                <ChevronRight className="w-4 h-4" />
             </Button>
           </DialogFooter>

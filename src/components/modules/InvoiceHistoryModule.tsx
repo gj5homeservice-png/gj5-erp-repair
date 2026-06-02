@@ -14,7 +14,8 @@ import {
   Receipt,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,10 +65,10 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
 
   const filteredInvoices = useMemo(() => {
     return (store.invoices || []).filter((inv: Invoice) => {
-      // Robust string normalization for safe searching
       const safeInvoiceNumber = String(inv?.invoiceNumber || "").toLowerCase();
       const safeJobId = String(inv?.jobId || "").toLowerCase();
       const safeCustomerName = String(inv?.customerName || "").toLowerCase();
+      const safeCustomerId = String(inv?.customerId || "").toLowerCase();
       const safeMobile = String(inv?.mobile || "").toLowerCase();
       const safeSearchQuery = searchQuery.toLowerCase();
 
@@ -75,6 +76,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
         safeInvoiceNumber.includes(safeSearchQuery) ||
         safeJobId.includes(safeSearchQuery) ||
         safeCustomerName.includes(safeSearchQuery) ||
+        safeCustomerId.includes(safeSearchQuery) ||
         safeMobile.includes(safeSearchQuery);
 
       if (!inv?.timestamp) return matchesSearch;
@@ -100,38 +102,74 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
       const doc = new jsPDF('p', 'mm', 'a4');
       doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 102, 255);
       doc.text('GJ5 HOME SERVICE', 15, 25);
+      
       doc.setFontSize(10);
+      doc.setTextColor(80);
       doc.text('Invoice Number: ' + String(inv.invoiceNumber || "N/A"), 15, 32);
       
-      const formattedDate = inv.timestamp ? format(parseISO(inv.timestamp), 'dd/MM/yyyy') : "N/A";
+      const formattedDate = inv.timestamp ? format(parseISO(inv.timestamp), 'dd/MM/yyyy HH:mm') : "N/A";
       doc.text('Date: ' + formattedDate, 15, 37);
       
-      doc.text('Customer: ' + String(inv.customerName || "N/A"), 15, 50);
-      doc.text('Mobile: ' + String(inv.mobile || "N/A"), 15, 55);
-      doc.text('Address: ' + String(inv.address || "N/A"), 15, 60);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLIENT DETAILS', 15, 50);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Name: ' + String(inv.customerName || "N/A"), 15, 56);
+      doc.text('Cust ID: ' + String(inv.customerId || "N/A"), 15, 62);
+      doc.text('Mobile: ' + String(inv.mobile || "N/A"), 15, 68);
 
-      doc.text('Device: ' + String(inv.brand || "") + ' ' + String(inv.model || ""), 15, 75);
-      doc.text('Job ID: ' + String(inv.jobId || "N/A"), 15, 80);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DEVICE DETAILS', 110, 50);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Device: ' + String(inv.brand || "") + ' ' + String(inv.model || ""), 110, 56);
+      doc.text('Job ID: ' + String(inv.jobId || "N/A"), 110, 62);
 
-      let y = 100;
-      doc.text('Description', 15, y);
-      doc.text('Amount', 170, y);
-      doc.line(15, y + 2, 195, y + 2);
+      let y = 85;
+      doc.setFillColor(0, 102, 255);
+      doc.rect(15, y, 180, 10, 'F');
+      doc.setTextColor(255);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DESCRIPTION', 20, y + 7);
+      doc.text('QTY', 150, y + 7, { align: 'center' });
+      doc.text('AMT (INR)', 190, y + 7, { align: 'right' });
       
       y += 10;
-      (inv.items || []).forEach(item => {
-        doc.text(String(item.name || "Part") + ' (Qty: ' + (item.quantity || 0) + ')', 15, y);
-        doc.text('INR ' + (item.total || 0).toFixed(2), 170, y);
-        y += 8;
-      });
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
       
-      doc.text('Labour Charges', 15, y);
-      doc.text('INR ' + (inv.labourCharges || 0).toFixed(2), 170, y);
+      if (!inv.items || inv.items.length === 0) {
+        doc.text('No Parts Used', 20, y + 7);
+        y += 10;
+      } else {
+        inv.items.forEach(item => {
+          doc.text(String(item.name || "Part"), 20, y + 7);
+          doc.text(String(item.quantity || 1), 150, y + 7, { align: 'center' });
+          doc.text('INR ' + (item.total || 0).toFixed(2), 190, y + 7, { align: 'right' });
+          y += 10;
+        });
+      }
       
-      y += 15;
+      doc.text('Labour & Service Charges', 20, y + 7);
+      doc.text('1', 150, y + 7, { align: 'center' });
+      doc.text('INR ' + (inv.labourCharges || 0).toFixed(2), 190, y + 7, { align: 'right' });
+      
+      y += 20;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Subtotal:', 140, y);
+      doc.text('INR ' + (inv.subtotal || 0).toFixed(2), 190, y, { align: 'right' });
+      
+      if (inv.taxEnabled) {
+        y += 7;
+        doc.text('GST (18%):', 140, y);
+        doc.text('INR ' + (inv.gst || 0).toFixed(2), 190, y, { align: 'right' });
+      }
+      
+      y += 10;
+      doc.setFontSize(14);
       doc.text('Total Amount:', 140, y);
-      doc.text('INR ' + (inv.total || 0).toFixed(2), 170, y);
+      doc.text('INR ' + (inv.total || 0).toFixed(2), 190, y, { align: 'right' });
 
       doc.save(`${inv.invoiceNumber || 'Invoice'}.pdf`);
       toast({ title: "PDF Generated", description: "Your invoice has been downloaded." });
@@ -203,7 +241,10 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-bold text-sm">{inv.customerName || "N/A"}</span>
-                      <span className="text-[10px] text-slate-500 font-code">{inv.mobile || "N/A"}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Badge variant="outline" className="text-[8px] h-4 px-1 border-slate-800 bg-slate-900 text-slate-400">{inv.customerId || "NO-ID"}</Badge>
+                        <span className="text-[10px] text-slate-500 font-code">{inv.mobile || "N/A"}</span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -255,6 +296,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                   <div className="space-y-1">
                     <Label className="text-[9px] text-slate-500 uppercase font-black">Customer Details</Label>
                     <p className="font-bold">{viewingInvoice.customerName || "N/A"}</p>
+                    <p className="text-[10px] text-blue-400 font-bold">CUST ID: {viewingInvoice.customerId || "N/A"}</p>
                     <p className="text-xs text-slate-400">{viewingInvoice.mobile || "N/A"}</p>
                     <p className="text-xs text-slate-400 truncate">{viewingInvoice.address || "N/A"}</p>
                   </div>
@@ -268,13 +310,17 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                 <div className="space-y-3">
                   <Label className="text-[9px] text-slate-500 uppercase font-black">Itemized Ledger</Label>
                   <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 space-y-2">
-                    {(viewingInvoice.items || []).map((item, i) => (
-                      <div key={i} className="flex justify-between text-xs py-1 border-b border-slate-900 last:border-0">
-                        <span className="text-slate-300">{item.name || "Part"} x {item.quantity || 1}</span>
-                        <span className="font-code font-bold">₹{(item.total || 0).toLocaleString()}</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between text-xs py-1 text-slate-400 italic">
+                    {(!viewingInvoice.items || viewingInvoice.items.length === 0) ? (
+                      <p className="text-[10px] text-slate-600 italic">No parts were used for this repair.</p>
+                    ) : (
+                      viewingInvoice.items.map((item, i) => (
+                        <div key={i} className="flex justify-between text-xs py-1 border-b border-slate-900 last:border-0">
+                          <span className="text-slate-300">{item.name || "Part"} x {item.quantity || 1}</span>
+                          <span className="font-code font-bold">₹{(item.total || 0).toLocaleString()}</span>
+                        </div>
+                      ))
+                    )}
+                    <div className="flex justify-between text-xs pt-2 mt-1 border-t border-slate-900/50 text-slate-400 italic">
                       <span>Labour & Service Charges</span>
                       <span className="font-code">₹{(viewingInvoice.labourCharges || 0).toLocaleString()}</span>
                     </div>

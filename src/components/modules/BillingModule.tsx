@@ -16,7 +16,8 @@ import {
   Package,
   History,
   Tag,
-  ArrowLeft
+  ArrowLeft,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +74,6 @@ export function BillingModule({ store }: { store: any }) {
   , [activeThemeId]);
 
   useEffect(() => {
-    // Check for edit mode from window (quick way to handle navigation between tabs)
     const win = window as any;
     if (win.__EDIT_INVOICE) {
       const inv = win.__EDIT_INVOICE as Invoice;
@@ -212,6 +212,9 @@ export function BillingModule({ store }: { store: any }) {
       currentY += 8;
       doc.setFont('helvetica', 'normal');
       doc.text(`Name: ${billData.customerName || 'N/A'}`, 15, currentY);
+      doc.text(`Cust ID: ${billData.customerId || 'N/A'}`, 15, currentY + 6);
+      doc.text(`Mobile: ${billData.mobile || 'N/A'}`, 15, currentY + 12);
+
       doc.text(`Job ID: ${billData.jobId || 'N/A'}`, 110, currentY);
       doc.text(`Device: ${billData.brand} ${billData.model}`, 110, currentY + 6);
 
@@ -220,22 +223,43 @@ export function BillingModule({ store }: { store: any }) {
       doc.rect(15, currentY, 180, 10, 'F');
       doc.setTextColor(255);
       doc.text('DESCRIPTION', 20, currentY + 7);
+      doc.text('QTY', 150, currentY + 7, { align: 'center' });
       doc.text('AMT (INR)', 190, currentY + 7, { align: 'right' });
 
       currentY += 10;
       doc.setTextColor(0);
-      billData.items.forEach(item => {
-        doc.text(item.name, 20, currentY + 7);
-        doc.text(item.total.toFixed(2), 190, currentY + 7, { align: 'right' });
+      
+      if (billData.items.length === 0) {
+        doc.text('No Parts Used', 20, currentY + 7);
         currentY += 10;
-      });
+      } else {
+        billData.items.forEach(item => {
+          doc.text(item.name, 20, currentY + 7);
+          doc.text(String(item.quantity), 150, currentY + 7, { align: 'center' });
+          doc.text(item.total.toFixed(2), 190, currentY + 7, { align: 'right' });
+          currentY += 10;
+        });
+      }
 
       doc.text('Labour / Service Charges', 20, currentY + 7);
+      doc.text('1', 150, currentY + 7, { align: 'center' });
       doc.text(billData.labourCharges.toFixed(2), 190, currentY + 7, { align: 'right' });
       
       currentY += 20;
-      doc.text('Total:', 140, currentY);
-      doc.text(total.toFixed(2), 190, currentY, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text('Subtotal:', 140, currentY);
+      doc.text(subtotal.toFixed(2), 190, currentY, { align: 'right' });
+      
+      if (billData.taxEnabled) {
+        currentY += 7;
+        doc.text('GST (18%):', 140, currentY);
+        doc.text(gst.toFixed(2), 190, currentY, { align: 'right' });
+      }
+
+      currentY += 10;
+      doc.setFontSize(14);
+      doc.text('Total Payable:', 140, currentY);
+      doc.text(`INR ${total.toFixed(2)}`, 190, currentY, { align: 'right' });
 
       doc.save(`INV_${billData.jobId || 'GJ5'}.pdf`);
     } catch (e) { console.error(e); }
@@ -291,7 +315,7 @@ export function BillingModule({ store }: { store: any }) {
                 {billData.items.map((item, idx) => (
                    <div key={idx} className="flex justify-between items-center bg-slate-900/40 p-2 rounded-lg text-xs">
                       <div className="flex flex-col">
-                         <span className="font-bold">{item.name}</span>
+                         <span className="font-bold">{item.name} (Qty: {item.quantity})</span>
                          <span className="text-[9px] text-slate-500">Unit: ₹{item.unitPrice}</span>
                       </div>
                       <div className="flex items-center gap-4">
@@ -389,7 +413,8 @@ export function BillingModule({ store }: { store: any }) {
               <div className="space-y-1">
                  <p className="text-[9px] font-black text-slate-400 uppercase">Customer Details</p>
                  <h4 className="text-base font-black">{billData.customerName || 'N/A'}</h4>
-                 <p className="text-[10px] font-bold text-slate-600">{billData.mobile || 'N/A'}</p>
+                 <p className="text-[10px] font-bold text-slate-600">ID: {billData.customerId || 'N/A'}</p>
+                 <p className="text-[10px] font-bold text-slate-600">Mob: {billData.mobile || 'N/A'}</p>
               </div>
               <div className="space-y-1 text-right">
                  <p className="text-[9px] font-black text-slate-400 uppercase">Device Context</p>
@@ -403,18 +428,27 @@ export function BillingModule({ store }: { store: any }) {
                  <thead>
                     <tr className={cn("text-white", activeTheme.bg)}>
                        <th className="p-2 text-left">DESCRIPTION</th>
+                       <th className="p-2 text-center">QTY</th>
                        <th className="p-2 text-right">TOTAL (INR)</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-50">
-                    {billData.items.map((item, i) => (
-                       <tr key={i}>
-                          <td className="p-2 font-bold">{item.name}</td>
-                          <td className="p-2 text-right font-mono">₹{item.total.toFixed(2)}</td>
+                    {billData.items.length === 0 ? (
+                       <tr>
+                         <td className="p-2 text-slate-400 italic" colSpan={3}>No spare parts used.</td>
                        </tr>
-                    ))}
+                    ) : (
+                      billData.items.map((item, i) => (
+                        <tr key={i}>
+                           <td className="p-2 font-bold">{item.name}</td>
+                           <td className="p-2 text-center">{item.quantity}</td>
+                           <td className="p-2 text-right font-mono">₹{item.total.toFixed(2)}</td>
+                        </tr>
+                      ))
+                    )}
                     <tr>
                        <td className="p-2 font-bold">Labour & Service Charges</td>
+                       <td className="p-2 text-center">1</td>
                        <td className="p-2 text-right font-mono">₹{billData.labourCharges.toFixed(2)}</td>
                     </tr>
                  </tbody>
@@ -422,7 +456,7 @@ export function BillingModule({ store }: { store: any }) {
            </div>
 
            <div className="mt-8 pt-8 border-t-2 border-slate-100 flex justify-end">
-              <div className="w-48 space-y-2">
+              <div className="w-56 space-y-2">
                  <div className="flex justify-between text-[10px]">
                     <span className="text-slate-400 font-bold uppercase">Subtotal</span>
                     <span className="font-bold">₹{subtotal.toFixed(2)}</span>

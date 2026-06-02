@@ -48,14 +48,24 @@ export interface Inquiry {
   createdAt: string;
 }
 
+export type EmployeeStatus = 'active' | 'inactive';
+
 export interface Employee {
   id: string;
   name: string;
   role: string;
+  designation: string;
   mobile: string;
+  address: string;
   salary: number;
   dailyWage: number;
+  joiningDate: string;
+  pin: string;
+  photo?: string;
+  status: EmployeeStatus;
 }
+
+export type AttendanceStatus = 'Present' | 'Late' | 'Half Day' | 'Absent';
 
 export interface AttendanceRecord {
   id: string;
@@ -66,6 +76,9 @@ export interface AttendanceRecord {
   clockInPhoto: string | null;
   clockOutTime: string | null;
   clockOutPhoto: string | null;
+  totalHours: number;
+  status: AttendanceStatus;
+  location?: { lat: number; lng: number };
 }
 
 export interface Expense {

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -39,8 +38,32 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
 };
 
 const DEFAULT_EMPLOYEES: Employee[] = [
-  { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
-  { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
+  { 
+    id: 'EMP101', 
+    name: 'Rajesh Sharma', 
+    role: 'Senior Technician', 
+    designation: 'Tech Lead',
+    mobile: '9876543210', 
+    address: 'Surat, Gujarat',
+    salary: 25000, 
+    dailyWage: 833,
+    joiningDate: '2023-01-15',
+    pin: '1234',
+    status: 'active'
+  },
+  { 
+    id: 'EMP102', 
+    name: 'Amit Patel', 
+    role: 'Runner', 
+    designation: 'Logistics Associate',
+    mobile: '9123456789', 
+    address: 'Surat, Gujarat',
+    salary: 15000, 
+    dailyWage: 500,
+    joiningDate: '2023-05-20',
+    pin: '4321',
+    status: 'active'
+  }
 ];
 
 export function useErpStore() {
@@ -230,6 +253,29 @@ export function useErpStore() {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
+  const updateTransaction = (updatedTx: WalletTransaction) => {
+    const oldTx = transactions.find(t => t.id === updatedTx.id);
+    if (!oldTx) return;
+
+    // Undo old impact
+    let newBalance = walletBalance;
+    if (oldTx.type === 'TOPUP' || oldTx.type === 'MANUAL_CREDIT' || oldTx.type === 'REVENUE') {
+      newBalance -= oldTx.amount;
+    } else {
+      newBalance += oldTx.amount;
+    }
+
+    // Apply new impact
+    if (updatedTx.type === 'TOPUP' || updatedTx.type === 'MANUAL_CREDIT' || updatedTx.type === 'REVENUE') {
+      newBalance += updatedTx.amount;
+    } else {
+      newBalance -= updatedTx.amount;
+    }
+
+    setWalletBalance(newBalance);
+    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
+  };
+
   const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', description: string) => {
     const finalAmount = Math.abs(amount);
     if (type === 'CREDIT') setWalletBalance(prev => prev + finalAmount);
@@ -251,6 +297,10 @@ export function useErpStore() {
   const updateTransportLogStatus = (id: string, status: any) => {
     setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   };
+
+  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
+  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
+  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
 
   const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => {
     const existing = prev.findIndex(r => r.employeeId === record.employeeId && r.date === record.date);
@@ -280,10 +330,10 @@ export function useErpStore() {
   return {
     calls, addCall, updateCall, deleteCall,
     inquiries, addInquiry,
-    employees,
+    employees, addEmployee, updateEmployee, deleteEmployee,
     attendance, updateAttendance,
     expenses, addExpense,
-    transactions, topUpWallet, deleteTransaction, manualAdjust,
+    transactions, topUpWallet, deleteTransaction, updateTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
     invoices, addInvoice, deleteInvoice, updateInvoice,
     stock, updateStockItem, deleteStockItem,

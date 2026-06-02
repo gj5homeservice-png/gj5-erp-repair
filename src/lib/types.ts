@@ -87,10 +87,15 @@ export interface WalletTransaction {
   amount: number;
   date: string;
   time: string;
-  type: 'TOPUP' | 'EXPENSE';
+  type: 'TOPUP' | 'EXPENSE' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT';
   status: 'SUCCESS' | 'FAILED' | 'PENDING';
   userId: string;
   description: string;
+  metadata?: {
+    expenseId?: string;
+    category?: string;
+    vendorName?: string;
+  };
 }
 
 export type LogisticsStatus = 'Pending Pickup' | 'OK Pickup' | 'Pending Delivery' | 'OK Delivery';

@@ -192,7 +192,12 @@ export function useErpStore() {
       type: 'EXPENSE',
       status: 'SUCCESS',
       userId: 'admin',
-      description: `Expense: ${expense.category}`
+      description: `Expense: ${expense.category}`,
+      metadata: {
+        expenseId: expense.id,
+        category: expense.category,
+        vendorName: expense.vendorName
+      }
     };
     setTransactions(prev => [trans, ...prev]);
   };
@@ -208,6 +213,83 @@ export function useErpStore() {
       status: 'SUCCESS',
       userId: 'admin',
       description: 'Wallet Top-Up'
+    };
+    setTransactions(prev => [trans, ...prev]);
+  };
+
+  const deleteTransaction = (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+
+    // Adjust balance based on transaction type
+    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT') {
+      setWalletBalance(prev => prev - tx.amount);
+    } else {
+      setWalletBalance(prev => prev + tx.amount);
+    }
+
+    // If it was an expense, remove the expense record too
+    if (tx.type === 'EXPENSE' && tx.metadata?.expenseId) {
+      setExpenses(prev => prev.filter(e => e.id !== tx.metadata?.expenseId));
+    }
+
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  };
+
+  const updateTransaction = (updatedTx: WalletTransaction) => {
+    const oldTx = transactions.find(t => t.id === updatedTx.id);
+    if (!oldTx) return;
+
+    // Reverse old balance impact
+    let balance = walletBalance;
+    if (oldTx.type === 'TOPUP' || oldTx.type === 'MANUAL_CREDIT') {
+      balance -= oldTx.amount;
+    } else {
+      balance += oldTx.amount;
+    }
+
+    // Apply new balance impact
+    if (updatedTx.type === 'TOPUP' || updatedTx.type === 'MANUAL_CREDIT') {
+      balance += updatedTx.amount;
+    } else {
+      balance -= updatedTx.amount;
+    }
+
+    setWalletBalance(balance);
+
+    // Sync with expenses if applicable
+    if (updatedTx.type === 'EXPENSE' && updatedTx.metadata?.expenseId) {
+      setExpenses(prev => prev.map(e => e.id === updatedTx.metadata?.expenseId ? {
+        ...e,
+        amount: updatedTx.amount,
+        category: updatedTx.metadata?.category || e.category,
+        vendorName: updatedTx.metadata?.vendorName || e.vendorName,
+        date: updatedTx.date
+      } : e));
+    }
+
+    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
+  };
+
+  const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', description: string) => {
+    const txType = type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT';
+    const finalAmount = Math.abs(amount);
+    
+    if (type === 'CREDIT') {
+      setWalletBalance(prev => prev + finalAmount);
+    } else {
+      setWalletBalance(prev => prev - finalAmount);
+    }
+
+    const trans: WalletTransaction = {
+      id: `TXN-MAN-${Date.now()}`,
+      amount: finalAmount,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString(),
+      type: txType,
+      status: 'SUCCESS',
+      userId: 'admin',
+      description: description || `Manual ${type === 'CREDIT' ? 'Credit' : 'Debit'}`
     };
     setTransactions(prev => [trans, ...prev]);
   };
@@ -247,7 +329,7 @@ export function useErpStore() {
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
-    transactions, topUpWallet,
+    transactions, topUpWallet, deleteTransaction, updateTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
     invoices, addInvoice,
     walletBalance, setWalletBalance,

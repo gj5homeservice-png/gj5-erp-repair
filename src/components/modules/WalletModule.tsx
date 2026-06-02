@@ -7,32 +7,24 @@ import {
   ArrowUpRight, 
   ArrowDownRight, 
   Coffee, 
-  PenTool, 
   Wrench, 
-  Package, 
   MoreHorizontal,
   PlusCircle,
   PieChart as PieIcon,
   TrendingUp,
   Fuel,
-  Home,
-  Zap,
-  Globe,
-  Smartphone,
   Users,
-  Truck,
   Box,
-  FileText,
-  Megaphone,
-  Mail,
-  ShieldCheck,
-  CreditCard,
-  FileDown,
-  Table as TableIcon,
   Search,
   History,
+  Trash2,
+  Edit,
+  MinusCircle,
+  Filter,
+  Calendar,
   CheckCircle2,
-  Clock
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +37,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Table, 
   TableBody, 
@@ -54,10 +45,29 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { format, isToday, isSameWeek, isSameMonth, parseISO } from 'date-fns';
+import { format, isToday, isSameMonth, parseISO } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { TopUpModal } from './wallet/TopUpModal';
+import { WalletTransaction } from '@/lib/types';
 
 const EXPENSE_CATEGORIES = [
   { name: 'TV Purchase', icon: Box, color: '#3B82F6' },
@@ -68,38 +78,41 @@ const EXPENSE_CATEGORIES = [
   { name: 'Other', icon: MoreHorizontal, color: '#64748B' }
 ];
 
-const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'] as const;
-
 export function WalletModule({ store }: { store: any }) {
   const [expense, setExpense] = useState({
-    amount: 0, category: 'Chai - Nasta', customCategory: '', quantity: '', vendorName: '', billNumber: '', paymentMode: 'UPI' as any, date: format(new Date(), 'yyyy-MM-dd'), notes: ''
+    amount: 0, category: 'Chai - Nasta', vendorName: '', date: format(new Date(), 'yyyy-MM-dd')
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [txToDelete, setTxToDelete] = useState<string | null>(null);
+  const [txToEdit, setTxToEdit] = useState<WalletTransaction | null>(null);
+  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
+  const [adjustment, setAdjustment] = useState({ amount: '', type: 'CREDIT' as 'CREDIT' | 'DEBIT', description: '' });
 
   const stats = useMemo(() => {
-    const expenses = store.expenses || [];
     const transactions = store.transactions || [];
     
     let todayExp = 0, monthExp = 0;
     let todayInc = 0, monthInc = 0;
 
-    expenses.forEach((e: any) => {
-      const date = parseISO(e.date);
-      const amount = Number(e.amount);
-      if (isToday(date)) todayExp += amount;
-      if (isSameMonth(date, new Date())) monthExp += amount;
-    });
-
-    transactions.filter((t: any) => t.type === 'TOPUP' && t.status === 'SUCCESS').forEach((t: any) => {
+    transactions.forEach((t: any) => {
       const date = parseISO(t.date);
       const amount = Number(t.amount);
-      if (isToday(date)) todayInc += amount;
-      if (isSameMonth(date, new Date())) monthInc += amount;
+      const isCredit = t.type === 'TOPUP' || t.type === 'MANUAL_CREDIT';
+      
+      if (isToday(date)) {
+        if (isCredit) todayInc += amount;
+        else todayExp += amount;
+      }
+      if (isSameMonth(date, new Date())) {
+        if (isCredit) monthInc += amount;
+        else monthExp += amount;
+      }
     });
 
     return { todayExp, monthExp, todayInc, monthInc };
-  }, [store.expenses, store.transactions]);
+  }, [store.transactions]);
 
   const chartData = useMemo(() => {
     const expenses = store.expenses || [];
@@ -112,11 +125,30 @@ export function WalletModule({ store }: { store: any }) {
     })).sort((a, b) => b.value - a.value).slice(0, 5);
   }, [store.expenses]);
 
-  const recentTransactions = useMemo(() => {
-    return (store.transactions || []).filter((t: any) => 
-      t.description.toLowerCase().includes(searchQuery.toLowerCase())
-    ).sort((a: any, b: any) => new Date(b.id.split('-').pop()).getTime() - new Date(a.id.split('-').pop()).getTime());
-  }, [store.transactions, searchQuery]);
+  const filteredTransactions = useMemo(() => {
+    return (store.transactions || []).filter((t: any) => {
+      const matchesSearch = t.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           t.metadata?.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           t.amount.toString().includes(searchQuery);
+      const matchesType = typeFilter === 'ALL' || t.type === typeFilter;
+      return matchesSearch && matchesType;
+    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [store.transactions, searchQuery, typeFilter]);
+
+  const handleManualAdjust = () => {
+    const amt = Number(adjustment.amount);
+    if (!amt || isNaN(amt)) return;
+    store.manualAdjust(amt, adjustment.type, adjustment.description);
+    setAdjustment({ amount: '', type: 'CREDIT', description: '' });
+    setIsAdjustmentOpen(false);
+  };
+
+  const handleUpdateTx = () => {
+    if (txToEdit) {
+      store.updateTransaction(txToEdit);
+      setTxToEdit(null);
+    }
+  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -130,12 +162,21 @@ export function WalletModule({ store }: { store: any }) {
                 <p className="text-blue-100/80 font-bold uppercase tracking-widest text-[10px] md:text-xs">Master Wallet Balance</p>
                 <h2 className="text-4xl md:text-6xl font-headline font-black tracking-tight">₹{store.walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
               </div>
-              <Button 
-                onClick={() => setIsTopUpOpen(true)}
-                className="bg-white text-[#0066FF] hover:bg-slate-100 h-12 px-8 rounded-xl font-bold uppercase text-xs shadow-lg"
-              >
-                <PlusCircle className="w-4 h-4 mr-2" /> Quick Top-Up
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  onClick={() => setIsTopUpOpen(true)}
+                  className="bg-white text-[#0066FF] hover:bg-slate-100 h-11 px-6 rounded-xl font-bold uppercase text-xs shadow-lg"
+                >
+                  <PlusCircle className="w-4 h-4 mr-2" /> Top-Up
+                </Button>
+                <Button 
+                  onClick={() => setIsAdjustmentOpen(true)}
+                  variant="outline"
+                  className="bg-blue-600/20 border-blue-400/30 text-white hover:bg-blue-600/40 h-11 px-6 rounded-xl font-bold uppercase text-xs"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" /> Manual Adjustment
+                </Button>
+              </div>
            </div>
         </div>
 
@@ -164,7 +205,7 @@ export function WalletModule({ store }: { store: any }) {
            <Card className="bg-slate-900/40 border-slate-800">
               <CardHeader className="border-b border-slate-800 p-4 md:p-6">
                  <CardTitle className="font-headline font-bold text-base md:text-lg flex items-center gap-2">
-                    <ArrowDownRight className="w-5 h-5 text-[#FF3366]" /> Expense Logger
+                    <ArrowDownRight className="w-5 h-5 text-[#FF3366]" /> New Expense Registry
                  </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-8 space-y-4 md:space-y-6">
@@ -191,63 +232,88 @@ export function WalletModule({ store }: { store: any }) {
                        <Input type="date" value={expense.date} onChange={e => setExpense({...expense, date: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11 text-xs" />
                     </div>
                  </div>
-                 <Button onClick={() => store.addExpense({id: `EXP${Date.now()}`, ...expense, timestamp: new Date().toISOString()})} className="w-full bg-[#FF3366] hover:bg-rose-600 h-12 rounded-xl font-bold uppercase text-sm shadow-lg shadow-rose-500/10">Record Transaction</Button>
+                 <Button onClick={() => store.addExpense({id: `EXP${Date.now()}`, ...expense, paymentMode: 'UPI', timestamp: new Date().toISOString()})} className="w-full bg-[#FF3366] hover:bg-rose-600 h-12 rounded-xl font-bold uppercase text-sm shadow-lg shadow-rose-500/10">Log Expense Record</Button>
               </CardContent>
            </Card>
 
            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                  <h3 className="text-lg font-headline font-bold flex items-center gap-2">
-                    <History className="w-5 h-5 text-blue-500" /> Transaction Ledger
+                    <History className="w-5 h-5 text-blue-500" /> Transaction Audit Ledger
                  </h3>
-                 <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                    <Input placeholder="Search ledger..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-10 bg-slate-900 border-slate-800 text-xs w-full" />
+                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-48">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                       <Input placeholder="Search logs..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-9 bg-slate-900 border-slate-800 text-xs" />
+                    </div>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                       <SelectTrigger className="w-full sm:w-36 h-9 bg-slate-900 border-slate-800 text-[10px] font-bold uppercase"><SelectValue placeholder="All Types" /></SelectTrigger>
+                       <SelectContent className="bg-slate-900 border-slate-800">
+                          <SelectItem value="ALL">All Types</SelectItem>
+                          <SelectItem value="TOPUP">Top-Up</SelectItem>
+                          <SelectItem value="EXPENSE">Expense</SelectItem>
+                          <SelectItem value="MANUAL_CREDIT">Manual Credit</SelectItem>
+                          <SelectItem value="MANUAL_DEBIT">Manual Debit</SelectItem>
+                       </SelectContent>
+                    </Select>
                  </div>
               </div>
+
               <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
                  <div className="overflow-x-auto">
                    <Table>
                       <TableHeader className="bg-slate-900/60">
                          <TableRow className="border-slate-800">
-                            <TableHead className="text-[10px] font-bold uppercase">Details</TableHead>
-                            <TableHead className="text-[10px] font-bold uppercase">Date</TableHead>
-                            <TableHead className="text-right text-[10px] font-bold uppercase">Amount</TableHead>
+                            <TableHead className="text-[10px] font-bold uppercase">Details & Class</TableHead>
+                            <TableHead className="text-[10px] font-bold uppercase">Chronology</TableHead>
+                            <TableHead className="text-right text-[10px] font-bold uppercase">Amount (₹)</TableHead>
+                            <TableHead className="text-right text-[10px] font-bold uppercase">Control</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {recentTransactions.map((tx: any) => (
-                           <TableRow key={tx.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className={cn(
-                                    "p-1.5 rounded-lg",
-                                    tx.type === 'TOPUP' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                                  )}>
-                                    {tx.type === 'TOPUP' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                         {filteredTransactions.map((tx: any) => {
+                           const isCredit = tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT';
+                           return (
+                             <TableRow key={tx.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                      "p-1.5 rounded-lg shrink-0",
+                                      isCredit ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                    )}>
+                                      {isCredit ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-slate-100 truncate">{tx.description}</p>
+                                      <Badge variant="outline" className={cn("text-[8px] uppercase px-1 border-0 bg-slate-800/50", isCredit ? "text-emerald-500" : "text-rose-500")}>
+                                         {tx.type.replace('_', ' ')}
+                                      </Badge>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-xs font-bold text-slate-100">{tx.description}</p>
-                                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">{tx.status}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-[10px] text-slate-400">
-                                <p>{format(parseISO(tx.date), 'dd MMM yyyy')}</p>
-                                <p className="text-[9px] text-slate-600">{tx.time}</p>
-                              </TableCell>
-                              <TableCell className={cn(
-                                "text-right font-code font-bold text-sm",
-                                tx.type === 'TOPUP' ? "text-emerald-400" : "text-rose-500"
-                              )}>
-                                {tx.type === 'TOPUP' ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
-                              </TableCell>
-                           </TableRow>
-                         ))}
-                         {recentTransactions.length === 0 && (
+                                </TableCell>
+                                <TableCell className="text-[10px] text-slate-400 whitespace-nowrap">
+                                  <p className="font-bold">{format(parseISO(tx.date), 'dd MMM yyyy')}</p>
+                                  <p className="text-[9px] text-slate-600 uppercase font-black">{tx.time}</p>
+                                </TableCell>
+                                <TableCell className={cn(
+                                  "text-right font-code font-bold text-sm",
+                                  isCredit ? "text-emerald-400" : "text-rose-500"
+                                )}>
+                                  {isCredit ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                   <div className="flex justify-end gap-1">
+                                      <Button variant="ghost" size="icon" onClick={() => setTxToEdit(tx)} className="h-7 w-7 text-blue-400 hover:bg-blue-500/10"><Edit className="w-3.5 h-3.5" /></Button>
+                                      <Button variant="ghost" size="icon" onClick={() => setTxToDelete(tx.id)} className="h-7 w-7 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                   </div>
+                                </TableCell>
+                             </TableRow>
+                           );
+                         })}
+                         {filteredTransactions.length === 0 && (
                            <TableRow>
-                             <TableCell colSpan={3} className="h-32 text-center text-slate-500 text-xs italic">
-                               No transactions found in history.
+                             <TableCell colSpan={4} className="h-32 text-center text-slate-500 text-xs italic">
+                               No transaction records found matching your filters.
                              </TableCell>
                            </TableRow>
                          )}
@@ -262,11 +328,11 @@ export function WalletModule({ store }: { store: any }) {
            <Card className="bg-slate-900/40 border-slate-800">
               <CardHeader className="border-b border-slate-800 p-4">
                  <CardTitle className="font-headline font-bold text-base flex items-center gap-2">
-                    <PieIcon className="w-5 h-5 text-[#FFD700]" /> Expense Distribution
+                    <PieIcon className="w-5 h-5 text-[#FFD700]" /> Cost Distribution
                  </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                 <div className="h-[200px] w-full mb-6">
+                 <div className="h-[180px] w-full mb-6">
                     <ResponsiveContainer width="100%" height="100%">
                        <PieChart>
                           <Pie data={chartData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value">
@@ -276,14 +342,14 @@ export function WalletModule({ store }: { store: any }) {
                        </PieChart>
                     </ResponsiveContainer>
                  </div>
-                 <div className="space-y-3">
+                 <div className="space-y-2.5">
                     {chartData.map((sector, i) => (
-                      <div key={i} className="flex justify-between items-center text-[11px]">
+                      <div key={i} className="flex justify-between items-center text-[10px]">
                          <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sector.color }}></div>
-                            <span className="text-slate-300 truncate max-w-[100px]">{sector.name}</span>
+                            <span className="text-slate-300 truncate max-w-[120px] font-bold uppercase">{sector.name}</span>
                          </div>
-                         <span className="font-code font-bold">₹{sector.value}</span>
+                         <span className="font-code font-bold">₹{sector.value.toLocaleString()}</span>
                       </div>
                     ))}
                  </div>
@@ -291,13 +357,15 @@ export function WalletModule({ store }: { store: any }) {
            </Card>
 
            <Card className="bg-slate-900/40 border-slate-800 border-dashed">
-             <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                <div className="p-3 bg-blue-500/10 rounded-full text-blue-400">
-                  <ShieldCheck className="w-6 h-6" />
+             <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><TrendingUp className="w-5 h-5" /></div>
+                  <h4 className="text-sm font-bold uppercase tracking-tighter">Instant Recalculation</h4>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold">Safe Transactions</h4>
-                  <p className="text-[10px] text-slate-500 mt-1">All top-ups are secured with industry standard encryption. GJ5 HOME SERVICE ensures your funds are tracked and verifiable.</p>
+                <p className="text-[10px] text-slate-500 leading-relaxed italic">The Master Ledger is self-balancing. Any edit or deletion triggers an immediate cascade update across analytics, monthly reports, and visual charts.</p>
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                   <span className="text-[9px] font-black text-slate-600 uppercase">Integrity: Verified</span>
+                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
              </CardContent>
            </Card>
@@ -309,6 +377,133 @@ export function WalletModule({ store }: { store: any }) {
         onClose={() => setIsTopUpOpen(false)} 
         onSuccess={(amt) => store.topUpWallet(amt)}
       />
+
+      {/* Manual Adjustment Modal */}
+      <Dialog open={isAdjustmentOpen} onOpenChange={setIsAdjustmentOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
+           <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Filter className="w-5 h-5 text-blue-400" /> Manual Wallet Adjustment</DialogTitle>
+           </DialogHeader>
+           <div className="space-y-6 py-4">
+              <div className="grid grid-cols-2 gap-3">
+                 <Button 
+                   onClick={() => setAdjustment({...adjustment, type: 'CREDIT'})}
+                   variant={adjustment.type === 'CREDIT' ? 'default' : 'outline'}
+                   className={cn("h-12 font-bold uppercase", adjustment.type === 'CREDIT' && "bg-emerald-600 hover:bg-emerald-700")}
+                 >
+                   <PlusCircle className="w-4 h-4 mr-2" /> Credit (+)
+                 </Button>
+                 <Button 
+                   onClick={() => setAdjustment({...adjustment, type: 'DEBIT'})}
+                   variant={adjustment.type === 'DEBIT' ? 'default' : 'outline'}
+                   className={cn("h-12 font-bold uppercase", adjustment.type === 'DEBIT' && "bg-rose-600 hover:bg-rose-700")}
+                 >
+                   <MinusCircle className="w-4 h-4 mr-2" /> Debit (-)
+                 </Button>
+              </div>
+              <div className="space-y-4">
+                 <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Adjustment Amount (₹)</Label>
+                    <Input 
+                      type="number" 
+                      value={adjustment.amount} 
+                      onChange={e => setAdjustment({...adjustment, amount: e.target.value})}
+                      className="bg-slate-950 border-slate-800 h-12 font-code font-bold text-xl" 
+                    />
+                 </div>
+                 <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Reference / Note</Label>
+                    <Input 
+                      value={adjustment.description} 
+                      onChange={e => setAdjustment({...adjustment, description: e.target.value})}
+                      placeholder="e.g. Correcting bank error"
+                      className="bg-slate-950 border-slate-800 h-11" 
+                    />
+                 </div>
+              </div>
+           </div>
+           <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsAdjustmentOpen(false)}>Cancel</Button>
+              <Button onClick={handleManualAdjust} className="bg-blue-600 hover:bg-blue-700 px-10 h-11 font-bold uppercase">Apply Adjustment</Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Transaction Modal */}
+      <Dialog open={!!txToEdit} onOpenChange={() => setTxToEdit(null)}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
+           <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Edit className="w-5 h-5 text-blue-400" /> Modify Transaction</DialogTitle>
+           </DialogHeader>
+           {txToEdit && (
+             <div className="space-y-5 py-4">
+                <div className="space-y-1">
+                   <Label className="text-[10px] font-bold text-slate-500 uppercase">Label / Description</Label>
+                   <Input value={txToEdit.description} onChange={e => setTxToEdit({...txToEdit, description: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Amount (₹)</Label>
+                      <Input type="number" value={txToEdit.amount} onChange={e => setTxToEdit({...txToEdit, amount: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">Date</Label>
+                      <Input type="date" value={txToEdit.date} onChange={e => setTxToEdit({...txToEdit, date: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                   </div>
+                </div>
+                {txToEdit.type === 'EXPENSE' && (
+                  <div className="space-y-4 pt-2">
+                     <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Expense Category</Label>
+                        <Select 
+                          value={txToEdit.metadata?.category} 
+                          onValueChange={v => setTxToEdit({...txToEdit, metadata: {...txToEdit.metadata, category: v}})}
+                        >
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {EXPENSE_CATEGORIES.map(cat => <SelectItem key={`edit-cat-${cat.name}`} value={cat.name}>{cat.name}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                     </div>
+                     <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Vendor</Label>
+                        <Input 
+                          value={txToEdit.metadata?.vendorName} 
+                          onChange={e => setTxToEdit({...txToEdit, metadata: {...txToEdit.metadata, vendorName: e.target.value}})} 
+                          className="bg-slate-950 border-slate-800 h-11" 
+                        />
+                     </div>
+                  </div>
+                )}
+             </div>
+           )}
+           <DialogFooter>
+              <Button variant="ghost" onClick={() => setTxToEdit(null)}>Cancel</Button>
+              <Button onClick={handleUpdateTx} className="bg-blue-600 hover:bg-blue-700 px-10 h-11 font-bold uppercase">Save Changes</Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!txToDelete} onOpenChange={() => setTxToDelete(null)}>
+        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+           <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-rose-500" /> Void Transaction?</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400">
+                 This action is irreversible. The wallet balance will be re-adjusted, and if this was a linked expense, the record will be completely removed from analytics.
+              </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+              <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700">Abort</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => { if (txToDelete) store.deleteTransaction(txToDelete); setTxToDelete(null); }}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                Confirm Delete
+              </AlertDialogAction>
+           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

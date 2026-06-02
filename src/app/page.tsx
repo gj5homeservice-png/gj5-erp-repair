@@ -32,12 +32,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -170,6 +173,8 @@ export default function DashboardPage() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0B0F19] border-r border-slate-800 p-0 w-72">
+                <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Access different system modules and system settings.</SheetDescription>
                 <div className="p-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
                     {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
@@ -187,7 +192,7 @@ export default function DashboardPage() {
 
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input placeholder="Search everything..." className="pl-10 bg-slate-900/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
+              <Input placeholder="Search everything..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
             </div>
           </div>
 
@@ -219,6 +224,7 @@ export default function DashboardPage() {
             <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-2">
               <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
             </DialogTitle>
+            <DialogDescription className="sr-only">Manage your shop logo, sidebar visibility, and dashboard KPI tracking.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 md:p-0 space-y-6">
             <div className="space-y-4">

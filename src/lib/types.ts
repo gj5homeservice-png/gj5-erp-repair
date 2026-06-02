@@ -114,15 +114,29 @@ export interface Expense {
   timestamp: string;
 }
 
+export interface StockMovement {
+  id: string;
+  date: string;
+  type: 'INWARD' | 'OUTWARD';
+  quantity: number;
+  referenceId?: string; // Job ID or Invoice ID
+  customerName?: string;
+  notes?: string;
+}
+
 export interface StockItem {
   id: string;
   name: string;
+  brand: string;
   category: string;
   purchasePrice: number;
   sellingPrice: number;
   quantity: number;
   minStockLevel: number;
+  barcode: string;
+  images: string[]; // base64 strings
   lastUpdated: string;
+  history: StockMovement[];
 }
 
 export interface InvoiceItem {

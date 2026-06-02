@@ -12,7 +12,8 @@ import {
   WalletTransaction,
   AuditLog,
   StockItem,
-  VisibilitySettings 
+  VisibilitySettings,
+  StockMovement
 } from '@/lib/types';
 
 const DEFAULT_VISIBILITY: VisibilitySettings = {
@@ -208,11 +209,30 @@ export function useErpStore() {
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
     setWalletBalance(prev => prev + invoice.total);
+    
+    // Automatic Stock Update with History
     setStock(prev => prev.map(item => {
       const usedItem = invoice.items.find(i => i.id === item.id);
-      if (usedItem) return { ...item, quantity: Math.max(0, item.quantity - usedItem.quantity) };
+      if (usedItem) {
+        const movement: StockMovement = {
+          id: `MOV-${Date.now()}`,
+          date: new Date().toISOString(),
+          type: 'OUTWARD',
+          quantity: usedItem.quantity,
+          referenceId: invoice.invoiceNumber,
+          customerName: invoice.customerName,
+          notes: `Used in Job ${invoice.jobId}`
+        };
+        return { 
+          ...item, 
+          quantity: Math.max(0, item.quantity - usedItem.quantity),
+          history: [movement, ...(item.history || [])],
+          lastUpdated: new Date().toISOString()
+        };
+      }
       return item;
     }));
+
     setTransactions(prev => [{
       id: `TXN-INV-${Date.now()}`,
       amount: invoice.total,
@@ -243,8 +263,8 @@ export function useErpStore() {
   const updateStockItem = (item: StockItem) => {
     setStock(prev => {
       const exists = prev.find(i => i.id === item.id);
-      if (exists) return prev.map(i => i.id === item.id ? item : i);
-      return [item, ...prev];
+      if (exists) return prev.map(i => i.id === item.id ? { ...item, history: item.history || exists.history || [] } : i);
+      return [{ ...item, history: item.history || [] }, ...prev];
     });
   };
 

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -18,7 +17,9 @@ import {
   ImageIcon,
   Trash2,
   Truck,
-  Database
+  Database,
+  BarChart3,
+  Box
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,8 @@ import { BillingModule } from '@/components/modules/BillingModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
+import { StockModule } from '@/components/modules/StockModule';
+import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
 import {
@@ -36,7 +39,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -49,7 +51,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
-type ActiveTab = 'Repairing' | 'Billing' | 'Employees' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Repairing' | 'Billing' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -62,16 +64,18 @@ export default function DashboardPage() {
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
     { name: 'Billing', icon: ReceiptText, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
+    { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
+    { name: 'P&L Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
-    { name: 'Transportation', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
+    { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
 
   const visibleNavigation = navigation.filter(item => item.visible);
 
   useEffect(() => {
     if (visibleNavigation.length > 0 && !visibleNavigation.find(n => n.id === activeTab)) {
-      setActiveTab(visibleNavigation[0].id);
+      setActiveTab(visibleNavigation[0].id as ActiveTab);
     }
   }, [store.visibility.tabs]);
 
@@ -121,22 +125,8 @@ export default function DashboardPage() {
     </nav>
   );
 
-  const SettingsTrigger = ({ isMobile = false }) => (
-    <button 
-      onClick={() => {
-        setSettingsOpen(true);
-        if (isMobile) setIsMobileMenuOpen(false);
-      }}
-      className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all"
-    >
-      <SettingsIcon className="w-5 h-5" />
-      {(isSidebarOpen || isMobile) && <span className="font-medium">System Settings</span>}
-    </button>
-  );
-
   return (
     <div className="flex min-h-screen bg-[#0B0F19] text-slate-100 overflow-x-hidden">
-      {/* Desktop Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 hidden lg:flex flex-col transition-all duration-300 border-r border-slate-800 bg-[#0B0F19]",
         isSidebarOpen ? "w-64" : "w-20"
@@ -153,7 +143,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
-          <SettingsTrigger />
+          <button onClick={() => setSettingsOpen(true)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
+            <SettingsIcon className="w-5 h-5" />
+            {isSidebarOpen && <span className="font-medium">Master Settings</span>}
+          </button>
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
             {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             {isSidebarOpen && <span className="font-medium">Collapse</span>}
@@ -161,14 +154,12 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className={cn(
         "flex-1 flex flex-col transition-all duration-300 w-full", 
         isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
       )}>
         <header className="h-20 border-b border-slate-800 px-4 md:px-8 flex items-center justify-between sticky top-0 bg-[#0B0F19]/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
-            {/* Mobile Menu Trigger */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden">
@@ -176,33 +167,30 @@ export default function DashboardPage() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0B0F19] border-r border-slate-800 p-0 w-72">
-                <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
-                <SheetDescription className="sr-only">Access different system modules and system settings.</SheetDescription>
+                <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+                <SheetDescription className="sr-only">ERP Navigation</SheetDescription>
                 <div className="p-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center font-headline font-bold text-xl overflow-hidden">
                     {store.shopLogo ? <img src={store.shopLogo} className="w-full h-full object-cover" alt="Logo" /> : "G"}
                   </div>
                   <span className="font-headline font-bold text-xl tracking-tight">GJ5 HOME SERVICE</span>
                 </div>
-                <div className="mt-8 flex-1">
+                <div className="mt-8">
                   <NavItems isMobile />
-                </div>
-                <div className="absolute bottom-0 left-0 w-full p-4 border-t border-slate-800">
-                  <SettingsTrigger isMobile />
                 </div>
               </SheetContent>
             </Sheet>
 
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input placeholder="Search everything..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
+              <Input placeholder="Master search..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-6 ml-4">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-              <span className="text-sm font-semibold">Admin Console</span>
-              <span className="text-[10px] text-slate-500 tracking-widest font-code">v2.5.0</span>
+          <div className="flex items-center gap-4 md:gap-6 ml-4">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-semibold text-blue-400 italic">ERP Enterprise Edition</span>
+              <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V2.8.0</span>
             </div>
             <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
               <Bell className="w-5 h-5" />
@@ -211,23 +199,23 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="p-4 md:p-8 max-w-full overflow-hidden">
+        <div className="p-4 md:p-8 max-w-full">
           {activeTab === 'Repairing' && <RepairingModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
+          {activeTab === 'Stock' && <StockModule store={store} />}
+          {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
           {activeTab === 'Transportation' && <TransportationModule store={store} />}
         </div>
       </main>
 
-      {/* Settings Modal (Global) */}
       <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl p-0 md:p-6 overflow-hidden max-h-[95vh] flex flex-col">
           <DialogHeader className="p-6 border-b border-slate-800 md:p-0 md:border-0">
             <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-2">
               <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
             </DialogTitle>
-            <DialogDescription className="sr-only">Manage your shop logo, sidebar visibility, dashboard KPI tracking, and system backups.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 md:p-0 space-y-8 custom-scrollbar">
             <div className="space-y-4">

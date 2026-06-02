@@ -11,32 +11,16 @@ import {
   Invoice,
   WalletTransaction,
   AuditLog,
-  VisibilitySettings as IVisibilitySettings 
+  StockItem,
+  VisibilitySettings 
 } from '@/lib/types';
-
-export interface VisibilitySettings {
-  tabs: {
-    Repairing: boolean;
-    Billing: boolean;
-    Employees: boolean;
-    'E-Wallet': boolean;
-    Transportation: boolean;
-  };
-  kpis: {
-    totalActive: boolean;
-    pending: boolean;
-    completed: boolean;
-    repeat: boolean;
-    rejected: boolean;
-    exchange: boolean;
-    warranty: boolean;
-  };
-}
 
 const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: {
     Repairing: true,
     Billing: true,
+    Stock: true,
+    Analytics: true,
     Employees: true,
     'E-Wallet': true,
     Transportation: true
@@ -66,6 +50,7 @@ export function useErpStore() {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
@@ -88,96 +73,41 @@ export function useErpStore() {
       }
     }
 
-    const savedCalls = localStorage.getItem('gj5_repair_calls');
-    if (savedCalls) {
-      try { setCalls(JSON.parse(savedCalls)); } catch (e) {}
-    }
+    // Restore all other states from local storage
+    const load = (key: string, setter: any) => {
+      const val = localStorage.getItem(key);
+      if (val) {
+        try { setter(JSON.parse(val)); } catch (e) { console.error(`Error loading ${key}`, e); }
+      }
+    };
 
-    const savedInquiries = localStorage.getItem('gj5_inquiries');
-    if (savedInquiries) {
-      try { setInquiries(JSON.parse(savedInquiries)); } catch (e) {}
-    }
-
-    const savedLogs = localStorage.getItem('gj5_transport_logs');
-    if (savedLogs) {
-      try { setTransportationLogs(JSON.parse(savedLogs)); } catch (e) {}
-    }
-
-    const savedInvoices = localStorage.getItem('gj5_invoices');
-    if (savedInvoices) {
-      try { setInvoices(JSON.parse(savedInvoices)); } catch (e) {}
-    }
-
-    const savedEmployees = localStorage.getItem('gj5_employees');
-    if (savedEmployees) {
-      try { setEmployees(JSON.parse(savedEmployees)); } catch (e) {}
-    }
-
-    const savedAttendance = localStorage.getItem('gj5_attendance');
-    if (savedAttendance) {
-      try { setAttendance(JSON.parse(savedAttendance)); } catch (e) {}
-    }
-
-    const savedExpenses = localStorage.getItem('gj5_expenses');
-    if (savedExpenses) {
-      try { setExpenses(JSON.parse(savedExpenses)); } catch (e) {}
-    }
-
-    const savedTransactions = localStorage.getItem('gj5_wallet_transactions');
-    if (savedTransactions) {
-      try { setTransactions(JSON.parse(savedTransactions)); } catch (e) {}
-    }
-
-    const savedAudit = localStorage.getItem('gj5_audit_logs');
-    if (savedAudit) {
-      try { setAuditLogs(JSON.parse(savedAudit)); } catch (e) {}
-    }
-
+    load('gj5_repair_calls', setCalls);
+    load('gj5_inquiries', setInquiries);
+    load('gj5_transport_logs', setTransportationLogs);
+    load('gj5_invoices', setInvoices);
+    load('gj5_employees', setEmployees);
+    load('gj5_attendance', setAttendance);
+    load('gj5_expenses', setExpenses);
+    load('gj5_wallet_transactions', setTransactions);
+    load('gj5_audit_logs', setAuditLogs);
+    load('gj5_stock', setStock);
+    
     const savedBalance = localStorage.getItem('gj5_wallet_balance');
-    if (savedBalance) {
-      try { setWalletBalance(Number(savedBalance)); } catch (e) {}
-    }
+    if (savedBalance) setWalletBalance(Number(savedBalance));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('gj5_repair_calls', JSON.stringify(calls));
-  }, [calls]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries));
-  }, [inquiries]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs));
-  }, [transportationLogs]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_invoices', JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_employees', JSON.stringify(employees));
-  }, [employees]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_attendance', JSON.stringify(attendance));
-  }, [attendance]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_wallet_transactions', JSON.stringify(transactions));
-  }, [transactions]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_audit_logs', JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
-    localStorage.setItem('gj5_wallet_balance', walletBalance.toString());
-  }, [walletBalance]);
+  // Persisters
+  useEffect(() => { localStorage.setItem('gj5_repair_calls', JSON.stringify(calls)); }, [calls]);
+  useEffect(() => { localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries)); }, [inquiries]);
+  useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
+  useEffect(() => { localStorage.setItem('gj5_invoices', JSON.stringify(invoices)); }, [invoices]);
+  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
+  useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem('gj5_wallet_transactions', JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem('gj5_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem('gj5_stock', JSON.stringify(stock)); }, [stock]);
+  useEffect(() => { localStorage.setItem('gj5_wallet_balance', walletBalance.toString()); }, [walletBalance]);
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
@@ -188,16 +118,7 @@ export function useErpStore() {
   const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   const deleteCall = (id: string) => {
     setCalls(prev => prev.filter(c => c.id !== id));
-    
-    // Add Audit Log
-    const log: AuditLog = {
-      id: `AUD-${Date.now()}`,
-      jobId: id,
-      deletedBy: 'Admin',
-      dateTime: new Date().toISOString(),
-      action: 'DELETE'
-    };
-    setAuditLogs(prev => [log, ...prev]);
+    setAuditLogs(prev => [{ id: `AUD-${Date.now()}`, jobId: id, deletedBy: 'Admin', dateTime: new Date().toISOString(), action: 'DELETE' }, ...prev]);
   };
   
   const addInquiry = (inquiry: Inquiry) => setInquiries(prev => [inquiry, ...prev]);
@@ -205,9 +126,7 @@ export function useErpStore() {
   const addExpense = (expense: Expense) => {
     setExpenses(prev => [expense, ...prev]);
     setWalletBalance(prev => prev - expense.amount);
-    
-    // Log as transaction
-    const trans: WalletTransaction = {
+    setTransactions(prev => [{
       id: `TXN-EXP-${Date.now()}`,
       amount: expense.amount,
       date: expense.date,
@@ -216,18 +135,58 @@ export function useErpStore() {
       status: 'SUCCESS',
       userId: 'admin',
       description: `Expense: ${expense.category}`,
-      metadata: {
-        expenseId: expense.id,
-        category: expense.category,
-        vendorName: expense.vendorName
-      }
-    };
-    setTransactions(prev => [trans, ...prev]);
+      metadata: { expenseId: expense.id, category: expense.category, vendorName: expense.vendorName }
+    }, ...prev]);
   };
+
+  const addInvoice = (invoice: Invoice) => {
+    setInvoices(prev => [invoice, ...prev]);
+    setWalletBalance(prev => prev + invoice.total);
+    
+    // Auto-deplete stock
+    setStock(prev => prev.map(item => {
+      const usedItem = invoice.items.find(i => i.id === item.id);
+      if (usedItem) {
+        return { ...item, quantity: Math.max(0, item.quantity - usedItem.quantity) };
+      }
+      return item;
+    }));
+
+    setTransactions(prev => [{
+      id: `TXN-INV-${Date.now()}`,
+      amount: invoice.total,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString(),
+      type: 'REVENUE',
+      status: 'SUCCESS',
+      userId: 'admin',
+      description: `Invoice: ${invoice.invoiceNumber}`,
+      metadata: { invoiceId: invoice.id }
+    }, ...prev]);
+  };
+
+  const deleteInvoice = (id: string) => {
+    const inv = invoices.find(i => i.id === id);
+    if (!inv) return;
+    setWalletBalance(prev => prev - inv.total);
+    setInvoices(prev => prev.filter(i => i.id !== id));
+    setTransactions(prev => prev.filter(t => t.metadata?.invoiceId !== id));
+    // Optional: add back to stock?
+  };
+
+  const updateStockItem = (item: StockItem) => {
+    setStock(prev => {
+      const exists = prev.find(i => i.id === item.id);
+      if (exists) return prev.map(i => i.id === item.id ? item : i);
+      return [item, ...prev];
+    });
+  };
+
+  const deleteStockItem = (id: string) => setStock(prev => prev.filter(i => i.id !== id));
 
   const topUpWallet = (amount: number) => {
     setWalletBalance(prev => prev + amount);
-    const trans: WalletTransaction = {
+    setTransactions(prev => [{
       id: `TXN-TOP-${Date.now()}`,
       amount: amount,
       date: new Date().toISOString().split('T')[0],
@@ -236,88 +195,36 @@ export function useErpStore() {
       status: 'SUCCESS',
       userId: 'admin',
       description: 'Wallet Top-Up'
-    };
-    setTransactions(prev => [trans, ...prev]);
+    }, ...prev]);
   };
 
   const deleteTransaction = (id: string) => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
-
-    // Adjust balance based on transaction type
-    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT') {
+    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT' || tx.type === 'REVENUE') {
       setWalletBalance(prev => prev - tx.amount);
     } else {
       setWalletBalance(prev => prev + tx.amount);
     }
-
-    // If it was an expense, remove the expense record too
-    if (tx.type === 'EXPENSE' && tx.metadata?.expenseId) {
-      setExpenses(prev => prev.filter(e => e.id !== tx.metadata?.expenseId));
-    }
-
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
-  const updateTransaction = (updatedTx: WalletTransaction) => {
-    const oldTx = transactions.find(t => t.id === updatedTx.id);
-    if (!oldTx) return;
-
-    // Reverse old balance impact
-    let balance = walletBalance;
-    if (oldTx.type === 'TOPUP' || oldTx.type === 'MANUAL_CREDIT') {
-      balance -= oldTx.amount;
-    } else {
-      balance += oldTx.amount;
-    }
-
-    // Apply new balance impact
-    if (updatedTx.type === 'TOPUP' || updatedTx.type === 'MANUAL_CREDIT') {
-      balance += updatedTx.amount;
-    } else {
-      balance -= updatedTx.amount;
-    }
-
-    setWalletBalance(balance);
-
-    // Sync with expenses if applicable
-    if (updatedTx.type === 'EXPENSE' && updatedTx.metadata?.expenseId) {
-      setExpenses(prev => prev.map(e => e.id === updatedTx.metadata?.expenseId ? {
-        ...e,
-        amount: updatedTx.amount,
-        category: updatedTx.metadata?.category || e.category,
-        vendorName: updatedTx.metadata?.vendorName || e.vendorName,
-        date: updatedTx.date
-      } : e));
-    }
-
-    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
-  };
-
   const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', description: string) => {
-    const txType = type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT';
     const finalAmount = Math.abs(amount);
-    
-    if (type === 'CREDIT') {
-      setWalletBalance(prev => prev + finalAmount);
-    } else {
-      setWalletBalance(prev => prev - finalAmount);
-    }
+    if (type === 'CREDIT') setWalletBalance(prev => prev + finalAmount);
+    else setWalletBalance(prev => prev - finalAmount);
 
-    const trans: WalletTransaction = {
+    setTransactions(prev => [{
       id: `TXN-MAN-${Date.now()}`,
       amount: finalAmount,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString(),
-      type: txType,
+      type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
       status: 'SUCCESS',
       userId: 'admin',
-      description: description || `Manual ${type === 'CREDIT' ? 'Credit' : 'Debit'}`
-    };
-    setTransactions(prev => [trans, ...prev]);
+      description: description || `Manual ${type}`
+    }, ...prev]);
   };
-
-  const addInvoice = (invoice: Invoice) => setInvoices(prev => [invoice, ...prev]);
 
   const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
   const updateTransportLogStatus = (id: string, status: any) => {
@@ -344,6 +251,7 @@ export function useErpStore() {
     if (data.employees) setEmployees(data.employees);
     if (data.attendance) setAttendance(data.attendance);
     if (data.auditLogs) setAuditLogs(data.auditLogs);
+    if (data.stock) setStock(data.stock);
     if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
   };
 
@@ -353,9 +261,10 @@ export function useErpStore() {
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
-    transactions, topUpWallet, deleteTransaction, updateTransaction, manualAdjust,
+    transactions, topUpWallet, deleteTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
-    invoices, addInvoice,
+    invoices, addInvoice, deleteInvoice,
+    stock, updateStockItem, deleteStockItem,
     auditLogs,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo,

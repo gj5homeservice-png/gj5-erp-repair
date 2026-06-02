@@ -82,17 +82,38 @@ export interface Expense {
   timestamp: string;
 }
 
+export interface StockItem {
+  id: string;
+  name: string;
+  category: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  quantity: number;
+  minStockLevel: number;
+  lastUpdated: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  purchasePrice: number; // For P&L calc
+  total: number;
+}
+
 export interface WalletTransaction {
   id: string;
   amount: number;
   date: string;
   time: string;
-  type: 'TOPUP' | 'EXPENSE' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT';
+  type: 'TOPUP' | 'EXPENSE' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT' | 'REVENUE';
   status: 'SUCCESS' | 'FAILED' | 'PENDING';
   userId: string;
   description: string;
   metadata?: {
     expenseId?: string;
+    invoiceId?: string;
     category?: string;
     vendorName?: string;
   };
@@ -112,21 +133,9 @@ export interface TransportationLog {
   status: LogisticsStatus;
 }
 
-export interface TransportEntry {
-  id: string;
-  vehicleNumber: string;
-  driverName: string;
-  vehicleType: string;
-  route: string;
-  departureDate: string;
-  arrivalDate?: string;
-  fuelCost: number;
-  status: 'Available' | 'On Route' | 'Maintenance' | 'Completed';
-  createdAt: string;
-}
-
 export interface Invoice {
   id: string;
+  invoiceNumber: string;
   jobId: string;
   customerId: string;
   customerName: string;
@@ -134,17 +143,16 @@ export interface Invoice {
   address: string;
   brand: string;
   model: string;
-  hardwareCost: number;
-  laborCost: number;
+  items: InvoiceItem[];
+  labourCharges: number;
   deliveryCharge: number;
   additionalCharges: number;
+  discount: number;
   taxEnabled: boolean;
   subtotal: number;
-  cgst: number;
-  sgst: number;
+  gst: number;
   total: number;
-  notes: string;
-  themeUsed: string;
+  profit: number; // Net profit on this invoice
   timestamp: string;
 }
 
@@ -160,6 +168,8 @@ export interface VisibilitySettings {
   tabs: {
     Repairing: boolean;
     Billing: boolean;
+    Stock: boolean;
+    Analytics: boolean;
     Employees: boolean;
     'E-Wallet': boolean;
     Transportation: boolean;

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -17,7 +16,8 @@ import {
   RefreshCw,
   History,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
+import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { differenceInDays, parseISO, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,7 @@ export function RepairingModule({ store }: { store: any }) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('Active');
   const [viewMode, setViewMode] = useState<'Repairing' | 'Inquiries'>('Repairing');
@@ -255,9 +257,10 @@ export function RepairingModule({ store }: { store: any }) {
                         </TableCell>
                         <TableCell className="text-right px-2">
                            <div className="flex justify-end gap-1 md:gap-2">
-                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-blue-400" onClick={() => handleMapClick(call.address)}><MapPin className="w-3.5 h-3.5" /></Button>
-                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-3.5 h-3.5" /></Button>
-                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-emerald-400" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-blue-400" title="Location" onClick={() => handleMapClick(call.address)}><MapPin className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Edit" onClick={() => { setEditingCall(call); setModalOpen(true); }}><Edit className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-emerald-400" title="Print" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-500/10" title="Delete" onClick={() => setDeleteJobId(call.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                            </div>
                         </TableCell>
                       </TableRow>
@@ -343,6 +346,12 @@ export function RepairingModule({ store }: { store: any }) {
 
       <CallModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} editingCall={editingCall} store={store} />
       <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.shopLogo} />
+      <DeleteJobModal 
+        isOpen={!!deleteJobId} 
+        onClose={() => setDeleteJobId(null)} 
+        jobId={deleteJobId || ''} 
+        onConfirm={() => { if (deleteJobId) store.deleteCall(deleteJobId); setDeleteJobId(null); }} 
+      />
     </div>
   );
 }

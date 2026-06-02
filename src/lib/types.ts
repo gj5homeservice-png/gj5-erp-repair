@@ -148,6 +148,14 @@ export interface Invoice {
   timestamp: string;
 }
 
+export interface AuditLog {
+  id: string;
+  jobId: string;
+  deletedBy: string;
+  dateTime: string;
+  action: string;
+}
+
 export interface VisibilitySettings {
   tabs: {
     Repairing: boolean;

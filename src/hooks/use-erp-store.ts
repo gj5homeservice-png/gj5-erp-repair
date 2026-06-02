@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -11,6 +10,7 @@ import {
   TransportationLog, 
   Invoice,
   WalletTransaction,
+  AuditLog,
   VisibilitySettings as IVisibilitySettings 
 } from '@/lib/types';
 
@@ -66,6 +66,7 @@ export function useErpStore() {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
@@ -127,6 +128,11 @@ export function useErpStore() {
       try { setTransactions(JSON.parse(savedTransactions)); } catch (e) {}
     }
 
+    const savedAudit = localStorage.getItem('gj5_audit_logs');
+    if (savedAudit) {
+      try { setAuditLogs(JSON.parse(savedAudit)); } catch (e) {}
+    }
+
     const savedBalance = localStorage.getItem('gj5_wallet_balance');
     if (savedBalance) {
       try { setWalletBalance(Number(savedBalance)); } catch (e) {}
@@ -166,6 +172,10 @@ export function useErpStore() {
   }, [transactions]);
 
   useEffect(() => {
+    localStorage.setItem('gj5_audit_logs', JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
+  useEffect(() => {
     localStorage.setItem('gj5_wallet_balance', walletBalance.toString());
   }, [walletBalance]);
 
@@ -176,6 +186,19 @@ export function useErpStore() {
 
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
   const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
+  const deleteCall = (id: string) => {
+    setCalls(prev => prev.filter(c => c.id !== id));
+    
+    // Add Audit Log
+    const log: AuditLog = {
+      id: `AUD-${Date.now()}`,
+      jobId: id,
+      deletedBy: 'Admin',
+      dateTime: new Date().toISOString(),
+      action: 'DELETE'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+  };
   
   const addInquiry = (inquiry: Inquiry) => setInquiries(prev => [inquiry, ...prev]);
   
@@ -320,11 +343,12 @@ export function useErpStore() {
     if (data.invoices) setInvoices(data.invoices);
     if (data.employees) setEmployees(data.employees);
     if (data.attendance) setAttendance(data.attendance);
+    if (data.auditLogs) setAuditLogs(data.auditLogs);
     if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
   };
 
   return {
-    calls, addCall, updateCall,
+    calls, addCall, updateCall, deleteCall,
     inquiries, addInquiry,
     employees,
     attendance, updateAttendance,
@@ -332,6 +356,7 @@ export function useErpStore() {
     transactions, topUpWallet, deleteTransaction, updateTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
     invoices, addInvoice,
+    auditLogs,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo,
     visibility, updateVisibility,

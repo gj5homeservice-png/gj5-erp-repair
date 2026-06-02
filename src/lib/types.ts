@@ -38,14 +38,33 @@ export interface RepairCall {
   receivedDate?: string;
 }
 
+export type InquiryStatus = 'New' | 'Pending' | 'Follow-up' | 'Converted' | 'Rejected';
+export type InquiryPriority = 'Low' | 'Medium' | 'High';
+export type InquirySource = 'Walk-In' | 'Call' | 'WhatsApp' | 'Facebook' | 'Instagram' | 'Referral';
+
 export interface Inquiry {
   id: string;
   customerName: string;
-  address: string;
-  pincode: string;
   mobile: string;
+  alternateMobile?: string;
+  address: string;
+  city?: string;
+  pincode?: string;
+  productType: string;
+  brand: string;
+  modelNumber?: string;
+  problemDescription: string;
+  source: InquirySource;
+  priority: InquiryPriority;
+  expectedBudget?: number;
+  assignedTechnician?: string;
+  followUpDate: string;
+  status: InquiryStatus;
   notes: string;
   createdAt: string;
+  updatedAt: string;
+  conversionDate?: string;
+  convertedJobId?: string;
 }
 
 export type EmployeeStatus = 'active' | 'inactive';
@@ -181,6 +200,7 @@ export interface AuditLog {
 export interface VisibilitySettings {
   tabs: {
     Repairing: boolean;
+    'CRM Leads': boolean;
     Billing: boolean;
     'Invoice History': boolean;
     Stock: boolean;

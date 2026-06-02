@@ -18,6 +18,7 @@ import {
 const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: {
     Repairing: true,
+    'CRM Leads': true,
     Billing: true,
     'Invoice History': true,
     Stock: true,
@@ -83,31 +84,28 @@ export function useErpStore() {
 
   // Persistence Key Identifiers
   const KEYS = {
-    CALLS: 'gj5_repair_calls_v2',
-    INQUIRIES: 'gj5_inquiries_v2',
-    TRANS_LOGS: 'gj5_transport_logs_v2',
-    INVOICES: 'gj5_invoices_v2',
-    EMPLOYEES: 'gj5_employees_v2',
-    ATTENDANCE: 'gj5_attendance_v2',
-    EXPENSES: 'gj5_expenses_v2',
-    TXNS: 'gj5_wallet_transactions_v2',
-    AUDIT: 'gj5_audit_logs_v2',
-    STOCK: 'gj5_stock_v2',
-    BALANCE: 'gj5_wallet_balance_v2',
-    LOGO: 'gj5_shop_logo_v2',
-    VISIBILITY: 'gj5_visibility_settings_v2'
+    CALLS: 'gj5_repair_calls_v3',
+    INQUIRIES: 'gj5_crm_leads_v3',
+    TRANS_LOGS: 'gj5_transport_logs_v3',
+    INVOICES: 'gj5_invoices_v3',
+    EMPLOYEES: 'gj5_employees_v3',
+    ATTENDANCE: 'gj5_attendance_v3',
+    EXPENSES: 'gj5_expenses_v3',
+    TXNS: 'gj5_wallet_transactions_v3',
+    AUDIT: 'gj5_audit_logs_v3',
+    STOCK: 'gj5_stock_v3',
+    BALANCE: 'gj5_wallet_balance_v3',
+    LOGO: 'gj5_shop_logo_v3',
+    VISIBILITY: 'gj5_visibility_settings_v3'
   };
 
   useEffect(() => {
-    // Initial Hydration from Browser/Electron Storage
     const safeGet = (key: string, setter: any, fallback?: any) => {
       try {
         const val = localStorage.getItem(key);
         if (val) setter(JSON.parse(val));
         else if (fallback !== undefined) setter(fallback);
-      } catch (e) {
-        console.error("Hydration Error", e);
-      }
+      } catch (e) { console.error("Hydration Error", e); }
     };
 
     safeGet(KEYS.LOGO, setShopLogo);
@@ -127,7 +125,6 @@ export function useErpStore() {
     if (savedBalance) setWalletBalance(Number(savedBalance));
   }, []);
 
-  // Universal Persisters - Runs on every state change
   useEffect(() => { localStorage.setItem(KEYS.CALLS, JSON.stringify(calls)); }, [calls]);
   useEffect(() => { localStorage.setItem(KEYS.INQUIRIES, JSON.stringify(inquiries)); }, [inquiries]);
   useEffect(() => { localStorage.setItem(KEYS.TRANS_LOGS, JSON.stringify(transportationLogs)); }, [transportationLogs]);
@@ -154,6 +151,43 @@ export function useErpStore() {
   };
   
   const addInquiry = (inquiry: Inquiry) => setInquiries(prev => [inquiry, ...prev]);
+  const updateInquiry = (updatedInquiry: Inquiry) => setInquiries(prev => prev.map(i => i.id === updatedInquiry.id ? updatedInquiry : i));
+  const deleteInquiry = (id: string) => setInquiries(prev => prev.filter(i => i.id !== id));
+  
+  const convertInquiryToJob = (inquiryId: string, jobId: string) => {
+    const inq = inquiries.find(i => i.id === inquiryId);
+    if (!inq) return;
+
+    const newCall: RepairCall = {
+      id: jobId,
+      customerId: inq.pincode ? `GJ5-${inq.pincode}-${Date.now().toString().slice(-4)}` : `CUST-${Date.now().toString().slice(-6)}`,
+      customerName: inq.customerName,
+      mobile: inq.mobile,
+      address: inq.address,
+      pincode: inq.pincode || '',
+      category: inq.productType,
+      brand: inq.brand,
+      model: inq.modelNumber || '',
+      screenSize: '',
+      techTags: [],
+      intakeMode: 'Customer Visit',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'Pending',
+      problemDescription: inq.problemDescription,
+      visitHistory: [],
+      repeatCount: 0
+    };
+
+    addCall(newCall);
+    updateInquiry({ 
+      ...inq, 
+      status: 'Converted', 
+      convertedJobId: jobId, 
+      conversionDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString() 
+    });
+  };
   
   const addExpense = (expense: Expense) => {
     setExpenses(prev => [expense, ...prev]);
@@ -174,15 +208,11 @@ export function useErpStore() {
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
     setWalletBalance(prev => prev + invoice.total);
-    
     setStock(prev => prev.map(item => {
       const usedItem = invoice.items.find(i => i.id === item.id);
-      if (usedItem) {
-        return { ...item, quantity: Math.max(0, item.quantity - usedItem.quantity) };
-      }
+      if (usedItem) return { ...item, quantity: Math.max(0, item.quantity - usedItem.quantity) };
       return item;
     }));
-
     setTransactions(prev => [{
       id: `TXN-INV-${Date.now()}`,
       amount: invoice.total,
@@ -201,12 +231,6 @@ export function useErpStore() {
     if (!oldInvoice) return;
     setWalletBalance(prev => prev - oldInvoice.total + updatedInvoice.total);
     setInvoices(prev => prev.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
-    setTransactions(prev => prev.map(t => {
-      if (t.metadata?.invoiceId === updatedInvoice.id) {
-        return { ...t, amount: updatedInvoice.total, description: `Invoice (Updated): ${updatedInvoice.invoiceNumber}` };
-      }
-      return t;
-    }));
   };
 
   const deleteInvoice = (id: string) => {
@@ -214,8 +238,6 @@ export function useErpStore() {
     if (!inv) return;
     setWalletBalance(prev => prev - inv.total);
     setInvoices(prev => prev.filter(i => i.id !== id));
-    setTransactions(prev => prev.filter(t => t.metadata?.invoiceId !== id));
-    setAuditLogs(prev => [{ id: `AUD-INV-${Date.now()}`, jobId: inv.invoiceNumber, deletedBy: 'Admin', dateTime: new Date().toISOString(), action: 'DELETE' }, ...prev]);
   };
 
   const updateStockItem = (item: StockItem) => {
@@ -245,42 +267,15 @@ export function useErpStore() {
   const deleteTransaction = (id: string) => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
-    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT' || tx.type === 'REVENUE') {
-      setWalletBalance(prev => prev - tx.amount);
-    } else {
-      setWalletBalance(prev => prev + tx.amount);
-    }
+    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT' || tx.type === 'REVENUE') setWalletBalance(prev => prev - tx.amount);
+    else setWalletBalance(prev => prev + tx.amount);
     setTransactions(prev => prev.filter(t => t.id !== id));
-  };
-
-  const updateTransaction = (updatedTx: WalletTransaction) => {
-    const oldTx = transactions.find(t => t.id === updatedTx.id);
-    if (!oldTx) return;
-
-    // Undo old impact
-    let newBalance = walletBalance;
-    if (oldTx.type === 'TOPUP' || oldTx.type === 'MANUAL_CREDIT' || oldTx.type === 'REVENUE') {
-      newBalance -= oldTx.amount;
-    } else {
-      newBalance += oldTx.amount;
-    }
-
-    // Apply new impact
-    if (updatedTx.type === 'TOPUP' || updatedTx.type === 'MANUAL_CREDIT' || updatedTx.type === 'REVENUE') {
-      newBalance += updatedTx.amount;
-    } else {
-      newBalance -= updatedTx.amount;
-    }
-
-    setWalletBalance(newBalance);
-    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
   };
 
   const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', description: string) => {
     const finalAmount = Math.abs(amount);
     if (type === 'CREDIT') setWalletBalance(prev => prev + finalAmount);
     else setWalletBalance(prev => prev - finalAmount);
-
     setTransactions(prev => [{
       id: `TXN-MAN-${Date.now()}`,
       amount: finalAmount,
@@ -294,9 +289,7 @@ export function useErpStore() {
   };
 
   const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
-  const updateTransportLogStatus = (id: string, status: any) => {
-    setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-  };
+  const updateTransportLogStatus = (id: string, status: any) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
 
   const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
   const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
@@ -321,7 +314,6 @@ export function useErpStore() {
     if (data.invoices) setInvoices(data.invoices);
     if (data.employees) setEmployees(data.employees);
     if (data.attendance) setAttendance(data.attendance);
-    if (data.auditLogs) setAuditLogs(data.auditLogs);
     if (data.stock) setStock(data.stock);
     if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
     if (data.shopLogo) setShopLogo(data.shopLogo);
@@ -329,18 +321,15 @@ export function useErpStore() {
 
   return {
     calls, addCall, updateCall, deleteCall,
-    inquiries, addInquiry,
+    inquiries, addInquiry, updateInquiry, deleteInquiry, convertInquiryToJob,
     employees, addEmployee, updateEmployee, deleteEmployee,
     attendance, updateAttendance,
     expenses, addExpense,
-    transactions, topUpWallet, deleteTransaction, updateTransaction, manualAdjust,
+    transactions, topUpWallet, deleteTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
     invoices, addInvoice, deleteInvoice, updateInvoice,
     stock, updateStockItem, deleteStockItem,
-    auditLogs,
-    walletBalance, setWalletBalance,
-    shopLogo, setShopLogo,
-    visibility, updateVisibility,
-    importAllData
+    auditLogs, walletBalance, setWalletBalance, shopLogo, setShopLogo,
+    visibility, updateVisibility, importAllData
   };
 }

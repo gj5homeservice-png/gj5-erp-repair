@@ -22,12 +22,14 @@ import {
   Box,
   History,
   TrendingUp,
-  Receipt
+  Receipt,
+  UserPlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useErpStore, VisibilitySettings } from '@/hooks/use-erp-store';
 import { RepairingModule } from '@/components/modules/RepairingModule';
+import { InquiryModule } from '@/components/modules/InquiryModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
@@ -57,7 +59,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { isToday, isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Repairing' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -69,6 +71,7 @@ export default function DashboardPage() {
 
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
+    { name: 'CRM Leads', icon: UserPlus, id: 'CRM Leads' as ActiveTab, visible: store.visibility.tabs['CRM Leads'] },
     { name: 'Billing', icon: Receipt, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
     { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
@@ -139,7 +142,7 @@ export default function DashboardPage() {
           )}
         >
           <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
-          {(isSidebarOpen || isMobile) && <span className="font-medium">{item.name}</span>}
+          {(isSidebarOpen || isMobile) && <span className="font-medium whitespace-nowrap">{item.name}</span>}
         </button>
       ))}
     </nav>
@@ -263,6 +266,7 @@ export default function DashboardPage() {
               <RepairingModule store={store} />
             </div>
           )}
+          {activeTab === 'CRM Leads' && <InquiryModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}

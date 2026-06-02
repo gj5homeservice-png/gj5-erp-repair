@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Wrench, 
   ReceiptText, 
@@ -19,13 +19,17 @@ import {
   Truck,
   Database,
   BarChart3,
-  Box
+  Box,
+  History,
+  TrendingUp,
+  Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useErpStore, VisibilitySettings } from '@/hooks/use-erp-store';
 import { RepairingModule } from '@/components/modules/RepairingModule';
 import { BillingModule } from '@/components/modules/BillingModule';
+import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
@@ -50,8 +54,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { isToday, isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Repairing' | 'Billing' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Repairing' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -63,13 +69,27 @@ export default function DashboardPage() {
 
   const navigation = [
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
-    { name: 'Billing', icon: ReceiptText, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
+    { name: 'Billing', icon: Receipt, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
+    { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
     { name: 'P&L Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
+
+  const dashboardStats = useMemo(() => {
+    const totalInvoices = store.invoices.length;
+    const todayBilling = store.invoices
+      .filter(inv => isToday(parseISO(inv.timestamp)))
+      .reduce((acc, curr) => acc + curr.total, 0);
+    const monthlyBilling = store.invoices
+      .filter(inv => isSameMonth(parseISO(inv.timestamp), new Date()))
+      .reduce((acc, curr) => acc + curr.total, 0);
+    const totalRevenue = store.invoices.reduce((acc, curr) => acc + curr.total, 0);
+
+    return { totalInvoices, todayBilling, monthlyBilling, totalRevenue };
+  }, [store.invoices]);
 
   const visibleNavigation = navigation.filter(item => item.visible);
 
@@ -200,8 +220,51 @@ export default function DashboardPage() {
         </header>
 
         <div className="p-4 md:p-8 max-w-full">
-          {activeTab === 'Repairing' && <RepairingModule store={store} />}
+          {activeTab === 'Repairing' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Today's Billing</p>
+                      <h3 className="text-2xl font-headline font-bold text-[#0066FF]">₹{dashboardStats.todayBilling.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><TrendingUp className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Billing</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">₹{dashboardStats.monthlyBilling.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Invoices</p>
+                      <h3 className="text-2xl font-headline font-bold text-purple-400">{dashboardStats.totalInvoices}</h3>
+                    </div>
+                    <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400"><ReceiptText className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Revenue</p>
+                      <h3 className="text-2xl font-headline font-bold text-cyan-400">₹{dashboardStats.totalRevenue.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400"><TrendingUp className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+              </div>
+              <RepairingModule store={store} />
+            </div>
+          )}
           {activeTab === 'Billing' && <BillingModule store={store} />}
+          {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}

@@ -153,6 +153,7 @@ export interface Invoice {
   gst: number;
   total: number;
   profit: number; // Net profit on this invoice
+  paymentStatus: 'Paid' | 'Pending' | 'Partially Paid';
   timestamp: string;
 }
 
@@ -168,6 +169,7 @@ export interface VisibilitySettings {
   tabs: {
     Repairing: boolean;
     Billing: boolean;
+    'Invoice History': boolean;
     Stock: boolean;
     Analytics: boolean;
     Employees: boolean;

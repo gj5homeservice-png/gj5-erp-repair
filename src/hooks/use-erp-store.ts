@@ -19,6 +19,7 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: {
     Repairing: true,
     Billing: true,
+    'Invoice History': true,
     Stock: true,
     Analytics: true,
     Employees: true,
@@ -165,13 +166,32 @@ export function useErpStore() {
     }, ...prev]);
   };
 
+  const updateInvoice = (updatedInvoice: Invoice) => {
+    const oldInvoice = invoices.find(i => i.id === updatedInvoice.id);
+    if (!oldInvoice) return;
+
+    // Adjust wallet balance
+    setWalletBalance(prev => prev - oldInvoice.total + updatedInvoice.total);
+
+    // Update invoices
+    setInvoices(prev => prev.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
+
+    // Update corresponding transaction
+    setTransactions(prev => prev.map(t => {
+      if (t.metadata?.invoiceId === updatedInvoice.id) {
+        return { ...t, amount: updatedInvoice.total, description: `Invoice (Updated): ${updatedInvoice.invoiceNumber}` };
+      }
+      return t;
+    }));
+  };
+
   const deleteInvoice = (id: string) => {
     const inv = invoices.find(i => i.id === id);
     if (!inv) return;
     setWalletBalance(prev => prev - inv.total);
     setInvoices(prev => prev.filter(i => i.id !== id));
     setTransactions(prev => prev.filter(t => t.metadata?.invoiceId !== id));
-    // Optional: add back to stock?
+    setAuditLogs(prev => [{ id: `AUD-INV-${Date.now()}`, jobId: inv.invoiceNumber, deletedBy: 'Admin', dateTime: new Date().toISOString(), action: 'DELETE' }, ...prev]);
   };
 
   const updateStockItem = (item: StockItem) => {
@@ -263,7 +283,7 @@ export function useErpStore() {
     expenses, addExpense,
     transactions, topUpWallet, deleteTransaction, manualAdjust,
     transportationLogs, addTransportLog, updateTransportLogStatus,
-    invoices, addInvoice, deleteInvoice,
+    invoices, addInvoice, deleteInvoice, updateInvoice,
     stock, updateStockItem, deleteStockItem,
     auditLogs,
     walletBalance, setWalletBalance,

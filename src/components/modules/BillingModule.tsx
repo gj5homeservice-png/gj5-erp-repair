@@ -15,7 +15,8 @@ import {
   Check,
   Package,
   History,
-  Tag
+  Tag,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,23 +44,27 @@ const INVOICE_THEMES = [
   { id: 'premium-indigo', name: 'Premium Indigo', primary: '#4F46E5', secondary: '#E0E7FF', text: 'text-[#4F46E5]', bg: 'bg-[#4F46E5]' },
 ];
 
+const INITIAL_BILL_DATA = {
+  jobId: '',
+  customerId: '',
+  customerName: '',
+  mobile: '',
+  address: '',
+  brand: '',
+  model: '',
+  labourCharges: 0,
+  deliveryCharge: 0,
+  additionalCharges: 0,
+  discount: 0,
+  taxEnabled: true,
+  paymentStatus: 'Paid' as const,
+  items: [] as InvoiceItem[]
+};
+
 export function BillingModule({ store }: { store: any }) {
   const [activeThemeId, setActiveThemeId] = useState('classic-blue');
-  const [billData, setBillData] = useState({
-    jobId: '',
-    customerId: '',
-    customerName: '',
-    mobile: '',
-    address: '',
-    brand: '',
-    model: '',
-    labourCharges: 0,
-    deliveryCharge: 0,
-    additionalCharges: 0,
-    discount: 0,
-    taxEnabled: true,
-    items: [] as InvoiceItem[]
-  });
+  const [billData, setBillData] = useState(INITIAL_BILL_DATA);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -68,7 +73,33 @@ export function BillingModule({ store }: { store: any }) {
   , [activeThemeId]);
 
   useEffect(() => {
-    if (billData.jobId) {
+    // Check for edit mode from window (quick way to handle navigation between tabs)
+    const win = window as any;
+    if (win.__EDIT_INVOICE) {
+      const inv = win.__EDIT_INVOICE as Invoice;
+      setBillData({
+        jobId: inv.jobId,
+        customerId: inv.customerId,
+        customerName: inv.customerName,
+        mobile: inv.mobile,
+        address: inv.address,
+        brand: inv.brand,
+        model: inv.model,
+        labourCharges: inv.labourCharges,
+        deliveryCharge: inv.deliveryCharge,
+        additionalCharges: inv.additionalCharges,
+        discount: inv.discount,
+        taxEnabled: inv.taxEnabled,
+        paymentStatus: inv.paymentStatus,
+        items: inv.items
+      });
+      setEditingInvoiceId(inv.id);
+      delete win.__EDIT_INVOICE;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (billData.jobId && !editingInvoiceId) {
       const job = store.calls.find((c: any) => c.id.toUpperCase() === billData.jobId.toUpperCase());
       if (job) {
         setBillData(prev => ({
@@ -82,7 +113,7 @@ export function BillingModule({ store }: { store: any }) {
         }));
       }
     }
-  }, [billData.jobId, store.calls]);
+  }, [billData.jobId, store.calls, editingInvoiceId]);
 
   const subtotal = useMemo(() => {
     const itemsTotal = billData.items.reduce((acc, curr) => acc + curr.total, 0);
@@ -115,18 +146,37 @@ export function BillingModule({ store }: { store: any }) {
 
   const handleSaveInvoice = () => {
     const profit = billData.items.reduce((acc, curr) => acc + (curr.unitPrice - curr.purchasePrice), 0) + billData.labourCharges;
-    const invoice: Invoice = {
-      id: `INV${Date.now()}`,
-      invoiceNumber: `GJ5-INV-${1000 + store.invoices.length}`,
-      ...billData,
-      subtotal,
-      gst,
-      total,
-      profit,
-      timestamp: new Date().toISOString()
-    };
-    store.addInvoice(invoice);
-    toast({ title: "Invoice Committed", description: `Record ${invoice.invoiceNumber} saved and stock updated.` });
+    
+    if (editingInvoiceId) {
+      const updatedInvoice: Invoice = {
+        id: editingInvoiceId,
+        invoiceNumber: store.invoices.find((i: any) => i.id === editingInvoiceId)?.invoiceNumber || `GJ5-INV-${1000 + store.invoices.length}`,
+        ...billData,
+        subtotal,
+        gst,
+        total,
+        profit,
+        timestamp: new Date().toISOString()
+      };
+      store.updateInvoice(updatedInvoice);
+      toast({ title: "Invoice Updated", description: `Record ${updatedInvoice.invoiceNumber} has been updated.` });
+      setEditingInvoiceId(null);
+      setBillData(INITIAL_BILL_DATA);
+    } else {
+      const invoice: Invoice = {
+        id: `INV${Date.now()}`,
+        invoiceNumber: `GJ5-INV-${1000 + store.invoices.length}`,
+        ...billData,
+        subtotal,
+        gst,
+        total,
+        profit,
+        timestamp: new Date().toISOString()
+      };
+      store.addInvoice(invoice);
+      toast({ title: "Invoice Committed", description: `Record ${invoice.invoiceNumber} saved and stock updated.` });
+      setBillData(INITIAL_BILL_DATA);
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -200,14 +250,21 @@ export function BillingModule({ store }: { store: any }) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500 pb-10">
       <div className="space-y-6">
         <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 space-y-6">
-          <div className="flex items-center gap-4">
-             <div className={cn("p-3 rounded-xl text-white", activeTheme.bg)}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={cn("p-3 rounded-xl text-white", activeTheme.bg)}>
                 <Receipt className="w-6 h-6" />
-             </div>
-             <div>
-                <h2 className="text-xl font-headline font-bold">Billing Architecture</h2>
+              </div>
+              <div>
+                <h2 className="text-xl font-headline font-bold">{editingInvoiceId ? "Edit Invoice" : "Billing Architecture"}</h2>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Enterprise Finance Management</p>
-             </div>
+              </div>
+            </div>
+            {editingInvoiceId && (
+              <Button variant="ghost" size="sm" onClick={() => { setEditingInvoiceId(null); setBillData(INITIAL_BILL_DATA); }} className="text-slate-500 hover:text-white">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Cancel Edit
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -258,9 +315,22 @@ export function BillingModule({ store }: { store: any }) {
              </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
-             <Label className="text-sm font-bold">Apply 18% GST</Label>
-             <Switch checked={billData.taxEnabled} onCheckedChange={v => setBillData({...billData, taxEnabled: v})} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+               <Label className="text-sm font-bold">Apply 18% GST</Label>
+               <Switch checked={billData.taxEnabled} onCheckedChange={v => setBillData({...billData, taxEnabled: v})} />
+            </div>
+            <div className="space-y-1">
+               <Label className="text-[10px] font-bold text-slate-500 uppercase">Payment Status</Label>
+               <Select value={billData.paymentStatus} onValueChange={v => setBillData({...billData, paymentStatus: v as any})}>
+                  <SelectTrigger className="bg-slate-950 border-slate-800 h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                     <SelectItem value="Paid">Paid</SelectItem>
+                     <SelectItem value="Pending">Pending</SelectItem>
+                     <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                  </SelectContent>
+               </Select>
+            </div>
           </div>
 
           <div className={cn("p-4 rounded-2xl border space-y-2", activeTheme.bg + "/5", "border-" + activeTheme.id)}>
@@ -283,7 +353,7 @@ export function BillingModule({ store }: { store: any }) {
 
         <div className="flex gap-3">
            <Button onClick={handleSaveInvoice} className={cn("flex-1 h-12 shadow-lg text-white font-bold", activeTheme.bg)}>
-              <Check className="w-5 h-5 mr-2" /> Save & Commit Invoice
+              <Check className="w-5 h-5 mr-2" /> {editingInvoiceId ? "Update & Save" : "Save & Commit Invoice"}
            </Button>
            <Button onClick={handleDownloadPDF} variant="outline" className="flex-1 h-12 border-slate-700">
               <FileDown className="w-5 h-5 mr-2" /> Download PDF

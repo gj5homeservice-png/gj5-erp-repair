@@ -13,7 +13,8 @@ import {
   AuditLog,
   StockItem,
   VisibilitySettings,
-  StockMovement
+  StockMovement,
+  StockMovementType
 } from '@/lib/types';
 
 const DEFAULT_NAV_ORDER = [
@@ -243,11 +244,12 @@ export function useErpStore() {
         const movement: StockMovement = {
           id: `MOV-${Date.now()}`,
           date: new Date().toISOString(),
-          type: 'OUTWARD',
+          type: 'SALE',
           quantity: usedItem.quantity,
           referenceId: invoice.invoiceNumber,
           customerName: invoice.customerName,
-          notes: `Used in Job ${invoice.jobId}`
+          notes: `Used in Job ${invoice.jobId}`,
+          performedBy: 'Admin'
         };
         return { 
           ...item, 

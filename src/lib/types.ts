@@ -153,14 +153,17 @@ export interface Expense {
   timestamp: string;
 }
 
+export type StockMovementType = 'INWARD' | 'OUTWARD' | 'PURCHASE' | 'SALE' | 'RETURN' | 'DAMAGE' | 'SCRAP';
+
 export interface StockMovement {
   id: string;
   date: string;
-  type: 'INWARD' | 'OUTWARD';
+  type: StockMovementType;
   quantity: number;
   referenceId?: string; // Job ID or Invoice ID
   customerName?: string;
   notes?: string;
+  performedBy?: string;
 }
 
 export interface StockItem {
@@ -176,6 +179,14 @@ export interface StockItem {
   images: string[]; // base64 strings
   lastUpdated: string;
   history: StockMovement[];
+  // Enterprise Fields
+  supplierName?: string;
+  supplierMobile?: string;
+  purchaseDate?: string;
+  warrantyPeriod?: string;
+  description?: string;
+  addedBy?: string;
+  editedBy?: string;
 }
 
 export interface InvoiceItem {

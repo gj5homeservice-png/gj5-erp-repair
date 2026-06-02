@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Plus, 
   Clock, 
@@ -17,15 +17,7 @@ import {
   RefreshCw,
   History,
   ChevronDown,
-  ChevronUp,
-  LayoutGrid,
-  Monitor,
-  Cpu,
-  Package,
-  Wrench,
-  Boxes,
-  ShoppingBag,
-  MoreHorizontal
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +37,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
-import { RepairCall, RepairStatus } from '@/lib/types';
+import { RepairCall, RepairStatus, VisitHistoryEntry } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
 import { differenceInDays, parseISO, format } from 'date-fns';
@@ -57,24 +49,26 @@ export function RepairingModule({ store }: { store: any }) {
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<any>('Active');
+  const [activeFilter, setActiveFilter] = useState<string>('Active');
   const [viewMode, setViewMode] = useState<'Repairing' | 'Inquiries'>('Repairing');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const stats = useMemo(() => {
-    const totalActive = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').length;
-    const pending = store.calls.filter((c: any) => c.status === 'Pending').length;
-    const completed = store.calls.filter((c: any) => c.status === 'Completed').length;
-    const rejected = store.calls.filter((c: any) => c.status === 'Rejected').length;
-    const repeat = store.calls.filter((c: any) => (c.repeatCount || 0) > 0).length;
-    const exchange = store.calls.filter((c: any) => c.status === 'Exchange' || c.status === 'Purchase').length;
-    const warranty = store.calls.filter((c: any) => c.status === 'Completed' && c.warrantyExpiry).length;
+    const allCalls: RepairCall[] = store.calls || [];
+    const totalActive = allCalls.filter((c: RepairCall) => c.status !== 'Completed' && c.status !== 'Rejected').length;
+    const pending = allCalls.filter((c: RepairCall) => c.status === 'Pending').length;
+    const completed = allCalls.filter((c: RepairCall) => c.status === 'Completed').length;
+    const rejected = allCalls.filter((c: RepairCall) => c.status === 'Rejected').length;
+    const repeat = allCalls.filter((c: RepairCall) => (c.repeatCount || 0) > 0).length;
+    const exchange = allCalls.filter((c: RepairCall) => c.status === 'Exchange' || c.status === 'Purchase').length;
+    const warranty = allCalls.filter((c: RepairCall) => c.status === 'Completed' && c.warrantyExpiry).length;
     return { totalActive, pending, completed, rejected, exchange, repeat, warranty };
   }, [store.calls]);
 
-  const filteredCalls = useMemo(() => {
-    return store.calls.filter((c: RepairCall) => {
+  const filteredCalls = useMemo<RepairCall[]>(() => {
+    const allCalls: RepairCall[] = store.calls || [];
+    return allCalls.filter((c: RepairCall) => {
       const matchesSearch = 
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -195,7 +189,7 @@ export function RepairingModule({ store }: { store: any }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCalls.map((call) => {
+                {filteredCalls.map((call: RepairCall) => {
                   const isExpanded = expandedRows.has(call.id);
                   const wDays = calculateWarrantyLeft(call.warrantyExpiry);
                   
@@ -284,7 +278,7 @@ export function RepairingModule({ store }: { store: any }) {
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
-                                    {call.visitHistory.map((v, i) => (
+                                    {call.visitHistory.map((v: VisitHistoryEntry, i: number) => (
                                       <TableRow key={v.id || `visit-${call.id}-${i}`} className="border-slate-800 bg-slate-900/30">
                                         <TableCell className="text-[10px] whitespace-nowrap">
                                           <p className="font-bold">{v.date}</p>

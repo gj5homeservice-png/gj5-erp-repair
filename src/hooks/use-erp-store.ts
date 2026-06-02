@@ -41,30 +41,38 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
 
 const DEFAULT_EMPLOYEES: Employee[] = [
   { 
-    id: 'EMP101', 
+    id: 'EMP0001', 
     name: 'Rajesh Sharma', 
-    role: 'Senior Technician', 
-    designation: 'Tech Lead',
     mobile: '9876543210', 
-    address: 'Surat, Gujarat',
+    address: 'Varachha, Surat',
+    city: 'Surat',
+    state: 'Gujarat',
+    pincode: '395006',
+    designation: 'Tech Lead',
+    department: 'Service',
     salary: 25000, 
     dailyWage: 833,
     joiningDate: '2023-01-15',
+    employmentType: 'Full Time',
     pin: '1234',
-    status: 'active'
+    status: 'Active'
   },
   { 
-    id: 'EMP102', 
+    id: 'EMP0002', 
     name: 'Amit Patel', 
-    role: 'Runner', 
-    designation: 'Logistics Associate',
     mobile: '9123456789', 
-    address: 'Surat, Gujarat',
+    address: 'Adajan, Surat',
+    city: 'Surat',
+    state: 'Gujarat',
+    pincode: '395009',
+    designation: 'Logistics Associate',
+    department: 'Logistics',
     salary: 15000, 
     dailyWage: 500,
     joiningDate: '2023-05-20',
+    employmentType: 'Full Time',
     pin: '4321',
-    status: 'active'
+    status: 'Active'
   }
 ];
 

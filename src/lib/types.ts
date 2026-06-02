@@ -67,21 +67,60 @@ export interface Inquiry {
   convertedJobId?: string;
 }
 
-export type EmployeeStatus = 'active' | 'inactive';
+export type EmployeeStatus = 'Active' | 'Inactive' | 'Resigned';
+export type EmploymentType = 'Full Time' | 'Part Time' | 'Contract';
 
 export interface Employee {
+  // Personal
   id: string;
   name: string;
-  role: string;
-  designation: string;
   mobile: string;
+  altMobile?: string;
+  email?: string;
+  dob?: string;
+  gender?: string;
+  bloodGroup?: string;
+  maritalStatus?: string;
   address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  
+  // Job
+  designation: string;
+  department: string;
+  joiningDate: string;
+  employmentType: EmploymentType;
   salary: number;
   dailyWage: number;
-  joiningDate: string;
+  status: EmployeeStatus;
+  
+  // Security
   pin: string;
   photo?: string;
-  status: EmployeeStatus;
+  facePhoto?: string;
+  qrCode?: string;
+
+  // Documents
+  aadhaarNo?: string;
+  aadhaarImage?: string;
+  panNo?: string;
+  panImage?: string;
+  dlImage?: string;
+  resumeUrl?: string;
+
+  // Bank
+  bankHolderName?: string;
+  bankName?: string;
+  accountNo?: string;
+  ifscCode?: string;
+  upiId?: string;
+
+  // Payroll / Monthly Adjustments
+  overtime?: number;
+  bonus?: number;
+  advance?: number;
+  deductions?: number;
 }
 
 export type AttendanceStatus = 'Present' | 'Late' | 'Half Day' | 'Absent';

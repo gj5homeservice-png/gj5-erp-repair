@@ -28,6 +28,7 @@ function createWindow() {
     // mainWindow.webContents.openDevTools();
   } else {
     // Load the static index.html from the Next.js export
+    // Use path.join to ensure absolute path relative to the app root
     mainWindow.loadFile(path.join(__dirname, 'out/index.html'));
   }
 

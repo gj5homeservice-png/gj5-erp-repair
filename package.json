@@ -7,13 +7,12 @@
   "description": "GJ5 HOME SERVICE ERP Desktop",
   "author": "GJ5 Enterprise",
   "scripts": {
-    "dev": "next dev --turbopack -p 9002",
-    "build:next": "next build",
-    "build:electron": "electron-builder",
-    "electron:dev": "electron .",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
+    "dev": "next dev -p 9002",
     "build": "next build",
-    "start": "next start",
+    "build:next": "next build",
+    "electron": "electron .",
+    "build:electron": "electron-builder --win portable",
+    "dist": "npm run build:next && npm run build:electron",
     "lint": "next lint"
   },
   "dependencies": {

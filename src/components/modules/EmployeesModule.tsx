@@ -14,7 +14,7 @@ import {
   LayoutDashboard,
   ShieldCheck,
   QrCode,
-  Keypad,
+  Keyboard,
   UserCircle,
   Eye,
   Trash2,
@@ -64,9 +64,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, differenceInMinutes, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { QRCodeSVG } from 'qrcode.react';
-import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import { Employee, AttendanceRecord, AttendanceStatus } from '@/lib/types';
 
 type ModuleView = 'ADMIN' | 'KIOSK';
@@ -271,7 +268,7 @@ export function EmployeesModule({ store }: { store: any }) {
              </div>
              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
                 <Button onClick={() => setKioskAuth('PIN')} variant="outline" className="h-16 px-8 rounded-2xl border-slate-800 bg-slate-900/50 text-lg font-bold hover:bg-blue-600 hover:text-white transition-all">
-                  <Keypad className="w-6 h-6 mr-3" /> Secure PIN
+                  <Keyboard className="w-6 h-6 mr-3" /> Secure PIN
                 </Button>
                 <Button onClick={() => setKioskAuth('QR')} variant="outline" className="h-16 px-8 rounded-2xl border-slate-800 bg-slate-900/50 text-lg font-bold hover:bg-blue-600 hover:text-white transition-all">
                   <QrCode className="w-6 h-6 mr-3" /> QR Scan

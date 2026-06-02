@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -28,7 +29,10 @@ import {
   CreditCard,
   FileDown,
   Table as TableIcon,
-  Search
+  Search,
+  History,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +57,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format, isToday, isSameWeek, isSameMonth, parseISO } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { TopUpModal } from './wallet/TopUpModal';
 
 const EXPENSE_CATEGORIES = [
   { name: 'TV Purchase', icon: Box, color: '#3B82F6' },
@@ -70,20 +75,31 @@ export function WalletModule({ store }: { store: any }) {
     amount: 0, category: 'Chai - Nasta', customCategory: '', quantity: '', vendorName: '', billNumber: '', paymentMode: 'UPI' as any, date: format(new Date(), 'yyyy-MM-dd'), notes: ''
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
   const stats = useMemo(() => {
     const expenses = store.expenses || [];
-    let today = 0, week = 0, month = 0, total = 0;
+    const transactions = store.transactions || [];
+    
+    let todayExp = 0, monthExp = 0;
+    let todayInc = 0, monthInc = 0;
+
     expenses.forEach((e: any) => {
       const date = parseISO(e.date);
       const amount = Number(e.amount);
-      total += amount;
-      if (isToday(date)) today += amount;
-      if (isSameWeek(date, new Date())) week += amount;
-      if (isSameMonth(date, new Date())) month += amount;
+      if (isToday(date)) todayExp += amount;
+      if (isSameMonth(date, new Date())) monthExp += amount;
     });
-    return { today, week, month, total };
-  }, [store.expenses]);
+
+    transactions.filter((t: any) => t.type === 'TOPUP' && t.status === 'SUCCESS').forEach((t: any) => {
+      const date = parseISO(t.date);
+      const amount = Number(t.amount);
+      if (isToday(date)) todayInc += amount;
+      if (isSameMonth(date, new Date())) monthInc += amount;
+    });
+
+    return { todayExp, monthExp, todayInc, monthInc };
+  }, [store.expenses, store.transactions]);
 
   const chartData = useMemo(() => {
     const expenses = store.expenses || [];
@@ -96,35 +112,47 @@ export function WalletModule({ store }: { store: any }) {
     })).sort((a, b) => b.value - a.value).slice(0, 5);
   }, [store.expenses]);
 
-  const filteredExpenses = useMemo(() => {
-    return (store.expenses || []).filter((e: any) => 
-      e.category.toLowerCase().includes(searchQuery.toLowerCase()) || e.vendorName?.toLowerCase().includes(searchQuery.toLowerCase())
-    ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [store.expenses, searchQuery]);
+  const recentTransactions = useMemo(() => {
+    return (store.transactions || []).filter((t: any) => 
+      t.description.toLowerCase().includes(searchQuery.toLowerCase())
+    ).sort((a: any, b: any) => new Date(b.id.split('-').pop()).getTime() - new Date(a.id.split('-').pop()).getTime());
+  }, [store.transactions, searchQuery]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-6">
-        <div className="xl:col-span-2 bg-[#0066FF] p-6 md:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-           <Wallet className="absolute top-0 right-0 p-4 w-24 h-24 md:w-32 md:h-32 opacity-10" />
-           <div className="relative z-10 space-y-4">
-              <p className="text-blue-100/80 font-bold uppercase tracking-widest text-[10px] md:text-xs">Balance</p>
-              <h2 className="text-3xl md:text-5xl font-headline font-black">₹{store.walletBalance.toFixed(2)}</h2>
-              <Button className="bg-white text-[#0066FF] h-10 px-6 rounded-xl font-bold uppercase text-xs">Top-Up</Button>
+        <div className="xl:col-span-2 bg-gradient-to-br from-[#0066FF] to-[#0052CC] p-6 md:p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-4 w-24 h-24 md:w-32 md:h-32 opacity-10 group-hover:scale-110 transition-transform duration-500">
+             <Wallet className="w-full h-full" />
+           </div>
+           <div className="relative z-10 space-y-6">
+              <div className="space-y-1">
+                <p className="text-blue-100/80 font-bold uppercase tracking-widest text-[10px] md:text-xs">Master Wallet Balance</p>
+                <h2 className="text-4xl md:text-6xl font-headline font-black tracking-tight">₹{store.walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+              </div>
+              <Button 
+                onClick={() => setIsTopUpOpen(true)}
+                className="bg-white text-[#0066FF] hover:bg-slate-100 h-12 px-8 rounded-xl font-bold uppercase text-xs shadow-lg"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" /> Quick Top-Up
+              </Button>
            </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:gap-4 xl:col-span-2">
            {[
-             { label: "Today", value: stats.today, color: "text-emerald-400" },
-             { label: "Weekly", value: stats.week, color: "text-blue-400" },
-             { label: "Monthly", value: stats.month, color: "text-purple-400" },
-             { label: "Total", value: stats.total, color: "text-rose-400" }
+             { label: "Today Income", value: stats.todayInc, color: "text-emerald-400", icon: ArrowUpRight },
+             { label: "Today Spent", value: stats.todayExp, color: "text-rose-400", icon: ArrowDownRight },
+             { label: "Monthly Income", value: stats.monthInc, color: "text-emerald-400", icon: TrendingUp },
+             { label: "Monthly Spent", value: stats.monthExp, color: "text-rose-400", icon: PieIcon }
            ].map((stat, i) => (
-             <Card key={i} className="bg-slate-900/40 border-slate-800">
-                <CardContent className="p-3 md:p-4">
-                   <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase truncate">{stat.label}</p>
-                   <p className={cn("text-base md:text-lg font-headline font-bold", stat.color)}>₹{stat.value.toFixed(0)}</p>
+             <Card key={i} className="bg-slate-900/40 border-slate-800 group hover:border-slate-700 transition-colors">
+                <CardContent className="p-4 flex flex-col justify-between h-full">
+                   <div className="flex justify-between items-start">
+                     <p className="text-[10px] font-bold text-slate-500 uppercase truncate">{stat.label}</p>
+                     <stat.icon className={cn("w-3 h-3 opacity-40", stat.color)} />
+                   </div>
+                   <p className={cn("text-xl md:text-2xl font-headline font-bold mt-2", stat.color)}>₹{stat.value.toLocaleString('en-IN')}</p>
                 </CardContent>
              </Card>
            ))}
@@ -136,13 +164,13 @@ export function WalletModule({ store }: { store: any }) {
            <Card className="bg-slate-900/40 border-slate-800">
               <CardHeader className="border-b border-slate-800 p-4 md:p-6">
                  <CardTitle className="font-headline font-bold text-base md:text-lg flex items-center gap-2">
-                    <ArrowDownRight className="w-5 h-5 text-[#FF3366]" /> Logger
+                    <ArrowDownRight className="w-5 h-5 text-[#FF3366]" /> Expense Logger
                  </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-8 space-y-4 md:space-y-6">
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                       <Label className="text-[10px] font-bold">Category</Label>
+                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Category</Label>
                        <Select value={expense.category} onValueChange={v => setExpense({...expense, category: v})}>
                           <SelectTrigger className="bg-slate-950 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-800">
@@ -151,30 +179,30 @@ export function WalletModule({ store }: { store: any }) {
                        </Select>
                     </div>
                     <div className="space-y-1">
-                       <Label className="text-[10px] font-bold">Amount (₹)</Label>
-                       <Input type="number" value={expense.amount} onChange={e => setExpense({...expense, amount: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-10 md:h-11" />
+                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Amount (₹)</Label>
+                       <Input type="number" value={expense.amount} onChange={e => setExpense({...expense, amount: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-10 md:h-11 font-code" />
                     </div>
                     <div className="space-y-1">
-                       <Label className="text-[10px] font-bold">Vendor</Label>
-                       <Input value={expense.vendorName} onChange={e => setExpense({...expense, vendorName: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11" />
+                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Vendor / Store</Label>
+                       <Input value={expense.vendorName} onChange={e => setExpense({...expense, vendorName: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11" placeholder="e.g. Local Hardware" />
                     </div>
                     <div className="space-y-1">
-                       <Label className="text-[10px] font-bold">Date</Label>
+                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Date</Label>
                        <Input type="date" value={expense.date} onChange={e => setExpense({...expense, date: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11 text-xs" />
                     </div>
                  </div>
-                 <Button onClick={() => store.addExpense({id: `EXP${Date.now()}`, ...expense, timestamp: new Date().toISOString()})} className="w-full bg-[#FF3366] h-11 md:h-12 rounded-xl font-bold uppercase text-xs md:text-sm">Save Transaction</Button>
+                 <Button onClick={() => store.addExpense({id: `EXP${Date.now()}`, ...expense, timestamp: new Date().toISOString()})} className="w-full bg-[#FF3366] hover:bg-rose-600 h-12 rounded-xl font-bold uppercase text-sm shadow-lg shadow-rose-500/10">Record Transaction</Button>
               </CardContent>
            </Card>
 
            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                  <h3 className="text-lg font-headline font-bold flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-500" /> Registry
+                    <History className="w-5 h-5 text-blue-500" /> Transaction Ledger
                  </h3>
                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                    <Input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-9 bg-slate-900 border-slate-800 text-xs w-full" />
+                    <Input placeholder="Search ledger..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-10 bg-slate-900 border-slate-800 text-xs w-full" />
                  </div>
               </div>
               <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
@@ -182,19 +210,47 @@ export function WalletModule({ store }: { store: any }) {
                    <Table>
                       <TableHeader className="bg-slate-900/60">
                          <TableRow className="border-slate-800">
-                            <TableHead className="text-[10px] font-bold">Date</TableHead>
-                            <TableHead className="text-[10px] font-bold">Category</TableHead>
-                            <TableHead className="text-right text-[10px] font-bold">Amount</TableHead>
+                            <TableHead className="text-[10px] font-bold uppercase">Details</TableHead>
+                            <TableHead className="text-[10px] font-bold uppercase">Date</TableHead>
+                            <TableHead className="text-right text-[10px] font-bold uppercase">Amount</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {filteredExpenses.map((exp: any) => (
-                           <TableRow key={exp.id} className="border-slate-800/50">
-                              <TableCell className="text-[10px] text-slate-400 whitespace-nowrap">{format(parseISO(exp.date), 'dd MMM')}</TableCell>
-                              <TableCell className="font-bold text-xs truncate max-w-[100px]">{exp.category}</TableCell>
-                              <TableCell className="text-right font-code font-bold text-rose-500 text-xs">₹{Number(exp.amount).toFixed(0)}</TableCell>
+                         {recentTransactions.map((tx: any) => (
+                           <TableRow key={tx.id} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "p-1.5 rounded-lg",
+                                    tx.type === 'TOPUP' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                  )}>
+                                    {tx.type === 'TOPUP' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-slate-100">{tx.description}</p>
+                                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">{tx.status}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-[10px] text-slate-400">
+                                <p>{format(parseISO(tx.date), 'dd MMM yyyy')}</p>
+                                <p className="text-[9px] text-slate-600">{tx.time}</p>
+                              </TableCell>
+                              <TableCell className={cn(
+                                "text-right font-code font-bold text-sm",
+                                tx.type === 'TOPUP' ? "text-emerald-400" : "text-rose-500"
+                              )}>
+                                {tx.type === 'TOPUP' ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
+                              </TableCell>
                            </TableRow>
                          ))}
+                         {recentTransactions.length === 0 && (
+                           <TableRow>
+                             <TableCell colSpan={3} className="h-32 text-center text-slate-500 text-xs italic">
+                               No transactions found in history.
+                             </TableCell>
+                           </TableRow>
+                         )}
                       </TableBody>
                    </Table>
                  </div>
@@ -206,7 +262,7 @@ export function WalletModule({ store }: { store: any }) {
            <Card className="bg-slate-900/40 border-slate-800">
               <CardHeader className="border-b border-slate-800 p-4">
                  <CardTitle className="font-headline font-bold text-base flex items-center gap-2">
-                    <PieIcon className="w-5 h-5 text-[#FFD700]" /> Intelligence
+                    <PieIcon className="w-5 h-5 text-[#FFD700]" /> Expense Distribution
                  </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
@@ -233,8 +289,26 @@ export function WalletModule({ store }: { store: any }) {
                  </div>
               </CardContent>
            </Card>
+
+           <Card className="bg-slate-900/40 border-slate-800 border-dashed">
+             <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+                <div className="p-3 bg-blue-500/10 rounded-full text-blue-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold">Safe Transactions</h4>
+                  <p className="text-[10px] text-slate-500 mt-1">All top-ups are secured with industry standard encryption. GJ5 HOME SERVICE ensures your funds are tracked and verifiable.</p>
+                </div>
+             </CardContent>
+           </Card>
         </div>
       </div>
+
+      <TopUpModal 
+        isOpen={isTopUpOpen} 
+        onClose={() => setIsTopUpOpen(false)} 
+        onSuccess={(amt) => store.topUpWallet(amt)}
+      />
     </div>
   );
 }

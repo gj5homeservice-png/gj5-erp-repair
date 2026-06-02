@@ -10,6 +10,7 @@ import {
   Expense, 
   TransportationLog, 
   Invoice,
+  WalletTransaction,
   VisibilitySettings as IVisibilitySettings 
 } from '@/lib/types';
 
@@ -62,6 +63,7 @@ export function useErpStore() {
   const [employees, setEmployees] = useState<Employee[]>(DEFAULT_EMPLOYEES);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(5000);
@@ -120,6 +122,11 @@ export function useErpStore() {
       try { setExpenses(JSON.parse(savedExpenses)); } catch (e) {}
     }
 
+    const savedTransactions = localStorage.getItem('gj5_wallet_transactions');
+    if (savedTransactions) {
+      try { setTransactions(JSON.parse(savedTransactions)); } catch (e) {}
+    }
+
     const savedBalance = localStorage.getItem('gj5_wallet_balance');
     if (savedBalance) {
       try { setWalletBalance(Number(savedBalance)); } catch (e) {}
@@ -155,6 +162,10 @@ export function useErpStore() {
   }, [expenses]);
 
   useEffect(() => {
+    localStorage.setItem('gj5_wallet_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  useEffect(() => {
     localStorage.setItem('gj5_wallet_balance', walletBalance.toString());
   }, [walletBalance]);
 
@@ -171,6 +182,34 @@ export function useErpStore() {
   const addExpense = (expense: Expense) => {
     setExpenses(prev => [expense, ...prev]);
     setWalletBalance(prev => prev - expense.amount);
+    
+    // Log as transaction
+    const trans: WalletTransaction = {
+      id: `TXN-EXP-${Date.now()}`,
+      amount: expense.amount,
+      date: expense.date,
+      time: new Date().toLocaleTimeString(),
+      type: 'EXPENSE',
+      status: 'SUCCESS',
+      userId: 'admin',
+      description: `Expense: ${expense.category}`
+    };
+    setTransactions(prev => [trans, ...prev]);
+  };
+
+  const topUpWallet = (amount: number) => {
+    setWalletBalance(prev => prev + amount);
+    const trans: WalletTransaction = {
+      id: `TXN-TOP-${Date.now()}`,
+      amount: amount,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString(),
+      type: 'TOPUP',
+      status: 'SUCCESS',
+      userId: 'admin',
+      description: 'Wallet Top-Up'
+    };
+    setTransactions(prev => [trans, ...prev]);
   };
 
   const addInvoice = (invoice: Invoice) => setInvoices(prev => [invoice, ...prev]);
@@ -194,6 +233,7 @@ export function useErpStore() {
     if (data.calls) setCalls(data.calls);
     if (data.inquiries) setInquiries(data.inquiries);
     if (data.expenses) setExpenses(data.expenses);
+    if (data.transactions) setTransactions(data.transactions);
     if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
     if (data.invoices) setInvoices(data.invoices);
     if (data.employees) setEmployees(data.employees);
@@ -207,6 +247,7 @@ export function useErpStore() {
     employees,
     attendance, updateAttendance,
     expenses, addExpense,
+    transactions, topUpWallet,
     transportationLogs, addTransportLog, updateTransportLogStatus,
     invoices, addInvoice,
     walletBalance, setWalletBalance,

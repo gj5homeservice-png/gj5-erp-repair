@@ -82,6 +82,17 @@ export interface Expense {
   timestamp: string;
 }
 
+export interface WalletTransaction {
+  id: string;
+  amount: number;
+  date: string;
+  time: string;
+  type: 'TOPUP' | 'EXPENSE';
+  status: 'SUCCESS' | 'FAILED' | 'PENDING';
+  userId: string;
+  description: string;
+}
+
 export type LogisticsStatus = 'Pending Pickup' | 'OK Pickup' | 'Pending Delivery' | 'OK Delivery';
 
 export interface TransportationLog {

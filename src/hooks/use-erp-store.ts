@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -50,10 +51,15 @@ const DEFAULT_VISIBILITY: VisibilitySettings = {
   }
 };
 
+const DEFAULT_EMPLOYEES: Employee[] = [
+  { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
+  { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
+];
+
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>(DEFAULT_EMPLOYEES);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
@@ -99,10 +105,25 @@ export function useErpStore() {
       try { setInvoices(JSON.parse(savedInvoices)); } catch (e) {}
     }
 
-    setEmployees([
-      { id: 'EMP101', name: 'Rajesh Sharma', role: 'Senior Technician', mobile: '9876543210', salary: 25000, dailyWage: 833 },
-      { id: 'EMP102', name: 'Amit Patel', role: 'Runner', mobile: '9123456789', salary: 15000, dailyWage: 500 }
-    ]);
+    const savedEmployees = localStorage.getItem('gj5_employees');
+    if (savedEmployees) {
+      try { setEmployees(JSON.parse(savedEmployees)); } catch (e) {}
+    }
+
+    const savedAttendance = localStorage.getItem('gj5_attendance');
+    if (savedAttendance) {
+      try { setAttendance(JSON.parse(savedAttendance)); } catch (e) {}
+    }
+
+    const savedExpenses = localStorage.getItem('gj5_expenses');
+    if (savedExpenses) {
+      try { setExpenses(JSON.parse(savedExpenses)); } catch (e) {}
+    }
+
+    const savedBalance = localStorage.getItem('gj5_wallet_balance');
+    if (savedBalance) {
+      try { setWalletBalance(Number(savedBalance)); } catch (e) {}
+    }
   }, []);
 
   useEffect(() => {
@@ -120,6 +141,22 @@ export function useErpStore() {
   useEffect(() => {
     localStorage.setItem('gj5_invoices', JSON.stringify(invoices));
   }, [invoices]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_employees', JSON.stringify(employees));
+  }, [employees]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_attendance', JSON.stringify(attendance));
+  }, [attendance]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_expenses', JSON.stringify(expenses));
+  }, [expenses]);
+
+  useEffect(() => {
+    localStorage.setItem('gj5_wallet_balance', walletBalance.toString());
+  }, [walletBalance]);
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
@@ -153,6 +190,17 @@ export function useErpStore() {
     return [record, ...prev];
   });
 
+  const importAllData = (data: any) => {
+    if (data.calls) setCalls(data.calls);
+    if (data.inquiries) setInquiries(data.inquiries);
+    if (data.expenses) setExpenses(data.expenses);
+    if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
+    if (data.invoices) setInvoices(data.invoices);
+    if (data.employees) setEmployees(data.employees);
+    if (data.attendance) setAttendance(data.attendance);
+    if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
+  };
+
   return {
     calls, addCall, updateCall,
     inquiries, addInquiry,
@@ -163,6 +211,7 @@ export function useErpStore() {
     invoices, addInvoice,
     walletBalance, setWalletBalance,
     shopLogo, setShopLogo,
-    visibility, updateVisibility
+    visibility, updateVisibility,
+    importAllData
   };
 }

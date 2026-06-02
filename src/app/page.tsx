@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +17,8 @@ import {
   Upload,
   ImageIcon,
   Trash2,
-  Truck
+  Truck,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +28,7 @@ import { BillingModule } from '@/components/modules/BillingModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
+import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -219,14 +222,14 @@ export default function DashboardPage() {
 
       {/* Settings Modal (Global) */}
       <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl p-0 md:p-6 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl p-0 md:p-6 overflow-hidden max-h-[95vh] flex flex-col">
           <DialogHeader className="p-6 border-b border-slate-800 md:p-0 md:border-0">
             <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-2">
               <SettingsIcon className="w-6 h-6 text-[#0066FF]" /> Master Controller Panel
             </DialogTitle>
-            <DialogDescription className="sr-only">Manage your shop logo, sidebar visibility, and dashboard KPI tracking.</DialogDescription>
+            <DialogDescription className="sr-only">Manage your shop logo, sidebar visibility, dashboard KPI tracking, and system backups.</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 md:p-0 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 md:p-0 space-y-8 custom-scrollbar">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Branding</h4>
               <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
@@ -243,10 +246,19 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
             <Separator className="bg-slate-800" />
+
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
+              <BackupCenter store={store} />
+            </div>
+
+            <Separator className="bg-slate-800" />
+
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Toggles</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.keys(store.visibility.tabs).map((tab) => (
                   <div key={tab} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                     <Label className="text-sm font-medium">{tab}</Label>
@@ -255,10 +267,12 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
+
             <Separator className="bg-slate-800" />
-            <div className="space-y-4 pb-4">
+
+            <div className="space-y-4 pb-8">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 7-Card Analytics</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                   { id: 'totalActive', label: 'Total Active' },
                   { id: 'pending', label: 'Pending' },

@@ -1,16 +1,20 @@
 
 {
-  "name": "nextn",
-  "version": "0.1.0",
+  "name": "gj5-home-service",
+  "version": "2.8.0",
   "private": true,
+  "main": "main.js",
+  "description": "GJ5 HOME SERVICE ERP Desktop",
+  "author": "GJ5 Enterprise",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
+    "build:next": "next build",
+    "build:electron": "electron-builder",
+    "electron:dev": "electron .",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "NODE_ENV=production next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "lint": "next lint"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
@@ -63,9 +67,37 @@
     "@types/node": "^20",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "electron": "^33.0.2",
+    "electron-builder": "^24.13.3",
     "genkit-cli": "^1.28.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "com.gj5.erp",
+    "productName": "GJ5 HOME SERVICE",
+    "copyright": "Copyright © 2024 GJ5 Enterprise",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "GJ5 HOME SERVICE"
+    }
   }
 }

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -57,62 +58,69 @@ export function useErpStore() {
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
 
+  // Persistence Key Identifiers
+  const KEYS = {
+    CALLS: 'gj5_repair_calls_v2',
+    INQUIRIES: 'gj5_inquiries_v2',
+    TRANS_LOGS: 'gj5_transport_logs_v2',
+    INVOICES: 'gj5_invoices_v2',
+    EMPLOYEES: 'gj5_employees_v2',
+    ATTENDANCE: 'gj5_attendance_v2',
+    EXPENSES: 'gj5_expenses_v2',
+    TXNS: 'gj5_wallet_transactions_v2',
+    AUDIT: 'gj5_audit_logs_v2',
+    STOCK: 'gj5_stock_v2',
+    BALANCE: 'gj5_wallet_balance_v2',
+    LOGO: 'gj5_shop_logo_v2',
+    VISIBILITY: 'gj5_visibility_settings_v2'
+  };
+
   useEffect(() => {
-    const savedLogo = localStorage.getItem('gj5_shop_logo');
-    if (savedLogo) setShopLogo(savedLogo);
-
-    const savedVisibility = localStorage.getItem('gj5_visibility_settings');
-    if (savedVisibility) {
+    // Initial Hydration from Browser/Electron Storage
+    const safeGet = (key: string, setter: any, fallback?: any) => {
       try {
-        const parsed = JSON.parse(savedVisibility);
-        setVisibility({
-          tabs: { ...DEFAULT_VISIBILITY.tabs, ...parsed.tabs },
-          kpis: { ...DEFAULT_VISIBILITY.kpis, ...parsed.kpis }
-        });
+        const val = localStorage.getItem(key);
+        if (val) setter(JSON.parse(val));
+        else if (fallback !== undefined) setter(fallback);
       } catch (e) {
-        setVisibility(DEFAULT_VISIBILITY);
-      }
-    }
-
-    // Restore all other states from local storage
-    const load = (key: string, setter: any) => {
-      const val = localStorage.getItem(key);
-      if (val) {
-        try { setter(JSON.parse(val)); } catch (e) { console.error(`Error loading ${key}`, e); }
+        console.error("Hydration Error", e);
       }
     };
 
-    load('gj5_repair_calls', setCalls);
-    load('gj5_inquiries', setInquiries);
-    load('gj5_transport_logs', setTransportationLogs);
-    load('gj5_invoices', setInvoices);
-    load('gj5_employees', setEmployees);
-    load('gj5_attendance', setAttendance);
-    load('gj5_expenses', setExpenses);
-    load('gj5_wallet_transactions', setTransactions);
-    load('gj5_audit_logs', setAuditLogs);
-    load('gj5_stock', setStock);
+    safeGet(KEYS.LOGO, setShopLogo);
+    safeGet(KEYS.VISIBILITY, setVisibility, DEFAULT_VISIBILITY);
+    safeGet(KEYS.CALLS, setCalls);
+    safeGet(KEYS.INQUIRIES, setInquiries);
+    safeGet(KEYS.TRANS_LOGS, setTransportationLogs);
+    safeGet(KEYS.INVOICES, setInvoices);
+    safeGet(KEYS.EMPLOYEES, setEmployees, DEFAULT_EMPLOYEES);
+    safeGet(KEYS.ATTENDANCE, setAttendance);
+    safeGet(KEYS.EXPENSES, setExpenses);
+    safeGet(KEYS.TXNS, setTransactions);
+    safeGet(KEYS.AUDIT, setAuditLogs);
+    safeGet(KEYS.STOCK, setStock);
     
-    const savedBalance = localStorage.getItem('gj5_wallet_balance');
+    const savedBalance = localStorage.getItem(KEYS.BALANCE);
     if (savedBalance) setWalletBalance(Number(savedBalance));
   }, []);
 
-  // Persisters
-  useEffect(() => { localStorage.setItem('gj5_repair_calls', JSON.stringify(calls)); }, [calls]);
-  useEffect(() => { localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries)); }, [inquiries]);
-  useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
-  useEffect(() => { localStorage.setItem('gj5_invoices', JSON.stringify(invoices)); }, [invoices]);
-  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
-  useEffect(() => { localStorage.setItem('gj5_wallet_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('gj5_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
-  useEffect(() => { localStorage.setItem('gj5_stock', JSON.stringify(stock)); }, [stock]);
-  useEffect(() => { localStorage.setItem('gj5_wallet_balance', walletBalance.toString()); }, [walletBalance]);
+  // Universal Persisters - Runs on every state change
+  useEffect(() => { localStorage.setItem(KEYS.CALLS, JSON.stringify(calls)); }, [calls]);
+  useEffect(() => { localStorage.setItem(KEYS.INQUIRIES, JSON.stringify(inquiries)); }, [inquiries]);
+  useEffect(() => { localStorage.setItem(KEYS.TRANS_LOGS, JSON.stringify(transportationLogs)); }, [transportationLogs]);
+  useEffect(() => { localStorage.setItem(KEYS.INVOICES, JSON.stringify(invoices)); }, [invoices]);
+  useEffect(() => { localStorage.setItem(KEYS.EMPLOYEES, JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(attendance)); }, [attendance]);
+  useEffect(() => { localStorage.setItem(KEYS.EXPENSES, JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem(KEYS.TXNS, JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem(KEYS.AUDIT, JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem(KEYS.STOCK, JSON.stringify(stock)); }, [stock]);
+  useEffect(() => { localStorage.setItem(KEYS.BALANCE, walletBalance.toString()); }, [walletBalance]);
+  useEffect(() => { if (shopLogo) localStorage.setItem(KEYS.LOGO, shopLogo); }, [shopLogo]);
 
   const updateVisibility = (newSettings: VisibilitySettings) => {
     setVisibility(newSettings);
-    localStorage.setItem('gj5_visibility_settings', JSON.stringify(newSettings));
+    localStorage.setItem(KEYS.VISIBILITY, JSON.stringify(newSettings));
   };
 
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
@@ -144,7 +152,6 @@ export function useErpStore() {
     setInvoices(prev => [invoice, ...prev]);
     setWalletBalance(prev => prev + invoice.total);
     
-    // Auto-deplete stock
     setStock(prev => prev.map(item => {
       const usedItem = invoice.items.find(i => i.id === item.id);
       if (usedItem) {
@@ -169,14 +176,8 @@ export function useErpStore() {
   const updateInvoice = (updatedInvoice: Invoice) => {
     const oldInvoice = invoices.find(i => i.id === updatedInvoice.id);
     if (!oldInvoice) return;
-
-    // Adjust wallet balance
     setWalletBalance(prev => prev - oldInvoice.total + updatedInvoice.total);
-
-    // Update invoices
     setInvoices(prev => prev.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
-
-    // Update corresponding transaction
     setTransactions(prev => prev.map(t => {
       if (t.metadata?.invoiceId === updatedInvoice.id) {
         return { ...t, amount: updatedInvoice.total, description: `Invoice (Updated): ${updatedInvoice.invoiceNumber}` };
@@ -273,6 +274,7 @@ export function useErpStore() {
     if (data.auditLogs) setAuditLogs(data.auditLogs);
     if (data.stock) setStock(data.stock);
     if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
+    if (data.shopLogo) setShopLogo(data.shopLogo);
   };
 
   return {

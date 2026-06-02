@@ -281,16 +281,16 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
       {/* View Modal */}
       <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
         <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50">
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-blue-400" /> {viewingInvoice?.invoiceNumber || "Invoice"} Details
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
+              {viewingInvoice?.timestamp ? `Committed on ${format(parseISO(viewingInvoice.timestamp), 'dd MMMM yyyy, hh:mm a')}` : "Financial Audit View"}
+            </DialogDescription>
+          </DialogHeader>
           {viewingInvoice && (
             <>
-              <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50">
-                <DialogTitle className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-blue-400" /> {viewingInvoice.invoiceNumber || "Invoice"} Details
-                </DialogTitle>
-                <DialogDescription className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
-                  Committed on {viewingInvoice.timestamp ? format(parseISO(viewingInvoice.timestamp), 'dd MMMM yyyy, hh:mm a') : "N/A"}
-                </DialogDescription>
-              </DialogHeader>
               <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-1">

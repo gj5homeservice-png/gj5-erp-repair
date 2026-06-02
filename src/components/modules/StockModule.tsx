@@ -242,7 +242,7 @@ export function StockModule({ store }: { store: any }) {
                 <TableCell className="px-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
-                       {item.images?.[0] ? <img src={item.images[0]} className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-slate-800" />}
+                       {item.images?.[0] ? <img src={item.images[0]} className="w-full h-full object-cover" alt={item.name} /> : <ImageIcon className="w-5 h-5 text-slate-800" />}
                     </div>
                     <div className="flex flex-col">
                       <span className="font-bold text-sm">{item.name}</span>
@@ -291,13 +291,13 @@ export function StockModule({ store }: { store: any }) {
         <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
            {viewingItem && (
              <Tabs defaultValue="overview" className="w-full">
-                <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <DialogHeader className="px-8 pt-8 pb-4 border-b border-slate-800 flex flex-row justify-between items-center bg-slate-900/50 space-y-0">
                    <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/20">
                          <QrCode className="w-6 h-6" />
                       </div>
                       <div>
-                         <h3 className="text-xl font-headline font-bold">{viewingItem.name}</h3>
+                         <DialogTitle className="text-xl font-headline font-bold">{viewingItem.name}</DialogTitle>
                          <p className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">{viewingItem.brand} • {viewingItem.category}</p>
                       </div>
                    </div>
@@ -306,7 +306,7 @@ export function StockModule({ store }: { store: any }) {
                       <TabsTrigger value="history" className="text-xs">Movement Ledger</TabsTrigger>
                       <TabsTrigger value="labels" className="text-xs">Label Center</TabsTrigger>
                    </TabsList>
-                </div>
+                </DialogHeader>
 
                 <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                    <TabsContent value="overview" className="space-y-8 mt-0">
@@ -315,7 +315,7 @@ export function StockModule({ store }: { store: any }) {
                             <h4 className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-2"><ImageIcon className="w-3 h-3" /> Product Gallery</h4>
                             <div className="grid grid-cols-2 gap-2">
                                {viewingItem.images.map((img, i) => (
-                                 <img key={i} src={img} className="aspect-square rounded-xl border border-slate-800 object-cover cursor-zoom-in" />
+                                 <img key={i} src={img} className="aspect-square rounded-xl border border-slate-800 object-cover cursor-zoom-in" alt={`Stock ${i}`} />
                                ))}
                                {viewingItem.images.length === 0 && <div className="aspect-square rounded-xl bg-slate-950 border border-slate-800 border-dashed flex items-center justify-center text-slate-700 text-xs italic">No Images</div>}
                             </div>
@@ -477,7 +477,7 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-4 gap-2 mt-4">
                         {formData.images?.map((img, i) => (
                            <div key={i} className="relative group">
-                              <img src={img} className="aspect-square rounded-lg object-cover border border-slate-800" />
+                              <img src={img} className="aspect-square rounded-lg object-cover border border-slate-800" alt={`Product Preview ${i}`} />
                               <button onClick={(e) => { e.stopPropagation(); setFormData({...formData, images: formData.images?.filter((_, idx) => idx !== i)}) }} className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-2.5 h-2.5" /></button>
                            </div>
                         ))}

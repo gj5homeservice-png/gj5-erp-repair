@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -34,7 +33,8 @@ import {
   X,
   Plus,
   Calendar,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 import { format, addMonths, parseISO, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -343,7 +343,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[100dvh] md:h-auto md:max-h-[90vh] flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
-          <div className="px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+          <DialogHeader className="px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 space-y-0">
             <DialogTitle className="text-xl md:text-2xl font-headline font-bold flex items-center gap-3">
                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
                   {activeTab === 'Inquiry' ? <Notebook className="w-4 h-4 md:w-5 md:h-5" /> : <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />}
@@ -355,7 +355,7 @@ export function CallModal({ isOpen, onClose, editingCall, store }: any) {
               <TabsTrigger value="Repeat" className="text-xs md:text-sm">Repeat</TabsTrigger>
               <TabsTrigger value="Inquiry" className="text-xs md:text-sm">Inquiry</TabsTrigger>
             </TabsList>
-          </div>
+          </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

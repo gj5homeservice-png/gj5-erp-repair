@@ -81,7 +81,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-8 pt-8 pb-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <DialogHeader className="px-8 pt-8 pb-4 border-b border-slate-800 flex flex-row justify-between items-center bg-slate-900/50 space-y-0">
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center">
                   <Truck className="w-6 h-6" />
@@ -90,7 +90,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
                  {editingEntry ? 'Update Transport Log' : 'Log New Transport Entry'}
                </DialogTitle>
             </div>
-          </div>
+          </DialogHeader>
 
           <div className="p-8 space-y-6">
             <div className="grid grid-cols-2 gap-6">

@@ -4,7 +4,7 @@
   "version": "2.8.0",
   "private": true,
   "main": "main.js",
-  "description": "GJ5 HOME SERVICE ERP Desktop",
+  "description": "GJ5 HOME SERVICE ERP Desktop & Mobile",
   "author": "GJ5 Enterprise",
   "scripts": {
     "dev": "next dev -p 9002",
@@ -13,9 +13,13 @@
     "electron": "electron .",
     "build:electron": "electron-builder --win portable",
     "dist": "npm run build:next && npm run build:electron",
+    "build:apk": "npm run build:next && npx cap sync android && npx cap open android",
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
     "@genkit-ai/google-genai": "^1.28.0",
     "@hookform/resolvers": "^4.1.3",
     "@radix-ui/react-accordion": "^1.2.3",

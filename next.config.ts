@@ -1,9 +1,8 @@
-
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   output: 'export', // Required for standalone desktop app
-  distDir: 'out',
+  trailingSlash: true, // Essential for Electron static file loading and routing
   images: {
     unoptimized: true, // Required for static export and local file loading
     remotePatterns: [

@@ -85,6 +85,7 @@
     },
     "files": [
       "out/**/*",
+      "public/**/*",
       "main.js",
       "package.json"
     ],

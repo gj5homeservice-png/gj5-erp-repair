@@ -2,11 +2,10 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   output: 'export', // Required for standalone desktop app
   distDir: 'out',
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true, // Required for static export and local file loading
     remotePatterns: [
       {
         protocol: 'https',

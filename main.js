@@ -14,7 +14,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webSecurity: false // Necessary for loading local file resources in some cases
+      webSecurity: false // Necessary for loading local file resources
     },
     backgroundColor: '#0B0F19'
   });
@@ -24,11 +24,9 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:9002');
-    // Open the DevTools.
-    // mainWindow.webContents.openDevTools();
   } else {
     // Load the static index.html from the Next.js export
-    // Use path.join to ensure absolute path relative to the app root
+    // When built, 'out' folder is at the root level of the app bundle
     mainWindow.loadFile(path.join(__dirname, 'out/index.html'));
   }
 

@@ -337,7 +337,9 @@ export function useErpStore() {
   };
 
   const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
-  const updateTransportLogStatus = (id: string, status: any) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  const updateTransportLogStatus = (id: string, status: any) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status, updatedAt: new Date().toISOString() } : l));
+  const updateTransportLog = (log: TransportationLog) => setTransportationLogs(prev => prev.map(l => l.id === log.id ? log : l));
+  const deleteTransportLog = (id: string) => setTransportationLogs(prev => prev.filter(l => l.id !== id));
 
   const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
   const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
@@ -375,7 +377,7 @@ export function useErpStore() {
     attendance, updateAttendance,
     expenses, addExpense,
     transactions, topUpWallet, deleteTransaction, manualAdjust,
-    transportationLogs, addTransportLog, updateTransportLogStatus,
+    transportationLogs, addTransportLog, updateTransportLogStatus, updateTransportLog, deleteTransportLog,
     invoices, addInvoice, deleteInvoice, updateInvoice,
     stock, updateStockItem, deleteStockItem,
     auditLogs, walletBalance, setWalletBalance, shopLogo, setShopLogo,

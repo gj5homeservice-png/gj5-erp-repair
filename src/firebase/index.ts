@@ -5,6 +5,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/
 import { firebaseConfig } from './config';
 
 // Initialize Firebase
+// Note: To re-enable security, update firebaseConfig in src/firebase/config.ts with valid credentials.
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();

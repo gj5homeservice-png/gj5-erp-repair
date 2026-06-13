@@ -75,7 +75,6 @@ type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'St
 export default function DashboardPage() {
   const store = useErpStore();
   const { toast } = useToast();
-  const user = auth.currentUser;
   const [activeTab, setActiveTab] = useState<ActiveTab>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -126,7 +125,7 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      toast({ title: "Logged Out", description: "Identity session terminated." });
+      toast({ title: "Logged Out", description: "Session terminated." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error", description: "Failed to logout." });
     }
@@ -285,18 +284,18 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-4 md:gap-6 ml-4">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-semibold text-blue-400 italic">ERP Enterprise</span>
+              <span className="text-sm font-semibold text-blue-400 italic">ERP Console</span>
               <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V2.8.0</span>
             </div>
             
             <div className="flex items-center gap-3 border-l border-slate-800 pl-4 md:pl-6">
               <Avatar className="w-9 h-9 border border-slate-800">
-                <AvatarImage src={user?.photoURL || ''} />
-                <AvatarFallback className="bg-blue-600 text-white text-xs">{user?.displayName?.[0] || 'U'}</AvatarFallback>
+                <AvatarImage src="" />
+                <AvatarFallback className="bg-blue-600 text-white text-xs">A</AvatarFallback>
               </Avatar>
               <div className="hidden xl:flex flex-col">
-                <span className="text-xs font-bold truncate max-w-[100px]">{user?.displayName || 'User'}</span>
-                <span className="text-[9px] text-slate-500 truncate max-w-[100px]">{user?.email}</span>
+                <span className="text-xs font-bold">Admin</span>
+                <span className="text-[9px] text-slate-500">System Root</span>
               </div>
               <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-rose-500 transition-colors" title="Logout">
                 <LogOut className="w-5 h-5" />

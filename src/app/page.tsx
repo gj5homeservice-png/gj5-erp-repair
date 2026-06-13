@@ -30,8 +30,7 @@ import {
   ChevronsDown,
   GripVertical,
   Download,
-  FileJson,
-  LogOut
+  FileJson
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +46,6 @@ import { StockModule } from '@/components/modules/StockModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
-import { auth, signOut } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -121,15 +119,6 @@ export default function DashboardPage() {
       setActiveTab(visibleNavigation[0].id as ActiveTab);
     }
   }, [store.visibility.tabs, sortedNavigation]);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({ title: "Logged Out", description: "Session terminated." });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to logout." });
-    }
-  };
 
   const handleToggleTab = (tab: keyof VisibilitySettings['tabs']) => {
     const newSettings = {
@@ -297,9 +286,6 @@ export default function DashboardPage() {
                 <span className="text-xs font-bold">Admin</span>
                 <span className="text-[9px] text-slate-500">System Root</span>
               </div>
-              <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-rose-500 transition-colors" title="Logout">
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </header>

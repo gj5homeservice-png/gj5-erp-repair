@@ -1,17 +1,14 @@
 'use client';
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { firebaseConfig } from './config';
-
-// Initialize Firebase
-// Note: To re-enable security, update firebaseConfig in src/firebase/config.ts with valid credentials.
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-
-export { app, auth, googleProvider, signInWithPopup, signOut };
+/**
+ * Firebase Rollback State
+ * This file is stubbed to prevent build errors while authentication is disabled.
+ */
+export const auth = null;
+export const googleProvider = null;
+export const signInWithPopup = async () => {};
+export const signOut = async () => {};
 
 export function initializeFirebase() {
-  return { app, auth };
+  return { app: null, auth: null };
 }

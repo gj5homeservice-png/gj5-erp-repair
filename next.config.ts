@@ -2,9 +2,9 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   output: 'export', // Required for standalone desktop app
-  trailingSlash: true, // Essential for Electron static file loading and routing
+  trailingSlash: false, // Better for Tauri's internal file serving
   images: {
-    unoptimized: true, // Required for static export and local file loading
+    unoptimized: true, // Required for static export
     remotePatterns: [
       {
         protocol: 'https',

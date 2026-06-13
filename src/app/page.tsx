@@ -30,7 +30,8 @@ import {
   ChevronsDown,
   GripVertical,
   Download,
-  FileJson
+  FileJson,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ import { StockModule } from '@/components/modules/StockModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
+import { auth, signOut } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +66,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { isToday, isSameMonth, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -72,6 +75,7 @@ type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'St
 export default function DashboardPage() {
   const store = useErpStore();
   const { toast } = useToast();
+  const user = auth.currentUser;
   const [activeTab, setActiveTab] = useState<ActiveTab>('Repairing');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -118,6 +122,15 @@ export default function DashboardPage() {
       setActiveTab(visibleNavigation[0].id as ActiveTab);
     }
   }, [store.visibility.tabs, sortedNavigation]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Logged Out", description: "Identity session terminated." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to logout." });
+    }
+  };
 
   const handleToggleTab = (tab: keyof VisibilitySettings['tabs']) => {
     const newSettings = {
@@ -272,13 +285,23 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-4 md:gap-6 ml-4">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-semibold text-blue-400 italic">ERP Enterprise Edition</span>
+              <span className="text-sm font-semibold text-blue-400 italic">ERP Enterprise</span>
               <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V2.8.0</span>
             </div>
-            <button className="relative p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#FF3366] rounded-full border-2 border-[#0B0F19]"></span>
-            </button>
+            
+            <div className="flex items-center gap-3 border-l border-slate-800 pl-4 md:pl-6">
+              <Avatar className="w-9 h-9 border border-slate-800">
+                <AvatarImage src={user?.photoURL || ''} />
+                <AvatarFallback className="bg-blue-600 text-white text-xs">{user?.displayName?.[0] || 'U'}</AvatarFallback>
+              </Avatar>
+              <div className="hidden xl:flex flex-col">
+                <span className="text-xs font-bold truncate max-w-[100px]">{user?.displayName || 'User'}</span>
+                <span className="text-[9px] text-slate-500 truncate max-w-[100px]">{user?.email}</span>
+              </div>
+              <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-rose-500 transition-colors" title="Logout">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
 

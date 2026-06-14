@@ -1,10 +1,10 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'export', // Required for standalone desktop app
-  trailingSlash: false, // Better for Tauri's internal file serving
+  output: 'export',
+  trailingSlash: false,
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

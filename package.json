@@ -1,17 +1,17 @@
 {
-  "name": "gj5-home-service",
+  "name": "gj5-erp",
   "version": "2.8.0",
   "private": true,
-  "main": "main.js",
-  "description": "GJ5 HOME SERVICE ERP Desktop & Mobile",
-  "author": "GJ5 Enterprise",
+  "type": "module",
+  "description": "GJ5 HOME SERVICE ERP - Windows Desktop Console",
   "scripts": {
     "dev": "next dev -p 9002",
     "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "npm run build && tauri build",
-    "lint": "next lint",
     "build:apk": "npm run build && npx cap sync android && npx cap open android"
   },
   "dependencies": {

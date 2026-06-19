@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -40,7 +39,9 @@ import {
   ShieldCheck,
   CreditCard,
   Lock,
-  ShieldAlert
+  ShieldAlert,
+  ClipboardList,
+  CalendarCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,9 @@ import { InquiryModule } from '@/components/modules/InquiryModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
 import { EmployeesModule } from '@/components/modules/EmployeesModule';
+import { AttendanceModule } from '@/components/modules/AttendanceModule';
+import { TasksModule } from '@/components/modules/TasksModule';
+import { SalaryModule } from '@/components/modules/SalaryModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
 import { StockModule } from '@/components/modules/StockModule';
@@ -78,7 +82,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'Attendance' | 'Tasks' | 'Salary' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -97,6 +101,9 @@ export default function DashboardPage() {
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
     { name: 'P&L Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
+    { name: 'Attendance', icon: CalendarCheck, id: 'Attendance' as ActiveTab, visible: store.visibility.tabs.Attendance },
+    { name: 'Task Board', icon: ClipboardList, id: 'Tasks' as ActiveTab, visible: store.visibility.tabs.Tasks },
+    { name: 'Salary', icon: DollarSign, id: 'Salary' as ActiveTab, visible: store.visibility.tabs.Salary },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
@@ -171,7 +178,7 @@ export default function DashboardPage() {
   };
 
   const NavItems = ({ isMobile = false }) => (
-    <nav className={cn("space-y-2", isMobile ? "px-0" : "px-4")}>
+    <nav className={cn("space-y-1.5", isMobile ? "px-0" : "px-4")}>
       {sortedNavigation.map((item) => item.visible && (
         <button 
           key={item.id} 
@@ -180,12 +187,12 @@ export default function DashboardPage() {
             if (isMobile) setIsMobileMenuOpen(false);
           }} 
           className={cn(
-            "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group", 
+            "w-full flex items-center gap-4 px-4 py-2.5 rounded-xl transition-all group", 
             activeTab === item.id ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
           )}
         >
           <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
-          {(isSidebarOpen || isMobile) && <span className="font-medium whitespace-nowrap">{item.name}</span>}
+          {(isSidebarOpen || isMobile) && <span className="font-medium whitespace-nowrap text-sm">{item.name}</span>}
         </button>
       ))}
     </nav>
@@ -204,18 +211,18 @@ export default function DashboardPage() {
           {isSidebarOpen && <span className="font-headline font-bold text-lg xl:text-xl tracking-tight truncate">GJ5 HOME SERVICE</span>}
         </div>
 
-        <div className="flex-1 overflow-y-auto mt-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto mt-2 custom-scrollbar">
           <NavItems />
         </div>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
           <button onClick={() => setSettingsOpen(true)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
             <SettingsIcon className="w-5 h-5" />
-            {isSidebarOpen && <span className="font-medium">Master Settings</span>}
+            {isSidebarOpen && <span className="font-medium text-sm">Master Settings</span>}
           </button>
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
             {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            {isSidebarOpen && <span className="font-medium">Collapse</span>}
+            {isSidebarOpen && <span className="font-medium text-sm">Collapse</span>}
           </button>
         </div>
       </aside>
@@ -362,6 +369,9 @@ export default function DashboardPage() {
           {activeTab === 'Stock' && <StockModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'Employees' && <EmployeesModule store={store} />}
+          {activeTab === 'Attendance' && <AttendanceModule store={store} />}
+          {activeTab === 'Tasks' && <TasksModule store={store} />}
+          {activeTab === 'Salary' && <SalaryModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
           {activeTab === 'Transportation' && <TransportationModule store={store} />}
         </div>

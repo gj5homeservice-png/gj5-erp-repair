@@ -126,7 +126,7 @@ export interface Employee {
   employmentType?: 'Full Time' | 'Part Time' | 'Contract';
   salary: number;
   dailyWage?: number;
-  status: string;
+  status: 'Active' | 'Inactive' | 'Resigned';
   pin: string;
   photo?: string;
   overtime?: number;
@@ -140,6 +140,12 @@ export interface Employee {
   upiId?: string;
   aadhaarNo?: string;
   panNo?: string;
+  lastSeen?: string;
+  lastLocation?: {
+    lat: number;
+    lng: number;
+    address?: string;
+  };
 }
 
 export interface AttendanceRecord {
@@ -153,6 +159,44 @@ export interface AttendanceRecord {
   clockOutPhoto?: string | null;
   status: 'Present' | 'Late' | 'Absent' | 'Half Day';
   totalHours?: number;
+  location?: string;
+}
+
+export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+
+export interface EmployeeTask {
+  id: string;
+  title: string;
+  description: string;
+  customerName: string;
+  customerMobile: string;
+  address: string;
+  category: string;
+  assignedToId: string;
+  assignedToName: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate: string;
+  createdAt: string;
+  completedAt?: string;
+  notes?: string;
+}
+
+export interface SalaryRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  month: string;
+  year: string;
+  baseSalary: number;
+  attendanceDays: number;
+  overtimeHours: number;
+  bonus: number;
+  deductions: number;
+  netPayable: number;
+  paymentStatus: 'Paid' | 'Pending';
+  processedDate: string;
 }
 
 export interface TransportationLog {

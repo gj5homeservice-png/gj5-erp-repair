@@ -31,15 +31,41 @@ export interface RepairCall {
   problemDescription: string;
   visitHistory: VisitHistoryEntry[];
   repeatCount: number;
+  isOldEntry?: boolean;
+  entryDate?: string;
+  receivedDate?: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  name: string;
+  brand: string;
+  size: string;
+  quantity: number;
+  rate: number;
+  gstPercent: number;
+  discount: number;
+  amount: number;
 }
 
 export interface Invoice {
   id: string;
   invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  customerId: string;
   customerName: string;
   mobile: string;
-  items: any[];
-  total: number;
+  address: string;
+  customerGSTIN?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  totalDiscount: number;
+  cgst: number;
+  sgst: number;
+  grandTotal: number;
+  paymentStatus: 'Paid' | 'Unpaid' | 'Partial';
+  paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit';
   timestamp: string;
 }
 
@@ -56,6 +82,13 @@ export interface StockItem {
   images: string[];
   lastUpdated: string;
   history: any[];
+  supplierName?: string;
+  supplierMobile?: string;
+  purchaseDate?: string;
+  warrantyPeriod?: string;
+  description?: string;
+  addedBy?: string;
+  editedBy?: string;
 }
 
 export interface WalletTransaction {
@@ -65,6 +98,7 @@ export interface WalletTransaction {
   time: string;
   type: string;
   description: string;
+  metadata?: any;
 }
 
 export interface VisibilitySettings {
@@ -76,10 +110,36 @@ export interface Employee {
   id: string;
   name: string;
   mobile: string;
-  pin: string;
-  salary: number;
-  status: string;
+  altMobile?: string;
+  email?: string;
+  dob?: string;
+  gender?: string;
+  bloodGroup?: string;
+  maritalStatus?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   designation: string;
+  department?: string;
+  joiningDate?: string;
+  employmentType?: 'Full Time' | 'Part Time' | 'Contract';
+  salary: number;
+  dailyWage?: number;
+  status: string;
+  pin: string;
+  photo?: string;
+  overtime?: number;
+  bonus?: number;
+  advance?: number;
+  deductions?: number;
+  bankHolderName?: string;
+  bankName?: string;
+  accountNo?: string;
+  ifscCode?: string;
+  upiId?: string;
+  aadhaarNo?: string;
+  panNo?: string;
 }
 
 export interface AttendanceRecord {
@@ -88,15 +148,71 @@ export interface AttendanceRecord {
   employeeName: string;
   date: string;
   clockInTime: string;
+  clockInPhoto?: string | null;
   clockOutTime: string | null;
-  status: string;
+  clockOutPhoto?: string | null;
+  status: 'Present' | 'Late' | 'Absent' | 'Half Day';
+  totalHours?: number;
 }
 
 export interface TransportationLog {
   id: string;
   runnerName: string;
+  runnerMobile: string;
   jobId: string;
   customerName: string;
-  status: string;
+  customerMobile: string;
+  address: string;
+  status: LogisticsStatus;
   dispatchTime: string;
+}
+
+export type LogisticsStatus = 'Pending Pickup' | 'OK Pickup' | 'Pending Delivery' | 'OK Delivery';
+
+export interface Inquiry {
+  id: string;
+  customerName: string;
+  mobile: string;
+  alternateMobile?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  productType: string;
+  brand: string;
+  modelNumber?: string;
+  problemDescription?: string;
+  source: 'Walk-In' | 'Call' | 'WhatsApp' | 'Facebook' | 'Instagram' | 'Referral';
+  priority: 'Low' | 'Medium' | 'High';
+  expectedBudget?: number;
+  assignedTechnician?: string;
+  followUpDate: string;
+  status: 'New' | 'Pending' | 'Follow-up' | 'Converted' | 'Rejected';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  convertedJobId?: string;
+  conversionDate?: string;
+}
+
+export interface Expense {
+  id: string;
+  amount: number;
+  category: string;
+  vendorName: string;
+  date: string;
+  paymentMode: string;
+  timestamp: string;
+}
+
+export type StockMovementType = 'PURCHASE' | 'SALE' | 'RETURN' | 'DAMAGE' | 'SCRAP' | 'INWARD' | 'OUTWARD';
+
+export interface StockMovement {
+  id: string;
+  date: string;
+  type: StockMovementType;
+  quantity: number;
+  notes: string;
+  performedBy: string;
+  referenceId?: string;
+  customerName?: string;
 }

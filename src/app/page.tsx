@@ -33,11 +33,15 @@ import {
   FileJson,
   XCircle,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  DollarSign,
+  Activity,
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useErpStore, VisibilitySettings } from '@/hooks/use-erp-store';
+import { useErpStore } from '@/hooks/use-erp-store';
 import { RepairingModule } from '@/components/modules/RepairingModule';
 import { InquiryModule } from '@/components/modules/InquiryModule';
 import { BillingModule } from '@/components/modules/BillingModule';
@@ -69,6 +73,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { isSameMonth, parseISO } from 'date-fns';
 
 type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
 
@@ -108,8 +113,22 @@ export default function DashboardPage() {
     const completed = allCalls.filter((c: any) => c.status === 'Completed').length;
     const rejected = allCalls.filter((c: any) => c.status === 'Rejected').length;
 
-    return { totalActive, pending, completed, rejected };
-  }, [store.calls]);
+    // Billing Stats
+    const currentMonth = store.invoices.filter((i: any) => isSameMonth(parseISO(i.timestamp), new Date()));
+    const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + curr.grandTotal, 0);
+    const totalProfit = currentMonth.reduce((acc: number, curr: any) => {
+      const itemsProfit = curr.items.reduce((sum: number, item: any) => {
+        const stockRef = store.stock.find((s: any) => s.name === item.name);
+        const cost = stockRef?.purchasePrice || item.rate * 0.6; // fallback 40% margin
+        return sum + (item.rate - cost) * item.quantity;
+      }, 0);
+      return acc + itemsProfit;
+    }, 0);
+    const pendingAmount = store.invoices.filter((i: any) => i.paymentStatus !== 'Paid').reduce((acc: number, curr: any) => acc + curr.grandTotal, 0);
+    const gstLiability = currentMonth.reduce((acc: number, curr: any) => acc + (curr.cgst + curr.sgst), 0);
+
+    return { totalActive, pending, completed, rejected, totalSales, totalProfit, pendingAmount, gstLiability };
+  }, [store.calls, store.invoices, store.stock]);
 
   const visibleNavigation = sortedNavigation.filter(item => item.visible);
 
@@ -119,7 +138,7 @@ export default function DashboardPage() {
     }
   }, [store.visibility.tabs, sortedNavigation]);
 
-  const handleToggleTab = (tab: keyof VisibilitySettings['tabs']) => {
+  const handleToggleTab = (tab: string) => {
     const newSettings = {
       ...store.visibility,
       tabs: { ...store.visibility.tabs, [tab]: !store.visibility.tabs[tab] }
@@ -127,7 +146,7 @@ export default function DashboardPage() {
     store.updateVisibility(newSettings);
   };
 
-  const handleToggleKpi = (kpi: keyof VisibilitySettings['kpis']) => {
+  const handleToggleKpi = (kpi: string) => {
     const newSettings = {
       ...store.visibility,
       kpis: { ...store.visibility.kpis, [kpi]: !store.visibility.kpis[kpi] }
@@ -155,36 +174,6 @@ export default function DashboardPage() {
     else if (direction === 'BOTTOM') newOrder.push(item);
 
     store.setNavOrder(newOrder);
-  };
-
-  const exportNavLayout = () => {
-    const data = JSON.stringify({ navOrder: store.navOrder }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `GJ5_Sidebar_Layout.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "Layout Exported", description: "Sidebar sequence JSON downloaded." });
-  };
-
-  const importNavLayout = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const content = JSON.parse(event.target?.result as string);
-        if (content.navOrder) {
-          store.setNavOrder(content.navOrder);
-          toast({ title: "Layout Imported", description: "Navigation sequence updated." });
-        }
-      } catch (err) {
-        toast({ variant: "destructive", title: "Import Error", description: "Invalid layout file." });
-      }
-    };
-    reader.readAsText(file);
   };
 
   const NavItems = ({ isMobile = false }) => (
@@ -272,8 +261,8 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-4 md:gap-6 ml-4">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-semibold text-blue-400 italic">ERP Console</span>
-              <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V2.8.0</span>
+              <span className="text-sm font-semibold text-blue-400 italic">GJ5 PLUS</span>
+              <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V3.2.0</span>
             </div>
             
             <div className="flex items-center gap-3 border-l border-slate-800 pl-4 md:pl-6">
@@ -290,9 +279,49 @@ export default function DashboardPage() {
         </header>
 
         <div className="p-4 md:p-8 max-w-full">
-          {activeTab === 'Repairing' && (
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Dashboard Stats Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {activeTab === 'Billing' || activeTab === 'Analytics' || activeTab === 'Invoice History' ? (
+              <>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Sales</p>
+                      <h3 className="text-2xl font-headline font-bold text-blue-400">₹{dashboardStats.totalSales.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><DollarSign className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Est. Net Profit</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">₹{dashboardStats.totalProfit.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">GST Liability</p>
+                      <h3 className="text-2xl font-headline font-bold text-rose-400">₹{dashboardStats.gstLiability.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><ShieldCheck className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Outstanding</p>
+                      <h3 className="text-2xl font-headline font-bold text-amber-400">₹{dashboardStats.pendingAmount.toLocaleString()}</h3>
+                    </div>
+                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><CreditCard className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <>
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
@@ -329,10 +358,11 @@ export default function DashboardPage() {
                     <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><XCircle className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
-              </div>
-              <RepairingModule store={store} />
-            </div>
-          )}
+              </>
+            )}
+          </div>
+
+          {activeTab === 'Repairing' && <RepairingModule store={store} />}
           {activeTab === 'CRM Leads' && <InquiryModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
@@ -375,15 +405,35 @@ export default function DashboardPage() {
                <div className="flex justify-between items-center">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Layout Manager</h4>
                   <div className="flex gap-2">
-                     <input type="file" id="import-nav" className="hidden" accept=".json" onChange={importNavLayout} />
+                     <input type="file" id="import-nav" className="hidden" accept=".json" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              const content = JSON.parse(event.target?.result as string);
+                              if (content.navOrder) store.setNavOrder(content.navOrder);
+                            } catch (err) { toast({ title: "Import Error", variant: "destructive" }); }
+                          };
+                          reader.readAsText(file);
+                        }
+                     }} />
                      <Button variant="outline" size="sm" onClick={() => document.getElementById('import-nav')?.click()} className="h-8 text-[9px] uppercase border-slate-700"><FileJson className="w-3 h-3 mr-1.5" /> Import</Button>
-                     <Button variant="outline" size="sm" onClick={exportNavLayout} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Export</Button>
+                     <Button variant="outline" size="sm" onClick={() => {
+                        const data = JSON.stringify({ navOrder: store.navOrder });
+                        const blob = new Blob([data], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `Sidebar_Layout.json`;
+                        link.click();
+                     }} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Export</Button>
                      <Button variant="ghost" size="sm" onClick={() => store.resetNavOrder()} className="h-8 text-[9px] uppercase text-slate-500 hover:text-white">Reset Default</Button>
                   </div>
                </div>
                <div className="bg-slate-950/50 rounded-2xl border border-slate-800 overflow-hidden">
                   <div className="divide-y divide-slate-800">
-                     {store.navOrder.map((id, idx) => {
+                     {store.navOrder.map((id: string, idx: number) => {
                         const item = navigation.find(n => n.id === id);
                         if (!item) return null;
                         return (
@@ -396,7 +446,7 @@ export default function DashboardPage() {
                                 <span className={cn("text-xs font-bold", item.visible ? "text-slate-100" : "text-slate-500")}>{item.name}</span>
                              </div>
                              <div className="flex items-center gap-4">
-                                <Switch checked={store.visibility.tabs[id as keyof VisibilitySettings['tabs']]} onCheckedChange={() => handleToggleTab(id as keyof VisibilitySettings['tabs'])} />
+                                <Switch checked={!!store.visibility.tabs[id]} onCheckedChange={() => handleToggleTab(id)} />
                                 <div className="flex gap-1 border-l border-slate-800 pl-4">
                                    <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'TOP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ChevronsUp className="w-3.5 h-3.5" /></Button>
                                    <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'UP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ArrowUp className="w-3.5 h-3.5" /></Button>
@@ -416,28 +466,6 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
               <BackupCenter store={store} />
-            </div>
-
-            <Separator className="bg-slate-800" />
-
-            <div className="space-y-4 pb-8">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Eye className="w-4 h-4" /> 7-Card Analytics</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { id: 'totalActive', label: 'Total Active' },
-                  { id: 'pending', label: 'Pending' },
-                  { id: 'completed', label: 'Completed' },
-                  { id: 'repeat', label: 'Repeat Call' },
-                  { id: 'rejected', label: 'Rejected' },
-                  { id: 'exchange', label: 'Exchange/Purchase' },
-                  { id: 'warranty', label: 'Warranty Tracking' }
-                ].map((kpi) => (
-                  <div key={kpi.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <Label className="text-sm font-medium">{kpi.label}</Label>
-                    <Switch checked={store.visibility.kpis[kpi.id as keyof VisibilitySettings['kpis']]} onCheckedChange={() => handleToggleKpi(kpi.id as keyof VisibilitySettings['kpis'])} />
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </DialogContent>

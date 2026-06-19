@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -46,7 +47,7 @@ import {
 import { Inquiry, InquiryStatus, InquiryPriority, InquirySource } from '@/lib/types';
 import { InquiryModal } from './inquiry/InquiryModal';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
-import { format, isToday, isPast, parseISO, differenceInDays } from 'date-fns';
+import { format, isToday, isPast, parseISO, differenceInDays, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -60,7 +61,7 @@ export function InquiryModule({ store }: { store: any }) {
 
   const stats = useMemo(() => {
     const all = store.inquiries || [];
-    const today = all.filter((i: Inquiry) => isToday(parseISO(i.createdAt))).length;
+    const today = all.filter((i: Inquiry) => i.createdAt && isToday(parseISO(i.createdAt))).length;
     const converted = all.filter((i: Inquiry) => i.status === 'Converted').length;
     const pending = all.filter((i: Inquiry) => i.status === 'New' || i.status === 'Pending' || i.status === 'Follow-up').length;
     const conversionRate = all.length > 0 ? (converted / all.length * 100).toFixed(1) : '0';
@@ -72,14 +73,18 @@ export function InquiryModule({ store }: { store: any }) {
   const filteredInquiries = useMemo(() => {
     return (store.inquiries || []).filter((i: Inquiry) => {
       const matchesSearch = 
-        i.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.mobile.includes(searchQuery) ||
-        i.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.brand.toLowerCase().includes(searchQuery.toLowerCase());
+        (i.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (i.mobile || '').includes(searchQuery) ||
+        (i.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (i.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesFilter = activeFilter === 'All' || i.status === activeFilter;
       return matchesSearch && matchesFilter;
-    }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }).sort((a: any, b: any) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [store.inquiries, searchQuery, activeFilter]);
 
   const handleStatusChange = (inq: Inquiry, newStatus: InquiryStatus) => {
@@ -169,7 +174,9 @@ export function InquiryModule({ store }: { store: any }) {
             </TableHeader>
             <TableBody>
               {filteredInquiries.map((inq: Inquiry) => {
-                const isFollowUpDue = isPast(parseISO(inq.followUpDate)) && inq.status !== 'Converted';
+                const followUpDateObj = inq.followUpDate ? parseISO(inq.followUpDate) : null;
+                const isFollowUpDue = followUpDateObj && isValid(followUpDateObj) && isPast(followUpDateObj) && inq.status !== 'Converted';
+                
                 return (
                   <TableRow key={inq.id} className="border-slate-800/50 hover:bg-slate-800/20">
                     <TableCell className="px-4">
@@ -221,7 +228,7 @@ export function InquiryModule({ store }: { store: any }) {
                           <div className="flex items-center gap-1.5">
                              <Calendar className={cn("w-3 h-3", isFollowUpDue ? "text-rose-500" : "text-slate-500")} />
                              <span className={cn("text-[10px] font-bold", isFollowUpDue ? "text-rose-500 animate-pulse" : "text-slate-400")}>
-                                {format(parseISO(inq.followUpDate), 'dd MMM yyyy')}
+                                {followUpDateObj && isValid(followUpDateObj) ? format(followUpDateObj, 'dd MMM yyyy') : 'No Date'}
                              </span>
                           </div>
                           <span className="text-[9px] text-slate-600 uppercase font-black mt-0.5">Staff: {inq.assignedTechnician || 'Unassigned'}</span>

@@ -187,6 +187,19 @@ export interface Employee {
   status: 'Active' | 'Inactive';
   role: UserRole;
   createdAt: string;
+  // KYC Fields
+  aadharNumber?: string;
+  panNumber?: string;
+  addressProofType?: string;
+  currentAddress?: string;
+  permanentAddress?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  aadharFront?: string;
+  aadharBack?: string;
+  panCard?: string;
+  addressProof?: string;
 }
 
 export interface AttendanceRecord {

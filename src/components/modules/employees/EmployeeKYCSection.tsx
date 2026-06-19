@@ -1,0 +1,181 @@
+"use client"
+
+import React from "react";
+import { Upload, FileText, ShieldCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface EmployeeKYCSectionProps {
+  formData: any;
+  setFormData: (data: any) => void;
+}
+
+export function EmployeeKYCSection({ formData, setFormData }: EmployeeKYCSectionProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, [field]: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-headline font-bold text-white">KYC & Identity Verification</h2>
+          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Secure Associate Documentation</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label className="text-[10px] uppercase font-bold text-slate-400">Aadhar Card Number</Label>
+          <Input
+            type="text"
+            maxLength={12}
+            name="aadharNumber"
+            value={formData.aadharNumber || ""}
+            onChange={handleChange}
+            className="bg-slate-950 border-slate-800 h-11 font-code"
+            placeholder="1234 5678 9012"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[10px] uppercase font-bold text-slate-400">PAN Card Number</Label>
+          <Input
+            type="text"
+            name="panNumber"
+            value={formData.panNumber || ""}
+            onChange={handleChange}
+            className="bg-slate-950 border-slate-800 h-11 font-code uppercase"
+            placeholder="ABCDE1234F"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-[10px] uppercase font-bold text-slate-400">Address Proof Class</Label>
+        <Select
+          value={formData.addressProofType || ""}
+          onValueChange={(v) => setFormData({ ...formData, addressProofType: v })}
+        >
+          <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+            <SelectValue placeholder="Select Document Type" />
+          </SelectTrigger>
+          <SelectContent className="bg-slate-900 border-slate-800">
+            <SelectItem value="Aadhar Card">Aadhar Card</SelectItem>
+            <SelectItem value="Driving License">Driving License</SelectItem>
+            <SelectItem value="Voter ID">Voter ID</SelectItem>
+            <SelectItem value="Passport">Passport</SelectItem>
+            <SelectItem value="Electricity Bill">Electricity Bill</SelectItem>
+            <SelectItem value="Bank Passbook">Bank Passbook</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Aadhar Front", field: "aadharFront", icon: Upload, color: "text-blue-500" },
+          { label: "Aadhar Back", field: "aadharBack", icon: Upload, color: "text-blue-500" },
+          { label: "PAN Card", field: "panCard", icon: FileText, color: "text-emerald-500" },
+          { label: "Address Proof", field: "addressProof", icon: FileText, color: "text-amber-500" },
+        ].map((item) => (
+          <div key={item.field} className="relative group aspect-square rounded-2xl border-2 border-dashed border-slate-800 bg-slate-950/50 flex flex-col items-center justify-center text-center gap-2 hover:border-blue-500/50 transition-all cursor-pointer overflow-hidden">
+            {formData[item.field] ? (
+              <img src={formData[item.field]} className="w-full h-full object-cover" alt={item.label} />
+            ) : (
+              <>
+                <item.icon className={`w-6 h-6 ${item.color}`} />
+                <p className="text-[10px] font-bold text-slate-400 px-2 uppercase">{item.label}</p>
+              </>
+            )}
+            <input
+              type="file"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={(e) => handleFileUpload(e, item.field)}
+              accept="image/*"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6">
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Geographical Node Details</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Current Residence</Label>
+            <Input
+              name="currentAddress"
+              value={formData.currentAddress || ""}
+              onChange={handleChange}
+              className="bg-slate-950 border-slate-800 h-11"
+              placeholder="Full local address"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Permanent Domicile</Label>
+            <Input
+              name="permanentAddress"
+              value={formData.permanentAddress || ""}
+              onChange={handleChange}
+              className="bg-slate-950 border-slate-800 h-11"
+              placeholder="Full hometown address"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">City</Label>
+            <Input
+              name="city"
+              value={formData.city || ""}
+              onChange={handleChange}
+              className="bg-slate-950 border-slate-800 h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">State</Label>
+            <Input
+              name="state"
+              value={formData.state || ""}
+              onChange={handleChange}
+              className="bg-slate-950 border-slate-800 h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Pincode</Label>
+            <Input
+              name="pincode"
+              value={formData.pincode || ""}
+              onChange={handleChange}
+              className="bg-slate-950 border-slate-800 h-11 font-code"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

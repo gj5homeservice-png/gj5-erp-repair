@@ -18,7 +18,8 @@ import {
   Building2,
   Mail,
   MoreVertical,
-  CheckCircle2
+  CheckCircle2,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -47,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -55,6 +58,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
+import { EmployeeKYCSection } from './employees/EmployeeKYCSection';
 
 const INITIAL_EMP: Partial<Employee> = {
   name: '', mobile: '', email: '', designation: 'Technician', department: 'Service', 
@@ -66,6 +70,7 @@ const ROLES: UserRole[] = ['Admin', 'Manager', 'Employee'];
 
 export function EmployeesModule({ store }: { store: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
   const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>(INITIAL_EMP);
   const [deleteEmpId, setDeleteEmpId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,7 +143,7 @@ export function EmployeesModule({ store }: { store: any }) {
           <Button variant="outline" onClick={exportToExcel} className="border-slate-800 h-10 font-bold uppercase text-[10px]">
             <FileDown className="w-4 h-4 mr-2" /> Excel Export
           </Button>
-          <Button onClick={() => { setEditingEmployee(INITIAL_EMP); setIsModalOpen(true); }} className="bg-[#0066FF] h-10 font-bold uppercase text-[10px] px-6">
+          <Button onClick={() => { setEditingEmployee(INITIAL_EMP); setIsModalOpen(true); setActiveTab('profile'); }} className="bg-[#0066FF] h-10 font-bold uppercase text-[10px] px-6">
             <UserPlus className="w-4 h-4 mr-2" /> Register Associate
           </Button>
         </div>
@@ -213,7 +218,7 @@ export function EmployeesModule({ store }: { store: any }) {
                 <TableCell className="text-right px-6">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => setViewingQr(emp)} className="h-8 w-8 text-slate-400 hover:text-white"><QrCode className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { setEditingEmployee(emp); setIsModalOpen(true); }} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10"><Edit className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { setEditingEmployee(emp); setIsModalOpen(true); setActiveTab('profile'); }} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10"><Edit className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => setDeleteEmpId(emp.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 </TableCell>
@@ -228,118 +233,141 @@ export function EmployeesModule({ store }: { store: any }) {
 
       {/* REGISTRATION MODAL */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
-          <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50">
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                  <UserPlus className="w-5 h-5" />
-               </div>
-               <DialogTitle className="text-xl font-headline font-bold">
-                 {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
-               </DialogTitle>
+        <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[90vh] flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-row justify-between items-center space-y-0">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                    <UserPlus className="w-5 h-5" />
+                 </div>
+                 <div>
+                   <DialogTitle className="text-xl font-headline font-bold">
+                     {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
+                   </DialogTitle>
+                   <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
+                 </div>
+              </div>
+              <TabsList className="bg-slate-800/50 border border-slate-700">
+                <TabsTrigger value="profile" className="text-xs uppercase font-bold">Profile</TabsTrigger>
+                <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>
+              </TabsList>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <TabsContent value="profile" className="mt-0 space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                   <div className="md:col-span-1 space-y-6">
+                      <div className="space-y-4 flex flex-col items-center text-center">
+                         <div className="w-32 h-32 rounded-3xl bg-slate-950 border-2 border-dashed border-slate-800 flex items-center justify-center relative overflow-hidden group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                            {editingEmployee.photo ? (
+                               <img src={editingEmployee.photo} className="w-full h-full object-cover" alt="Preview" />
+                            ) : (
+                               <Camera className="w-8 h-8 text-slate-700 group-hover:text-blue-500 transition-colors" />
+                            )}
+                            <div className="absolute inset-0 bg-blue-600/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                               <span className="text-[10px] font-black uppercase text-white">Change Photo</span>
+                            </div>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                         </div>
+                         <div>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">High-Res ID Visual</p>
+                         </div>
+                      </div>
+
+                      <div className="p-5 bg-blue-600/5 rounded-2xl border border-blue-600/20 space-y-4">
+                         <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2">Security Clearance</h4>
+                         <div className="space-y-1">
+                            <Label className="text-[9px] uppercase text-slate-500 font-bold">System Role</Label>
+                            <Select value={editingEmployee.role} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, role: v})}>
+                               <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs"><SelectValue /></SelectTrigger>
+                               <SelectContent className="bg-slate-900 border-slate-800">
+                                  {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                               </SelectContent>
+                            </Select>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="md:col-span-2 space-y-8">
+                      <div className="space-y-6">
+                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Core Identity</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
+                              <Input value={editingEmployee.name} onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Official Identity" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Identity ID</Label>
+                              <Input readOnly value={editingEmployee.employeeId || 'AUTO-GEN'} className="bg-slate-900 border-slate-800 h-11 font-code text-blue-400 font-bold" />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Mobile (10-Digit)</Label>
+                              <Input value={editingEmployee.mobile} onChange={e => setEditingEmployee({...editingEmployee, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Email Hub</Label>
+                              <Input value={editingEmployee.email} onChange={e => setEditingEmployee({...editingEmployee, email: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="space-y-6">
+                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Placement Node</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Department</Label>
+                              <Select value={editingEmployee.department} onValueChange={v => setEditingEmployee({...editingEmployee, department: v})}>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="bg-slate-900 border-slate-800">
+                                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                 </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Designation</Label>
+                              <Input value={editingEmployee.designation} onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Master Tech" />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Monthly Node (₹)</Label>
+                              <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Joining Date</Label>
+                              <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="kyc" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+                <EmployeeKYCSection 
+                  formData={editingEmployee} 
+                  setFormData={setEditingEmployee} 
+                />
+              </TabsContent>
             </div>
-          </DialogHeader>
 
-          <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-             <div className="md:col-span-1 space-y-6">
-                <div className="space-y-4 flex flex-col items-center text-center">
-                   <div className="w-32 h-32 rounded-3xl bg-slate-950 border-2 border-dashed border-slate-800 flex items-center justify-center relative overflow-hidden group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                      {editingEmployee.photo ? (
-                         <img src={editingEmployee.photo} className="w-full h-full object-cover" alt="Preview" />
-                      ) : (
-                         <Camera className="w-8 h-8 text-slate-700 group-hover:text-blue-500 transition-colors" />
-                      )}
-                      <div className="absolute inset-0 bg-blue-600/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                         <span className="text-[10px] font-black uppercase text-white">Change Photo</span>
-                      </div>
-                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-                   </div>
-                   <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">High-Res ID Visual</p>
-                      <p className="text-[8px] text-slate-700 mt-1 uppercase italic">Supports JPG/PNG up to 2MB</p>
-                   </div>
-                </div>
-
-                <div className="p-5 bg-blue-600/5 rounded-2xl border border-blue-600/20 space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2">Security Clearance</h4>
-                   <div className="space-y-1">
-                      <Label className="text-[9px] uppercase text-slate-500 font-bold">System Role</Label>
-                      <Select value={editingEmployee.role} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, role: v})}>
-                         <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs"><SelectValue /></SelectTrigger>
-                         <SelectContent className="bg-slate-900 border-slate-800">
-                            {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                         </SelectContent>
-                      </Select>
-                   </div>
-                </div>
-             </div>
-
-             <div className="md:col-span-2 space-y-8">
-                <div className="space-y-6">
-                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Core Identity</h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
-                        <Input value={editingEmployee.name} onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Official Identity" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Identity ID</Label>
-                        <Input readOnly value={editingEmployee.employeeId || 'AUTO-GEN'} className="bg-slate-900 border-slate-800 h-11 font-code text-blue-400 font-bold" />
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Mobile (10-Digit)</Label>
-                        <Input value={editingEmployee.mobile} onChange={e => setEditingEmployee({...editingEmployee, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Email Hub</Label>
-                        <Input value={editingEmployee.email} onChange={e => setEditingEmployee({...editingEmployee, email: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
-                      </div>
-                   </div>
-                </div>
-
-                <div className="space-y-6">
-                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Placement Node</h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Department</Label>
-                        <Select value={editingEmployee.department} onValueChange={v => setEditingEmployee({...editingEmployee, department: v})}>
-                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                           <SelectContent className="bg-slate-900 border-slate-800">
-                              {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                           </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Designation</Label>
-                        <Input value={editingEmployee.designation} onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Master Tech" />
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Monthly Node (₹)</Label>
-                        <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-400">Joining Date</Label>
-                        <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-
-          <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px]">Terminate Entry</Button>
-            <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-blue-500/20">Commit Associate Node</Button>
-          </DialogFooter>
+            <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3 shrink-0">
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px]">Terminate Entry</Button>
+              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-blue-500/20">Commit Associate Node</Button>
+            </DialogFooter>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
       {/* QR IDENTITY PREVIEW */}
       <Dialog open={!!viewingQr} onOpenChange={() => setViewingQr(null)}>
          <DialogContent className="max-w-md bg-white text-black p-0 overflow-hidden">
+            <DialogHeader className="sr-only">
+               <DialogTitle>QR Identity Card - {viewingQr?.name}</DialogTitle>
+               <DialogDescription>Workforce identification manifest for associate registry.</DialogDescription>
+            </DialogHeader>
             {viewingQr && (
                <div className="p-10 flex flex-col items-center text-center gap-6">
                   <div className="space-y-1">

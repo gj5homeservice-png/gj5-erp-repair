@@ -1,7 +1,9 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  trailingSlash: false,
+  // Required for Capacitor/Mobile APK builds
+  output: 'export',
+  trailingSlash: true,
   images: {
     unoptimized: true,
     remotePatterns: [

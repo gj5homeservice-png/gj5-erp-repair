@@ -1,4 +1,3 @@
-
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -7,10 +6,12 @@ const config: CapacitorConfig = {
   webDir: 'out',
   bundledWebRuntime: false,
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true // Allows local API testing if needed
   },
   android: {
-    allowMixedContent: true
+    allowMixedContent: true,
+    captureInput: true
   }
 };
 

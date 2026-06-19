@@ -14,7 +14,8 @@ import {
   Employee,
   AttendanceRecord,
   SalaryRecord,
-  LeaveRequest
+  LeaveRequest,
+  AttendanceLink
 } from '@/lib/types';
 import { db, doc, setDoc, collection, updateDoc, deleteDoc, getDocs } from '@/firebase';
 
@@ -71,6 +72,7 @@ export function useErpStore() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [attendanceLinks, setAttendanceLinks] = useState<AttendanceLink[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(50000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
@@ -107,6 +109,7 @@ export function useErpStore() {
     safeGet('gj5_attendance', setAttendance);
     safeGet('gj5_salaries', setSalaries);
     safeGet('gj5_leaves', setLeaves);
+    safeGet('gj5_attendance_links', setAttendanceLinks);
     safeGet('gj5_wallet_balance', setWalletBalance);
     safeGet('gj5_visibility', setVisibility);
     safeGet('gj5_nav_order', setNavOrder);
@@ -125,6 +128,7 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
   useEffect(() => { localStorage.setItem('gj5_salaries', JSON.stringify(salaries)); }, [salaries]);
   useEffect(() => { localStorage.setItem('gj5_leaves', JSON.stringify(leaves)); }, [leaves]);
+  useEffect(() => { localStorage.setItem('gj5_attendance_links', JSON.stringify(attendanceLinks)); }, [attendanceLinks]);
   useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
   useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
@@ -145,6 +149,27 @@ export function useErpStore() {
 
   const addLeave = (request: LeaveRequest) => setLeaves(prev => [request, ...prev]);
   const updateLeave = (request: LeaveRequest) => setLeaves(prev => prev.map(l => l.id === request.id ? request : l));
+
+  const generateAttendanceLink = (emp: Employee): string => {
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const expiresAt = new Date(Date.now() + 30000).toISOString(); // 30 seconds
+    const newLink: AttendanceLink = {
+      id: `LINK-${Date.now()}`,
+      token,
+      employeeId: emp.employeeId,
+      employeeName: emp.name,
+      mobile: emp.mobile,
+      expiresAt,
+      used: false,
+      createdAt: new Date().toISOString()
+    };
+    setAttendanceLinks(prev => [newLink, ...prev]);
+    return token;
+  };
+
+  const useAttendanceLink = (token: string) => {
+    setAttendanceLinks(prev => prev.map(l => l.token === token ? { ...l, used: true } : l));
+  };
 
   // CORE ACTIONS
   const addInvoice = (invoice: Invoice) => {
@@ -200,7 +225,7 @@ export function useErpStore() {
   const deleteCall = (id: string) => setCalls(prev => prev.filter(c => c.id !== id));
 
   const addInquiry = (inq: Inquiry) => setInquiries(prev => [inq, ...prev]);
-  const updateInquiry = (inq: Inquiry) => setInquiries(prev => prev.map(i => i.id === inq.id ? inq : i));
+  const updateInquiry = (inq: Inquiry) => setInquiries(prev => prev.map(i => i.id === inq.id ? i : inq));
   const deleteInquiry = (id: string) => setInquiries(prev => prev.filter(i => i.id !== id));
 
   const addExpense = (exp: Expense) => {
@@ -290,6 +315,7 @@ export function useErpStore() {
     attendance, addAttendance, updateAttendance, deleteAttendance,
     salaries, addSalary, updateSalary,
     leaves, addLeave, updateLeave,
+    attendanceLinks, generateAttendanceLink, useAttendanceLink,
     walletBalance, setWalletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility, updateVisibility,
     navOrder, setNavOrder, resetNavOrder,

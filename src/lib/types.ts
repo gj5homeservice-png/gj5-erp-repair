@@ -216,6 +216,20 @@ export interface AttendanceRecord {
   longitude?: string;
   status: AttendanceStatus;
   createdAt: string;
+  deviceInfo?: string;
+  ipAddress?: string;
+  attendanceType?: 'Manual' | 'QR' | 'WhatsAppLink';
+}
+
+export interface AttendanceLink {
+  id: string;
+  token: string;
+  employeeId: string;
+  employeeName: string;
+  mobile: string;
+  expiresAt: string;
+  used: boolean;
+  createdAt: string;
 }
 
 export interface SalaryRecord {

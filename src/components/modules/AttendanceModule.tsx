@@ -18,7 +18,9 @@ import {
   Trash2,
   MapPin,
   QrCode,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare,
+  Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,7 +104,8 @@ export function AttendanceModule({ store }: { store: any }) {
         latitude: latitude.toString(),
         longitude: longitude.toString(),
         status: status,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        attendanceType: 'Manual'
       };
 
       store.addAttendance(newRecord);
@@ -139,6 +142,19 @@ export function AttendanceModule({ store }: { store: any }) {
     toast({ title: "Check-Out Success", description: `${emp.name} session closed. Work Hours: ${workHours}.` });
   };
 
+  const handleSendWhatsAppLink = (emp: Employee) => {
+    const token = store.generateAttendanceLink(emp);
+    const origin = window.location.origin;
+    const attendanceUrl = `${origin}/attendance/${token}`;
+    
+    const msg = `🔐 *GJ5 Secure Attendance Access*\n\nHello ${emp.name},\n\nUse the link below to mark your Check-In/Out. \n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 30 seconds.* One-time use only.\n📍 GPS verification active.`;
+    
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=91${emp.mobile}&text=${encodeURIComponent(msg)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast({ title: "Secure Link Dispatched", description: `Attendance token sent to ${emp.name}'s WhatsApp.` });
+  };
+
   const exportExcel = () => {
     const data = filteredAttendance.map((a: AttendanceRecord) => ({
       Date: a.date,
@@ -149,7 +165,9 @@ export function AttendanceModule({ store }: { store: any }) {
       'Check Out': a.checkOut ? format(parseISO(a.checkOut), 'hh:mm a') : '--',
       'Work Hours': a.workHours,
       Status: a.status,
-      Location: `${a.latitude},${a.longitude}`
+      Type: a.attendanceType || 'Manual',
+      Location: `${a.latitude},${a.longitude}`,
+      IP: a.ipAddress || 'N/A'
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -192,7 +210,7 @@ export function AttendanceModule({ store }: { store: any }) {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-headline font-bold">Attendance Reconciliation</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial Workforce Sync V2.8</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial Workforce Sync V3.2</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -260,10 +278,16 @@ export function AttendanceModule({ store }: { store: any }) {
                            </div>
                            <div className="flex gap-1.5">
                               {!att && (
-                                <Button size="sm" onClick={() => handleCheckIn(emp)} className="bg-emerald-600 hover:bg-emerald-700 h-9 px-4 text-[10px] font-black uppercase shadow-lg shadow-emerald-500/10">IN</Button>
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" onClick={() => handleSendWhatsAppLink(emp)} className="h-9 w-9 text-blue-400 hover:bg-blue-500/10" title="Send WhatsApp Access Link"><Share2 className="w-4 h-4" /></Button>
+                                  <Button size="sm" onClick={() => handleCheckIn(emp)} className="bg-emerald-600 hover:bg-emerald-700 h-9 px-4 text-[10px] font-black uppercase shadow-lg shadow-emerald-500/10">IN</Button>
+                                </div>
                               )}
                               {isCheckedIn && (
-                                <Button size="sm" onClick={() => handleCheckOut(emp)} className="bg-rose-600 hover:bg-rose-700 h-9 px-4 text-[10px] font-black uppercase shadow-lg shadow-rose-500/10">OUT</Button>
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" onClick={() => handleSendWhatsAppLink(emp)} className="h-9 w-9 text-blue-400 hover:bg-blue-500/10" title="Send WhatsApp Access Link"><Share2 className="w-4 h-4" /></Button>
+                                  <Button size="sm" onClick={() => handleCheckOut(emp)} className="bg-rose-600 hover:bg-rose-700 h-9 px-4 text-[10px] font-black uppercase shadow-lg shadow-rose-500/10">OUT</Button>
+                                </div>
                               )}
                               {isCheckedOut && (
                                 <Badge className="bg-slate-800 text-slate-500 text-[9px] uppercase border-0 h-9 px-3 flex items-center">SHIFT DONE</Badge>
@@ -279,7 +303,7 @@ export function AttendanceModule({ store }: { store: any }) {
            <Card className="bg-blue-600/5 border-blue-600/20 border-dashed">
               <CardContent className="p-5 flex items-start gap-4">
                  <ShieldCheck className="w-6 h-6 text-blue-500 shrink-0" />
-                 <p className="text-[10px] text-slate-400 italic leading-relaxed">Identity Integrity Protocol Active. GPS Geolocation is required for all check-in nodes. All metadata is committed to the Master Audit Ledger.</p>
+                 <p className="text-[10px] text-slate-400 italic leading-relaxed">Identity Integrity Protocol Active. GPS Geolocation and Secure Tokens are required for all check-in nodes. All metadata is committed to the Master Audit Ledger.</p>
               </CardContent>
            </Card>
         </div>
@@ -313,7 +337,10 @@ export function AttendanceModule({ store }: { store: any }) {
                       <TableCell className="px-6">
                         <div className="flex flex-col">
                            <span className="font-bold text-sm text-slate-100">{rec.employeeName}</span>
-                           <span className="text-[9px] text-slate-500 font-code font-bold uppercase">{rec.employeeId}</span>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[9px] text-slate-500 font-code font-bold uppercase">{rec.employeeId}</span>
+                             <Badge variant="outline" className="text-[7px] uppercase h-3 px-1 border-slate-800">{rec.attendanceType || 'Manual'}</Badge>
+                           </div>
                         </div>
                       </TableCell>
                       <TableCell>

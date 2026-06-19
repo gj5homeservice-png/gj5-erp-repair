@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -72,7 +73,12 @@ export function useErpStore() {
         try {
           setter(JSON.parse(val));
         } catch (e) {
-          console.error(`Error parsing ${key}`, e);
+          // Fallback for raw strings (like base64 images) that aren't valid JSON
+          if (key === 'gj5_shop_logo') {
+            setter(val);
+          } else {
+            console.error(`Error parsing ${key}`, e);
+          }
         }
       }
     };

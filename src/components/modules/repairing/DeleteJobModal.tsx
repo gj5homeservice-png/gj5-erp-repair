@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { AlertTriangle, Lock, ShieldAlert, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useErpStore } from '@/hooks/use-erp-store';
-import { db, doc, getDoc, deleteDoc } from '@/firebase';
 
 interface DeleteJobModalProps {
   isOpen: boolean;
@@ -25,64 +24,48 @@ interface DeleteJobModalProps {
 }
 
 export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobModalProps) {
+  const store = useErpStore();
   const [password, setPassword] = useState('');
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
 
-  const handleVerifyPassword = async () => {
+  const handleVerifyPassword = () => {
     if (!password) return;
     
     setIsVerifying(true);
     setError('');
 
-    try {
-      const settingsRef = doc(db, "settings", "security");
-      const settingsSnap = await getDoc(settingsRef);
-      
-      const savedPassword = settingsSnap.exists() 
-        ? settingsSnap.data()?.deletePassword 
-        : "1234"; // Default fallback if not set in DB
-
-      if (password === savedPassword) {
-        setIsPasswordVerified(true);
-      } else {
-        setError('Incorrect authorization key');
-        toast({
-          variant: "destructive",
-          title: "Wrong Password",
-          description: "Unauthorized access attempt logged."
-        });
-      }
-    } catch (err) {
-      console.error(err);
+    // Verification against local-first store state for offline resilience
+    // The store synchronizes with Firestore settings/security in the background
+    if (password === store.deletePassword) {
+      setIsPasswordVerified(true);
+      setError('');
+    } else {
+      setError('Incorrect authorization key');
       toast({
         variant: "destructive",
-        title: "Connection Error",
-        description: "Could not reach Security Node."
+        title: "Wrong Password",
+        description: "Unauthorized access attempt logged."
       });
-    } finally {
-      setIsVerifying(false);
     }
+    setIsVerifying(false);
   };
 
-  const handleFinalConfirm = async () => {
+  const handleFinalConfirm = () => {
     try {
-      // In a real Firebase setup, we'd delete from Firestore here
-      // await deleteDoc(doc(db, "repairs", jobId));
-      
-      onConfirm(); // This updates the local store/state
+      onConfirm(); // This updates the local store/state and handles deletion
       toast({
         title: "Record Terminated",
-        description: `Job ${jobId} removed from registry.`
+        description: `Record ${jobId} removed from registry.`
       });
       resetAndClose();
     } catch (err) {
       toast({
         variant: "destructive",
         title: "Deletion Failed",
-        description: "Server rejected the termination request."
+        description: "An error occurred while terminating the record."
       });
     }
   };

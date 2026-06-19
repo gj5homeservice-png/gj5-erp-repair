@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertTriangle, Lock, ShieldAlert, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useErpStore } from '@/hooks/use-erp-store';
 
 interface DeleteJobModalProps {
   isOpen: boolean;
@@ -23,13 +25,14 @@ interface DeleteJobModalProps {
 }
 
 export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobModalProps) {
+  const store = useErpStore();
   const [password, setPassword] = useState('');
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
 
   const handleVerifyPassword = () => {
-    if (password === 'Avi.2310') {
+    if (password === store.deletePassword) {
       setIsPasswordVerified(true);
       setError('');
     } else {
@@ -37,7 +40,7 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
       toast({
         variant: "destructive",
         title: "Security Alert",
-        description: "Invalid Admin password entered."
+        description: "Invalid Master Password entered."
       });
     }
   };
@@ -45,8 +48,8 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
   const handleFinalConfirm = () => {
     onConfirm();
     toast({
-      title: "Job Deleted",
-      description: `Job ${jobId} has been permanently removed and audited.`
+      title: "Operation Successful",
+      description: `Target record ${jobId} has been removed from the registry.`
     });
     resetAndClose();
   };
@@ -68,7 +71,7 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
                 <ShieldAlert className="w-6 h-6" /> Admin Authorization
               </DialogTitle>
               <DialogDescription className="text-slate-400">
-                A password is required to delete Job record <span className="font-mono text-blue-400 font-bold">{jobId}</span>.
+                Master Password is required to perform destructive actions on <span className="font-mono text-blue-400 font-bold">{jobId}</span>.
               </DialogDescription>
             </DialogHeader>
             <div className="py-6 space-y-4">
@@ -101,7 +104,7 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
                 <AlertTriangle className="w-6 h-6 animate-bounce" /> Final Confirmation
               </DialogTitle>
               <DialogDescription className="text-slate-400">
-                Are you sure you want to <span className="text-rose-500 font-black">PERMANENTLY DELETE</span> Job <span className="font-mono text-white font-bold">{jobId}</span>? This action is tracked in the audit log and cannot be undone.
+                Confirming <span className="text-rose-500 font-black uppercase">Permanent Termination</span> for <span className="font-mono text-white font-bold">{jobId}</span>. This session is logged for audit purposes.
               </DialogDescription>
             </DialogHeader>
             <div className="py-8 flex justify-center">
@@ -112,7 +115,7 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={resetAndClose} className="border-slate-800">Abort</Button>
               <Button onClick={handleFinalConfirm} className="bg-rose-600 hover:bg-rose-700 font-black uppercase px-8">
-                Confirm Permanent Delete
+                Confirm Deletion
               </Button>
             </DialogFooter>
           </>

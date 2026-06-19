@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -64,21 +65,20 @@ export function useErpStore() {
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
   const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
+  const [deletePassword, setDeletePassword] = useState<string>('1234');
 
   useEffect(() => {
     const safeGet = (key: string, setter: any) => {
       const val = localStorage.getItem(key);
       if (val) {
         try {
-          // If it starts with data:image or is a plain string, don't parse as JSON
           if (val.startsWith('data:image/') || key === 'gj5_shop_logo') {
             setter(val);
           } else {
             setter(JSON.parse(val));
           }
         } catch (e) {
-          // Fallback: If parsing fails, use raw value for logo, otherwise log error
-          if (key === 'gj5_shop_logo') {
+          if (key === 'gj5_shop_logo' || key === 'gj5_delete_password') {
             setter(val);
           } else {
             console.error(`Error parsing ${key}:`, e);
@@ -99,6 +99,7 @@ export function useErpStore() {
     safeGet('gj5_visibility', setVisibility);
     safeGet('gj5_nav_order', setNavOrder);
     safeGet('gj5_shop_logo', setShopLogo);
+    safeGet('gj5_delete_password', setDeletePassword);
   }, []);
 
   useEffect(() => { localStorage.setItem('gj5_invoices', JSON.stringify(invoices)); }, [invoices]);
@@ -113,15 +114,11 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
   useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
-  useEffect(() => { 
-    if (shopLogo) {
-      localStorage.setItem('gj5_shop_logo', shopLogo);
-    }
-  }, [shopLogo]);
+  useEffect(() => { if (shopLogo) localStorage.setItem('gj5_shop_logo', shopLogo); }, [shopLogo]);
+  useEffect(() => { localStorage.setItem('gj5_delete_password', deletePassword); }, [deletePassword]);
 
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
-    // Reduce stock for items
     invoice.items?.forEach(item => {
       const stockItem = stock.find(s => s.name === item.name || s.barcode === item.id);
       if (stockItem) {
@@ -144,7 +141,6 @@ export function useErpStore() {
       }
     });
 
-    // Log transaction
     const tx: WalletTransaction = {
       id: `TX-${Date.now()}`,
       amount: invoice.grandTotal,
@@ -297,6 +293,7 @@ export function useErpStore() {
     if (data.visibility) setVisibility(data.visibility);
     if (data.navOrder) setNavOrder(data.navOrder);
     if (data.shopLogo) setShopLogo(data.shopLogo);
+    if (data.deletePassword) setDeletePassword(data.deletePassword);
   };
 
   return {
@@ -308,6 +305,7 @@ export function useErpStore() {
     visibility, setVisibility, updateVisibility,
     navOrder, setNavOrder, resetNavOrder,
     shopLogo, setShopLogo,
+    deletePassword, setDeletePassword,
     transactions, deleteTransaction, updateTransaction,
     employees, addEmployee, updateEmployee, deleteEmployee,
     attendance, updateAttendance,

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -37,7 +38,9 @@ import {
   DollarSign,
   Activity,
   ShieldCheck,
-  CreditCard
+  CreditCard,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,19 +116,18 @@ export default function DashboardPage() {
     const completed = allCalls.filter((c: any) => c.status === 'Completed').length;
     const rejected = allCalls.filter((c: any) => c.status === 'Rejected').length;
 
-    // Billing Stats
-    const currentMonth = store.invoices.filter((i: any) => isSameMonth(parseISO(i.timestamp), new Date()));
-    const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + curr.grandTotal, 0);
+    const currentMonth = store.invoices.filter((i: any) => i.timestamp && isSameMonth(parseISO(i.timestamp), new Date()));
+    const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
     const totalProfit = currentMonth.reduce((acc: number, curr: any) => {
-      const itemsProfit = curr.items.reduce((sum: number, item: any) => {
+      const itemsProfit = (curr.items || []).reduce((sum: number, item: any) => {
         const stockRef = store.stock.find((s: any) => s.name === item.name);
-        const cost = stockRef?.purchasePrice || item.rate * 0.6; // fallback 40% margin
+        const cost = stockRef?.purchasePrice || item.rate * 0.6;
         return sum + (item.rate - cost) * item.quantity;
       }, 0);
       return acc + itemsProfit;
     }, 0);
-    const pendingAmount = store.invoices.filter((i: any) => i.paymentStatus !== 'Paid').reduce((acc: number, curr: any) => acc + curr.grandTotal, 0);
-    const gstLiability = currentMonth.reduce((acc: number, curr: any) => acc + (curr.cgst + curr.sgst), 0);
+    const pendingAmount = store.invoices.filter((i: any) => i.paymentStatus !== 'Paid').reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
+    const gstLiability = currentMonth.reduce((acc: number, curr: any) => acc + ((curr.cgst || 0) + (curr.sgst || 0)), 0);
 
     return { totalActive, pending, completed, rejected, totalSales, totalProfit, pendingAmount, gstLiability };
   }, [store.calls, store.invoices, store.stock]);
@@ -142,14 +144,6 @@ export default function DashboardPage() {
     const newSettings = {
       ...store.visibility,
       tabs: { ...store.visibility.tabs, [tab]: !store.visibility.tabs[tab] }
-    };
-    store.updateVisibility(newSettings);
-  };
-
-  const handleToggleKpi = (kpi: string) => {
-    const newSettings = {
-      ...store.visibility,
-      kpis: { ...store.visibility.kpis, [kpi]: !store.visibility.kpis[kpi] }
     };
     store.updateVisibility(newSettings);
   };
@@ -279,7 +273,6 @@ export default function DashboardPage() {
         </header>
 
         <div className="p-4 md:p-8 max-w-full">
-          {/* Dashboard Stats Section */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {activeTab === 'Billing' || activeTab === 'Analytics' || activeTab === 'Invoice History' ? (
               <>
@@ -397,6 +390,34 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <Separator className="bg-slate-800" />
+
+            <div className="space-y-4">
+               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Lock className="w-4 h-4" /> Security Matrix</h4>
+               <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                     <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-400">Master Delete Password</Label>
+                        <p className="text-[10px] text-slate-600 leading-tight">Required for terminating jobs, assets, and registry records.</p>
+                     </div>
+                     <div className="flex gap-2 w-full sm:w-auto">
+                        <Input 
+                          type="password" 
+                          value={store.deletePassword} 
+                          onChange={e => store.setDeletePassword(e.target.value)} 
+                          className="bg-slate-950 border-slate-800 h-10 w-full sm:w-40 font-code text-center" 
+                          placeholder="••••"
+                        />
+                        <Button size="sm" variant="ghost" className="h-10 text-[9px] uppercase font-black text-blue-500" onClick={() => toast({title: "Security Updated", description: "Master password committed to local node."})}>Commit</Button>
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                     <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                     <p className="text-[10px] text-amber-500 leading-tight italic">Warning: This password protects all critical database destructive actions.</p>
+                  </div>
+               </div>
             </div>
 
             <Separator className="bg-slate-800" />

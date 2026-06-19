@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -99,7 +100,6 @@ export function EmployeesModule({ store }: { store: any }) {
   const [activeTab, setActiveTab] = useState('registry');
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // Forms & Modals
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>(INITIAL_EMP);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -107,7 +107,6 @@ export function EmployeesModule({ store }: { store: any }) {
   const [adminPassword, setAdminPassword] = useState('');
   const [modalTab, setModalTab] = useState('personal');
   
-  // Kiosk States
   const [pinInput, setPinInput] = useState('');
   const [isCameraActive, setCameraActive] = useState(false);
   const [punchingStaff, setPunchingStaff] = useState<Employee | null>(null);
@@ -119,11 +118,11 @@ export function EmployeesModule({ store }: { store: any }) {
 
   const stats = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todayAttendance = store.attendance.filter((a: AttendanceRecord) => a.date === today);
+    const todayAttendance = (store.attendance || []).filter((a: AttendanceRecord) => a.date === today);
     const presentToday = todayAttendance.length;
-    const activeEmployees = store.employees.filter((e: Employee) => e.status === 'Active');
+    const activeEmployees = (store.employees || []).filter((e: Employee) => e.status === 'Active');
     const absentToday = Math.max(0, activeEmployees.length - presentToday);
-    const totalSalaryLiability = activeEmployees.reduce((acc: number, curr: Employee) => acc + curr.salary, 0);
+    const totalSalaryLiability = activeEmployees.reduce((acc: number, curr: Employee) => acc + (curr.salary || 0), 0);
     const attPct = activeEmployees.length > 0 ? Math.round((presentToday / activeEmployees.length) * 100) : 0;
     
     return { presentToday, absentToday, totalEmployees: activeEmployees.length, totalSalaryLiability, attPct };
@@ -134,8 +133,6 @@ export function EmployeesModule({ store }: { store: any }) {
     return () => clearInterval(timer);
   }, []);
 
-  // --- Handlers ---
-
   const handleSaveEmployee = () => {
     if (!editingEmployee.name || !editingEmployee.pin) {
       toast({ variant: "destructive", title: "Missing Core Data", description: "Name and Security PIN are mandatory." });
@@ -144,12 +141,11 @@ export function EmployeesModule({ store }: { store: any }) {
 
     const dailyWage = Math.round((editingEmployee.salary || 0) / 30);
     
-    // Auto Gen ID for new hires
     let nextId = editingEmployee.id;
     if (!nextId) {
       const currentMax = store.employees.reduce((max: number, e: Employee) => {
         const num = parseInt(e.id.replace('EMP', ''));
-        return num > max ? num : max;
+        return isNaN(num) ? max : (num > max ? num : max);
       }, 0);
       nextId = `EMP${String(currentMax + 1).padStart(4, '0')}`;
     }
@@ -171,7 +167,7 @@ export function EmployeesModule({ store }: { store: any }) {
   };
 
   const confirmDelete = () => {
-    if (adminPassword === 'Avi.2310') {
+    if (adminPassword === store.deletePassword) {
       if (empToDelete) store.deleteEmployee(empToDelete);
       setIsDeleteModalOpen(false);
       setEmpToDelete(null);
@@ -200,7 +196,6 @@ export function EmployeesModule({ store }: { store: any }) {
     XLSX.writeFile(wb, "GJ5_Employee_Master.xlsx");
   };
 
-  // --- Kiosk Logic ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -467,7 +462,6 @@ export function EmployeesModule({ store }: { store: any }) {
                 </div>
              </TabsContent>
              
-             {/* Attendance & Payroll Content - Using existing logic but optimized */}
              <TabsContent value="attendance" className="space-y-4">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
                    <Table>
@@ -505,7 +499,6 @@ export function EmployeesModule({ store }: { store: any }) {
         </>
       )}
 
-      {/* Main HRMS Modal */}
       <Dialog open={isEmployeeModalOpen} onOpenChange={setIsEmployeeModalOpen}>
         <DialogContent className="max-w-5xl bg-[#0F172A] border-slate-800 text-slate-100 shadow-2xl p-0 overflow-hidden flex flex-col h-[90vh]">
           <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 shrink-0">
@@ -784,7 +777,6 @@ export function EmployeesModule({ store }: { store: any }) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent className="max-w-md bg-[#0F172A] border-slate-800 text-slate-100">
            <DialogHeader>

@@ -14,11 +14,12 @@ import {
   FileText,
   UserCheck,
   AlertCircle,
-  Filter
+  Filter,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Table, 
   TableBody, 
@@ -337,8 +338,4 @@ export function AttendanceModule({ store }: { store: any }) {
       />
     </div>
   );
-}
-
-function CardHeader({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <div className={cn("p-4", className)}>{children}</div>;
 }

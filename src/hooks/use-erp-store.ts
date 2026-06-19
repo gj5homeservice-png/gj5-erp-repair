@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -71,13 +70,18 @@ export function useErpStore() {
       const val = localStorage.getItem(key);
       if (val) {
         try {
-          setter(JSON.parse(val));
+          // If it starts with data:image or is a plain string, don't parse as JSON
+          if (val.startsWith('data:image/') || key === 'gj5_shop_logo') {
+            setter(val);
+          } else {
+            setter(JSON.parse(val));
+          }
         } catch (e) {
-          // Fallback for raw strings (like base64 images) that aren't valid JSON
+          // Fallback: If parsing fails, use raw value for logo, otherwise log error
           if (key === 'gj5_shop_logo') {
             setter(val);
           } else {
-            console.error(`Error parsing ${key}`, e);
+            console.error(`Error parsing ${key}:`, e);
           }
         }
       }
@@ -109,17 +113,21 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
   useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
-  useEffect(() => { localStorage.setItem('gj5_shop_logo', JSON.stringify(shopLogo)); }, [shopLogo]);
+  useEffect(() => { 
+    if (shopLogo) {
+      localStorage.setItem('gj5_shop_logo', shopLogo);
+    }
+  }, [shopLogo]);
 
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
     // Reduce stock for items
-    invoice.items.forEach(item => {
+    invoice.items?.forEach(item => {
       const stockItem = stock.find(s => s.name === item.name || s.barcode === item.id);
       if (stockItem) {
         const updatedItem = {
           ...stockItem,
-          quantity: Math.max(0, stockItem.quantity - item.quantity),
+          quantity: Math.max(0, (stockItem.quantity || 0) - (item.quantity || 0)),
           lastUpdated: new Date().toISOString(),
           history: [{
             id: `MOV-${Date.now()}-${item.id}`,

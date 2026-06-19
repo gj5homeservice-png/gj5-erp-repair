@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -95,7 +94,7 @@ export function InquiryModule({ store }: { store: any }) {
   const handleDuplicate = (inq: Inquiry) => {
     const duplicate: Inquiry = {
       ...inq,
-      id: `INQ-${1000 + store.inquiries.length + 1}`,
+      id: `INQ-${1000 + (store.inquiries?.length || 0) + 1}`,
       status: 'New',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -112,7 +111,7 @@ export function InquiryModule({ store }: { store: any }) {
       return;
     }
     
-    const nextJobId = `TV${1001 + store.calls.length}`;
+    const nextJobId = `TV${1001 + (store.calls?.length || 0)}`;
     store.convertInquiryToJob(inq.id, nextJobId);
     toast({ title: "Conversion Successful", description: `Lead converted to Repair Job: ${nextJobId}` });
   };
@@ -174,7 +173,8 @@ export function InquiryModule({ store }: { store: any }) {
             </TableHeader>
             <TableBody>
               {filteredInquiries.map((inq: Inquiry) => {
-                const followUpDateObj = inq.followUpDate ? parseISO(inq.followUpDate) : null;
+                const followUpDateStr = inq.followUpDate || '';
+                const followUpDateObj = followUpDateStr ? parseISO(followUpDateStr) : null;
                 const isFollowUpDue = followUpDateObj && isValid(followUpDateObj) && isPast(followUpDateObj) && inq.status !== 'Converted';
                 
                 return (

@@ -363,14 +363,14 @@ export function StockModule({ store }: { store: any }) {
                        {item.quantity <= item.minStockLevel && item.quantity > 0 && <AlertCircle className="w-3.5 h-3.5 text-amber-500 animate-pulse" />}
                        {item.quantity === 0 && <X className="w-3.5 h-3.5 text-rose-600" />}
                     </div>
-                    <p className="text-[8px] text-slate-600 uppercase font-black">Last Update: {format(parseISO(item.lastUpdated), 'dd MMM')}</p>
+                    <p className="text-[8px] text-slate-600 uppercase font-black">Last Update: {item.lastUpdated ? format(parseISO(item.lastUpdated), 'dd MMM') : 'N/A'}</p>
                   </div>
                 </TableCell>
                 <TableCell>
                    <div className="flex flex-col">
-                      <span className="font-code text-[11px] text-slate-500">Buy: ₹{item.purchasePrice.toLocaleString()}</span>
-                      <span className="font-code text-xs text-blue-400 font-bold">Sell: ₹{item.sellingPrice.toLocaleString()}</span>
-                      <span className="text-[9px] text-emerald-500 font-bold mt-0.5">Yield: +₹{(item.sellingPrice - item.purchasePrice).toLocaleString()}</span>
+                      <span className="font-code text-[11px] text-slate-500">Buy: ₹{item.purchasePrice?.toLocaleString() || 0}</span>
+                      <span className="font-code text-xs text-blue-400 font-bold">Sell: ₹{item.sellingPrice?.toLocaleString() || 0}</span>
+                      <span className="text-[9px] text-emerald-500 font-bold mt-0.5">Yield: +₹{((item.sellingPrice || 0) - (item.purchasePrice || 0)).toLocaleString()}</span>
                    </div>
                 </TableCell>
                 <TableCell className="text-right px-4">
@@ -419,12 +419,12 @@ export function StockModule({ store }: { store: any }) {
                             <div className="space-y-4">
                                <h4 className="text-[11px] uppercase font-bold text-slate-500 flex items-center gap-2 tracking-widest"><ImageIcon className="w-3.5 h-3.5" /> High-Res Asset Gallery</h4>
                                <div className="grid grid-cols-2 gap-3">
-                                  {viewingItem.images.map((img, i) => (
+                                  {viewingItem.images?.map((img, i) => (
                                     <div key={i} className="aspect-square rounded-2xl border border-slate-800 overflow-hidden bg-slate-950 group">
                                        <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={`Asset ${i}`} />
                                     </div>
                                   ))}
-                                  {viewingItem.images.length === 0 && (
+                                  {(!viewingItem.images || viewingItem.images.length === 0) && (
                                     <div className="col-span-2 aspect-video rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-700 gap-2">
                                        <ImageIcon className="w-8 h-8" />
                                        <span className="text-xs font-bold uppercase">No Visuals Registered</span>
@@ -456,15 +456,15 @@ export function StockModule({ store }: { store: any }) {
                             <div className="grid grid-cols-3 gap-4">
                                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
                                   <span className="text-[9px] text-slate-500 font-bold uppercase">Avg Purchase</span>
-                                  <p className="text-xl font-code font-bold">₹{viewingItem.purchasePrice.toLocaleString()}</p>
+                                  <p className="text-xl font-code font-bold">₹{viewingItem.purchasePrice?.toLocaleString() || 0}</p>
                                </div>
                                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
                                   <span className="text-[9px] text-slate-500 font-bold uppercase">Fixed Selling</span>
-                                  <p className="text-xl font-code font-bold text-blue-400">₹{viewingItem.sellingPrice.toLocaleString()}</p>
+                                  <p className="text-xl font-code font-bold text-blue-400">₹{viewingItem.sellingPrice?.toLocaleString() || 0}</p>
                                </div>
                                <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 space-y-1">
                                   <span className="text-[9px] text-emerald-500 font-bold uppercase">Net Profit/U</span>
-                                  <p className="text-xl font-code font-bold text-emerald-400">₹{(viewingItem.sellingPrice - viewingItem.purchasePrice).toLocaleString()}</p>
+                                  <p className="text-xl font-code font-bold text-emerald-400">₹{((viewingItem.sellingPrice || 0) - (viewingItem.purchasePrice || 0)).toLocaleString()}</p>
                                </div>
                             </div>
 
@@ -504,13 +504,13 @@ export function StockModule({ store }: { store: any }) {
                                  <div className="grid grid-cols-2 gap-4">
                                     <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex flex-col justify-center items-center text-center gap-2">
                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Current Assets In-Hand</p>
-                                       <h3 className={cn("text-5xl font-headline font-black", viewingItem.quantity <= viewingItem.minStockLevel ? "text-amber-500" : "text-white")}>{viewingItem.quantity}</h3>
-                                       <Badge variant="outline" className="text-[9px] uppercase border-slate-700">{viewingItem.minStockLevel} Min Target</Badge>
+                                       <h3 className={cn("text-5xl font-headline font-black", (viewingItem.quantity || 0) <= (viewingItem.minStockLevel || 0) ? "text-amber-500" : "text-white")}>{viewingItem.quantity || 0}</h3>
+                                       <Badge variant="outline" className="text-[9px] uppercase border-slate-700">{viewingItem.minStockLevel || 0} Min Target</Badge>
                                     </div>
                                     <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex flex-col justify-center items-center text-center gap-2">
                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Total Stock Valuation</p>
-                                       <h3 className="text-4xl font-headline font-black text-blue-500">₹{(viewingItem.quantity * viewingItem.purchasePrice).toLocaleString()}</h3>
-                                       <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Est. Profit: ₹{((viewingItem.sellingPrice - viewingItem.purchasePrice) * viewingItem.quantity).toLocaleString()}</p>
+                                       <h3 className="text-4xl font-headline font-black text-blue-500">₹{((viewingItem.quantity || 0) * (viewingItem.purchasePrice || 0)).toLocaleString()}</h3>
+                                       <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Est. Profit: ₹{(((viewingItem.sellingPrice || 0) - (viewingItem.purchasePrice || 0)) * (viewingItem.quantity || 0)).toLocaleString()}</p>
                                     </div>
                                  </div>
                                )}
@@ -545,8 +545,8 @@ export function StockModule({ store }: { store: any }) {
                                  <TableRow key={mov.id} className="border-slate-800/50 hover:bg-slate-900/40 transition-colors">
                                     <TableCell className="px-6">
                                        <div className="flex flex-col">
-                                          <span className="text-[10px] text-slate-300 font-bold">{format(parseISO(mov.date), 'dd MMM yyyy')}</span>
-                                          <span className="text-[9px] text-slate-600 uppercase font-black">{format(parseISO(mov.date), 'hh:mm a')}</span>
+                                          <span className="text-[10px] text-slate-300 font-bold">{mov.date ? format(parseISO(mov.date), 'dd MMM yyyy') : 'N/A'}</span>
+                                          <span className="text-[9px] text-slate-600 uppercase font-black">{mov.date ? format(parseISO(mov.date), 'hh:mm a') : 'N/A'}</span>
                                        </div>
                                     </TableCell>
                                     <TableCell>
@@ -598,8 +598,8 @@ export function StockModule({ store }: { store: any }) {
                             </div>
                             <div className="flex flex-col items-center justify-center flex-1 space-y-3">
                                <div className="flex flex-col items-center">
-                                  <Barcode value={viewingItem.barcode} height={60} width={2.2} displayValue={false} background="transparent" margin={0} />
-                                  <span className="text-sm font-black uppercase tracking-widest mt-1">{viewingItem.barcode}</span>
+                                  <Barcode value={viewingItem.barcode || 'N/A'} height={60} width={2.2} displayValue={false} background="transparent" margin={0} />
+                                  <span className="text-sm font-black uppercase tracking-widest mt-1">{viewingItem.barcode || 'N/A'}</span>
                                </div>
                                <div className="w-full space-y-1 text-center">
                                   <p className="text-xs font-black uppercase truncate max-w-[220px]">{viewingItem.name}</p>
@@ -669,16 +669,16 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Official Asset Name</Label>
-                          <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Backlight Strips 32\" />
+                          <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Backlight Strips 32\" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Brand Hierarchy</Label>
-                              <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Sony" />
+                              <Input value={formData.brand || ''} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Sony" />
                            </div>
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Category Node</Label>
-                              <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                              <Input value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
                            </div>
                         </div>
                      </div>
@@ -689,19 +689,19 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">In-Hand Units</Label>
-                           <Input type="number" value={formData.quantity} onChange={e => setFormData({...formData, quantity: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-blue-400" />
+                           <Input type="number" value={formData.quantity || 0} onChange={e => setFormData({...formData, quantity: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-blue-400" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Purchase Cost (₹)</Label>
-                           <Input type="number" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                           <Input type="number" value={formData.purchasePrice || 0} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Market Rate (₹)</Label>
-                           <Input type="number" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code text-emerald-400 font-bold" />
+                           <Input type="number" value={formData.sellingPrice || 0} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code text-emerald-400 font-bold" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Min Alert Level</Label>
-                           <Input type="number" value={formData.minStockLevel} onChange={e => setFormData({...formData, minStockLevel: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11" />
+                           <Input type="number" value={formData.minStockLevel || 0} onChange={e => setFormData({...formData, minStockLevel: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11" />
                         </div>
                      </div>
                   </div>
@@ -711,22 +711,22 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Supplier Authority</Label>
-                           <Input value={formData.supplierName} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Authorized Vendor" />
+                           <Input value={formData.supplierName || ''} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Authorized Vendor" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Supplier Mobile</Label>
-                           <Input value={formData.supplierMobile} onChange={e => setFormData({...formData, supplierMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                           <Input value={formData.supplierMobile || ''} onChange={e => setFormData({...formData, supplierMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Warranty Context</Label>
-                           <Input value={formData.warrantyPeriod} onChange={e => setFormData({...formData, warrantyPeriod: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. 6 Months" />
+                           <Input value={formData.warrantyPeriod || ''} onChange={e => setFormData({...formData, warrantyPeriod: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. 6 Months" />
                         </div>
                      </div>
                   </div>
 
                   <div className="space-y-1">
                      <Label className="text-[10px] uppercase font-bold text-slate-400">Internal SKU Context</Label>
-                     <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-xs resize-none" placeholder="Detailed technical specifications..." />
+                     <Textarea value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-xs resize-none" placeholder="Detailed technical specifications..." />
                   </div>
                </div>
 
@@ -757,7 +757,7 @@ export function StockModule({ store }: { store: any }) {
                     <div className="space-y-1">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Barcode Hierarchy</Label>
                        <div className="flex gap-2">
-                          <Input value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-xs" placeholder="Laser/Scan ID" />
+                          <Input value={formData.barcode || ''} onChange={e => setFormData({...formData, barcode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-xs" placeholder="Laser/Scan ID" />
                           <Button variant="outline" className="h-11 w-12 border-slate-800" onClick={() => setFormData({...formData, barcode: `BC-${Date.now().toString().slice(-8)}`})}><BarcodeIcon className="w-4 h-4" /></Button>
                        </div>
                     </div>

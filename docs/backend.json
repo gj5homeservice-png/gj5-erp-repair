@@ -1,0 +1,78 @@
+
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "Enterprise customer profile for billing and CRM.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "mobile": { "type": "string" },
+        "address": { "type": "string" },
+        "gstin": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "mobile"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory asset/part with GST and stock tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "size": { "type": "string" },
+        "quantity": { "type": "number" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "gstPercent": { "type": "number" },
+        "hsnCode": { "type": "string" },
+        "minStockLevel": { "type": "number" }
+      },
+      "required": ["name", "sellingPrice"]
+    },
+    "Invoice": {
+      "title": "GST Invoice",
+      "description": "Professional tax invoice compliant with Indian GST standards.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerMobile": { "type": "string" },
+        "customerAddress": { "type": "string" },
+        "customerGSTIN": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "totalDiscount": { "type": "number" },
+        "cgst": { "type": "number" },
+        "sgst": { "type": "number" },
+        "grandTotal": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["Paid", "Unpaid", "Partial"] },
+        "paymentMode": { "type": "string", "enum": ["Cash", "UPI", "Bank Transfer", "Credit"] }
+      },
+      "required": ["invoiceNumber", "customerName", "grandTotal"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": "#/backend/entities/Customer",
+      "description": "Customer registry."
+    },
+    "/products/{productId}": {
+      "schema": "#/backend/entities/Product",
+      "description": "Inventory stock."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "#/backend/entities/Invoice",
+      "description": "Tax invoices."
+    }
+  }
+}

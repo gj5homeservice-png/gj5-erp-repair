@@ -1,3 +1,4 @@
+
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface VisitHistoryEntry {
@@ -7,12 +8,11 @@ export interface VisitHistoryEntry {
   complaintDescription: string;
   technicianNotes: string;
   status: RepairStatus;
-  resolutionNotes?: string;
 }
 
 export interface RepairCall {
-  id: string; // Job ID e.g. TV1001
-  customerId: string; // GJ51001
+  id: string;
+  customerId: string;
   customerName: string;
   mobile: string;
   address: string;
@@ -32,138 +32,48 @@ export interface RepairCall {
   problemDescription: string;
   visitHistory: VisitHistoryEntry[];
   repeatCount: number;
-  // Old Entry Mode Fields
-  isOldEntry?: boolean;
-  entryDate?: string;
-  receivedDate?: string;
 }
 
-export type InquiryStatus = 'New' | 'Pending' | 'Follow-up' | 'Converted' | 'Rejected';
-export type InquiryPriority = 'Low' | 'Medium' | 'High';
-export type InquirySource = 'Walk-In' | 'Call' | 'WhatsApp' | 'Facebook' | 'Instagram' | 'Referral';
+export type InvoiceStatus = 'Paid' | 'Unpaid' | 'Partial';
+export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit';
 
-export interface Inquiry {
-  id: string;
-  customerName: string;
-  mobile: string;
-  alternateMobile?: string;
-  address: string;
-  city?: string;
-  pincode?: string;
-  productType: string;
-  brand: string;
-  modelNumber?: string;
-  problemDescription: string;
-  source: InquirySource;
-  priority: InquiryPriority;
-  expectedBudget?: number;
-  assignedTechnician?: string;
-  followUpDate: string;
-  status: InquiryStatus;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-  conversionDate?: string;
-  convertedJobId?: string;
-}
-
-export type EmployeeStatus = 'Active' | 'Inactive' | 'Resigned';
-export type EmploymentType = 'Full Time' | 'Part Time' | 'Contract';
-
-export interface Employee {
-  // Personal
+export interface InvoiceItem {
   id: string;
   name: string;
-  mobile: string;
-  altMobile?: string;
-  email?: string;
-  dob?: string;
-  gender?: string;
-  bloodGroup?: string;
-  maritalStatus?: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  
-  // Job
-  designation: string;
-  department: string;
-  joiningDate: string;
-  employmentType: EmploymentType;
-  salary: number;
-  dailyWage: number;
-  status: EmployeeStatus;
-  
-  // Security
-  pin: string;
-  photo?: string;
-  facePhoto?: string;
-  qrCode?: string;
-
-  // Documents
-  aadhaarNo?: string;
-  aadhaarImage?: string;
-  panNo?: string;
-  panImage?: string;
-  dlImage?: string;
-  resumeUrl?: string;
-
-  // Bank
-  bankHolderName?: string;
-  bankName?: string;
-  accountNo?: string;
-  ifscCode?: string;
-  upiId?: string;
-
-  // Payroll / Monthly Adjustments
-  overtime?: number;
-  bonus?: number;
-  advance?: number;
-  deductions?: number;
-}
-
-export type AttendanceStatus = 'Present' | 'Late' | 'Half Day' | 'Absent';
-
-export interface AttendanceRecord {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  date: string;
-  clockInTime: string;
-  clockInPhoto: string | null;
-  clockOutTime: string | null;
-  clockOutPhoto: string | null;
-  totalHours: number;
-  status: AttendanceStatus;
-  location?: { lat: number; lng: number };
-}
-
-export interface Expense {
-  id: string;
-  amount: number;
-  category: string;
-  customCategory?: string;
-  quantity?: string;
-  vendorName?: string;
-  billNumber?: string;
-  paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
-  date: string;
-  notes?: string;
-  timestamp: string;
-}
-
-export type StockMovementType = 'INWARD' | 'OUTWARD' | 'PURCHASE' | 'SALE' | 'RETURN' | 'DAMAGE' | 'SCRAP';
-
-export interface StockMovement {
-  id: string;
-  date: string;
-  type: StockMovementType;
+  brand?: string;
+  size?: string;
+  hsnCode?: string;
   quantity: number;
-  referenceId?: string; // Job ID or Invoice ID
-  customerName?: string;
-  notes?: string;
-  performedBy?: string;
+  rate: number;
+  gstPercent: number;
+  discount: number;
+  amount: number;
+  purchasePrice: number; // For Profit calc
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  jobId?: string;
+  customerId: string;
+  customerName: string;
+  customerMobile: string;
+  customerAddress: string;
+  customerGSTIN?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  totalDiscount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  grandTotal: number;
+  paymentStatus: InvoiceStatus;
+  paymentMode: PaymentMode;
+  terms: string;
+  warranty: string;
+  timestamp: string;
 }
 
 export interface StockItem {
@@ -176,26 +86,12 @@ export interface StockItem {
   quantity: number;
   minStockLevel: number;
   barcode: string;
-  images: string[]; // base64 strings
+  images: string[];
   lastUpdated: string;
-  history: StockMovement[];
-  // Enterprise Fields
-  supplierName?: string;
-  supplierMobile?: string;
-  purchaseDate?: string;
-  warrantyPeriod?: string;
-  description?: string;
-  addedBy?: string;
-  editedBy?: string;
-}
-
-export interface InvoiceItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  purchasePrice: number; // For P&L calc
-  total: number;
+  gstPercent?: number;
+  hsnCode?: string;
+  size?: string;
+  history: any[];
 }
 
 export interface WalletTransaction {
@@ -207,79 +103,38 @@ export interface WalletTransaction {
   status: 'SUCCESS' | 'FAILED' | 'PENDING';
   userId: string;
   description: string;
-  metadata?: {
-    expenseId?: string;
-    invoiceId?: string;
-    category?: string;
-    vendorName?: string;
-  };
 }
 
-export type LogisticsStatus = 'Pending Pickup' | 'OK Pickup' | 'Pending Delivery' | 'OK Delivery';
+export interface VisibilitySettings {
+  tabs: Record<string, boolean>;
+  kpis: Record<string, boolean>;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  mobile: string;
+  pin: string;
+  salary: number;
+  status: string;
+  designation: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  clockInTime: string;
+  clockOutTime: string | null;
+  status: string;
+}
 
 export interface TransportationLog {
   id: string;
   runnerName: string;
-  runnerMobile: string;
   jobId: string;
   customerName: string;
-  customerMobile: string;
-  address: string;
+  status: string;
   dispatchTime: string;
-  status: LogisticsStatus;
-}
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  jobId: string;
-  customerId: string;
-  customerName: string;
-  mobile: string;
-  address: string;
-  brand: string;
-  model: string;
-  items: InvoiceItem[];
-  labourCharges: number;
-  deliveryCharge: number;
-  additionalCharges: number;
-  discount: number;
-  taxEnabled: boolean;
-  subtotal: number;
-  gst: number;
-  total: number;
-  profit: number; // Net profit on this invoice
-  paymentStatus: 'Paid' | 'Pending' | 'Partially Paid';
-  timestamp: string;
-}
-
-export interface AuditLog {
-  id: string;
-  jobId: string;
-  deletedBy: string;
-  dateTime: string;
-  action: string;
-}
-
-export interface VisibilitySettings {
-  tabs: {
-    Repairing: boolean;
-    'CRM Leads': boolean;
-    Billing: boolean;
-    'Invoice History': boolean;
-    Stock: boolean;
-    Analytics: boolean;
-    Employees: boolean;
-    'E-Wallet': boolean;
-    Transportation: boolean;
-  };
-  kpis: {
-    totalActive: boolean;
-    pending: boolean;
-    completed: boolean;
-    repeat: boolean;
-    rejected: boolean;
-    exchange: boolean;
-    warranty: boolean;
-  };
 }

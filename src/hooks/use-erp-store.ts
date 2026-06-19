@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -10,11 +11,8 @@ import {
   TransportationLog, 
   Invoice,
   WalletTransaction,
-  AuditLog,
   StockItem,
-  VisibilitySettings,
-  StockMovement,
-  StockMovementType
+  VisibilitySettings
 } from '@/lib/types';
 
 const DEFAULT_NAV_ORDER = [
@@ -29,359 +27,96 @@ const DEFAULT_NAV_ORDER = [
   'Transportation'
 ];
 
-const DEFAULT_VISIBILITY: VisibilitySettings = {
-  tabs: {
-    Repairing: true,
-    'CRM Leads': true,
-    Billing: true,
-    'Invoice History': true,
-    Stock: true,
-    Analytics: true,
-    Employees: true,
-    'E-Wallet': true,
-    Transportation: true
-  },
-  kpis: {
-    totalActive: true,
-    pending: true,
-    completed: true,
-    repeat: true,
-    rejected: true,
-    exchange: true,
-    warranty: true
-  }
-};
-
-const DEFAULT_EMPLOYEES: Employee[] = [
-  { 
-    id: 'EMP0001', 
-    name: 'Rajesh Sharma', 
-    mobile: '9876543210', 
-    address: 'Varachha, Surat',
-    city: 'Surat',
-    state: 'Gujarat',
-    pincode: '395006',
-    designation: 'Tech Lead',
-    department: 'Service',
-    salary: 25000, 
-    dailyWage: 833,
-    joiningDate: '2023-01-15',
-    employmentType: 'Full Time',
-    pin: '1234',
-    status: 'Active'
-  },
-  { 
-    id: 'EMP0002', 
-    name: 'Amit Patel', 
-    mobile: '9123456789', 
-    address: 'Adajan, Surat',
-    city: 'Surat',
-    state: 'Gujarat',
-    pincode: '395009',
-    designation: 'Logistics Associate',
-    department: 'Logistics',
-    salary: 15000, 
-    dailyWage: 500,
-    joiningDate: '2023-05-20',
-    employmentType: 'Full Time',
-    pin: '4321',
-    status: 'Active'
-  }
-];
-
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>(DEFAULT_EMPLOYEES);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stock, setStock] = useState<StockItem[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [walletBalance, setWalletBalance] = useState<number>(5000);
+  const [walletBalance, setWalletBalance] = useState<number>(50000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
-  const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
+  const [visibility, setVisibility] = useState<VisibilitySettings>({ tabs: {}, kpis: {} });
   const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
 
-  // Persistence Key Identifiers
-  const KEYS = {
-    CALLS: 'gj5_repair_calls_v3',
-    INQUIRIES: 'gj5_crm_leads_v3',
-    TRANS_LOGS: 'gj5_transport_logs_v3',
-    INVOICES: 'gj5_invoices_v3',
-    EMPLOYEES: 'gj5_employees_v3',
-    ATTENDANCE: 'gj5_attendance_v3',
-    EXPENSES: 'gj5_expenses_v3',
-    TXNS: 'gj5_wallet_transactions_v3',
-    AUDIT: 'gj5_audit_logs_v3',
-    STOCK: 'gj5_stock_v3',
-    BALANCE: 'gj5_wallet_balance_v3',
-    LOGO: 'gj5_shop_logo_v3',
-    VISIBILITY: 'gj5_visibility_settings_v3',
-    NAV_ORDER: 'gj5_nav_order_v3'
-  };
-
   useEffect(() => {
-    const safeGet = (key: string, setter: any, fallback?: any) => {
-      try {
-        const val = localStorage.getItem(key);
-        if (val) setter(JSON.parse(val));
-        else if (fallback !== undefined) setter(fallback);
-      } catch (e) { console.error("Hydration Error", e); }
+    const safeGet = (key: string, setter: any) => {
+      const val = localStorage.getItem(key);
+      if (val) setter(JSON.parse(val));
     };
-
-    safeGet(KEYS.LOGO, setShopLogo);
-    safeGet(KEYS.VISIBILITY, setVisibility, DEFAULT_VISIBILITY);
-    safeGet(KEYS.NAV_ORDER, setNavOrder, DEFAULT_NAV_ORDER);
-    safeGet(KEYS.CALLS, setCalls);
-    safeGet(KEYS.INQUIRIES, setInquiries);
-    safeGet(KEYS.TRANS_LOGS, setTransportationLogs);
-    safeGet(KEYS.INVOICES, setInvoices);
-    safeGet(KEYS.EMPLOYEES, setEmployees, DEFAULT_EMPLOYEES);
-    safeGet(KEYS.ATTENDANCE, setAttendance);
-    safeGet(KEYS.EXPENSES, setExpenses);
-    safeGet(KEYS.TXNS, setTransactions);
-    safeGet(KEYS.AUDIT, setAuditLogs);
-    safeGet(KEYS.STOCK, setStock);
-    
-    const savedBalance = localStorage.getItem(KEYS.BALANCE);
-    if (savedBalance) setWalletBalance(Number(savedBalance));
+    safeGet('gj5_invoices', setInvoices);
+    safeGet('gj5_stock', setStock);
+    safeGet('gj5_calls', setCalls);
+    safeGet('gj5_inquiries', setInquiries);
+    safeGet('gj5_wallet_balance', setWalletBalance);
+    safeGet('gj5_visibility', setVisibility);
+    safeGet('gj5_nav_order', setNavOrder);
   }, []);
 
-  useEffect(() => { localStorage.setItem(KEYS.CALLS, JSON.stringify(calls)); }, [calls]);
-  useEffect(() => { localStorage.setItem(KEYS.INQUIRIES, JSON.stringify(inquiries)); }, [inquiries]);
-  useEffect(() => { localStorage.setItem(KEYS.TRANS_LOGS, JSON.stringify(transportationLogs)); }, [transportationLogs]);
-  useEffect(() => { localStorage.setItem(KEYS.INVOICES, JSON.stringify(invoices)); }, [invoices]);
-  useEffect(() => { localStorage.setItem(KEYS.EMPLOYEES, JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem(KEYS.EXPENSES, JSON.stringify(expenses)); }, [expenses]);
-  useEffect(() => { localStorage.setItem(KEYS.TXNS, JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem(KEYS.AUDIT, JSON.stringify(auditLogs)); }, [auditLogs]);
-  useEffect(() => { localStorage.setItem(KEYS.STOCK, JSON.stringify(stock)); }, [stock]);
-  useEffect(() => { localStorage.setItem(KEYS.BALANCE, walletBalance.toString()); }, [walletBalance]);
-  useEffect(() => { if (shopLogo) localStorage.setItem(KEYS.LOGO, JSON.stringify(shopLogo)); }, [shopLogo]);
-  useEffect(() => { localStorage.setItem(KEYS.NAV_ORDER, JSON.stringify(navOrder)); }, [navOrder]);
-
-  const updateVisibility = (newSettings: VisibilitySettings) => {
-    setVisibility(newSettings);
-    localStorage.setItem(KEYS.VISIBILITY, JSON.stringify(newSettings));
-  };
-
-  const resetNavOrder = () => setNavOrder(DEFAULT_NAV_ORDER);
-
-  const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
-  const updateCall = (updatedCall: RepairCall) => setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
-  const deleteCall = (id: string) => {
-    setCalls(prev => prev.filter(c => c.id !== id));
-    setAuditLogs(prev => [{ id: `AUD-${Date.now()}`, jobId: id, deletedBy: 'Admin', dateTime: new Date().toISOString(), action: 'DELETE' }, ...prev]);
-  };
-  
-  const addInquiry = (inquiry: Inquiry) => setInquiries(prev => [inquiry, ...prev]);
-  const updateInquiry = (updatedInquiry: Inquiry) => setInquiries(prev => prev.map(i => i.id === updatedInquiry.id ? updatedInquiry : i));
-  const deleteInquiry = (id: string) => setInquiries(prev => prev.filter(i => i.id !== id));
-  
-  const convertInquiryToJob = (inquiryId: string, jobId: string) => {
-    const inq = inquiries.find(i => i.id === inquiryId);
-    if (!inq) return;
-
-    const newCall: RepairCall = {
-      id: jobId,
-      customerId: inq.pincode ? `GJ5-${inq.pincode}-${Date.now().toString().slice(-4)}` : `CUST-${Date.now().toString().slice(-6)}`,
-      customerName: inq.customerName,
-      mobile: inq.mobile,
-      address: inq.address,
-      pincode: inq.pincode || '',
-      category: inq.productType,
-      brand: inq.brand,
-      model: inq.modelNumber || '',
-      screenSize: '',
-      techTags: [],
-      intakeMode: 'Customer Visit',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'Pending',
-      problemDescription: inq.problemDescription,
-      visitHistory: [],
-      repeatCount: 0
-    };
-
-    addCall(newCall);
-    updateInquiry({ 
-      ...inq, 
-      status: 'Converted', 
-      convertedJobId: jobId, 
-      conversionDate: new Date().toISOString(),
-      updatedAt: new Date().toISOString() 
-    });
-  };
-  
-  const addExpense = (expense: Expense) => {
-    setExpenses(prev => [expense, ...prev]);
-    setWalletBalance(prev => prev - expense.amount);
-    setTransactions(prev => [{
-      id: `TXN-EXP-${Date.now()}`,
-      amount: expense.amount,
-      date: expense.date,
-      time: new Date().toLocaleTimeString(),
-      type: 'EXPENSE',
-      status: 'SUCCESS',
-      userId: 'admin',
-      description: `Expense: ${expense.category}`,
-      metadata: { expenseId: expense.id, category: expense.category, vendorName: expense.vendorName }
-    }, ...prev]);
-  };
+  useEffect(() => { localStorage.setItem('gj5_invoices', JSON.stringify(invoices)); }, [invoices]);
+  useEffect(() => { localStorage.setItem('gj5_stock', JSON.stringify(stock)); }, [stock]);
+  useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
 
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
-    setWalletBalance(prev => prev + invoice.total);
+    setWalletBalance(prev => prev + invoice.grandTotal);
     
-    // Automatic Stock Update with History
-    setStock(prev => prev.map(item => {
-      const usedItem = invoice.items.find(i => i.id === item.id);
-      if (usedItem) {
-        const movement: StockMovement = {
-          id: `MOV-${Date.now()}`,
-          date: new Date().toISOString(),
-          type: 'SALE',
-          quantity: usedItem.quantity,
-          referenceId: invoice.invoiceNumber,
-          customerName: invoice.customerName,
-          notes: `Used in Job ${invoice.jobId}`,
-          performedBy: 'Admin'
-        };
+    // Auto-Stock Reduction
+    setStock(prevStock => prevStock.map(s => {
+      const used = invoice.items.find(i => i.id === s.id || i.name === s.name);
+      if (used) {
         return { 
-          ...item, 
-          quantity: Math.max(0, item.quantity - usedItem.quantity),
-          history: [movement, ...(item.history || [])],
+          ...s, 
+          quantity: Math.max(0, s.quantity - used.quantity),
           lastUpdated: new Date().toISOString()
         };
       }
-      return item;
+      return s;
     }));
 
+    // Record Transaction
     setTransactions(prev => [{
-      id: `TXN-INV-${Date.now()}`,
-      amount: invoice.total,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
+      id: `TXN-${Date.now()}`,
+      amount: invoice.grandTotal,
+      date: invoice.date,
+      time: format(new Date(), 'hh:mm a'),
       type: 'REVENUE',
       status: 'SUCCESS',
-      userId: 'admin',
-      description: `Invoice: ${invoice.invoiceNumber}`,
-      metadata: { invoiceId: invoice.id }
+      userId: 'Admin',
+      description: `Invoice: ${invoice.invoiceNumber}`
     }, ...prev]);
   };
 
-  const updateInvoice = (updatedInvoice: Invoice) => {
-    const oldInvoice = invoices.find(i => i.id === updatedInvoice.id);
-    if (!oldInvoice) return;
-    setWalletBalance(prev => prev - oldInvoice.total + updatedInvoice.total);
-    setInvoices(prev => prev.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
-  };
-
   const deleteInvoice = (id: string) => {
-    const inv = invoices.find(i => i.id === id);
-    if (!inv) return;
-    setWalletBalance(prev => prev - inv.total);
+    const target = invoices.find(i => i.id === id);
+    if (target) setWalletBalance(prev => prev - target.grandTotal);
     setInvoices(prev => prev.filter(i => i.id !== id));
   };
 
   const updateStockItem = (item: StockItem) => {
     setStock(prev => {
       const exists = prev.find(i => i.id === item.id);
-      if (exists) return prev.map(i => i.id === item.id ? { ...item, history: item.history || exists.history || [] } : i);
-      return [{ ...item, history: item.history || [] }, ...prev];
+      if (exists) return prev.map(i => i.id === item.id ? item : i);
+      return [item, ...prev];
     });
   };
 
-  const deleteStockItem = (id: string) => setStock(prev => prev.filter(i => i.id !== id));
-
-  const topUpWallet = (amount: number) => {
-    setWalletBalance(prev => prev + amount);
-    setTransactions(prev => [{
-      id: `TXN-TOP-${Date.now()}`,
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      type: 'TOPUP',
-      status: 'SUCCESS',
-      userId: 'admin',
-      description: 'Wallet Top-Up'
-    }, ...prev]);
-  };
-
-  const deleteTransaction = (id: string) => {
-    const tx = transactions.find(t => t.id === id);
-    if (!tx) return;
-    if (tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT' || tx.type === 'REVENUE') setWalletBalance(prev => prev - tx.amount);
-    else setWalletBalance(prev => prev + tx.amount);
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
-
-  const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', description: string) => {
-    const finalAmount = Math.abs(amount);
-    if (type === 'CREDIT') setWalletBalance(prev => prev + finalAmount);
-    else setWalletBalance(prev => prev - finalAmount);
-    setTransactions(prev => [{
-      id: `TXN-MAN-${Date.now()}`,
-      amount: finalAmount,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
-      status: 'SUCCESS',
-      userId: 'admin',
-      description: description || `Manual ${type}`
-    }, ...prev]);
-  };
-
-  const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
-  const updateTransportLogStatus = (id: string, status: any) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status, updatedAt: new Date().toISOString() } : l));
-  const updateTransportLog = (log: TransportationLog) => setTransportationLogs(prev => prev.map(l => l.id === log.id ? log : l));
-  const deleteTransportLog = (id: string) => setTransportationLogs(prev => prev.filter(l => l.id !== id));
-
-  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
-  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
-  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
-
-  const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => {
-    const existing = prev.findIndex(r => r.employeeId === record.employeeId && r.date === record.date);
-    if (existing > -1) {
-       const updated = [...prev];
-       updated[existing] = { ...updated[existing], ...record };
-       return updated;
-    }
-    return [record, ...prev];
-  });
-
-  const importAllData = (data: any) => {
-    if (data.calls) setCalls(data.calls);
-    if (data.inquiries) setInquiries(data.inquiries);
-    if (data.expenses) setExpenses(data.expenses);
-    if (data.transactions) setTransactions(data.transactions);
-    if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
-    if (data.invoices) setInvoices(data.invoices);
-    if (data.employees) setEmployees(data.employees);
-    if (data.attendance) setAttendance(data.attendance);
-    if (data.stock) setStock(data.stock);
-    if (data.walletBalance !== undefined) setWalletBalance(Number(data.walletBalance));
-    if (data.shopLogo) setShopLogo(data.shopLogo);
-    if (data.navOrder) setNavOrder(data.navOrder);
-  };
-
   return {
-    calls, addCall, updateCall, deleteCall,
-    inquiries, addInquiry, updateInquiry, deleteInquiry, convertInquiryToJob,
-    employees, addEmployee, updateEmployee, deleteEmployee,
-    attendance, updateAttendance,
-    expenses, addExpense,
-    transactions, topUpWallet, deleteTransaction, manualAdjust,
-    transportationLogs, addTransportLog, updateTransportLogStatus, updateTransportLog, deleteTransportLog,
-    invoices, addInvoice, deleteInvoice, updateInvoice,
-    stock, updateStockItem, deleteStockItem,
-    auditLogs, walletBalance, setWalletBalance, shopLogo, setShopLogo,
-    visibility, updateVisibility, importAllData,
-    navOrder, setNavOrder, resetNavOrder
+    invoices, addInvoice, deleteInvoice,
+    stock, updateStockItem,
+    calls, setCalls,
+    inquiries, setInquiries,
+    walletBalance, setWalletBalance,
+    visibility, setVisibility,
+    navOrder, setNavOrder,
+    shopLogo, setShopLogo,
+    transactions,
+    employees, setEmployees,
+    attendance, setAttendance,
+    expenses, setExpenses,
+    transportationLogs, setTransportationLogs
   };
 }

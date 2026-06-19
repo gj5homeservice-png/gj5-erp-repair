@@ -167,3 +167,45 @@ export interface StockMovement {
   referenceId?: string;
   customerName?: string;
 }
+
+export interface Employee {
+  id: string;
+  employeeId: string;
+  name: string;
+  mobile: string;
+  designation: string;
+  status: 'Active' | 'Inactive';
+  salary: number;
+  joiningDate: string;
+  photo?: string;
+}
+
+export type AttendanceStatus = 'Present' | 'Absent' | 'Checked In' | 'Checked Out' | 'Late';
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  mobile: string;
+  checkIn: string; // ISO String
+  checkOut?: string; // ISO String
+  workHours: string;
+  date: string; // YYYY-MM-DD
+  status: AttendanceStatus;
+}
+
+export interface SalaryRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  month: string;
+  year: string;
+  baseSalary: number;
+  attendanceDays: number;
+  overtimeHours: number;
+  bonus: number;
+  deductions: number;
+  netPayable: number;
+  paymentStatus: 'Paid' | 'Pending';
+  processedDate: string;
+}

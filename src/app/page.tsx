@@ -3,16 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Wrench, 
-  ReceiptText, 
   Users, 
   Wallet, 
   Search, 
-  Bell, 
   Settings as SettingsIcon,
   Menu,
   X,
   LayoutDashboard,
-  Eye,
   Upload,
   ImageIcon,
   Trash2,
@@ -40,7 +37,6 @@ import {
   CreditCard,
   Lock,
   ShieldAlert,
-  ClipboardList,
   CalendarCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,6 +49,9 @@ import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule'
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
 import { StockModule } from '@/components/modules/StockModule';
+import { EmployeesModule } from '@/components/modules/EmployeesModule';
+import { AttendanceModule } from '@/components/modules/AttendanceModule';
+import { SalaryModule } from '@/components/modules/SalaryModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
@@ -61,7 +60,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -76,9 +74,9 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { isSameMonth, parseISO } from 'date-fns';
+import { isSameMonth, parseISO, isToday } from 'date-fns';
 
-type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Dashboard' | 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Employees' | 'Attendance' | 'Salary' | 'Analytics' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -90,12 +88,16 @@ export default function DashboardPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const navigation = [
+    { name: 'Dashboard', icon: LayoutDashboard, id: 'Dashboard' as ActiveTab, visible: store.visibility.tabs.Dashboard },
     { name: 'Repairing', icon: Wrench, id: 'Repairing' as ActiveTab, visible: store.visibility.tabs.Repairing },
     { name: 'CRM Leads', icon: UserPlus, id: 'CRM Leads' as ActiveTab, visible: store.visibility.tabs['CRM Leads'] },
     { name: 'Billing', icon: Receipt, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
     { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
-    { name: 'P&L Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
+    { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
+    { name: 'Attendance', icon: CalendarCheck, id: 'Attendance' as ActiveTab, visible: store.visibility.tabs.Attendance },
+    { name: 'Salary', icon: DollarSign, id: 'Salary' as ActiveTab, visible: store.visibility.tabs.Salary },
+    { name: 'Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
@@ -117,19 +119,16 @@ export default function DashboardPage() {
 
     const currentMonth = store.invoices.filter((i: any) => i.timestamp && isSameMonth(parseISO(i.timestamp), new Date()));
     const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
-    const totalProfit = currentMonth.reduce((acc: number, curr: any) => {
-      const itemsProfit = (curr.items || []).reduce((sum: number, item: any) => {
-        const stockRef = store.stock.find((s: any) => s.name === item.name);
-        const cost = stockRef?.purchasePrice || item.rate * 0.6;
-        return sum + (item.rate - cost) * item.quantity;
-      }, 0);
-      return acc + itemsProfit;
-    }, 0);
-    const pendingAmount = store.invoices.filter((i: any) => i.paymentStatus !== 'Paid').reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
-    const gstLiability = currentMonth.reduce((acc: number, curr: any) => acc + ((curr.cgst || 0) + (curr.sgst || 0)), 0);
+    
+    // Attendance Stats
+    const totalEmployees = store.employees.length;
+    const todayRecs = store.attendance.filter((a: any) => a.date === new Date().toISOString().split('T')[0]);
+    const presentToday = todayRecs.filter((a: any) => a.status === 'Present' || a.status === 'Checked In' || a.status === 'Checked Out').length;
+    const absentToday = Math.max(0, totalEmployees - presentToday);
+    const lateToday = todayRecs.filter((a: any) => a.status === 'Late').length;
 
-    return { totalActive, pending, completed, rejected, totalSales, totalProfit, pendingAmount, gstLiability };
-  }, [store.calls, store.invoices, store.stock]);
+    return { totalActive, pending, completed, rejected, totalSales, totalEmployees, presentToday, absentToday, lateToday };
+  }, [store.calls, store.invoices, store.employees, store.attendance]);
 
   const visibleNavigation = sortedNavigation.filter(item => item.visible);
 
@@ -160,12 +159,10 @@ export default function DashboardPage() {
     const newOrder = [...store.navOrder];
     const item = newOrder[index];
     newOrder.splice(index, 1);
-
     if (direction === 'UP') newOrder.splice(Math.max(0, index - 1), 0, item);
     else if (direction === 'DOWN') newOrder.splice(Math.min(newOrder.length, index + 1), 0, item);
     else if (direction === 'TOP') newOrder.splice(0, 0, item);
     else if (direction === 'BOTTOM') newOrder.push(item);
-
     store.setNavOrder(newOrder);
   };
 
@@ -202,11 +199,9 @@ export default function DashboardPage() {
           </div>
           {isSidebarOpen && <span className="font-headline font-bold text-lg xl:text-xl tracking-tight truncate">GJ5 HOME SERVICE</span>}
         </div>
-
         <div className="flex-1 overflow-y-auto mt-2 custom-scrollbar">
           <NavItems />
         </div>
-
         <div className="p-4 border-t border-slate-800 space-y-2">
           <button onClick={() => setSettingsOpen(true)} className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800/50 transition-all">
             <SettingsIcon className="w-5 h-5" />
@@ -245,19 +240,16 @@ export default function DashboardPage() {
                 </div>
               </SheetContent>
             </Sheet>
-
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <Input placeholder="Master search..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
             </div>
           </div>
-
           <div className="flex items-center gap-4 md:gap-6 ml-4">
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-semibold text-blue-400 italic">GJ5 PLUS</span>
               <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V3.2.0</span>
             </div>
-            
             <div className="flex items-center gap-3 border-l border-slate-800 pl-4 md:pl-6">
               <Avatar className="w-9 h-9 border border-slate-800">
                 <AvatarImage src="" />
@@ -273,7 +265,46 @@ export default function DashboardPage() {
 
         <div className="p-4 md:p-8 max-w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {activeTab === 'Billing' || activeTab === 'Analytics' || activeTab === 'Invoice History' ? (
+            {activeTab === 'Employees' || activeTab === 'Attendance' || activeTab === 'Salary' ? (
+              <>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Employees</p>
+                      <h3 className="text-2xl font-headline font-bold text-blue-400">{dashboardStats.totalEmployees}</h3>
+                    </div>
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><Users className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Present Today</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.presentToday}</h3>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Absent Today</p>
+                      <h3 className="text-2xl font-headline font-bold text-rose-400">{dashboardStats.absentToday}</h3>
+                    </div>
+                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><XCircle className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/40 border-slate-800">
+                  <CardContent className="p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Late Entries</p>
+                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.lateToday}</h3>
+                    </div>
+                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : activeTab === 'Billing' || activeTab === 'Analytics' || activeTab === 'Invoice History' ? (
               <>
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
@@ -287,8 +318,8 @@ export default function DashboardPage() {
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Est. Net Profit</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">₹{dashboardStats.totalProfit.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Active Jobs</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.totalActive}</h3>
                     </div>
                     <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
                   </CardContent>
@@ -296,19 +327,19 @@ export default function DashboardPage() {
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">GST Liability</p>
-                      <h3 className="text-2xl font-headline font-bold text-rose-400">₹{dashboardStats.gstLiability.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
+                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
                     </div>
-                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><ShieldCheck className="w-5 h-5" /></div>
+                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Outstanding</p>
-                      <h3 className="text-2xl font-headline font-bold text-amber-400">₹{dashboardStats.pendingAmount.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Success Node</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
                     </div>
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><CreditCard className="w-5 h-5" /></div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><ShieldCheck className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
               </>
@@ -354,11 +385,15 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {activeTab === 'Dashboard' && <RepairingModule store={store} />}
           {activeTab === 'Repairing' && <RepairingModule store={store} />}
           {activeTab === 'CRM Leads' && <InquiryModule store={store} />}
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}
+          {activeTab === 'Employees' && <EmployeesModule store={store} />}
+          {activeTab === 'Attendance' && <AttendanceModule store={store} />}
+          {activeTab === 'Salary' && <SalaryModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
           {activeTab === 'Transportation' && <TransportationModule store={store} />}
@@ -389,9 +424,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-
             <Separator className="bg-slate-800" />
-
             <div className="space-y-4">
                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Lock className="w-4 h-4" /> Security Matrix</h4>
                <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
@@ -417,9 +450,7 @@ export default function DashboardPage() {
                   </div>
                </div>
             </div>
-
             <Separator className="bg-slate-800" />
-
             <div className="space-y-4">
                <div className="flex justify-between items-center">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Layout Manager</h4>
@@ -437,7 +468,7 @@ export default function DashboardPage() {
                           reader.readAsText(file);
                         }
                      }} />
-                     <Button variant="outline" size="sm" onClick={() => document.getElementById('import-nav')?.click()} className="h-8 text-[9px] uppercase border-slate-700"><FileJson className="w-3 h-3 mr-1.5" /> Import</Button>
+                     <Button variant="outline" size="sm" onClick={() => document.getElementById('import-nav')?.click()} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Import</Button>
                      <Button variant="outline" size="sm" onClick={() => {
                         const data = JSON.stringify({ navOrder: store.navOrder });
                         const blob = new Blob([data], { type: 'application/json' });
@@ -479,9 +510,7 @@ export default function DashboardPage() {
                   </div>
                </div>
             </div>
-
             <Separator className="bg-slate-800" />
-
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
               <BackupCenter store={store} />

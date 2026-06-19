@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Truck, 
   Package, 
@@ -9,7 +9,10 @@ import {
   Send,
   MapPin,
   Clock,
-  Search
+  Search,
+  CheckCircle,
+  BadgeCheck,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +37,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 
 export function LogisticsModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({
@@ -59,6 +62,23 @@ export function LogisticsModule({ store }: { store: any }) {
   }, []);
 
   const activeJobs = store.calls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected');
+
+  const stats = useMemo(() => {
+    const logs = store.transportationLogs || [];
+    
+    const getStatsForStatus = (status: string) => {
+      const filtered = logs.filter((l: any) => l.status === status);
+      const todayCount = filtered.filter((l: any) => l.dispatchTime && isToday(parseISO(l.dispatchTime))).length;
+      return { count: filtered.length, today: todayCount };
+    };
+
+    return {
+      pendingPickup: getStatsForStatus('Pending Pickup'),
+      okPickup: getStatsForStatus('OK Pickup'),
+      pendingDelivery: getStatsForStatus('Pending Delivery'),
+      okDelivery: getStatsForStatus('OK Delivery'),
+    };
+  }, [store.transportationLogs]);
 
   const handleTemplateChange = (index: number, value: string) => {
     const newTemplates = [...templates];
@@ -112,6 +132,41 @@ export function LogisticsModule({ store }: { store: any }) {
 
     setFormData({ runnerName: '', runnerMobile: '', selectedJobId: '' });
   };
+
+  const summaryCards = [
+    { 
+      title: "Pending Pickup", 
+      count: stats.pendingPickup.count, 
+      today: stats.pendingPickup.today,
+      icon: Package, 
+      color: "text-orange-400", 
+      bg: "bg-orange-400/10" 
+    },
+    { 
+      title: "OK Pickup", 
+      count: stats.okPickup.count, 
+      today: stats.okPickup.today,
+      icon: CheckCircle, 
+      color: "text-emerald-400", 
+      bg: "bg-emerald-400/10" 
+    },
+    { 
+      title: "Pending Delivery", 
+      count: stats.pendingDelivery.count, 
+      today: stats.pendingDelivery.today,
+      icon: Truck, 
+      color: "text-amber-400", 
+      bg: "bg-amber-400/10" 
+    },
+    { 
+      title: "OK Delivery", 
+      count: stats.okDelivery.count, 
+      today: stats.okDelivery.today,
+      icon: BadgeCheck, 
+      color: "text-blue-400", 
+      bg: "bg-blue-400/10" 
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -184,6 +239,31 @@ export function LogisticsModule({ store }: { store: any }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Status Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {summaryCards.map((card, i) => (
+          <Card key={i} className="bg-slate-900/40 border-slate-800 group hover:border-slate-700 transition-colors">
+            <CardContent className="p-5 flex justify-between items-center">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className={cn("px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter", card.bg, card.color)}>
+                    {card.title}
+                  </div>
+                </div>
+                <h3 className="text-3xl font-headline font-black text-white">{card.count}</h3>
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  <span className="text-[9px] text-slate-500 font-bold uppercase">Today's activity: {card.today}</span>
+                </div>
+              </div>
+              <div className={cn("p-4 rounded-2xl bg-slate-950 shadow-inner group-hover:scale-110 transition-transform duration-300", card.color)}>
+                <card.icon className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <div className="space-y-4">
         <h3 className="text-xl font-headline font-bold flex items-center gap-2">

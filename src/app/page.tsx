@@ -50,10 +50,6 @@ import { RepairingModule } from '@/components/modules/RepairingModule';
 import { InquiryModule } from '@/components/modules/InquiryModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
-import { EmployeesModule } from '@/components/modules/EmployeesModule';
-import { AttendanceModule } from '@/components/modules/AttendanceModule';
-import { TasksModule } from '@/components/modules/TasksModule';
-import { SalaryModule } from '@/components/modules/SalaryModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
 import { StockModule } from '@/components/modules/StockModule';
@@ -82,7 +78,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'Attendance' | 'Tasks' | 'Salary' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -100,10 +96,6 @@ export default function DashboardPage() {
     { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
     { name: 'P&L Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
-    { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
-    { name: 'Attendance', icon: CalendarCheck, id: 'Attendance' as ActiveTab, visible: store.visibility.tabs.Attendance },
-    { name: 'Task Board', icon: ClipboardList, id: 'Tasks' as ActiveTab, visible: store.visibility.tabs.Tasks },
-    { name: 'Salary', icon: DollarSign, id: 'Salary' as ActiveTab, visible: store.visibility.tabs.Salary },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
   ];
@@ -368,10 +360,6 @@ export default function DashboardPage() {
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
-          {activeTab === 'Employees' && <EmployeesModule store={store} />}
-          {activeTab === 'Attendance' && <AttendanceModule store={store} />}
-          {activeTab === 'Tasks' && <TasksModule store={store} />}
-          {activeTab === 'Salary' && <SalaryModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
           {activeTab === 'Transportation' && <TransportationModule store={store} />}
         </div>

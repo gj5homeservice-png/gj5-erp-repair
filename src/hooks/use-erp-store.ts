@@ -4,17 +4,13 @@ import { useState, useEffect } from 'react';
 import { 
   RepairCall, 
   Inquiry, 
-  Employee, 
-  AttendanceRecord, 
   Expense, 
   TransportationLog, 
   Invoice,
   WalletTransaction,
   StockItem,
   VisibilitySettings,
-  LogisticsStatus,
-  EmployeeTask,
-  SalaryRecord
+  LogisticsStatus
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, onSnapshot, updateDoc, deleteDoc } from '@/firebase';
 
@@ -25,10 +21,6 @@ const DEFAULT_NAV_ORDER = [
   'Invoice History',
   'Stock',
   'Analytics',
-  'Employees',
-  'Attendance',
-  'Tasks',
-  'Salary',
   'E-Wallet',
   'Transportation'
 ];
@@ -41,10 +33,6 @@ const DEFAULT_VISIBILITY = {
     'Invoice History': true,
     'Stock': true,
     'Analytics': true,
-    'Employees': true,
-    'Attendance': true,
-    'Tasks': true,
-    'Salary': true,
     'E-Wallet': true,
     'Transportation': true,
   },
@@ -62,10 +50,6 @@ const DEFAULT_VISIBILITY = {
 export function useErpStore() {
   const [calls, setCalls] = useState<RepairCall[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [tasks, setTasks] = useState<EmployeeTask[]>([]);
-  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
@@ -100,10 +84,6 @@ export function useErpStore() {
     safeGet('gj5_stock', setStock);
     safeGet('gj5_calls', setCalls);
     safeGet('gj5_inquiries', setInquiries);
-    safeGet('gj5_employees', setEmployees);
-    safeGet('gj5_attendance', setAttendance);
-    safeGet('gj5_tasks', setTasks);
-    safeGet('gj5_salaries', setSalaries);
     safeGet('gj5_expenses', setExpenses);
     safeGet('gj5_transactions', setTransactions);
     safeGet('gj5_transport_logs', setTransportationLogs);
@@ -118,10 +98,6 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_stock', JSON.stringify(stock)); }, [stock]);
   useEffect(() => { localStorage.setItem('gj5_calls', JSON.stringify(calls)); }, [calls]);
   useEffect(() => { localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries)); }, [inquiries]);
-  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('gj5_tasks', JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem('gj5_salaries', JSON.stringify(salaries)); }, [salaries]);
   useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
   useEffect(() => { localStorage.setItem('gj5_transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
@@ -230,25 +206,6 @@ export function useErpStore() {
     updateInquiry({ ...inq, status: 'Converted', convertedJobId: jobId, conversionDate: new Date().toISOString() });
   };
 
-  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
-  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
-  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
-
-  const updateAttendance = (rec: AttendanceRecord) => {
-    setAttendance(prev => {
-      const exists = prev.find(a => a.employeeId === rec.employeeId && a.date === rec.date);
-      if (exists) return prev.map(a => (a.employeeId === rec.employeeId && a.date === rec.date) ? rec : a);
-      return [rec, ...prev];
-    });
-  };
-
-  const addTask = (task: EmployeeTask) => setTasks(prev => [task, ...prev]);
-  const updateTask = (task: EmployeeTask) => setTasks(prev => prev.map(t => t.id === task.id ? task : t));
-  const deleteTask = (id: string) => setTasks(prev => prev.filter(t => t.id !== id));
-
-  const addSalary = (record: SalaryRecord) => setSalaries(prev => [record, ...prev]);
-  const updateSalary = (record: SalaryRecord) => setSalaries(prev => prev.map(s => s.id === record.id ? record : s));
-
   const addExpense = (exp: Expense) => {
     setExpenses(prev => [exp, ...prev]);
     const tx: WalletTransaction = {
@@ -313,10 +270,6 @@ export function useErpStore() {
   const importAllData = (data: any) => {
     if (data.calls) setCalls(data.calls);
     if (data.inquiries) setInquiries(data.inquiries);
-    if (data.employees) setEmployees(data.employees);
-    if (data.attendance) setAttendance(data.attendance);
-    if (data.tasks) setTasks(data.tasks);
-    if (data.salaries) setSalaries(data.salaries);
     if (data.expenses) setExpenses(data.expenses);
     if (data.transactions) setTransactions(data.transactions);
     if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
@@ -340,10 +293,6 @@ export function useErpStore() {
     shopLogo, setShopLogo,
     deletePassword, setDeletePassword, setDeletePassword: updateDeletePassword,
     transactions, deleteTransaction, updateTransaction,
-    employees, addEmployee, updateEmployee, deleteEmployee,
-    attendance, updateAttendance,
-    tasks, addTask, updateTask, deleteTask,
-    salaries, addSalary, updateSalary,
     expenses, addExpense,
     transportationLogs, addTransportLog, updateTransportLog, updateTransportLogStatus, deleteTransportLog,
     importAllData

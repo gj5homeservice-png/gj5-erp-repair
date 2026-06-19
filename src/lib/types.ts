@@ -167,3 +167,68 @@ export interface StockMovement {
   referenceId?: string;
   customerName?: string;
 }
+
+// HRMS TYPES
+export type UserRole = 'Admin' | 'Manager' | 'Employee';
+export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Checked In' | 'Checked Out';
+
+export interface Employee {
+  id: string;
+  employeeId: string;
+  photo?: string;
+  qrCode?: string;
+  name: string;
+  mobile: string;
+  email: string;
+  designation: string;
+  department: string;
+  salary: number;
+  joiningDate: string;
+  status: 'Active' | 'Inactive';
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  mobile: string;
+  date: string;
+  checkIn?: string;
+  checkOut?: string;
+  workHours: string;
+  overtime: string;
+  latitude?: string;
+  longitude?: string;
+  status: AttendanceStatus;
+  createdAt: string;
+}
+
+export interface SalaryRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  month: string;
+  year: string;
+  baseSalary: number;
+  attendanceDays: number;
+  overtimeHours: number;
+  bonus: number;
+  deductions: number;
+  netPayable: number;
+  paymentStatus: 'Pending' | 'Paid';
+  processedDate: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  startDate: string;
+  endDate: string;
+  type: 'Sick' | 'Casual' | 'Emergency' | 'Paid';
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+}

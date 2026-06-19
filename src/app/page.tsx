@@ -37,7 +37,8 @@ import {
   CreditCard,
   Lock,
   ShieldAlert,
-  CalendarCheck
+  CalendarCheck,
+  Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,9 +48,12 @@ import { InquiryModule } from '@/components/modules/InquiryModule';
 import { BillingModule } from '@/components/modules/BillingModule';
 import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
 import { WalletModule } from '@/components/modules/WalletModule';
-import { TransportationModule } from '@/components/modules/TransportationModule';
+import { LogisticsModule } from '@/components/modules/LogisticsModule';
 import { StockModule } from '@/components/modules/StockModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
+import { EmployeesModule } from '@/components/modules/EmployeesModule';
+import { AttendanceModule } from '@/components/modules/AttendanceModule';
+import { SalaryModule } from '@/components/modules/SalaryModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
 import {
@@ -73,7 +77,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Dashboard' | 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Dashboard' | 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'E-Wallet' | 'Logistics' | 'Employees' | 'Attendance' | 'Salary';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -91,9 +95,12 @@ export default function DashboardPage() {
     { name: 'Billing', icon: Receipt, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
     { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
+    { name: 'Workforce', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
+    { name: 'Attendance', icon: CalendarCheck, id: 'Attendance' as ActiveTab, visible: store.visibility.tabs.Attendance },
+    { name: 'Payroll', icon: DollarSign, id: 'Salary' as ActiveTab, visible: store.visibility.tabs.Salary },
     { name: 'Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
-    { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
+    { name: 'Logistics', icon: Truck, id: 'Logistics' as ActiveTab, visible: store.visibility.tabs.Logistics },
   ];
 
   const sortedNavigation = useMemo(() => {
@@ -109,12 +116,11 @@ export default function DashboardPage() {
     const totalActive = allCalls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').length;
     const pending = allCalls.filter((c: any) => c.status === 'Pending').length;
     const completed = allCalls.filter((c: any) => c.status === 'Completed').length;
-    const rejected = allCalls.filter((c: any) => c.status === 'Rejected').length;
-
+    
     const currentMonth = store.invoices.filter((i: any) => i.timestamp && isSameMonth(parseISO(i.timestamp), new Date()));
     const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
 
-    return { totalActive, pending, completed, rejected, totalSales };
+    return { totalActive, pending, completed, totalSales };
   }, [store.calls, store.invoices]);
 
   const visibleNavigation = sortedNavigation.filter(item => item.visible);
@@ -131,15 +137,6 @@ export default function DashboardPage() {
       tabs: { ...store.visibility.tabs, [tab]: !store.visibility.tabs[tab] }
     };
     store.updateVisibility(newSettings);
-  };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => store.setShopLogo(reader.result as string);
-      reader.readAsDataURL(file);
-    }
   };
 
   const reorderNav = (index: number, direction: 'UP' | 'DOWN' | 'TOP' | 'BOTTOM') => {
@@ -229,22 +226,21 @@ export default function DashboardPage() {
             </Sheet>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input placeholder="Master search..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
+              <Input placeholder="Master search node..." className="pl-10 bg-slate-950/50 border-slate-800 rounded-xl w-full h-11 focus-visible:ring-[#0066FF]" />
             </div>
           </div>
           <div className="flex items-center gap-4 md:gap-6 ml-4">
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-semibold text-blue-400 italic">GJ5 PLUS</span>
-              <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V3.2.0</span>
+              <span className="text-[10px] text-slate-500 tracking-widest font-code">PRO-V4.1.0</span>
             </div>
             <div className="flex items-center gap-3 border-l border-slate-800 pl-4 md:pl-6">
               <Avatar className="w-9 h-9 border border-slate-800">
-                <AvatarImage src="" />
                 <AvatarFallback className="bg-blue-600 text-white text-xs">A</AvatarFallback>
               </Avatar>
               <div className="hidden xl:flex flex-col">
                 <span className="text-xs font-bold">Admin</span>
-                <span className="text-[9px] text-slate-500">System Root</span>
+                <span className="text-[9px] text-slate-500 font-black uppercase">System Root</span>
               </div>
             </div>
           </div>
@@ -255,7 +251,7 @@ export default function DashboardPage() {
             <Card className="bg-slate-900/40 border-slate-800">
               <CardContent className="p-5 flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Sales</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Yield</p>
                   <h3 className="text-2xl font-headline font-bold text-blue-400">₹{dashboardStats.totalSales.toLocaleString()}</h3>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><DollarSign className="w-5 h-5" /></div>
@@ -264,7 +260,7 @@ export default function DashboardPage() {
             <Card className="bg-slate-900/40 border-slate-800">
               <CardContent className="p-5 flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Active Jobs</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Active Nodes</p>
                   <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.totalActive}</h3>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
@@ -273,7 +269,7 @@ export default function DashboardPage() {
             <Card className="bg-slate-900/40 border-slate-800">
               <CardContent className="p-5 flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Awaiting Audit</p>
                   <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
                 </div>
                 <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
@@ -282,10 +278,10 @@ export default function DashboardPage() {
             <Card className="bg-slate-900/40 border-slate-800">
               <CardContent className="p-5 flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Success Node</p>
-                  <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">System Health</p>
+                  <h3 className="text-2xl font-headline font-bold text-blue-500">OK</h3>
                 </div>
-                <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><ShieldCheck className="w-5 h-5" /></div>
+                <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500"><ShieldCheck className="w-5 h-5" /></div>
               </CardContent>
             </Card>
           </div>
@@ -296,9 +292,12 @@ export default function DashboardPage() {
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}
+          {activeTab === 'Employees' && <EmployeesModule store={store} />}
+          {activeTab === 'Attendance' && <AttendanceModule store={store} />}
+          {activeTab === 'Salary' && <SalaryModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
-          {activeTab === 'Transportation' && <TransportationModule store={store} />}
+          {activeTab === 'Logistics' && <LogisticsModule store={store} />}
         </div>
       </main>
 
@@ -319,7 +318,14 @@ export default function DashboardPage() {
                 <div className="flex-1 space-y-3 w-full text-center sm:text-left">
                   <p className="text-sm font-medium text-slate-300">Logo Asset</p>
                   <div className="flex gap-2 justify-center sm:justify-start">
-                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
+                       const file = e.target.files?.[0];
+                       if (file) {
+                         const reader = new FileReader();
+                         reader.onloadend = () => store.setShopLogo(reader.result as string);
+                         reader.readAsDataURL(file);
+                       }
+                    }} />
                     <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-[#0066FF] hover:bg-blue-600"><Upload className="w-4 h-4 mr-2" /> Upload</Button>
                     {store.shopLogo && <Button size="sm" variant="ghost" onClick={() => store.setShopLogo(null)} className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>}
                   </div>
@@ -333,7 +339,7 @@ export default function DashboardPage() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                      <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-bold text-slate-400">Master Delete Password</Label>
-                        <p className="text-[10px] text-slate-600 leading-tight">Required for terminating jobs, assets, and registry records.</p>
+                        <p className="text-[10px] text-slate-600 leading-tight">Required for terminating jobs, assets, and HR nodes.</p>
                      </div>
                      <div className="flex gap-2 w-full sm:w-auto">
                         <Input 
@@ -343,44 +349,17 @@ export default function DashboardPage() {
                           className="bg-slate-950 border-slate-800 h-10 w-full sm:w-40 font-code text-center" 
                           placeholder="••••"
                         />
-                        <Button size="sm" variant="ghost" className="h-10 text-[9px] uppercase font-black text-blue-500" onClick={() => toast({title: "Security Updated", description: "Master password committed to local node."})}>Commit</Button>
+                        <Button size="sm" variant="ghost" className="h-10 text-[9px] uppercase font-black text-blue-500" onClick={() => toast({title: "Security Node Sync", description: "Identity key committed to local database."})}>Commit</Button>
                      </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                     <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-                     <p className="text-[10px] text-amber-500 leading-tight italic">Warning: This password protects all critical database destructive actions.</p>
                   </div>
                </div>
             </div>
             <Separator className="bg-slate-800" />
             <div className="space-y-4">
                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Layout Manager</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4" /> Sidebar Topology</h4>
                   <div className="flex gap-2">
-                     <input type="file" id="import-nav" className="hidden" accept=".json" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            try {
-                              const content = JSON.parse(event.target?.result as string);
-                              if (content.navOrder) store.setNavOrder(content.navOrder);
-                            } catch (err) { toast({ title: "Import Error", variant: "destructive" }); }
-                          };
-                          reader.readAsText(file);
-                        }
-                     }} />
-                     <Button variant="outline" size="sm" onClick={() => document.getElementById('import-nav')?.click()} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Import</Button>
-                     <Button variant="outline" size="sm" onClick={() => {
-                        const data = JSON.stringify({ navOrder: store.navOrder });
-                        const blob = new Blob([data], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `Sidebar_Layout.json`;
-                        link.click();
-                     }} className="h-8 text-[9px] uppercase border-slate-700"><Download className="w-3 h-3 mr-1.5" /> Export</Button>
-                     <Button variant="ghost" size="sm" onClick={() => store.resetNavOrder()} className="h-8 text-[9px] uppercase text-slate-500 hover:text-white">Reset Default</Button>
+                     <Button variant="outline" size="sm" onClick={() => store.resetNavOrder()} className="h-8 text-[9px] uppercase border-slate-700">Restore Factory Default</Button>
                   </div>
                </div>
                <div className="bg-slate-950/50 rounded-2xl border border-slate-800 overflow-hidden">
@@ -400,10 +379,8 @@ export default function DashboardPage() {
                              <div className="flex items-center gap-4">
                                 <Switch checked={!!store.visibility.tabs[id]} onCheckedChange={() => handleToggleTab(id)} />
                                 <div className="flex gap-1 border-l border-slate-800 pl-4">
-                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'TOP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ChevronsUp className="w-3.5 h-3.5" /></Button>
                                    <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'UP')} disabled={idx === 0} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ArrowUp className="w-3.5 h-3.5" /></Button>
                                    <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'DOWN')} disabled={idx === store.navOrder.length - 1} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ArrowDown className="w-3.5 h-3.5" /></Button>
-                                   <Button variant="ghost" size="icon" onClick={() => reorderNav(idx, 'BOTTOM')} disabled={idx === store.navOrder.length - 1} className="h-7 w-7 text-slate-500 hover:text-blue-400"><ChevronsDown className="w-3.5 h-3.5" /></Button>
                                 </div>
                              </div>
                           </div>
@@ -414,7 +391,7 @@ export default function DashboardPage() {
             </div>
             <Separator className="bg-slate-800" />
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Backup Center</h4>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Database className="w-4 h-4" /> Cloud Synchronization</h4>
               <BackupCenter store={store} />
             </div>
           </div>

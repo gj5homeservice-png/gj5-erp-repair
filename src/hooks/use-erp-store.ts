@@ -10,9 +10,13 @@ import {
   WalletTransaction,
   StockItem,
   VisibilitySettings,
-  LogisticsStatus
+  LogisticsStatus,
+  Employee,
+  AttendanceRecord,
+  SalaryRecord,
+  LeaveRequest
 } from '@/lib/types';
-import { db, doc, setDoc, collection, updateDoc, deleteDoc } from '@/firebase';
+import { db, doc, setDoc, collection, updateDoc, deleteDoc, getDocs } from '@/firebase';
 
 const DEFAULT_NAV_ORDER = [
   'Dashboard',
@@ -21,9 +25,12 @@ const DEFAULT_NAV_ORDER = [
   'Billing',
   'Invoice History',
   'Stock',
+  'Employees',
+  'Attendance',
+  'Salary',
   'Analytics',
   'E-Wallet',
-  'Transportation'
+  'Logistics'
 ];
 
 const DEFAULT_VISIBILITY = {
@@ -34,9 +41,12 @@ const DEFAULT_VISIBILITY = {
     'Billing': true,
     'Invoice History': true,
     'Stock': true,
+    'Employees': true,
+    'Attendance': true,
+    'Salary': true,
     'Analytics': true,
     'E-Wallet': true,
-    'Transportation': true
+    'Logistics': true
   },
   kpis: {
     totalActive: true,
@@ -57,6 +67,10 @@ export function useErpStore() {
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stock, setStock] = useState<StockItem[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(50000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
@@ -89,6 +103,10 @@ export function useErpStore() {
     safeGet('gj5_expenses', setExpenses);
     safeGet('gj5_transactions', setTransactions);
     safeGet('gj5_transport_logs', setTransportationLogs);
+    safeGet('gj5_employees', setEmployees);
+    safeGet('gj5_attendance', setAttendance);
+    safeGet('gj5_salaries', setSalaries);
+    safeGet('gj5_leaves', setLeaves);
     safeGet('gj5_wallet_balance', setWalletBalance);
     safeGet('gj5_visibility', setVisibility);
     safeGet('gj5_nav_order', setNavOrder);
@@ -103,22 +121,32 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
   useEffect(() => { localStorage.setItem('gj5_transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
+  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
+  useEffect(() => { localStorage.setItem('gj5_salaries', JSON.stringify(salaries)); }, [salaries]);
+  useEffect(() => { localStorage.setItem('gj5_leaves', JSON.stringify(leaves)); }, [leaves]);
   useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
   useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
   useEffect(() => { if (shopLogo) localStorage.setItem('gj5_shop_logo', shopLogo); }, [shopLogo]);
   useEffect(() => { localStorage.setItem('gj5_delete_password', deletePassword); }, [deletePassword]);
 
-  const updateDeletePassword = async (newPassword: string) => {
-    setDeletePassword(newPassword);
-    try {
-      const settingsRef = doc(db, "settings", "security");
-      await setDoc(settingsRef, { deletePassword: newPassword, updatedAt: new Date().toISOString() }, { merge: true });
-    } catch (e) {
-      console.error("Failed to sync security settings to cloud:", e);
-    }
-  };
+  // HRMS ACTIONS
+  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
+  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
+  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
 
+  const addAttendance = (record: AttendanceRecord) => setAttendance(prev => [record, ...prev]);
+  const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => prev.map(a => a.id === record.id ? record : a));
+  const deleteAttendance = (id: string) => setAttendance(prev => prev.filter(a => a.id !== id));
+
+  const addSalary = (record: SalaryRecord) => setSalaries(prev => [record, ...prev]);
+  const updateSalary = (record: SalaryRecord) => setSalaries(prev => prev.map(s => s.id === record.id ? record : s));
+
+  const addLeave = (request: LeaveRequest) => setLeaves(prev => [request, ...prev]);
+  const updateLeave = (request: LeaveRequest) => setLeaves(prev => prev.map(l => l.id === request.id ? request : l));
+
+  // CORE ACTIONS
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
     invoice.items?.forEach(item => {
@@ -174,33 +202,6 @@ export function useErpStore() {
   const addInquiry = (inq: Inquiry) => setInquiries(prev => [inq, ...prev]);
   const updateInquiry = (inq: Inquiry) => setInquiries(prev => prev.map(i => i.id === inq.id ? inq : i));
   const deleteInquiry = (id: string) => setInquiries(prev => prev.filter(i => i.id !== id));
-
-  const convertInquiryToJob = (inqId: string, jobId: string) => {
-    const inq = inquiries.find(i => i.id === inqId);
-    if (!inq) return;
-    const newCall: RepairCall = {
-      id: jobId,
-      customerId: inq.id.replace('INQ', 'GJ5'),
-      customerName: inq.customerName,
-      mobile: inq.mobile,
-      address: inq.address || '',
-      pincode: inq.pincode || '',
-      category: inq.productType,
-      brand: inq.brand,
-      model: inq.modelNumber || '',
-      screenSize: '',
-      techTags: [],
-      intakeMode: 'Customer Visit',
-      status: 'Pending',
-      problemDescription: inq.problemDescription || inq.notes || '',
-      visitHistory: [],
-      repeatCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    addCall(newCall);
-    updateInquiry({ ...inq, status: 'Converted', convertedJobId: jobId, conversionDate: new Date().toISOString() });
-  };
 
   const addExpense = (exp: Expense) => {
     setExpenses(prev => [exp, ...prev]);
@@ -269,6 +270,10 @@ export function useErpStore() {
     if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
     if (data.invoices) setInvoices(data.invoices);
     if (data.stock) setStock(data.stock);
+    if (data.employees) setEmployees(data.employees);
+    if (data.attendance) setAttendance(data.attendance);
+    if (data.salaries) setSalaries(data.salaries);
+    if (data.leaves) setLeaves(data.leaves);
     if (data.walletBalance !== undefined) setWalletBalance(data.walletBalance);
     if (data.visibility) setVisibility(data.visibility);
     if (data.navOrder) setNavOrder(data.navOrder);
@@ -280,12 +285,16 @@ export function useErpStore() {
     invoices, addInvoice, deleteInvoice,
     stock, updateStockItem, deleteStockItem,
     calls, addCall, updateCall, deleteCall,
-    inquiries, addInquiry, updateInquiry, deleteInquiry, convertInquiryToJob,
+    inquiries, addInquiry, updateInquiry, deleteInquiry,
+    employees, addEmployee, updateEmployee, deleteEmployee,
+    attendance, addAttendance, updateAttendance, deleteAttendance,
+    salaries, addSalary, updateSalary,
+    leaves, addLeave, updateLeave,
     walletBalance, setWalletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility, updateVisibility,
     navOrder, setNavOrder, resetNavOrder,
     shopLogo, setShopLogo,
-    deletePassword, setDeletePassword, setDeletePassword: updateDeletePassword,
+    deletePassword, setDeletePassword,
     transactions, deleteTransaction, updateTransaction,
     expenses, addExpense,
     transportationLogs, addTransportLog, updateTransportLog, updateTransportLogStatus, deleteTransportLog,

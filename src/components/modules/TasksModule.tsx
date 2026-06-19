@@ -21,7 +21,8 @@ import {
   Package,
   MapPin,
   Tag,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,7 +100,7 @@ export function TasksModule({ store }: { store: any }) {
     return (store.tasks || []).filter((t: EmployeeTask) => {
       const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            t.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           t.assignedToName.toLowerCase().includes(searchQuery.toLowerCase());
+                           (t.assignedToName || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
       return matchesSearch && matchesStatus;
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

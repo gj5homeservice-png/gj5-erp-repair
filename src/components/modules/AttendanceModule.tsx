@@ -11,15 +11,11 @@ import {
   LogIn,
   LogOut,
   History,
-  FileText,
   UserCheck,
   AlertCircle,
-  Filter,
   Trash2,
   MapPin,
-  QrCode,
   ShieldCheck,
-  MessageSquare,
   Share2,
   Eye,
   Camera,
@@ -38,13 +34,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
@@ -52,12 +41,12 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { format, parseISO, differenceInMinutes, isToday } from 'date-fns';
+import { Label } from '@/components/ui/label';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { AttendanceRecord, Employee, AttendanceStatus } from '@/lib/types';
+import { AttendanceRecord, Employee } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 
 export function AttendanceModule({ store }: { store: any }) {
@@ -88,17 +77,18 @@ export function AttendanceModule({ store }: { store: any }) {
     return { total: activeEmployees.length, present, late, absent, checkedInCount, checkOutPending };
   }, [store.attendance, dateFilter, activeEmployees]);
 
-  const handleSendWhatsAppLink = (emp: Employee, targetRole: 'Employee' | 'Manager' | 'Admin' = 'Employee') => {
+  const handleSendWhatsAppLink = (emp: Employee) => {
     const token = store.generateAttendanceLink(emp);
     const origin = window.location.origin;
-    const attendanceUrl = `${origin}/attendance/${token}`;
+    // Updated to use search query parameter instead of dynamic route
+    const attendanceUrl = `${origin}/attendance?token=${token}`;
     
     const msg = `🔐 *GJ5 Secure Smart Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification is required to log your shift. Click below to capture your Biometric Selfie and GPS Node. \n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* One-time use only.\n📍 GPS + Selfie verification mandatory.`;
     
     const whatsappUrl = `https://web.whatsapp.com/send?phone=91${emp.mobile}&text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
     
-    toast({ title: "Smart Link Dispatched", description: `Secure token sent to ${targetRole} for ${emp.name}.` });
+    toast({ title: "Smart Link Dispatched", description: `Secure token sent to ${emp.name}.` });
   };
 
   const exportExcel = () => {

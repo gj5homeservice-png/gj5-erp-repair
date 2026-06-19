@@ -49,6 +49,9 @@ import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 
+// Replace with your production domain for external links
+const PRODUCTION_URL = "https://gj5-erp.web.app"; 
+
 export function AttendanceModule({ store }: { store: any }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -79,13 +82,17 @@ export function AttendanceModule({ store }: { store: any }) {
 
   const handleSendWhatsAppLink = (emp: Employee) => {
     const token = store.generateAttendanceLink(emp);
-    const origin = window.location.origin;
-    // Updated to use search query parameter instead of dynamic route
-    const attendanceUrl = `${origin}/attendance?token=${token}`;
+    
+    // Logic: In Capacitor apps, window.location.origin is 'https://localhost'. 
+    // We must use the production URL for technicians to open links in their own browsers.
+    const isMobileApp = typeof window !== 'undefined' && (window as any).Capacitor;
+    const baseUrl = isMobileApp ? PRODUCTION_URL : window.location.origin;
+    
+    const attendanceUrl = `${baseUrl}/attendance?token=${token}`;
     
     const msg = `🔐 *GJ5 Secure Smart Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification is required to log your shift. Click below to capture your Biometric Selfie and GPS Node. \n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* One-time use only.\n📍 GPS + Selfie verification mandatory.`;
     
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=91${emp.mobile}&text=${encodeURIComponent(msg)}`;
+    const whatsappUrl = `https://wa.me/91${emp.mobile}?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
     
     toast({ title: "Smart Link Dispatched", description: `Secure token sent to ${emp.name}.` });

@@ -11,7 +11,8 @@
     "lint": "next lint",
     "tauri": "tauri",
     "static": "next build",
-    "mobile:sync": "next build && npx cap sync",
+    "mobile:build": "next build && npx cap sync",
+    "mobile:sync": "npx cap sync",
     "mobile:open": "npx cap open android",
     "tauri:dev": "tauri dev",
     "tauri:build": "npm run build && tauri build"

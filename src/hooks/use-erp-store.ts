@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import {
   VisibilitySettings,
   LogisticsStatus
 } from '@/lib/types';
+import { db, doc, setDoc } from '@/firebase';
 
 const DEFAULT_NAV_ORDER = [
   'Repairing',
@@ -116,6 +116,17 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
   useEffect(() => { if (shopLogo) localStorage.setItem('gj5_shop_logo', shopLogo); }, [shopLogo]);
   useEffect(() => { localStorage.setItem('gj5_delete_password', deletePassword); }, [deletePassword]);
+
+  const updateDeletePassword = async (newPassword: string) => {
+    setDeletePassword(newPassword);
+    // Sync to Firestore if configured
+    try {
+      const settingsRef = doc(db, "settings", "security");
+      await setDoc(settingsRef, { deletePassword: newPassword, updatedAt: new Date().toISOString() }, { merge: true });
+    } catch (e) {
+      console.error("Failed to sync security settings to cloud:", e);
+    }
+  };
 
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
@@ -305,7 +316,7 @@ export function useErpStore() {
     visibility, setVisibility, updateVisibility,
     navOrder, setNavOrder, resetNavOrder,
     shopLogo, setShopLogo,
-    deletePassword, setDeletePassword,
+    deletePassword, setDeletePassword, setDeletePassword: updateDeletePassword,
     transactions, deleteTransaction, updateTransaction,
     employees, addEmployee, updateEmployee, deleteEmployee,
     attendance, updateAttendance,

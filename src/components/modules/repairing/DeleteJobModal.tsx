@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -13,9 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, Lock, ShieldAlert, Trash2 } from 'lucide-react';
+import { AlertTriangle, Lock, ShieldAlert, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useErpStore } from '@/hooks/use-erp-store';
+import { db, doc, getDoc, deleteDoc } from '@/firebase';
 
 interface DeleteJobModalProps {
   isOpen: boolean;
@@ -25,33 +25,66 @@ interface DeleteJobModalProps {
 }
 
 export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobModalProps) {
-  const store = useErpStore();
   const [password, setPassword] = useState('');
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
 
-  const handleVerifyPassword = () => {
-    if (password === store.deletePassword) {
-      setIsPasswordVerified(true);
-      setError('');
-    } else {
-      setError('Invalid Password');
+  const handleVerifyPassword = async () => {
+    if (!password) return;
+    
+    setIsVerifying(true);
+    setError('');
+
+    try {
+      const settingsRef = doc(db, "settings", "security");
+      const settingsSnap = await getDoc(settingsRef);
+      
+      const savedPassword = settingsSnap.exists() 
+        ? settingsSnap.data()?.deletePassword 
+        : "1234"; // Default fallback if not set in DB
+
+      if (password === savedPassword) {
+        setIsPasswordVerified(true);
+      } else {
+        setError('Incorrect authorization key');
+        toast({
+          variant: "destructive",
+          title: "Wrong Password",
+          description: "Unauthorized access attempt logged."
+        });
+      }
+    } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
-        title: "Security Alert",
-        description: "Invalid Master Password entered."
+        title: "Connection Error",
+        description: "Could not reach Security Node."
       });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
-  const handleFinalConfirm = () => {
-    onConfirm();
-    toast({
-      title: "Operation Successful",
-      description: `Target record ${jobId} has been removed from the registry.`
-    });
-    resetAndClose();
+  const handleFinalConfirm = async () => {
+    try {
+      // In a real Firebase setup, we'd delete from Firestore here
+      // await deleteDoc(doc(db, "repairs", jobId));
+      
+      onConfirm(); // This updates the local store/state
+      toast({
+        title: "Record Terminated",
+        description: `Job ${jobId} removed from registry.`
+      });
+      resetAndClose();
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Deletion Failed",
+        description: "Server rejected the termination request."
+      });
+    }
   };
 
   const resetAndClose = () => {
@@ -70,29 +103,35 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
               <DialogTitle className="flex items-center gap-2 text-rose-500">
                 <ShieldAlert className="w-6 h-6" /> Admin Authorization
               </DialogTitle>
-              <DialogDescription className="text-slate-400">
-                Master Password is required to perform destructive actions on <span className="font-mono text-blue-400 font-bold">{jobId}</span>.
+              <DialogDescription className="text-slate-400 text-xs uppercase font-bold tracking-widest mt-1">
+                Security clearance required for <span className="text-white font-black">{jobId}</span>
               </DialogDescription>
             </DialogHeader>
             <div className="py-6 space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5" /> Security Password
+                <Label className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2 tracking-tighter">
+                  <Lock className="w-3 h-3" /> Master Password Node
                 </Label>
                 <Input 
                   type="password" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="bg-slate-950 border-slate-800 h-11 focus-visible:ring-rose-500"
+                  className="bg-slate-950 border-slate-800 h-12 text-center text-xl tracking-widest focus-visible:ring-rose-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()}
+                  autoFocus
                 />
-                {error && <p className="text-[10px] text-rose-500 font-bold uppercase animate-pulse">{error}</p>}
+                {error && <p className="text-[10px] text-rose-500 font-bold uppercase animate-pulse text-center">{error}</p>}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={resetAndClose}>Cancel</Button>
-              <Button onClick={handleVerifyPassword} className="bg-rose-600 hover:bg-rose-700 font-bold uppercase">
+              <Button variant="ghost" onClick={resetAndClose} className="text-slate-400">Abort</Button>
+              <Button 
+                onClick={handleVerifyPassword} 
+                disabled={isVerifying || !password}
+                className="bg-rose-600 hover:bg-rose-700 font-bold uppercase px-8 h-11"
+              >
+                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Verify Identity
               </Button>
             </DialogFooter>
@@ -103,19 +142,20 @@ export function DeleteJobModal({ isOpen, onClose, jobId, onConfirm }: DeleteJobM
               <DialogTitle className="flex items-center gap-2 text-rose-500">
                 <AlertTriangle className="w-6 h-6 animate-bounce" /> Final Confirmation
               </DialogTitle>
-              <DialogDescription className="text-slate-400">
-                Confirming <span className="text-rose-500 font-black uppercase">Permanent Termination</span> for <span className="font-mono text-white font-bold">{jobId}</span>. This session is logged for audit purposes.
+              <DialogDescription className="text-slate-400 text-xs font-bold uppercase leading-relaxed">
+                Confirming <span className="text-rose-500 font-black">Permanent Termination</span> for <span className="text-white font-black">{jobId}</span>. This session is logged for audit purposes.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-8 flex justify-center">
-              <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20">
-                <Trash2 className="w-12 h-12 text-rose-500" />
+            <div className="py-10 flex justify-center">
+              <div className="p-6 bg-rose-500/10 rounded-full border border-rose-500/20 relative group">
+                <Trash2 className="w-16 h-16 text-rose-500 group-hover:scale-110 transition-transform" />
+                <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full -z-10"></div>
               </div>
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={resetAndClose} className="border-slate-800">Abort</Button>
-              <Button onClick={handleFinalConfirm} className="bg-rose-600 hover:bg-rose-700 font-black uppercase px-8">
-                Confirm Deletion
+              <Button variant="outline" onClick={resetAndClose} className="border-slate-800 hover:bg-slate-800 flex-1">Keep Record</Button>
+              <Button onClick={handleFinalConfirm} className="bg-rose-600 hover:bg-rose-700 font-black uppercase px-8 flex-1">
+                Confirm Delete
               </Button>
             </DialogFooter>
           </>

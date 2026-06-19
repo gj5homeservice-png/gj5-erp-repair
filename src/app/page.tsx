@@ -30,7 +30,10 @@ import {
   ChevronsDown,
   GripVertical,
   Download,
-  FileJson
+  FileJson,
+  XCircle,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,7 +68,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { isToday, isSameMonth, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 type ActiveTab = 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'Employees' | 'E-Wallet' | 'Transportation';
@@ -100,17 +102,14 @@ export default function DashboardPage() {
   }, [store.navOrder, store.visibility.tabs]);
 
   const dashboardStats = useMemo(() => {
-    const totalInvoices = store.invoices.length;
-    const todayBilling = store.invoices
-      .filter(inv => isToday(parseISO(inv.timestamp)))
-      .reduce((acc, curr) => acc + curr.total, 0);
-    const monthlyBilling = store.invoices
-      .filter(inv => isSameMonth(parseISO(inv.timestamp), new Date()))
-      .reduce((acc, curr) => acc + curr.total, 0);
-    const totalRevenue = store.invoices.reduce((acc, curr) => acc + curr.total, 0);
+    const allCalls = store.calls || [];
+    const totalActive = allCalls.filter((c: any) => c.status !== 'Completed' && c.status !== 'Rejected').length;
+    const pending = allCalls.filter((c: any) => c.status === 'Pending').length;
+    const completed = allCalls.filter((c: any) => c.status === 'Completed').length;
+    const rejected = allCalls.filter((c: any) => c.status === 'Rejected').length;
 
-    return { totalInvoices, todayBilling, monthlyBilling, totalRevenue };
-  }, [store.invoices]);
+    return { totalActive, pending, completed, rejected };
+  }, [store.calls]);
 
   const visibleNavigation = sortedNavigation.filter(item => item.visible);
 
@@ -297,8 +296,8 @@ export default function DashboardPage() {
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Today's Billing</p>
-                      <h3 className="text-2xl font-headline font-bold text-[#0066FF]">₹{dashboardStats.todayBilling.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Active</p>
+                      <h3 className="text-2xl font-headline font-bold text-[#0066FF]">{dashboardStats.totalActive}</h3>
                     </div>
                     <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><TrendingUp className="w-5 h-5" /></div>
                   </CardContent>
@@ -306,28 +305,28 @@ export default function DashboardPage() {
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Billing</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">₹{dashboardStats.monthlyBilling.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
+                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
                     </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
+                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Invoices</p>
-                      <h3 className="text-2xl font-headline font-bold text-purple-400">{dashboardStats.totalInvoices}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Completed Jobs</p>
+                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
                     </div>
-                    <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400"><ReceiptText className="w-5 h-5" /></div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
                 <Card className="bg-slate-900/40 border-slate-800">
                   <CardContent className="p-5 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Revenue</p>
-                      <h3 className="text-2xl font-headline font-bold text-cyan-400">₹{dashboardStats.totalRevenue.toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Rejected Calls</p>
+                      <h3 className="text-2xl font-headline font-bold text-rose-400">{dashboardStats.rejected}</h3>
                     </div>
-                    <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400"><TrendingUp className="w-5 h-5" /></div>
+                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><XCircle className="w-5 h-5" /></div>
                   </CardContent>
                 </Card>
               </div>

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -62,37 +61,9 @@ export function useErpStore() {
 
   const addInvoice = (invoice: Invoice) => {
     setInvoices(prev => [invoice, ...prev]);
-    setWalletBalance(prev => prev + invoice.grandTotal);
-    
-    // Auto-Stock Reduction
-    setStock(prevStock => prevStock.map(s => {
-      const used = invoice.items.find(i => i.id === s.id || i.name === s.name);
-      if (used) {
-        return { 
-          ...s, 
-          quantity: Math.max(0, s.quantity - used.quantity),
-          lastUpdated: new Date().toISOString()
-        };
-      }
-      return s;
-    }));
-
-    // Record Transaction
-    setTransactions(prev => [{
-      id: `TXN-${Date.now()}`,
-      amount: invoice.grandTotal,
-      date: invoice.date,
-      time: format(new Date(), 'hh:mm a'),
-      type: 'REVENUE',
-      status: 'SUCCESS',
-      userId: 'Admin',
-      description: `Invoice: ${invoice.invoiceNumber}`
-    }, ...prev]);
   };
 
   const deleteInvoice = (id: string) => {
-    const target = invoices.find(i => i.id === id);
-    if (target) setWalletBalance(prev => prev - target.grandTotal);
     setInvoices(prev => prev.filter(i => i.id !== id));
   };
 

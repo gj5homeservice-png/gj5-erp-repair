@@ -1,4 +1,3 @@
-
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface VisitHistoryEntry {
@@ -34,45 +33,13 @@ export interface RepairCall {
   repeatCount: number;
 }
 
-export type InvoiceStatus = 'Paid' | 'Unpaid' | 'Partial';
-export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit';
-
-export interface InvoiceItem {
-  id: string;
-  name: string;
-  brand?: string;
-  size?: string;
-  hsnCode?: string;
-  quantity: number;
-  rate: number;
-  gstPercent: number;
-  discount: number;
-  amount: number;
-  purchasePrice: number; // For Profit calc
-}
-
 export interface Invoice {
   id: string;
   invoiceNumber: string;
-  date: string;
-  dueDate: string;
-  jobId?: string;
-  customerId: string;
   customerName: string;
-  customerMobile: string;
-  customerAddress: string;
-  customerGSTIN?: string;
-  items: InvoiceItem[];
-  subtotal: number;
-  totalDiscount: number;
-  cgst: number;
-  sgst: number;
-  igst: number;
-  grandTotal: number;
-  paymentStatus: InvoiceStatus;
-  paymentMode: PaymentMode;
-  terms: string;
-  warranty: string;
+  mobile: string;
+  items: any[];
+  total: number;
   timestamp: string;
 }
 
@@ -88,9 +55,6 @@ export interface StockItem {
   barcode: string;
   images: string[];
   lastUpdated: string;
-  gstPercent?: number;
-  hsnCode?: string;
-  size?: string;
   history: any[];
 }
 
@@ -99,9 +63,7 @@ export interface WalletTransaction {
   amount: number;
   date: string;
   time: string;
-  type: 'TOPUP' | 'EXPENSE' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT' | 'REVENUE';
-  status: 'SUCCESS' | 'FAILED' | 'PENDING';
-  userId: string;
+  type: string;
   description: string;
 }
 

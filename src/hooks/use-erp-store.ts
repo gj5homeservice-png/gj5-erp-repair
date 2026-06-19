@@ -10,10 +10,7 @@ import {
   WalletTransaction,
   StockItem,
   VisibilitySettings,
-  LogisticsStatus,
-  Employee,
-  AttendanceRecord,
-  SalaryRecord
+  LogisticsStatus
 } from '@/lib/types';
 import { db, doc, setDoc, collection, updateDoc, deleteDoc } from '@/firebase';
 
@@ -24,11 +21,9 @@ const DEFAULT_NAV_ORDER = [
   'Billing',
   'Invoice History',
   'Stock',
-  'Employees',
-  'Attendance',
-  'Salary',
   'Analytics',
-  'Master Settings'
+  'E-Wallet',
+  'Transportation'
 ];
 
 const DEFAULT_VISIBILITY = {
@@ -39,11 +34,9 @@ const DEFAULT_VISIBILITY = {
     'Billing': true,
     'Invoice History': true,
     'Stock': true,
-    'Employees': true,
-    'Attendance': true,
-    'Salary': true,
     'Analytics': true,
-    'Master Settings': true,
+    'E-Wallet': true,
+    'Transportation': true
   },
   kpis: {
     totalActive: true,
@@ -52,11 +45,7 @@ const DEFAULT_VISIBILITY = {
     repeat: true,
     rejected: true,
     exchange: true,
-    warranty: true,
-    totalEmployees: true,
-    presentToday: true,
-    absentToday: true,
-    lateToday: true
+    warranty: true
   }
 };
 
@@ -68,9 +57,6 @@ export function useErpStore() {
   const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stock, setStock] = useState<StockItem[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(50000);
   const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
@@ -103,9 +89,6 @@ export function useErpStore() {
     safeGet('gj5_expenses', setExpenses);
     safeGet('gj5_transactions', setTransactions);
     safeGet('gj5_transport_logs', setTransportationLogs);
-    safeGet('gj5_employees', setEmployees);
-    safeGet('gj5_attendance', setAttendance);
-    safeGet('gj5_salaries', setSalaries);
     safeGet('gj5_wallet_balance', setWalletBalance);
     safeGet('gj5_visibility', setVisibility);
     safeGet('gj5_nav_order', setNavOrder);
@@ -120,9 +103,6 @@ export function useErpStore() {
   useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
   useEffect(() => { localStorage.setItem('gj5_transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
-  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('gj5_salaries', JSON.stringify(salaries)); }, [salaries]);
   useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
   useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
   useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
@@ -222,21 +202,6 @@ export function useErpStore() {
     updateInquiry({ ...inq, status: 'Converted', convertedJobId: jobId, conversionDate: new Date().toISOString() });
   };
 
-  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
-  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
-  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
-
-  const addAttendance = (rec: AttendanceRecord) => setAttendance(prev => [rec, ...prev]);
-  const updateAttendance = (rec: AttendanceRecord) => setAttendance(prev => {
-    const exists = prev.find(r => r.id === rec.id);
-    if (exists) return prev.map(r => r.id === rec.id ? rec : r);
-    return [rec, ...prev];
-  });
-  const deleteAttendance = (id: string) => setAttendance(prev => prev.filter(a => a.id !== id));
-
-  const addSalary = (sal: SalaryRecord) => setSalaries(prev => [sal, ...prev]);
-  const updateSalary = (sal: SalaryRecord) => setSalaries(prev => prev.map(s => s.id === sal.id ? sal : s));
-
   const addExpense = (exp: Expense) => {
     setExpenses(prev => [exp, ...prev]);
     const tx: WalletTransaction = {
@@ -304,9 +269,6 @@ export function useErpStore() {
     if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
     if (data.invoices) setInvoices(data.invoices);
     if (data.stock) setStock(data.stock);
-    if (data.employees) setEmployees(data.employees);
-    if (data.attendance) setAttendance(data.attendance);
-    if (data.salaries) setSalaries(data.salaries);
     if (data.walletBalance !== undefined) setWalletBalance(data.walletBalance);
     if (data.visibility) setVisibility(data.visibility);
     if (data.navOrder) setNavOrder(data.navOrder);
@@ -319,9 +281,6 @@ export function useErpStore() {
     stock, updateStockItem, deleteStockItem,
     calls, addCall, updateCall, deleteCall,
     inquiries, addInquiry, updateInquiry, deleteInquiry, convertInquiryToJob,
-    employees, addEmployee, updateEmployee, deleteEmployee,
-    attendance, addAttendance, updateAttendance, deleteAttendance,
-    salaries, addSalary, updateSalary,
     walletBalance, setWalletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility, updateVisibility,
     navOrder, setNavOrder, resetNavOrder,

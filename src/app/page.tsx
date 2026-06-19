@@ -49,9 +49,6 @@ import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule'
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
 import { StockModule } from '@/components/modules/StockModule';
-import { EmployeesModule } from '@/components/modules/EmployeesModule';
-import { AttendanceModule } from '@/components/modules/AttendanceModule';
-import { SalaryModule } from '@/components/modules/SalaryModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { BackupCenter } from '@/components/modules/BackupCenter';
 import { cn } from '@/lib/utils';
@@ -74,9 +71,9 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { isSameMonth, parseISO, isToday } from 'date-fns';
+import { isSameMonth, parseISO } from 'date-fns';
 
-type ActiveTab = 'Dashboard' | 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Employees' | 'Attendance' | 'Salary' | 'Analytics' | 'E-Wallet' | 'Transportation';
+type ActiveTab = 'Dashboard' | 'Repairing' | 'CRM Leads' | 'Billing' | 'Invoice History' | 'Stock' | 'Analytics' | 'E-Wallet' | 'Transportation';
 
 export default function DashboardPage() {
   const store = useErpStore();
@@ -94,9 +91,6 @@ export default function DashboardPage() {
     { name: 'Billing', icon: Receipt, id: 'Billing' as ActiveTab, visible: store.visibility.tabs.Billing },
     { name: 'Invoice History', icon: History, id: 'Invoice History' as ActiveTab, visible: store.visibility.tabs['Invoice History'] },
     { name: 'Stock', icon: Box, id: 'Stock' as ActiveTab, visible: store.visibility.tabs.Stock },
-    { name: 'Employees', icon: Users, id: 'Employees' as ActiveTab, visible: store.visibility.tabs.Employees },
-    { name: 'Attendance', icon: CalendarCheck, id: 'Attendance' as ActiveTab, visible: store.visibility.tabs.Attendance },
-    { name: 'Salary', icon: DollarSign, id: 'Salary' as ActiveTab, visible: store.visibility.tabs.Salary },
     { name: 'Analytics', icon: BarChart3, id: 'Analytics' as ActiveTab, visible: store.visibility.tabs.Analytics },
     { name: 'E-Wallet', icon: Wallet, id: 'E-Wallet' as ActiveTab, visible: store.visibility.tabs['E-Wallet'] },
     { name: 'Logistics', icon: Truck, id: 'Transportation' as ActiveTab, visible: store.visibility.tabs.Transportation },
@@ -119,16 +113,9 @@ export default function DashboardPage() {
 
     const currentMonth = store.invoices.filter((i: any) => i.timestamp && isSameMonth(parseISO(i.timestamp), new Date()));
     const totalSales = currentMonth.reduce((acc: number, curr: any) => acc + (curr.grandTotal || 0), 0);
-    
-    // Attendance Stats
-    const totalEmployees = store.employees.length;
-    const todayRecs = store.attendance.filter((a: any) => a.date === new Date().toISOString().split('T')[0]);
-    const presentToday = todayRecs.filter((a: any) => a.status === 'Present' || a.status === 'Checked In' || a.status === 'Checked Out').length;
-    const absentToday = Math.max(0, totalEmployees - presentToday);
-    const lateToday = todayRecs.filter((a: any) => a.status === 'Late').length;
 
-    return { totalActive, pending, completed, rejected, totalSales, totalEmployees, presentToday, absentToday, lateToday };
-  }, [store.calls, store.invoices, store.employees, store.attendance]);
+    return { totalActive, pending, completed, rejected, totalSales };
+  }, [store.calls, store.invoices]);
 
   const visibleNavigation = sortedNavigation.filter(item => item.visible);
 
@@ -265,124 +252,42 @@ export default function DashboardPage() {
 
         <div className="p-4 md:p-8 max-w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {activeTab === 'Employees' || activeTab === 'Attendance' || activeTab === 'Salary' ? (
-              <>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Employees</p>
-                      <h3 className="text-2xl font-headline font-bold text-blue-400">{dashboardStats.totalEmployees}</h3>
-                    </div>
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><Users className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Present Today</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.presentToday}</h3>
-                    </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Absent Today</p>
-                      <h3 className="text-2xl font-headline font-bold text-rose-400">{dashboardStats.absentToday}</h3>
-                    </div>
-                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><XCircle className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Late Entries</p>
-                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.lateToday}</h3>
-                    </div>
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-              </>
-            ) : activeTab === 'Billing' || activeTab === 'Analytics' || activeTab === 'Invoice History' ? (
-              <>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Sales</p>
-                      <h3 className="text-2xl font-headline font-bold text-blue-400">₹{dashboardStats.totalSales.toLocaleString()}</h3>
-                    </div>
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><DollarSign className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Active Jobs</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.totalActive}</h3>
-                    </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
-                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
-                    </div>
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Success Node</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
-                    </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><ShieldCheck className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Total Active</p>
-                      <h3 className="text-2xl font-headline font-bold text-[#0066FF]">{dashboardStats.totalActive}</h3>
-                    </div>
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><TrendingUp className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
-                      <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
-                    </div>
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Completed Jobs</p>
-                      <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
-                    </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-900/40 border-slate-800">
-                  <CardContent className="p-5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase">Rejected Calls</p>
-                      <h3 className="text-2xl font-headline font-bold text-rose-400">{dashboardStats.rejected}</h3>
-                    </div>
-                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400"><XCircle className="w-5 h-5" /></div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+            <Card className="bg-slate-900/40 border-slate-800">
+              <CardContent className="p-5 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Monthly Sales</p>
+                  <h3 className="text-2xl font-headline font-bold text-blue-400">₹{dashboardStats.totalSales.toLocaleString()}</h3>
+                </div>
+                <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><DollarSign className="w-5 h-5" /></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-900/40 border-slate-800">
+              <CardContent className="p-5 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Active Jobs</p>
+                  <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.totalActive}</h3>
+                </div>
+                <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-900/40 border-slate-800">
+              <CardContent className="p-5 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Cases</p>
+                  <h3 className="text-2xl font-headline font-bold text-amber-400">{dashboardStats.pending}</h3>
+                </div>
+                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-5 h-5" /></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-900/40 border-slate-800">
+              <CardContent className="p-5 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Success Node</p>
+                  <h3 className="text-2xl font-headline font-bold text-emerald-400">{dashboardStats.completed}</h3>
+                </div>
+                <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><ShieldCheck className="w-5 h-5" /></div>
+              </CardContent>
+            </Card>
           </div>
 
           {activeTab === 'Dashboard' && <RepairingModule store={store} />}
@@ -391,9 +296,6 @@ export default function DashboardPage() {
           {activeTab === 'Billing' && <BillingModule store={store} />}
           {activeTab === 'Invoice History' && <InvoiceHistoryModule store={store} onEditInvoice={(inv) => { setActiveTab('Billing'); (window as any).__EDIT_INVOICE = inv; }} />}
           {activeTab === 'Stock' && <StockModule store={store} />}
-          {activeTab === 'Employees' && <EmployeesModule store={store} />}
-          {activeTab === 'Attendance' && <AttendanceModule store={store} />}
-          {activeTab === 'Salary' && <SalaryModule store={store} />}
           {activeTab === 'Analytics' && <AnalyticsModule store={store} />}
           {activeTab === 'E-Wallet' && <WalletModule store={store} />}
           {activeTab === 'Transportation' && <TransportationModule store={store} />}

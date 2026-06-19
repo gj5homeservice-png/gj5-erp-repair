@@ -214,9 +214,13 @@ export interface AttendanceRecord {
   overtime: string;
   latitude?: string;
   longitude?: string;
+  address?: string;
+  selfieCheckIn?: string;
+  selfieCheckOut?: string;
   status: AttendanceStatus;
   createdAt: string;
   deviceInfo?: string;
+  browserInfo?: string;
   ipAddress?: string;
   attendanceType?: 'Manual' | 'QR' | 'WhatsAppLink';
 }

@@ -152,7 +152,7 @@ export function useErpStore() {
 
   const generateAttendanceLink = (emp: Employee): string => {
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const expiresAt = new Date(Date.now() + 30000).toISOString(); // 30 seconds
+    const expiresAt = new Date(Date.now() + 120000).toISOString(); // 2 Minutes
     const newLink: AttendanceLink = {
       id: `LINK-${Date.now()}`,
       token,

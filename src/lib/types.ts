@@ -1,3 +1,4 @@
+
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface VisitHistoryEntry {
@@ -34,6 +35,67 @@ export interface RepairCall {
   isOldEntry?: boolean;
   entryDate?: string;
   receivedDate?: string;
+}
+
+export interface TVProduct {
+  id: string;
+  name: string;
+  brand: string;
+  size: string;
+  os: string;
+  resolution: string;
+  features: string[];
+  mrp: number;
+  offerPrice: number;
+  warranty: string;
+  stock: number;
+  imageUrl: string;
+  isOffer: boolean;
+  lastUpdated: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  mobile: string;
+  address: string;
+  pincode: string;
+  email?: string;
+  createdAt: string;
+}
+
+export interface SalesOrder {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerMobile: string;
+  items: any[];
+  totalAmount: number;
+  status: 'Pending' | 'Processed' | 'Shipped' | 'Delivered' | 'Cancelled';
+  paymentMode: string;
+  createdAt: string;
+}
+
+export interface ProductInquiry {
+  id: string;
+  customerName: string;
+  mobile: string;
+  address: string;
+  pincode: string;
+  productId: string;
+  productName: string;
+  message: string;
+  status: 'New' | 'Pending' | 'Confirmed' | 'Delivered' | 'Cancelled';
+  createdAt: string;
+}
+
+export interface Offer {
+  id: string;
+  title: string;
+  description: string;
+  discount: string;
+  expiryDate: string;
+  active: boolean;
 }
 
 export interface InvoiceItem {

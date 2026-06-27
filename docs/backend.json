@@ -3,76 +3,114 @@
   "entities": {
     "Customer": {
       "title": "Customer",
-      "description": "Enterprise customer profile for billing and CRM.",
+      "description": "Retail customer profile for tracking and CRM.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "mobile": { "type": "string" },
         "address": { "type": "string" },
-        "gstin": { "type": "string" },
+        "pincode": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "mobile"]
     },
-    "Product": {
-      "title": "Product",
-      "description": "Inventory asset/part with GST and stock tracking.",
+    "TVProduct": {
+      "title": "TV Product",
+      "description": "Smart TV asset with technical specifications and pricing.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "brand": { "type": "string" },
         "size": { "type": "string" },
-        "quantity": { "type": "number" },
-        "purchasePrice": { "type": "number" },
-        "sellingPrice": { "type": "number" },
-        "gstPercent": { "type": "number" },
-        "hsnCode": { "type": "string" },
-        "minStockLevel": { "type": "number" }
+        "os": { "type": "string" },
+        "resolution": { "type": "string" },
+        "features": { "type": "array" },
+        "mrp": { "type": "number" },
+        "offerPrice": { "type": "number" },
+        "warranty": { "type": "string" },
+        "stock": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "isOffer": { "type": "boolean" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "sellingPrice"]
+      "required": ["name", "brand", "offerPrice", "stock"]
     },
-    "Invoice": {
-      "title": "GST Invoice",
-      "description": "Professional tax invoice compliant with Indian GST standards.",
+    "Inquiry": {
+      "title": "Customer Inquiry",
+      "description": "Lead management for potential sales and service.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "invoiceNumber": { "type": "string" },
-        "date": { "type": "string" },
-        "dueDate": { "type": "string" },
+        "customerName": { "type": "string" },
+        "mobile": { "type": "string" },
+        "address": { "type": "string" },
+        "pincode": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["New", "Pending", "Confirmed", "Delivered", "Cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "mobile", "status"]
+    },
+    "Order": {
+      "title": "Sales Order",
+      "description": "Direct purchase order tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
         "customerName": { "type": "string" },
         "customerMobile": { "type": "string" },
-        "customerAddress": { "type": "string" },
-        "customerGSTIN": { "type": "string" },
         "items": { "type": "array" },
-        "subtotal": { "type": "number" },
-        "totalDiscount": { "type": "number" },
-        "cgst": { "type": "number" },
-        "sgst": { "type": "number" },
-        "grandTotal": { "type": "number" },
-        "paymentStatus": { "type": "string", "enum": ["Paid", "Unpaid", "Partial"] },
-        "paymentMode": { "type": "string", "enum": ["Cash", "UPI", "Bank Transfer", "Credit"] }
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Processed", "Shipped", "Delivered", "Cancelled"] },
+        "paymentMode": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["invoiceNumber", "customerName", "grandTotal"]
+      "required": ["customerName", "totalAmount", "status"]
+    },
+    "Offer": {
+      "title": "Promotional Offer",
+      "description": "Flash deals and seasonal discounts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "discount": { "type": "string" },
+        "expiryDate": { "type": "string", "format": "date" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["title", "discount"]
     }
   },
   "auth": {
     "providers": ["google.com"]
   },
   "firestore": {
+    "/products/{productId}": {
+      "schema": "#/backend/entities/TVProduct",
+      "description": "Master product catalog."
+    },
     "/customers/{customerId}": {
       "schema": "#/backend/entities/Customer",
-      "description": "Customer registry."
+      "description": "Customer CRM records."
     },
-    "/products/{productId}": {
-      "schema": "#/backend/entities/Product",
-      "description": "Inventory stock."
+    "/inquiries/{inquiryId}": {
+      "schema": "#/backend/entities/Inquiry",
+      "description": "Sales leads and inquiries."
     },
-    "/invoices/{invoiceId}": {
-      "schema": "#/backend/entities/Invoice",
-      "description": "Tax invoices."
+    "/orders/{orderId}": {
+      "schema": "#/backend/entities/Order",
+      "description": "Transaction ledger."
+    },
+    "/offers/{offerId}": {
+      "schema": "#/backend/entities/Offer",
+      "description": "Seasonal marketing offers."
     }
   }
 }

@@ -1,45 +1,46 @@
+
 {
   "placeholderImages": [
     {
       "id": "hero-tv",
-      "description": "Premium Smart TV in living room",
-      "imageUrl": "https://picsum.photos/seed/gj5-hero/1200/600",
-      "imageHint": "smart tv"
+      "description": "Premium Ultra-Slim Smart TV Mockup",
+      "imageUrl": "https://picsum.photos/seed/gj5-premium-tv/1200/800",
+      "imageHint": "luxury tv"
     },
     {
       "id": "tv-32",
       "description": "32 Inch LED TV",
-      "imageUrl": "https://picsum.photos/seed/tv32/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv32-new/800/600",
       "imageHint": "led tv"
     },
     {
       "id": "tv-40",
       "description": "40 Inch Full HD TV",
-      "imageUrl": "https://picsum.photos/seed/tv40/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv40-new/800/600",
       "imageHint": "smart tv"
     },
     {
       "id": "tv-43",
       "description": "43 Inch 4K TV",
-      "imageUrl": "https://picsum.photos/seed/tv43/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv43-new/800/600",
       "imageHint": "4k tv"
     },
     {
       "id": "tv-50",
       "description": "50 Inch Smart TV",
-      "imageUrl": "https://picsum.photos/seed/tv50/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv50-new/800/600",
       "imageHint": "ultra hd tv"
     },
     {
       "id": "tv-55",
       "description": "55 Inch QLED TV",
-      "imageUrl": "https://picsum.photos/seed/tv55/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv55-new/800/600",
       "imageHint": "qled tv"
     },
     {
       "id": "tv-65",
       "description": "65 Inch 8K Display",
-      "imageUrl": "https://picsum.photos/seed/tv65/600/400",
+      "imageUrl": "https://picsum.photos/seed/tv65-new/800/600",
       "imageHint": "cinema tv"
     }
   ]

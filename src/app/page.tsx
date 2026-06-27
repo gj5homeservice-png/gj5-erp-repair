@@ -65,17 +65,17 @@ export default function LandingPage() {
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
               <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">New Matrix V2.8 Live</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1]">
+            <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1] text-slate-900">
               Best Call Management & <span className="text-[#DC2626]">Billing Software</span> for TV Service Business
             </h1>
-            <p className="text-lg text-slate-500 leading-relaxed max-w-xl">
+            <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">
               Manage repairing calls, pickup, delivery, billing, stock, employees and reports in one powerful, multi-platform software designed for Indian service centers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button onClick={() => router.push('/login')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group">
                 Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg">
+              <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg text-slate-700">
                 Create New Account
               </Button>
             </div>
@@ -98,7 +98,7 @@ export default function LandingPage() {
                <div className="absolute top-10 -left-10 bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 animate-bounce duration-[3000ms]">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-500 rounded-lg text-white"><CheckCircle2 className="w-4 h-4" /></div>
-                    <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-slate-400">Sale Committed</span><span className="text-sm font-black">₹45,200.00</span></div>
+                    <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-slate-400">Sale Committed</span><span className="text-sm font-black text-slate-900">₹45,200.00</span></div>
                   </div>
                </div>
             </div>
@@ -110,19 +110,19 @@ export default function LandingPage() {
       <section id="features" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4 mb-20">
-            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight">Everything you need to <span className="text-[#DC2626]">Scale</span></h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">Built specifically for the technical service industry with local-first data resilience.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight text-slate-900">Everything you need to <span className="text-[#DC2626]">Scale</span></h2>
+            <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">Built specifically for the technical service industry with local-first data resilience.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {features.map((f, i) => (
-              <Card key={i} className="border-0 shadow-none bg-white rounded-[2rem] group hover:bg-[#DC2626] transition-all duration-500 overflow-hidden">
+              <Card key={i} className="border-0 shadow-lg bg-white rounded-[2rem] group hover:bg-[#DC2626] transition-all duration-500 overflow-hidden">
                 <CardContent className="p-8 space-y-6">
                   <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center text-[#DC2626] group-hover:bg-white/20 group-hover:text-white transition-colors">
                     <f.icon className="w-7 h-7" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-headline font-bold text-lg group-hover:text-white transition-colors">{f.title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed group-hover:text-white/80 transition-colors">{f.desc}</p>
+                    <h3 className="font-headline font-bold text-lg text-slate-900 group-hover:text-white transition-colors">{f.title}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium group-hover:text-white/80 transition-colors">{f.desc}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -149,12 +149,12 @@ export default function LandingPage() {
           <div className="space-y-6 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-[#DC2626] flex items-center justify-center text-white font-black italic text-lg">G</div>
-              <span className="text-sm font-headline font-black">GJ5 HOME SERVICE</span>
+              <span className="text-sm font-headline font-black text-slate-900">GJ5 HOME SERVICE</span>
             </div>
             <p className="text-sm text-slate-500 max-w-sm">The leading ERP ecosystem for independent service centers and repair hubs in Gujarat.</p>
             <div className="flex gap-4">
-               <Button size="icon" variant="outline" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button>
-               <Button size="icon" variant="outline" className="rounded-full"><ShieldCheck className="w-4 h-4" /></Button>
+               <Button size="icon" variant="outline" className="rounded-full"><MessageSquare className="w-4 h-4 text-slate-600" /></Button>
+               <Button size="icon" variant="outline" className="rounded-full"><ShieldCheck className="w-4 h-4 text-slate-600" /></Button>
             </div>
           </div>
           <div className="space-y-4">

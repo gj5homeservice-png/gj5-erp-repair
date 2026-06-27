@@ -4,6 +4,30 @@
 
 @layer base {
   :root {
+    /* Vyapar Style: Clean White Background with Navy and Red accents */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 0 72.2% 50.6%; /* Red Accent */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -23,7 +47,6 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
-    --radius: 0.75rem;
   }
 }
 
@@ -33,24 +56,20 @@
   }
   body {
     @apply bg-background text-foreground font-body;
-    background-color: #0B0F19;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-background;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+.vyapar-gradient {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
 }
 
-.glass {
-  @apply bg-slate-900/50 backdrop-blur-md border border-slate-800;
+.btn-red {
+  @apply bg-[#DC2626] hover:bg-[#B91C1C] text-white transition-all shadow-lg hover:shadow-red-500/20 active:scale-95;
+}
+
+.btn-navy {
+  @apply bg-[#0F172A] hover:bg-[#1E293B] text-white transition-all shadow-lg active:scale-95;
 }

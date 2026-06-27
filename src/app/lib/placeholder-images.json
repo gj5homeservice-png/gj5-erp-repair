@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-tv",
+      "description": "Premium Smart TV in living room",
+      "imageUrl": "https://picsum.photos/seed/gj5-hero/1200/600",
+      "imageHint": "smart tv"
+    },
+    {
+      "id": "tv-32",
+      "description": "32 Inch LED TV",
+      "imageUrl": "https://picsum.photos/seed/tv32/600/400",
+      "imageHint": "led tv"
+    },
+    {
+      "id": "tv-43",
+      "description": "43 Inch 4K TV",
+      "imageUrl": "https://picsum.photos/seed/tv43/600/400",
+      "imageHint": "4k tv"
+    },
+    {
+      "id": "tv-55",
+      "description": "55 Inch QLED TV",
+      "imageUrl": "https://picsum.photos/seed/tv55/600/400",
+      "imageHint": "qled tv"
+    }
+  ]
+}

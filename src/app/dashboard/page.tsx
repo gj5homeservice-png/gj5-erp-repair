@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
-  Tv, 
+  Wrench, 
   ShoppingCart, 
   Receipt, 
   History,
@@ -20,7 +19,8 @@ import {
   Search,
   Bell,
   User,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,30 +43,29 @@ import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { WalletModule } from '@/components/modules/WalletModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
 
-// Sub-components for modules
 const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-end">
       <div>
-        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Master Console</h2>
-        <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Operational Status: Optimal</p>
+        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Enterprise Console</h2>
+        <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Workspace Status: Operational</p>
       </div>
       <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Local Node</span>
+        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Cloud Node</span>
       </div>
     </div>
 
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
       {[
-        { label: 'Repair Nodes', value: store.calls.length, icon: Tv, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-        { label: 'Sales Feed', value: store.invoices.length, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-        { label: 'Stock Registry', value: store.stock.reduce((a: any, b: any) => a + b.quantity, 0), icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
-        { label: 'Workforce', value: store.employees.length, icon: Users, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-        { label: 'Wallet Balance', value: `₹${store.walletBalance.toLocaleString()}`, icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-        { label: 'Active Leads', value: store.inquiries.length, icon: BarChart3, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+        { label: 'Active Jobs', value: store.calls.length, icon: Wrench, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { label: 'Sales Audit', value: store.invoices.length, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+        { label: 'Asset Units', value: store.stock.reduce((a: any, b: any) => a + b.quantity, 0), icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+        { label: 'Staff Roster', value: store.employees.length, icon: Users, color: 'text-rose-400', bg: 'bg-rose-400/10' },
+        { label: 'Wallet Matrix', value: `₹${store.walletBalance.toLocaleString()}`, icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+        { label: 'CRM Leads', value: store.inquiries.length, icon: BarChart3, color: 'text-amber-400', bg: 'bg-amber-400/10' },
       ].map((stat, i) => (
-        <Card key={i} className="bg-slate-900/40 border-slate-800 shadow-xl group hover:border-blue-500/30 transition-all cursor-default overflow-hidden relative">
+        <Card key={i} className="bg-slate-900/40 border-slate-800 shadow-xl overflow-hidden relative">
           <div className={cn("absolute top-0 right-0 w-16 h-16 opacity-5 -mr-4 -mt-4", stat.color)}>
             <stat.icon className="w-full h-full" />
           </div>
@@ -87,7 +86,7 @@ const DashboardModule = ({ store }: { store: any }) => (
       <div className="lg:col-span-2 bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
            <h3 className="text-lg font-headline font-bold text-white flex items-center gap-2">
-             <Bell className="w-5 h-5 text-blue-500" /> Recent Activity Logs
+             <Bell className="w-5 h-5 text-blue-500" /> Recent Service Activity
            </h3>
         </div>
         <div className="divide-y divide-slate-800">
@@ -95,22 +94,23 @@ const DashboardModule = ({ store }: { store: any }) => (
              <div key={call.id} className="p-6 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-blue-400">
-                    <Tv className="w-5 h-5" />
+                    <Wrench className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-200">{call.customerName} - {call.brand}</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Job ID: {call.id} • {call.status}</p>
+                    <p className="text-sm font-bold text-slate-200">{call.customerName} - {call.category}</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">ID: {call.id} • {call.status}</p>
                   </div>
                 </div>
-                <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase px-2">Active</Badge>
+                <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase">Active</Badge>
              </div>
            ))}
+           {store.calls.length === 0 && <div className="p-10 text-center text-slate-600 text-xs italic">Awaiting service entries...</div>}
         </div>
       </div>
 
       <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-6">
         <h3 className="text-lg font-headline font-bold text-white flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-rose-500" /> Stock Alerts
+          <AlertCircle className="w-5 h-5 text-rose-500" /> Critical Stock
         </h3>
         <div className="space-y-6">
           {store.stock.filter((s: any) => s.quantity <= s.minStockLevel).slice(0, 4).map((item: any, i: number) => (
@@ -142,7 +142,7 @@ export default function ErpMainHub() {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Repairing', icon: Tv },
+    { name: 'Repairing', icon: Wrench },
     { name: 'CRM Leads', icon: BarChart3 },
     { name: 'Billing', icon: Receipt },
     { name: 'Invoice History', icon: History },
@@ -158,7 +158,7 @@ export default function ErpMainHub() {
 
   const handleLogout = () => {
     localStorage.removeItem('gj5_auth_token');
-    localStorage.removeItem('gj5_user_role');
+    localStorage.removeItem('gj5_active_user');
     router.push('/');
   };
 
@@ -180,6 +180,9 @@ export default function ErpMainHub() {
     }
   };
 
+  const companyLogo = store.companyProfile?.logo;
+  const companyName = store.companyProfile?.companyName || "Home Service ERP";
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex overflow-hidden font-body">
@@ -187,10 +190,16 @@ export default function ErpMainHub() {
         <aside className="w-72 bg-slate-900/40 border-r border-slate-800 backdrop-blur-xl hidden lg:flex flex-col z-20 shrink-0">
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-xl shadow-lg shadow-red-600/20">G</div>
-              <div className="flex flex-col">
-                <span className="text-sm font-headline font-black text-white tracking-tighter leading-none">GJ5 HOME SERVICE</span>
-                <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1.5">Admin Matrix v2.8</span>
+              {companyLogo ? (
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800">
+                   <img src={companyLogo} className="w-full h-full object-cover" alt="Logo" />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black italic text-xl shadow-lg">S</div>
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
+                <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Enterprise Matrix</span>
               </div>
             </div>
           </div>
@@ -218,7 +227,7 @@ export default function ErpMainHub() {
             <Button 
               onClick={handleLogout}
               variant="ghost" 
-              className="w-full justify-start gap-4 text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 h-12 rounded-xl transition-all"
+              className="w-full justify-start gap-4 text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 h-12 rounded-xl"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-bold">Terminate Session</span>
@@ -228,40 +237,34 @@ export default function ErpMainHub() {
 
         {/* Main Viewport */}
         <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-          {/* Background Decor */}
-          <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-blue-600/5 rounded-full blur-[120px] -z-10"></div>
-          
-          {/* Top Header Bar */}
           <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-[#0B0F19]/80 backdrop-blur-md z-10 shrink-0">
             <div className="flex items-center gap-6">
-               <div className="lg:hidden w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-black">G</div>
                <div className="relative w-96 hidden md:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input 
-                    placeholder="Global Audit: Search Jobs, Stock, Clients..." 
-                    className="bg-slate-900/50 border-slate-800 pl-10 h-11 focus-visible:ring-blue-500 transition-all placeholder:text-slate-600"
+                    placeholder="Audit: Jobs, Stock, Invoices..." 
+                    className="bg-slate-900/50 border-slate-800 pl-10 h-11 focus-visible:ring-blue-500 placeholder:text-slate-600"
                   />
                </div>
             </div>
 
             <div className="flex items-center gap-6">
-              <Button size="icon" variant="ghost" className="relative text-slate-400 hover:text-white transition-colors">
+              <Button size="icon" variant="ghost" className="relative text-slate-400">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0B0F19]"></span>
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">
-                   <p className="text-xs font-bold text-white">System Admin</p>
+                   <p className="text-xs font-bold text-white">{store.companyProfile?.ownerEmail?.split('@')[0] || 'System Admin'}</p>
                    <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 shadow-inner">
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400">
                   <User className="w-6 h-6" />
                 </div>
               </div>
             </div>
           </header>
 
-          {/* Scrolling Content Area */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
             {renderModule()}
           </div>
@@ -269,19 +272,10 @@ export default function ErpMainHub() {
       </div>
 
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e293b;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #334155;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
     </AuthGuard>
   );

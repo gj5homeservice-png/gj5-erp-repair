@@ -17,7 +17,6 @@ import {
   LeaveRequest,
   AttendanceLink
 } from '@/lib/types';
-import { db, doc, setDoc, collection, updateDoc, deleteDoc, getDocs } from '@/firebase';
 
 const DEFAULT_NAV_ORDER = [
   'Dashboard',
@@ -36,27 +35,13 @@ const DEFAULT_NAV_ORDER = [
 
 const DEFAULT_VISIBILITY = {
   tabs: {
-    'Dashboard': true,
-    'Repairing': true,
-    'CRM Leads': true,
-    'Billing': true,
-    'Invoice History': true,
-    'Stock': true,
-    'Employees': true,
-    'Attendance': true,
-    'Salary': true,
-    'Analytics': true,
-    'E-Wallet': true,
-    'Logistics': true
+    'Dashboard': true, 'Repairing': true, 'CRM Leads': true, 'Billing': true,
+    'Invoice History': true, 'Stock': true, 'Employees': true, 'Attendance': true,
+    'Salary': true, 'Analytics': true, 'E-Wallet': true, 'Logistics': true
   },
   kpis: {
-    totalActive: true,
-    pending: true,
-    completed: true,
-    repeat: true,
-    rejected: true,
-    exchange: true,
-    warranty: true
+    totalActive: true, pending: true, completed: true, repeat: true,
+    rejected: true, exchange: true, warranty: true
   }
 };
 
@@ -74,66 +59,72 @@ export function useErpStore() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [attendanceLinks, setAttendanceLinks] = useState<AttendanceLink[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(50000);
-  const [shopLogo, setShopLogo] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
   const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
   const [deletePassword, setDeletePassword] = useState<string>('1234');
+  
+  // Multi-workspace Company Metadata
+  const [companyProfile, setCompanyProfile] = useState<any>(null);
 
   useEffect(() => {
+    const activeUser = localStorage.getItem('gj5_active_user');
+    if (!activeUser) return;
+
+    const prefix = `gj5_user_${activeUser}_`;
+    const companyKey = `gj5_company_${activeUser}`;
+    
+    // Load Company Metadata
+    const compData = localStorage.getItem(companyKey);
+    if (compData) setCompanyProfile(JSON.parse(compData));
+
     const safeGet = (key: string, setter: any) => {
-      const val = localStorage.getItem(key);
+      const val = localStorage.getItem(prefix + key);
       if (val) {
         try {
-          if (val.startsWith('data:image/') || key === 'gj5_shop_logo') {
-            setter(val);
-          } else {
-            setter(JSON.parse(val));
-          }
+          setter(JSON.parse(val));
         } catch (e) {
-          if (key === 'gj5_shop_logo' || key === 'gj5_delete_password') {
-            setter(val);
-          } else {
-            console.error(`Error parsing ${key}:`, e);
-          }
+          console.error(`Error parsing ${key}:`, e);
         }
       }
     };
-    safeGet('gj5_invoices', setInvoices);
-    safeGet('gj5_stock', setStock);
-    safeGet('gj5_calls', setCalls);
-    safeGet('gj5_inquiries', setInquiries);
-    safeGet('gj5_expenses', setExpenses);
-    safeGet('gj5_transactions', setTransactions);
-    safeGet('gj5_transport_logs', setTransportationLogs);
-    safeGet('gj5_employees', setEmployees);
-    safeGet('gj5_attendance', setAttendance);
-    safeGet('gj5_salaries', setSalaries);
-    safeGet('gj5_leaves', setLeaves);
-    safeGet('gj5_attendance_links', setAttendanceLinks);
-    safeGet('gj5_wallet_balance', setWalletBalance);
-    safeGet('gj5_visibility', setVisibility);
-    safeGet('gj5_nav_order', setNavOrder);
-    safeGet('gj5_shop_logo', setShopLogo);
-    safeGet('gj5_delete_password', setDeletePassword);
+
+    safeGet('invoices', setInvoices);
+    safeGet('stock', setStock);
+    safeGet('calls', setCalls);
+    safeGet('inquiries', setInquiries);
+    safeGet('expenses', setExpenses);
+    safeGet('transactions', setTransactions);
+    safeGet('transport_logs', setTransportationLogs);
+    safeGet('employees', setEmployees);
+    safeGet('attendance', setAttendance);
+    safeGet('salaries', setSalaries);
+    safeGet('leaves', setLeaves);
+    safeGet('attendance_links', setAttendanceLinks);
+    safeGet('wallet_balance', setWalletBalance);
   }, []);
 
-  useEffect(() => { localStorage.setItem('gj5_invoices', JSON.stringify(invoices)); }, [invoices]);
-  useEffect(() => { localStorage.setItem('gj5_stock', JSON.stringify(stock)); }, [stock]);
-  useEffect(() => { localStorage.setItem('gj5_calls', JSON.stringify(calls)); }, [calls]);
-  useEffect(() => { localStorage.setItem('gj5_inquiries', JSON.stringify(inquiries)); }, [inquiries]);
-  useEffect(() => { localStorage.setItem('gj5_expenses', JSON.stringify(expenses)); }, [expenses]);
-  useEffect(() => { localStorage.setItem('gj5_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('gj5_transport_logs', JSON.stringify(transportationLogs)); }, [transportationLogs]);
-  useEffect(() => { localStorage.setItem('gj5_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('gj5_attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('gj5_salaries', JSON.stringify(salaries)); }, [salaries]);
-  useEffect(() => { localStorage.setItem('gj5_leaves', JSON.stringify(leaves)); }, [leaves]);
-  useEffect(() => { localStorage.setItem('gj5_attendance_links', JSON.stringify(attendanceLinks)); }, [attendanceLinks]);
-  useEffect(() => { localStorage.setItem('gj5_wallet_balance', JSON.stringify(walletBalance)); }, [walletBalance]);
-  useEffect(() => { localStorage.setItem('gj5_visibility', JSON.stringify(visibility)); }, [visibility]);
-  useEffect(() => { localStorage.setItem('gj5_nav_order', JSON.stringify(navOrder)); }, [navOrder]);
-  useEffect(() => { if (shopLogo) localStorage.setItem('gj5_shop_logo', shopLogo); }, [shopLogo]);
-  useEffect(() => { localStorage.setItem('gj5_delete_password', deletePassword); }, [deletePassword]);
+  // Save with User Prefix for isolation
+  useEffect(() => {
+    const activeUser = localStorage.getItem('gj5_active_user');
+    if (!activeUser) return;
+    const prefix = `gj5_user_${activeUser}_`;
+    
+    const save = (key: string, data: any) => localStorage.setItem(prefix + key, JSON.stringify(data));
+    
+    save('invoices', invoices);
+    save('stock', stock);
+    save('calls', calls);
+    save('inquiries', inquiries);
+    save('expenses', expenses);
+    save('transactions', transactions);
+    save('transport_logs', transportationLogs);
+    save('employees', employees);
+    save('attendance', attendance);
+    save('salaries', salaries);
+    save('leaves', leaves);
+    save('attendance_links', attendanceLinks);
+    save('wallet_balance', walletBalance);
+  }, [invoices, stock, calls, inquiries, expenses, transactions, transportationLogs, employees, attendance, salaries, leaves, attendanceLinks, walletBalance]);
 
   // HRMS ACTIONS
   const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
@@ -147,12 +138,9 @@ export function useErpStore() {
   const addSalary = (record: SalaryRecord) => setSalaries(prev => [record, ...prev]);
   const updateSalary = (record: SalaryRecord) => setSalaries(prev => prev.map(s => s.id === record.id ? record : s));
 
-  const addLeave = (request: LeaveRequest) => setLeaves(prev => [request, ...prev]);
-  const updateLeave = (request: LeaveRequest) => setLeaves(prev => prev.map(l => l.id === request.id ? request : l));
-
   const generateAttendanceLink = (emp: Employee): string => {
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const expiresAt = new Date(Date.now() + 120000).toISOString(); // 2 Minutes
+    const token = Math.random().toString(36).substring(2, 15);
+    const expiresAt = new Date(Date.now() + 120000).toISOString();
     const newLink: AttendanceLink = {
       id: `LINK-${Date.now()}`,
       token,
@@ -180,30 +168,18 @@ export function useErpStore() {
         const updatedItem = {
           ...stockItem,
           quantity: Math.max(0, (stockItem.quantity || 0) - (item.quantity || 0)),
-          lastUpdated: new Date().toISOString(),
-          history: [{
-            id: `MOV-${Date.now()}-${item.id}`,
-            date: new Date().toISOString(),
-            type: 'SALE',
-            quantity: item.quantity,
-            notes: `Sale for Invoice ${invoice.invoiceNumber}`,
-            performedBy: 'Billing System',
-            referenceId: invoice.invoiceNumber,
-            customerName: invoice.customerName
-          }, ...(stockItem.history || [])]
+          lastUpdated: new Date().toISOString()
         } as StockItem;
         updateStockItem(updatedItem);
       }
     });
-
     const tx: WalletTransaction = {
       id: `TX-${Date.now()}`,
       amount: invoice.grandTotal,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString(),
       type: 'INVOICE_SALE',
-      description: `Sale: ${invoice.invoiceNumber} - ${invoice.customerName}`,
-      metadata: { invoiceId: invoice.id }
+      description: `Sale: ${invoice.invoiceNumber} - ${invoice.customerName}`
     };
     setTransactions(prev => [tx, ...prev]);
   };
@@ -236,8 +212,7 @@ export function useErpStore() {
       date: exp.date,
       time: new Date().toLocaleTimeString(),
       type: 'EXPENSE',
-      description: `${exp.category}: ${exp.vendorName}`,
-      metadata: { expenseId: exp.id, category: exp.category, vendorName: exp.vendorName }
+      description: `${exp.category}: ${exp.vendorName}`
     };
     setTransactions(prev => [tx, ...prev]);
     setWalletBalance(curr => curr - exp.amount);
@@ -277,15 +252,9 @@ export function useErpStore() {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
-  const updateTransaction = (tx: WalletTransaction) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
-
   const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
-  const updateTransportLog = (log: TransportationLog) => setTransportationLogs(prev => prev.map(l => l.id === log.id ? log : l));
   const updateTransportLogStatus = (id: string, status: LogisticsStatus) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   const deleteTransportLog = (id: string) => setTransportationLogs(prev => prev.filter(l => l.id !== id));
-
-  const resetNavOrder = () => setNavOrder(DEFAULT_NAV_ORDER);
-  const updateVisibility = (v: VisibilitySettings) => setVisibility(v);
 
   const importAllData = (data: any) => {
     if (data.calls) setCalls(data.calls);
@@ -298,12 +267,7 @@ export function useErpStore() {
     if (data.employees) setEmployees(data.employees);
     if (data.attendance) setAttendance(data.attendance);
     if (data.salaries) setSalaries(data.salaries);
-    if (data.leaves) setLeaves(data.leaves);
     if (data.walletBalance !== undefined) setWalletBalance(data.walletBalance);
-    if (data.visibility) setVisibility(data.visibility);
-    if (data.navOrder) setNavOrder(data.navOrder);
-    if (data.shopLogo) setShopLogo(data.shopLogo);
-    if (data.deletePassword) setDeletePassword(data.deletePassword);
   };
 
   return {
@@ -314,16 +278,15 @@ export function useErpStore() {
     employees, addEmployee, updateEmployee, deleteEmployee,
     attendance, addAttendance, updateAttendance, deleteAttendance,
     salaries, addSalary, updateSalary,
-    leaves, addLeave, updateLeave,
     attendanceLinks, generateAttendanceLink, useAttendanceLink,
-    walletBalance, setWalletBalance, topUpWallet, manualAdjust,
-    visibility, setVisibility, updateVisibility,
-    navOrder, setNavOrder, resetNavOrder,
-    shopLogo, setShopLogo,
-    deletePassword, setDeletePassword,
-    transactions, deleteTransaction, updateTransaction,
+    walletBalance, topUpWallet, manualAdjust,
+    visibility, setVisibility,
+    navOrder, setNavOrder,
+    companyProfile,
+    deletePassword,
+    transactions, deleteTransaction,
     expenses, addExpense,
-    transportationLogs, addTransportLog, updateTransportLog, updateTransportLogStatus, deleteTransportLog,
+    transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
     importAllData
   };
 }

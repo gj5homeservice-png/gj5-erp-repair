@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -74,7 +75,10 @@ export default function LandingPage() {
   const heroImg = PlaceHolderImages.find(img => img.id === 'hero-tv');
 
   const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -125,14 +129,21 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="relative animate-in zoom-in duration-700">
-            <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white">
-              <Image 
-                src={heroImg?.imageUrl || ''} 
-                alt="Smart TV" 
-                fill 
-                className="object-cover"
-                data-ai-hint="smart tv"
-              />
+            <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white bg-slate-100 relative">
+              {heroImg?.imageUrl ? (
+                <Image 
+                  src={heroImg.imageUrl} 
+                  alt="Smart TV" 
+                  fill 
+                  className="object-cover"
+                  data-ai-hint="smart tv"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-4">
+                  <Tv className="w-16 h-16" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Image Coming Soon</span>
+                </div>
+              )}
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-xl border border-slate-100 hidden md:block">
               <div className="flex items-center gap-3">
@@ -177,13 +188,20 @@ export default function LandingPage() {
               <Card key={product.id} className="group border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
-                    <Image 
-                      src={pImg?.imageUrl || ''} 
-                      alt={product.name} 
-                      fill 
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
-                      data-ai-hint="led tv"
-                    />
+                    {pImg?.imageUrl ? (
+                      <Image 
+                        src={pImg.imageUrl} 
+                        alt={product.name} 
+                        fill 
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        data-ai-hint="led tv"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+                        <Tv className="w-10 h-10" />
+                        <span className="text-[10px] font-bold uppercase">No Image</span>
+                      </div>
+                    )}
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-[#DC2626] text-white border-0 font-bold">{Math.round((1 - product.price/product.mrp) * 100)}% OFF</Badge>
                     </div>

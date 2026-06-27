@@ -8,7 +8,7 @@ export default function AdminRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/');
+    router.push('/dashboard');
   }, [router]);
 
   return (

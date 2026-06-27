@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -12,10 +13,12 @@ import {
   Mail, 
   Lock, 
   Loader2, 
-  KeyRound
+  KeyRound,
+  ArrowLeft
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -36,11 +39,15 @@ export default function LoginPage() {
     // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    if (email === 'admin@gj5.com' && password === '123456') {
-      localStorage.setItem('gj5_auth_token', 'demo-admin-token-' + Date.now());
+    // Check against hardcoded demo or local users
+    const users = JSON.parse(localStorage.getItem('gj5_demo_users') || '[]');
+    const localUser = users.find((u: any) => u.email === email && u.password === password);
+
+    if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
+      localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
       localStorage.setItem('gj5_user_role', 'Admin');
-      toast({ title: "Admin Access Granted", description: "Identity verified successfully." });
-      router.push('/');
+      toast({ title: "Identity Verified", description: "Loading Master Console..." });
+      router.push('/dashboard');
     } else {
       toast({ 
         variant: "destructive", 
@@ -74,7 +81,7 @@ export default function LoginPage() {
       localStorage.setItem('gj5_auth_token', 'demo-user-token-' + Date.now());
       localStorage.setItem('gj5_user_role', 'Associate');
       toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
-      router.push('/');
+      router.push('/dashboard');
     } else {
       toast({ variant: "destructive", title: "Invalid OTP", description: "The code entered is incorrect. Use 123456" });
     }
@@ -82,19 +89,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden font-body">
       {/* Background Decor */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px]"></div>
 
-      <Card className="w-full max-w-md bg-slate-900/40 border-slate-800 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden">
+      <Card className="w-full max-w-md bg-slate-900/40 border-slate-800 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden rounded-[2.5rem]">
         <CardContent className="p-8 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-[#0066FF] to-blue-700 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+          <div className="w-full flex justify-between items-center mb-6">
+             <Link href="/" className="p-2 rounded-xl bg-slate-800/50 text-slate-500 hover:text-white transition-colors">
+               <ArrowLeft className="w-5 h-5" />
+             </Link>
+             <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Security Node 4.2</span>
+                <span className="text-[8px] text-slate-600 uppercase font-bold">Admin/Associate Access</span>
+             </div>
+          </div>
+
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0066FF] to-blue-700 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
             <LogIn className="w-8 h-8 text-white" />
           </div>
 
-          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1">GJ5 HOME SERVICE</h1>
-          <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">Identity Control Node</p>
+          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 HOME SERVICE</h1>
+          <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">Industrial Enterprise Console</p>
 
           <Tabs defaultValue="admin" className="w-full">
             <TabsList className="grid grid-cols-2 bg-slate-950/50 border border-slate-800 h-11 p-1 rounded-xl mb-8">
@@ -105,27 +122,27 @@ export default function LoginPage() {
             <TabsContent value="admin" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
               <form onSubmit={handleEmailLogin} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Admin Email</Label>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Admin Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                     <Input 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500" 
+                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500 rounded-xl" 
                       placeholder="admin@gj5.com"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Clearance Key</Label>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Clearance Key</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                     <Input 
                       type="password" 
                       value={password} 
                       onChange={e => setPassword(e.target.value)}
-                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500" 
+                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500 rounded-xl" 
                       placeholder="••••••••"
                     />
                   </div>
@@ -144,15 +161,15 @@ export default function LoginPage() {
               {!showOtp ? (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Registered Mobile</Label>
+                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Registered Mobile</Label>
                     <div className="relative">
                       <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                       <Input 
                         type="tel" 
                         value={phone} 
                         onChange={e => setMobile(e.target.value)}
-                        className="bg-slate-950 border-slate-800 pl-10 h-12 font-code" 
-                        placeholder="9876543210"
+                        className="bg-slate-950 border-slate-800 pl-10 h-12 font-code rounded-xl" 
+                        placeholder="98765 43210"
                         maxLength={10}
                       />
                     </div>
@@ -169,21 +186,21 @@ export default function LoginPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Verification Node (OTP)</Label>
+                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Verification Node (OTP)</Label>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                       <Input 
                         type="text" 
                         value={otp} 
                         onChange={e => setOtp(e.target.value)}
-                        className="bg-slate-950 border-slate-800 pl-10 h-12 text-center text-xl tracking-[0.5em] font-code" 
+                        className="bg-slate-950 border-slate-800 pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl" 
                         placeholder="000000"
                         maxLength={6}
                       />
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" onClick={() => setShowOtp(false)} className="flex-1 text-slate-500 text-[10px] uppercase font-bold">Back</Button>
+                    <Button variant="ghost" onClick={() => setShowOtp(false)} className="flex-1 text-slate-500 text-[10px] font-bold uppercase">Back</Button>
                     <Button 
                       onClick={handleVerifyOtp}
                       disabled={loading || otp.length < 6}

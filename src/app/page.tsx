@@ -51,8 +51,8 @@ export default function LandingPage() {
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600">Features</Link>
-            <Link href="/login" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600">Software Access</Link>
-            <Button onClick={() => router.push('/login')} className="bg-[#DC2626] hover:bg-[#B91C1C] h-10 px-6 rounded-full font-bold uppercase text-[10px] shadow-lg">Start Software</Button>
+            <Link href="/plans" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600">Software Access</Link>
+            <Button onClick={() => router.push('/plans')} className="bg-[#DC2626] hover:bg-[#B91C1C] h-10 px-6 rounded-full font-bold uppercase text-[10px] shadow-lg">Start Software</Button>
           </nav>
         </div>
       </header>
@@ -72,7 +72,7 @@ export default function LandingPage() {
               Manage repairing calls, pickup, delivery, billing, stock, employees and reports in one powerful, multi-platform software designed for Indian service centers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={() => router.push('/login')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group">
+              <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
                 Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg text-slate-700">
@@ -121,7 +121,7 @@ export default function LandingPage() {
                     <f.icon className="w-7 h-7" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-headline font-bold text-lg text-slate-900 group-hover:text-white transition-colors">{f.title}</h3>
+                    <h3 className="font-headline font-bold text-lg text-[#0F172A] group-hover:text-white transition-colors">{f.title}</h3>
                     <p className="text-sm text-slate-600 leading-relaxed font-medium group-hover:text-white/80 transition-colors">{f.desc}</p>
                   </div>
                 </CardContent>
@@ -138,7 +138,7 @@ export default function LandingPage() {
             <div className="relative z-10 space-y-8">
                <h2 className="text-3xl md:text-5xl font-headline font-bold text-white leading-tight">Ready to modernize your <br /> service business?</h2>
                <p className="text-slate-400 max-w-xl mx-auto text-lg italic font-medium">"This software changed how we handle TV repairs. No more lost job cards or billing mistakes."</p>
-               <Button onClick={() => router.push('/register')} className="h-16 px-12 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl font-headline font-bold text-lg">Create Free Account</Button>
+               <Button onClick={() => router.push('/plans')} className="h-16 px-12 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl font-headline font-bold text-lg">Create Free Account</Button>
             </div>
          </div>
       </section>

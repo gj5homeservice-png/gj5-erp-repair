@@ -3,18 +3,14 @@
 import React from 'react';
 import { 
   ChevronRight, 
-  Tv, 
   Receipt, 
   Truck, 
   Package, 
   Users, 
   History, 
   BarChart3, 
-  ShieldCheck,
-  CheckCircle2,
-  Smartphone,
-  MessageSquare,
-  Wrench
+  Wrench,
+  Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,12 +42,13 @@ export default function LandingPage() {
             <div className="w-10 h-10 rounded-xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-xl shadow-lg">G</div>
             <div className="flex flex-col">
               <span className="text-sm font-headline font-black tracking-tighter leading-none">GJ5 HOME SERVICE</span>
-              <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">Enterprise Suite</span>
+              <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">SaaS Enterprise Suite</span>
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600">Features</Link>
-            <Link href="/plans" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600">Software Access</Link>
+            <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">Features</Link>
+            <Link href="/plans" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">Software Access</Link>
+            <Link href="/login" className="text-xs font-bold uppercase tracking-widest text-slate-900 hover:text-red-600 transition-colors">Login</Link>
             <Button onClick={() => router.push('/plans')} className="bg-[#DC2626] hover:bg-[#B91C1C] h-10 px-6 rounded-full font-bold uppercase text-[10px] shadow-lg text-white">Start Software</Button>
           </nav>
         </div>
@@ -63,13 +60,13 @@ export default function LandingPage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">New Matrix V2.9 Live</span>
+              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Enterprise V3.5 Operational</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1] text-slate-900">
               Best <span className="text-[#DC2626]">Home Appliance Service</span> & Billing Software
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">
-              The complete ERP solution for AC, Refrigerator, Washing Machine, and TV service centers. Manage calls, inventory, and staff in one powerful dashboard.
+              The complete ERP solution for AC, Refrigerator, Washing Machine, and Microwave service centers. Manage calls, inventory, and staff in one powerful dashboard.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
@@ -83,17 +80,22 @@ export default function LandingPage() {
               <div className="flex -space-x-3">
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                    <img src={`https://picsum.photos/seed/${i+40}/100`} alt="user" />
+                    <img src={`https://picsum.photos/seed/${i+100}/100`} alt="user" />
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Trusted by <span className="text-slate-900">1000+ Service Centers</span> in India</p>
+              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Trusted by <span className="text-slate-900">2,500+ Service Centers</span></p>
             </div>
           </div>
           <div className="relative animate-in zoom-in duration-1000">
-            <div className="aspect-[4/3] rounded-[3rem] bg-slate-900 p-2 shadow-2xl relative overflow-hidden group">
-               <img src="https://picsum.photos/seed/home-service-dash/1200/900" className="w-full h-full object-cover rounded-[2.5rem] opacity-80 group-hover:scale-105 transition-transform duration-700" alt="ERP Preview" data-ai-hint="home appliances" />
-               <div className="absolute inset-0 bg-gradient-to-t from-red-600/20 to-transparent"></div>
+            <div className="aspect-[4/3] rounded-[3rem] bg-slate-900 p-2 shadow-2xl relative overflow-hidden group border-4 border-slate-100">
+               <img 
+                 src="https://picsum.photos/seed/appliance-repair-erp/1200/900" 
+                 className="w-full h-full object-cover rounded-[2.5rem] opacity-90 group-hover:scale-105 transition-transform duration-700" 
+                 alt="ERP Command Center" 
+                 data-ai-hint="appliance repair"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent"></div>
             </div>
           </div>
         </div>
@@ -103,8 +105,8 @@ export default function LandingPage() {
       <section id="features" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4 mb-20">
-            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight text-slate-900">Built for <span className="text-[#DC2626]">Scale</span></h2>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">Professional toolset for multi-brand appliance repair ecosystems.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight text-slate-900">Industrial <span className="text-[#DC2626]">Toolsets</span></h2>
+            <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">Professional grade features designed for high-volume appliance service ecosystems.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {features.map((f, i) => (
@@ -132,7 +134,7 @@ export default function LandingPage() {
               <div className="w-8 h-8 rounded-lg bg-[#DC2626] flex items-center justify-center text-white font-black italic text-lg">G</div>
               <span className="text-sm font-headline font-black text-slate-900">GJ5 HOME SERVICE</span>
             </div>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto md:mx-0">Universal ERP for Appliance Service businesses. Designed for reliability and speed.</p>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto md:mx-0">Universal ERP for Appliance Service businesses. Designed for reliability, speed, and business growth.</p>
           </div>
           <div className="space-y-4">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Contact Node</h4>

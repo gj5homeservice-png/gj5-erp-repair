@@ -37,13 +37,14 @@ export default function LoginPage() {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 800));
 
+    // Check against demo credentials or local registry
     const users = JSON.parse(localStorage.getItem('gj5_demo_users') || '[]');
     const localUser = users.find((u: any) => u.email === email && u.password === password);
 
     if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
       localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
       localStorage.setItem('gj5_active_user', email);
-      toast({ title: "Identity Verified", description: "Loading Master Console..." });
+      toast({ title: "Identity Verified", description: "Accessing Workspace Console..." });
       router.push('/dashboard');
     } else {
       toast({ 
@@ -95,8 +96,8 @@ export default function LoginPage() {
                <ArrowLeft className="w-5 h-5" />
              </Link>
              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Security Node 4.2</span>
-                <span className="text-[8px] text-slate-600 uppercase font-bold">Admin/Associate Access</span>
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Admin Console V3.5</span>
+                <span className="text-[8px] text-slate-600 uppercase font-bold">Secure Gateway</span>
              </div>
           </div>
 
@@ -109,34 +110,34 @@ export default function LoginPage() {
 
           <Tabs defaultValue="admin" className="w-full">
             <TabsList className="grid grid-cols-2 bg-slate-950/50 border border-slate-800 h-11 p-1 rounded-xl mb-8">
-              <TabsTrigger value="admin" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Admin Terminal</TabsTrigger>
-              <TabsTrigger value="associate" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Associate Access</TabsTrigger>
+              <TabsTrigger value="admin" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Email Access</TabsTrigger>
+              <TabsTrigger value="associate" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Mobile Access</TabsTrigger>
             </TabsList>
 
             <TabsContent value="admin" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
               <form onSubmit={handleEmailLogin} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Admin Email</Label>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Account Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="pl-10 h-12 rounded-xl border-slate-800" 
+                      className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900" 
                       placeholder="admin@gj5.com"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Clearance Key</Label>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Access Key</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       type="password" 
                       value={password} 
                       onChange={e => setPassword(e.target.value)}
-                      className="pl-10 h-12 rounded-xl border-slate-800" 
+                      className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900" 
                       placeholder="••••••••"
                     />
                   </div>
@@ -146,7 +147,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold uppercase text-xs mt-4 shadow-lg shadow-blue-500/20"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Master Console"}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Dashboard"}
                 </Button>
               </form>
             </TabsContent>
@@ -162,7 +163,7 @@ export default function LoginPage() {
                         type="tel" 
                         value={phone} 
                         onChange={e => setMobile(e.target.value)}
-                        className="pl-10 h-12 font-code rounded-xl border-slate-800" 
+                        className="pl-10 h-12 font-code rounded-xl border-slate-800 bg-white text-slate-900" 
                         placeholder="98765 43210"
                         maxLength={10}
                       />
@@ -180,14 +181,14 @@ export default function LoginPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Verification Node (OTP)</Label>
+                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Verification Code (OTP)</Label>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                       <Input 
                         type="text" 
                         value={otp} 
                         onChange={e => setOtp(e.target.value)}
-                        className="pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl border-slate-800" 
+                        className="pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl border-slate-800 bg-white text-slate-900" 
                         placeholder="000000"
                         maxLength={6}
                       />
@@ -200,7 +201,7 @@ export default function LoginPage() {
                       disabled={loading || otp.length < 6}
                       className="flex-[2] h-12 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold uppercase text-xs"
                     >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Authenticate Node"}
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Authenticate Identity"}
                     </Button>
                   </div>
                 </div>
@@ -209,7 +210,7 @@ export default function LoginPage() {
           </Tabs>
 
           <p className="mt-12 text-[9px] text-slate-600 font-bold uppercase leading-relaxed text-center">
-            Authorized Personnel Only.<br />Access logged via Security Protocol V2.9.
+            Authorized Personnel Only.<br />Access logged via GJ5 Secure Protocol.
           </p>
         </CardContent>
       </Card>

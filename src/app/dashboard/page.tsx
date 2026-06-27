@@ -240,10 +240,10 @@ export default function ErpMainHub() {
           <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-[#0B0F19]/80 backdrop-blur-md z-10 shrink-0">
             <div className="flex items-center gap-6">
                <div className="relative w-96 hidden md:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
                   <Input 
                     placeholder="Audit: Jobs, Stock, Invoices..." 
-                    className="bg-slate-900/50 border-slate-800 pl-10 h-11 focus-visible:ring-blue-500 placeholder:text-slate-600"
+                    className="pl-10 h-11 border-slate-800 focus-visible:ring-blue-500 placeholder:text-slate-600"
                   />
                </div>
             </div>

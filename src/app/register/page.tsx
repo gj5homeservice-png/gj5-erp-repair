@@ -40,12 +40,10 @@ export default function RegisterPage() {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Store user account locally
     const users = JSON.parse(localStorage.getItem('gj5_demo_users') || '[]');
     users.push(formData);
     localStorage.setItem('gj5_demo_users', JSON.stringify(users));
     
-    // Set temp session for onboarding
     localStorage.setItem('gj5_temp_email', formData.email);
 
     toast({ title: "Identity Registered", description: "Configuring your workspace now..." });
@@ -69,11 +67,11 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                 <Input 
                   value={formData.ownerName} 
                   onChange={e => setFormData({...formData, ownerName: e.target.value})}
-                  className="bg-slate-50 border-slate-100 pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-bold" 
+                  className="pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-bold border-slate-200" 
                   placeholder="Official Identity"
                 />
               </div>
@@ -82,12 +80,12 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Mobile</Label>
               <div className="relative">
-                <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                 <Input 
                   type="tel"
                   value={formData.mobile} 
                   onChange={e => setFormData({...formData, mobile: e.target.value})}
-                  className="bg-slate-50 border-slate-100 pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-code font-bold" 
+                  className="pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-code font-bold border-slate-200" 
                   placeholder="98765 43210"
                 />
               </div>
@@ -96,12 +94,12 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Official Email</Label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                 <Input 
                   type="email"
                   value={formData.email} 
                   onChange={e => setFormData({...formData, email: e.target.value})}
-                  className="bg-slate-50 border-slate-100 pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-bold" 
+                  className="pl-12 h-14 rounded-2xl focus-visible:ring-red-500 font-bold border-slate-200" 
                   placeholder="admin@service.com"
                 />
               </div>
@@ -110,12 +108,12 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                 <Input 
                   type="password"
                   value={formData.password} 
                   onChange={e => setFormData({...formData, password: e.target.value})}
-                  className="bg-slate-50 border-slate-100 pl-12 h-14 rounded-2xl focus-visible:ring-red-500" 
+                  className="pl-12 h-14 rounded-2xl focus-visible:ring-red-500 border-slate-200" 
                   placeholder="••••••••"
                 />
               </div>

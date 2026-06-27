@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -36,16 +35,14 @@ export default function LoginPage() {
     if (!email || !password) return;
     
     setLoading(true);
-    // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Check against hardcoded demo or local users
     const users = JSON.parse(localStorage.getItem('gj5_demo_users') || '[]');
     const localUser = users.find((u: any) => u.email === email && u.password === password);
 
     if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
       localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
-      localStorage.setItem('gj5_user_role', 'Admin');
+      localStorage.setItem('gj5_active_user', email);
       toast({ title: "Identity Verified", description: "Loading Master Console..." });
       router.push('/dashboard');
     } else {
@@ -64,7 +61,6 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 800));
     setShowOtp(true);
     toast({ title: "OTP Dispatched", description: `Verification code 123456 sent to ${phone}` });
@@ -74,12 +70,11 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     if (!otp) return;
     setLoading(true);
-    // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
     if (otp === '123456') {
       localStorage.setItem('gj5_auth_token', 'demo-user-token-' + Date.now());
-      localStorage.setItem('gj5_user_role', 'Associate');
+      localStorage.setItem('gj5_active_user', phone);
       toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
       router.push('/dashboard');
     } else {
@@ -90,7 +85,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden font-body">
-      {/* Background Decor */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px]"></div>
 
@@ -124,12 +118,12 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Admin Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500 rounded-xl" 
+                      className="pl-10 h-12 rounded-xl border-slate-800" 
                       placeholder="admin@gj5.com"
                     />
                   </div>
@@ -137,12 +131,12 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Clearance Key</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       type="password" 
                       value={password} 
                       onChange={e => setPassword(e.target.value)}
-                      className="bg-slate-950 border-slate-800 pl-10 h-12 focus-visible:ring-blue-500 rounded-xl" 
+                      className="pl-10 h-12 rounded-xl border-slate-800" 
                       placeholder="••••••••"
                     />
                   </div>
@@ -163,12 +157,12 @@ export default function LoginPage() {
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Registered Mobile</Label>
                     <div className="relative">
-                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                       <Input 
                         type="tel" 
                         value={phone} 
                         onChange={e => setMobile(e.target.value)}
-                        className="bg-slate-950 border-slate-800 pl-10 h-12 font-code rounded-xl" 
+                        className="pl-10 h-12 font-code rounded-xl border-slate-800" 
                         placeholder="98765 43210"
                         maxLength={10}
                       />
@@ -188,12 +182,12 @@ export default function LoginPage() {
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Verification Node (OTP)</Label>
                     <div className="relative">
-                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                       <Input 
                         type="text" 
                         value={otp} 
                         onChange={e => setOtp(e.target.value)}
-                        className="bg-slate-950 border-slate-800 pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl" 
+                        className="pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl border-slate-800" 
                         placeholder="000000"
                         maxLength={6}
                       />

@@ -153,12 +153,12 @@ export function RepairingModule({ store }: { store: any }) {
 
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 md:p-6 rounded-2xl border border-slate-800">
         <div className="flex-1 w-full md:max-w-md relative">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
            <Input 
              placeholder="Search Jobs, Mobile, Category..." 
              value={searchQuery} 
              onChange={e => setSearchQuery(e.target.value)} 
-             className="pl-10 bg-slate-950 border-slate-800 h-11 w-full" 
+             className="pl-10 border-slate-800 h-11 w-full" 
            />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">

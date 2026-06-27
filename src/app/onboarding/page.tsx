@@ -53,7 +53,6 @@ export default function OnboardingPage() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 1500));
 
-    // Commit company profile to local store
     const email = localStorage.getItem('gj5_temp_email');
     if (email) {
       const companyData = {
@@ -109,11 +108,11 @@ export default function OnboardingPage() {
                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Company Name</Label>
                   <div className="relative">
-                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       value={formData.companyName} 
                       onChange={e => setFormData({...formData, companyName: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold" 
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
                       placeholder="e.g. Master Services"
                     />
                   </div>
@@ -121,11 +120,11 @@ export default function OnboardingPage() {
                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Business Category</Label>
                   <div className="relative">
-                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       value={formData.category} 
                       onChange={e => setFormData({...formData, category: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold" 
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
                     />
                   </div>
                </div>
@@ -136,7 +135,7 @@ export default function OnboardingPage() {
                <Input 
                  value={formData.services} 
                  onChange={e => setFormData({...formData, services: e.target.value})}
-                 className="h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold" 
+                 className="h-14 rounded-2xl border-slate-200 font-bold" 
                  placeholder="e.g. AC, Washing Machine, Refrigerator"
                />
             </div>
@@ -145,11 +144,11 @@ export default function OnboardingPage() {
                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Headquarters Address</Label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       value={formData.address} 
                       onChange={e => setFormData({...formData, address: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold" 
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
                       placeholder="Full Address"
                     />
                   </div>
@@ -157,11 +156,11 @@ export default function OnboardingPage() {
                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">WhatsApp Support Number</Label>
                   <div className="relative">
-                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                     <Input 
                       value={formData.whatsapp} 
                       onChange={e => setFormData({...formData, whatsapp: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-100 font-code font-bold" 
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-code font-bold" 
                       placeholder="91XXXXXXXXXX"
                     />
                   </div>

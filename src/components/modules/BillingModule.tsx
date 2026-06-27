@@ -109,7 +109,7 @@ export function BillingModule({ store }: { store: any }) {
     const subtotal = items.reduce((acc, curr) => acc + curr.amount, 0);
     const totalDiscount = items.reduce((acc, curr) => acc + (curr.discount || 0), 0);
     const taxableAmount = subtotal - totalDiscount;
-    const cgst = taxableAmount * 0.09; // Assuming 18% total GST (9% CGST + 9% SGST)
+    const cgst = taxableAmount * 0.09; 
     const sgst = taxableAmount * 0.09;
     const grandTotal = taxableAmount + cgst + sgst;
     return { subtotal, totalDiscount, cgst, sgst, grandTotal };
@@ -145,18 +145,16 @@ export function BillingModule({ store }: { store: any }) {
     store.addInvoice(newInvoice);
     toast({ title: "Invoice Committed", description: `Billing record ${newInvoice.invoiceNumber} saved and inventory adjusted.` });
     
-    // Reset form
     setCustomer({ name: '', mobile: '', address: '', gstin: '', id: '' });
     setItems([]);
   };
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
-    const accentColor = [0, 102, 255]; // GJ5 Navy Blue
-    const redColor = [220, 38, 38]; // GJ5 Primary Red
+    const accentColor = [0, 102, 255]; 
+    const redColor = [220, 38, 38]; 
 
-    // --- Header ---
-    doc.setFillColor(15, 23, 42); // Dark Navy
+    doc.setFillColor(15, 23, 42); 
     doc.rect(0, 0, 210, 40, 'F');
     
     doc.setTextColor(255, 255, 255);
@@ -173,7 +171,6 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(255, 255, 255);
     doc.text('TAX INVOICE', 195, 25, { align: 'right' });
 
-    // --- Invoice Info ---
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -181,7 +178,6 @@ export function BillingModule({ store }: { store: any }) {
     doc.text(`Date: ${format(new Date(invoiceDate), 'dd/MM/yyyy')}`, 150, 56);
     doc.text(`Due Date: ${format(new Date(dueDate), 'dd/MM/yyyy')}`, 150, 62);
 
-    // --- Customer Info ---
     doc.setDrawColor(200);
     doc.line(15, 45, 195, 45);
     doc.setFontSize(11);
@@ -192,7 +188,6 @@ export function BillingModule({ store }: { store: any }) {
     doc.text(customer.mobile || '--', 15, 68);
     doc.text(customer.address || 'Surat, Gujarat', 15, 74, { maxWidth: 80 });
 
-    // --- Table Header ---
     let y = 90;
     doc.setFillColor(241, 245, 249);
     doc.rect(15, y, 180, 10, 'F');
@@ -203,7 +198,6 @@ export function BillingModule({ store }: { store: any }) {
     doc.text('GST%', 165, y + 7, { align: 'center' });
     doc.text('AMOUNT', 190, y + 7, { align: 'right' });
 
-    // --- Items ---
     y += 10;
     doc.setFont('helvetica', 'normal');
     items.forEach((item, index) => {
@@ -218,7 +212,6 @@ export function BillingModule({ store }: { store: any }) {
       doc.line(15, y, 195, y);
     });
 
-    // --- Totals ---
     y += 10;
     const rightX = 195;
     const labelX = 150;
@@ -240,7 +233,6 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(255);
     drawTotalRow('GRAND TOTAL:', `INR ${calculations.grandTotal.toLocaleString()}`, true);
 
-    // --- Footer ---
     doc.setTextColor(100);
     doc.setFontSize(8);
     doc.text('TERMS & CONDITIONS:', 15, 260);
@@ -259,7 +251,6 @@ export function BillingModule({ store }: { store: any }) {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20 print:bg-white print:p-0">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Invoice Generator Form */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="bg-slate-900/40 border-slate-800 shadow-xl overflow-hidden">
             <CardHeader className="bg-slate-900/60 border-b border-slate-800 p-6">
@@ -280,22 +271,21 @@ export function BillingModule({ store }: { store: any }) {
                </div>
             </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-8">
-              {/* Customer Profile Node */}
               <div className="space-y-6">
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><User className="w-3.5 h-3.5" /> Client Metadata</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Official Name</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                        <Input value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="pl-10 bg-slate-950 border-slate-800 h-11" placeholder="Enter Full Name" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                        <Input value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="Enter Full Name" />
                       </div>
                    </div>
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Communication Node (Mobile)</Label>
                       <div className="relative">
-                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                        <Input value={customer.mobile} onChange={e => setCustomer({...customer, mobile: e.target.value})} className="pl-10 bg-slate-950 border-slate-800 h-11" placeholder="10 Digit Number" />
+                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                        <Input value={customer.mobile} onChange={e => setCustomer({...customer, mobile: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="10 Digit Number" />
                       </div>
                    </div>
                 </div>
@@ -303,42 +293,41 @@ export function BillingModule({ store }: { store: any }) {
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Client GSTIN (Optional)</Label>
                       <div className="relative">
-                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                        <Input value={customer.gstin} onChange={e => setCustomer({...customer, gstin: e.target.value})} className="pl-10 bg-slate-950 border-slate-800 h-11" placeholder="24XXXXX..." />
+                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                        <Input value={customer.gstin} onChange={e => setCustomer({...customer, gstin: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="24XXXXX..." />
                       </div>
                    </div>
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Shipping / Billing Destination</Label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                        <Input value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="pl-10 bg-slate-950 border-slate-800 h-11" placeholder="Full Address Node" />
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                        <Input value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="Full Address Node" />
                       </div>
                    </div>
                 </div>
               </div>
 
-              {/* Item Discovery & Entry */}
               <div className="space-y-6 p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Package className="w-3.5 h-3.5" /> Item Discovery</h4>
                 <div className="space-y-4">
                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                       <Input 
                         placeholder="Scan Barcode or Search Asset Registry..." 
                         value={searchStock}
                         onChange={e => setSearchStock(e.target.value)}
-                        className="pl-10 bg-slate-900 border-slate-800 h-12 text-blue-400 font-bold" 
+                        className="pl-10 h-12 border-slate-800 font-bold" 
                       />
                       {filteredStock.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 z-50 bg-slate-900 border border-slate-700 mt-1 rounded-xl shadow-2xl overflow-hidden">
+                        <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 mt-1 rounded-xl shadow-2xl overflow-hidden">
                            {filteredStock.map((s: any) => (
-                             <button key={s.id} onClick={() => handleSelectItem(s)} className="w-full text-left p-3 hover:bg-slate-800 flex justify-between items-center border-b border-slate-800 last:border-0 transition-colors">
+                             <button key={s.id} onClick={() => handleSelectItem(s)} className="w-full text-left p-3 hover:bg-slate-100 flex justify-between items-center border-b border-slate-100 last:border-0 transition-colors">
                                 <div>
-                                  <p className="text-xs font-bold text-slate-100">{s.name}</p>
+                                  <p className="text-xs font-bold text-slate-900">{s.name}</p>
                                   <p className="text-[9px] text-slate-500 uppercase">{s.brand} • SKU: {s.id}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-xs font-code font-bold text-emerald-400">₹{s.sellingPrice}</p>
+                                  <p className="text-xs font-code font-bold text-emerald-600">₹{s.sellingPrice}</p>
                                   <p className="text-[9px] text-slate-600 uppercase">Stock: {s.quantity}</p>
                                 </div>
                              </button>
@@ -350,15 +339,15 @@ export function BillingModule({ store }: { store: any }) {
                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <div className="md:col-span-2 space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Asset Label</Label>
-                         <Input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="bg-slate-900 border-slate-800 h-10 text-xs" />
+                         <Input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="h-10 text-xs border-slate-800" />
                       </div>
                       <div className="space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Qty</Label>
-                         <Input type="number" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: Number(e.target.value)})} className="bg-slate-900 border-slate-800 h-10 font-code text-xs" />
+                         <Input type="number" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: Number(e.target.value)})} className="h-10 font-code text-xs border-slate-800" />
                       </div>
                       <div className="space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Rate (₹)</Label>
-                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="bg-slate-900 border-slate-800 h-10 font-code text-xs text-blue-400 font-bold" />
+                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="h-10 font-code text-xs text-blue-600 font-bold border-slate-800" />
                       </div>
                       <div className="flex items-end">
                          <Button onClick={addItem} className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/10"><Plus className="w-4 h-4 mr-2" /> Add</Button>
@@ -400,7 +389,6 @@ export function BillingModule({ store }: { store: any }) {
                 </div>
               </div>
 
-              {/* Fiscal Configuration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div className="space-y-6">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Fiscal Node</h4>
@@ -432,11 +420,11 @@ export function BillingModule({ store }: { store: any }) {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Invoice Date</Label>
-                          <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                          <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-11 text-xs border-slate-800" />
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Settlement Deadline</Label>
-                          <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                          <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-11 text-xs border-slate-800" />
                        </div>
                     </div>
                  </div>
@@ -470,7 +458,6 @@ export function BillingModule({ store }: { store: any }) {
           </Card>
         </div>
 
-        {/* Live A4 Print Preview Node */}
         <div className="space-y-6">
            <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden sticky top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
@@ -481,7 +468,6 @@ export function BillingModule({ store }: { store: any }) {
                  <Badge className="bg-red-600 text-[8px] uppercase border-0">A4 Calibration</Badge>
               </CardHeader>
               <div className="aspect-[1/1.414] p-8 flex flex-col gap-6">
-                 {/* This matches exactly how it would print */}
                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
                     <div className="flex flex-col">
                        <h2 className="text-xl font-black italic tracking-tighter leading-none">GJ5 PLUS</h2>
@@ -549,16 +535,6 @@ export function BillingModule({ store }: { store: any }) {
               <Button onClick={() => window.print()} variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs hover:bg-slate-800"><Printer className="w-4 h-4 mr-2" /> Thermal Print</Button>
               <Button variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs text-emerald-400 hover:bg-emerald-500/10"><MessageSquare className="w-4 h-4 mr-2" /> WhatsApp</Button>
            </div>
-
-           <Card className="bg-slate-900/40 border-slate-800 border-dashed">
-              <CardContent className="p-4 space-y-3">
-                 <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-blue-500" />
-                    <span className="text-[10px] font-black uppercase text-slate-400">Inventory Guard</span>
-                 </div>
-                 <p className="text-[10px] text-slate-500 italic leading-tight">Saving this manifest will trigger an <span className="text-white font-bold">instant deduction</span> in asset registry levels for each identified SKU.</p>
-              </CardContent>
-           </Card>
         </div>
       </div>
     </div>

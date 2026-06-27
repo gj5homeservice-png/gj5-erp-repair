@@ -1,17 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
-import { 
-  auth, 
-  db,
-  signInWithEmailAndPassword, 
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  doc,
-  setDoc,
-  serverTimestamp,
-  isFirebaseConfigured
-} from '@/firebase';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,13 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   LogIn, 
-  ShieldCheck, 
-  Zap, 
   Smartphone, 
   Mail, 
   Lock, 
   Loader2, 
-  AlertCircle,
   KeyRound
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -38,106 +24,62 @@ export default function LoginPage() {
   const [phone, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [showOtp, setShowOtp] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
   
   const router = useRouter();
   const { toast } = useToast();
-
-  // Initialize Recaptcha
-  const setupRecaptcha = (buttonId: string) => {
-    if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, buttonId, {
-        'size': 'invisible',
-        'callback': () => {}
-      });
-    }
-  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     
     setLoading(true);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await syncUserProfile(userCredential.user);
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    if (email === 'admin@gj5.com' && password === '123456') {
+      localStorage.setItem('gj5_auth_token', 'demo-admin-token-' + Date.now());
+      localStorage.setItem('gj5_user_role', 'Admin');
       toast({ title: "Admin Access Granted", description: "Identity verified successfully." });
       router.push('/');
-    } catch (error: any) {
+    } else {
       toast({ 
         variant: "destructive", 
         title: "Auth Failed", 
-        description: "Invalid credentials or account suspended." 
+        description: "Invalid credentials. Use admin@gj5.com / 123456" 
       });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handleSendOtp = async () => {
-    if (!phone) return;
-    setLoading(true);
-    try {
-      setupRecaptcha('send-otp-btn');
-      const appVerifier = (window as any).recaptchaVerifier;
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(confirmation);
-      setShowOtp(true);
-      toast({ title: "OTP Dispatched", description: `Verification code sent to ${phone}` });
-    } catch (error: any) {
-      console.error(error);
-      toast({ variant: "destructive", title: "Gateway Error", description: "Failed to send OTP. Check mobile number." });
-    } finally {
-      setLoading(false);
+    if (!phone || phone.length !== 10) {
+      toast({ variant: "destructive", title: "Invalid Number", description: "Please enter a valid 10-digit mobile number." });
+      return;
     }
+    setLoading(true);
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setShowOtp(true);
+    toast({ title: "OTP Dispatched", description: `Verification code 123456 sent to ${phone}` });
+    setLoading(false);
   };
 
   const handleVerifyOtp = async () => {
-    if (!otp || !confirmationResult) return;
+    if (!otp) return;
     setLoading(true);
-    try {
-      const result = await confirmationResult.confirm(otp);
-      await syncUserProfile(result.user);
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    if (otp === '123456') {
+      localStorage.setItem('gj5_auth_token', 'demo-user-token-' + Date.now());
+      localStorage.setItem('gj5_user_role', 'Associate');
       toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
       router.push('/');
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Invalid OTP", description: "The code entered is incorrect." });
-    } finally {
-      setLoading(false);
+    } else {
+      toast({ variant: "destructive", title: "Invalid OTP", description: "The code entered is incorrect. Use 123456" });
     }
+    setLoading(false);
   };
-
-  const syncUserProfile = async (user: any) => {
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email || '',
-      phone: user.phoneNumber || '',
-      lastLogin: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  };
-
-  if (!isFirebaseConfigured) {
-    return (
-      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-slate-900/40 border-slate-800 backdrop-blur-xl p-8 text-center space-y-6">
-           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500">
-              <AlertCircle className="w-8 h-8" />
-           </div>
-           <h2 className="text-xl font-headline font-bold text-white uppercase">Cloud Node Disconnected</h2>
-           <p className="text-sm text-slate-400 leading-relaxed">
-              Firebase environment variables are missing. Please configure your <code className="text-blue-400">.env</code> file with valid API keys to initialize the GJ5 Security Matrix.
-           </p>
-           <div className="text-[10px] text-slate-600 font-mono text-left bg-black/40 p-4 rounded-lg overflow-x-auto">
-              NEXT_PUBLIC_FIREBASE_API_KEY=...<br/>
-              NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-           </div>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden">
@@ -211,6 +153,7 @@ export default function LoginPage() {
                         onChange={e => setMobile(e.target.value)}
                         className="bg-slate-950 border-slate-800 pl-10 h-12 font-code" 
                         placeholder="9876543210"
+                        maxLength={10}
                       />
                     </div>
                   </div>
@@ -259,7 +202,6 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
-      <div id="recaptcha-container"></div>
     </div>
   );
 }

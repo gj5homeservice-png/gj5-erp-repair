@@ -1,32 +1,26 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-      
-      // Protect /admin routes
-      if (!currentUser && pathname.startsWith('/admin')) {
-        router.push('/login/');
-      } else if (currentUser && pathname === '/login/') {
-        router.push('/admin/');
-      }
-    });
-
-    return () => unsubscribe();
+    // Local session check
+    const token = localStorage.getItem('gj5_auth_token');
+    
+    setLoading(false);
+    
+    // Protected routes logic
+    if (!token && !pathname.includes('/login/')) {
+      router.push('/login/');
+    } else if (token && pathname.includes('/login/')) {
+      router.push('/');
+    }
   }, [pathname, router]);
 
   if (loading) {
@@ -36,11 +30,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Initializing Identity Node...</p>
       </div>
     );
-  }
-
-  // If not logged in and trying to access a protected page, show nothing (redirect handles it)
-  if (!user && pathname.startsWith('/admin')) {
-    return null;
   }
 
   return <>{children}</>;

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -26,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { AuthGuard } from '@/components/AuthGuard';
-import { auth, signOut } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
@@ -54,7 +52,7 @@ const DashboardModule = ({ store }: { store: any }) => (
       </div>
       <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Cloud Node</span>
+        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Local Node</span>
       </div>
     </div>
 
@@ -157,8 +155,9 @@ export default function ErpMainHub() {
     { name: 'Settings', icon: Settings },
   ];
 
-  const handleLogout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
+    localStorage.removeItem('gj5_auth_token');
+    localStorage.removeItem('gj5_user_role');
     router.push('/login/');
   };
 

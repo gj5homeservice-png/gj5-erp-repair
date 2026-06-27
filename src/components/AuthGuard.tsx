@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
@@ -17,10 +18,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
       setLoading(false);
       
-      if (!currentUser && pathname !== '/login/') {
+      // Protect /admin routes
+      if (!currentUser && pathname.startsWith('/admin')) {
         router.push('/login/');
       } else if (currentUser && pathname === '/login/') {
-        router.push('/');
+        router.push('/admin/');
       }
     });
 
@@ -37,7 +39,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // If not logged in and trying to access a protected page, show nothing (redirect handles it)
-  if (!user && pathname !== '/login/') {
+  if (!user && pathname.startsWith('/admin')) {
     return null;
   }
 

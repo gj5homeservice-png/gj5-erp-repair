@@ -99,7 +99,7 @@ export default function PlansPage() {
       <header className="h-20 border-b border-slate-800 bg-[#0B0F19]/80 backdrop-blur-md sticky top-0 z-50 flex items-center px-6 md:px-12">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
            <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
+            <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
                <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
             </div>
             <div className="flex flex-col">

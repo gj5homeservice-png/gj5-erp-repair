@@ -192,7 +192,7 @@ export default function ErpMainHub() {
         <aside className="w-72 bg-slate-900/40 border-r border-slate-800 backdrop-blur-xl hidden lg:flex flex-col z-20 shrink-0">
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800 bg-white">
+              <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white">
                 <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
               </div>
               <div className="flex flex-col min-w-0">

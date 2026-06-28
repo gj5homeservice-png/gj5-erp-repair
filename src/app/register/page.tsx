@@ -57,7 +57,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md bg-white border-slate-100 shadow-2xl relative z-10 overflow-hidden rounded-[2.5rem]">
         <CardContent className="p-10">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-xl p-1">
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-xl p-1">
                <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
             </div>
             <div className="flex flex-col">

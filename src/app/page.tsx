@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -68,8 +67,8 @@ export default function LandingPage() {
               <span className="w-2 h-2 rounded-full bg-[#123C8C] animate-pulse"></span>
               <span className="text-[10px] font-black text-[#123C8C] uppercase tracking-widest">GJ5 ERP v4.0 Operational</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1] text-slate-900">
-              Smart <span className="text-[#123C8C]">Business Management</span> & Billing Software
+            <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1] text-[#111827]">
+              <span className="text-[#2563EB]">Call Business</span> Management & Billing Software
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">
               GOOD JOB 5 ERP: The complete solution for Home Appliance Service, Stock Management, and Workforce Tracking. Simplify your operations with a single powerful dashboard.

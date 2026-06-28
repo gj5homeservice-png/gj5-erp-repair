@@ -43,7 +43,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 overflow-hidden flex items-center justify-center">
-               <img src="https://picsum.photos/seed/gj5-logo-main/200/200" className="w-full h-full object-contain" alt="GJ5 ERP Logo" data-ai-hint="company logo" />
+               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="GJ5 ERP Logo" data-ai-hint="official logo" />
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-headline font-black tracking-tighter leading-none uppercase text-[#123C8C]">GJ5 ERP</span>
@@ -187,7 +187,7 @@ export default function LandingPage() {
           <div className="space-y-6 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 justify-center md:justify-start">
               <div className="w-8 h-8 overflow-hidden">
-                <img src="https://picsum.photos/seed/gj5-logo-footer/100/100" className="w-full h-full object-contain" alt="GJ5 ERP" />
+                <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="GJ5 ERP" />
               </div>
               <span className="text-sm font-headline font-black text-slate-900 uppercase">GJ5 ERP</span>
             </div>

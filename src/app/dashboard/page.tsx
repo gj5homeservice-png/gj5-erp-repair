@@ -197,7 +197,7 @@ export default function ErpMainHub() {
                 </div>
               ) : (
                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
-                  <img src="https://picsum.photos/seed/gj5-logo-sidebar/100/100" className="w-full h-full object-contain" alt="GJ5 ERP" />
+                  <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="GJ5 ERP" />
                 </div>
               )}
               <div className="flex flex-col min-w-0">
@@ -262,7 +262,7 @@ export default function ErpMainHub() {
                    <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner">
-                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-contain" /> : <img src="https://picsum.photos/seed/gj5-avatar/100/100" className="w-full h-full object-contain" />}
+                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-contain" /> : <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" />}
                 </div>
               </div>
             </div>

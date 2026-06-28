@@ -56,9 +56,11 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md bg-white border-slate-100 shadow-2xl relative z-10 overflow-hidden rounded-[2.5rem]">
         <CardContent className="p-10">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-2xl shadow-xl">G</div>
+            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-xl p-1">
+               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-base font-headline font-black text-slate-900 uppercase italic">Home Service ERP</span>
+              <span className="text-base font-headline font-black text-slate-900 uppercase italic">GJ5 ERP</span>
               <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Master Registration</span>
             </div>
           </div>
@@ -122,7 +124,7 @@ export default function RegisterPage() {
             <Button 
               type="submit" 
               disabled={loading}
-              className="w-full h-16 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-black text-lg uppercase mt-6 shadow-xl shadow-red-600/20 text-white"
+              className="w-full h-16 bg-[#123C8C] hover:bg-[#0D2E63] rounded-2xl font-headline font-black text-lg uppercase mt-6 shadow-xl shadow-blue-600/20 text-white"
             >
               {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Register Identity <ChevronRight className="ml-2 w-5 h-5" /></>}
             </Button>

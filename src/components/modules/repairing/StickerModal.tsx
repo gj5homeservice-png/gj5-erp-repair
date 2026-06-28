@@ -74,7 +74,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                   {shopLogo ? (
                     <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
-                    <img src="https://picsum.photos/seed/gj5-logo-sticker/100/100" className="max-w-full max-h-full object-contain opacity-40" alt="GJ5 ERP" />
+                    <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="max-w-full max-h-full object-contain" alt="GJ5 ERP" />
                   )}
                 </div>
 

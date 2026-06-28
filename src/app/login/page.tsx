@@ -102,7 +102,7 @@ export default function LoginPage() {
           </div>
 
           <div className="w-20 h-20 rounded-2xl bg-white p-2 flex items-center justify-center mb-6 shadow-lg shadow-blue-900/20">
-            <img src="https://picsum.photos/seed/gj5-logo-login/200/200" className="w-full h-full object-contain" alt="GJ5 ERP Logo" />
+            <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="GJ5 ERP Logo" />
           </div>
 
           <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 ERP</h1>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -71,11 +72,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
             <div className="flex flex-1 gap-6 items-center">
               <div className="flex flex-col items-center gap-1.5 flex-1">
                 <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden mb-1">
-                  {shopLogo ? (
-                    <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
-                  ) : (
-                    <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="max-w-full max-h-full object-contain" alt="GJ5 ERP" />
-                  )}
+                  <img src={shopLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} alt="Logo" className="max-w-full max-h-full object-contain" data-ai-hint="official logo" />
                 </div>
 
                 <div className="p-1.5 bg-white border border-slate-900 rounded-lg">

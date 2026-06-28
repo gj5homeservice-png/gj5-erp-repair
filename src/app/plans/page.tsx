@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -99,7 +100,7 @@ export default function PlansPage() {
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
            <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
-               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" />
+               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 ERP</span>

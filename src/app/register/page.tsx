@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -57,7 +58,7 @@ export default function RegisterPage() {
         <CardContent className="p-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-xl p-1">
-               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" />
+               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
             </div>
             <div className="flex flex-col">
               <span className="text-base font-headline font-black text-slate-900 uppercase italic">GJ5 ERP</span>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -191,15 +192,9 @@ export default function ErpMainHub() {
         <aside className="w-72 bg-slate-900/40 border-r border-slate-800 backdrop-blur-xl hidden lg:flex flex-col z-20 shrink-0">
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
-              {companyLogo ? (
-                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800 bg-white">
-                   <img src={companyLogo} className="w-full h-full object-contain" alt="Logo" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
-                  <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="GJ5 ERP" />
-                </div>
-              )}
+              <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800 bg-white">
+                <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
+              </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
                 <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'GOOD JOB 5 ERP'}</span>
@@ -262,7 +257,7 @@ export default function ErpMainHub() {
                    <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner">
-                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-contain" /> : <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" />}
+                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Profile" data-ai-hint="official logo" />
                 </div>
               </div>
             </div>

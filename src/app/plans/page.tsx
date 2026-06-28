@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -7,7 +8,8 @@ import {
   ShieldCheck, 
   Zap,
   Calendar,
-  Infinity
+  Clock,
+  Gem
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -21,44 +23,44 @@ const PLANS = [
     title: 'FREE TRIAL',
     price: '₹0',
     duration: '7 Days',
-    desc: 'Perfect for exploring core features.',
+    desc: 'Explore the core appliance service matrix.',
     icon: Zap,
     button: 'Start Free Trial',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50'
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10'
+  },
+  {
+    id: '3months',
+    title: '3 MONTHS',
+    price: '₹2,999',
+    duration: '3 Months',
+    desc: 'Ideal for small service centers.',
+    icon: Clock,
+    button: 'Choose 3 Months',
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10'
   },
   {
     id: '6months',
     title: '6 MONTHS',
     price: '₹5,999',
     duration: '6 Months',
-    desc: 'Ideal for small service hubs.',
+    desc: 'Standard license for growing businesses.',
     icon: Calendar,
     button: 'Choose 6 Months',
-    color: 'text-amber-600',
-    bg: 'bg-amber-50'
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10'
   },
   {
-    id: '1year',
-    title: '1 YEAR',
-    price: '₹10,999',
-    duration: '1 Year',
-    desc: 'Best for growing businesses.',
-    icon: Calendar,
-    button: 'Choose 1 Year',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50'
-  },
-  {
-    id: 'lifetime',
-    title: 'LIFETIME',
-    price: '₹25,999',
-    duration: 'Lifetime',
-    desc: 'One-time payment. Forever access.',
-    icon: Infinity,
-    button: 'Choose Lifetime',
-    color: 'text-[#DC2626]',
-    bg: 'bg-red-50',
+    id: '12months',
+    title: '12 MONTHS',
+    price: '₹9,999',
+    duration: '12 Months',
+    desc: 'Master license for full enterprise control.',
+    icon: Gem,
+    button: 'Choose 12 Months',
+    color: 'text-[#FF3366]',
+    bg: 'bg-rose-500/10',
     highlight: true
   }
 ];
@@ -72,17 +74,17 @@ export default function PlansPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-body selection:bg-red-100">
-      <header className="h-20 border-b border-slate-100 flex items-center px-6 md:px-12">
+    <div className="min-h-screen bg-[#0B0F19] text-slate-100 font-body selection:bg-blue-500/30">
+      <header className="h-20 border-b border-slate-800 bg-[#0B0F19]/80 backdrop-blur-md sticky top-0 z-50 flex items-center px-6 md:px-12">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
            <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-xl shadow-lg">G</div>
             <div className="flex flex-col">
-              <span className="text-sm font-headline font-black tracking-tighter leading-none">GJ5 HOME SERVICE</span>
-              <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">Enterprise Plans</span>
+              <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</span>
+              <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-1">Enterprise Plans</span>
             </div>
           </Link>
-          <Link href="/" className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">
+          <Link href="/" className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back Home
           </Link>
         </div>
@@ -90,8 +92,8 @@ export default function PlansPage() {
 
       <main className="py-20 px-6">
         <div className="max-w-7xl mx-auto text-center space-y-4 mb-16">
-          <h1 className="text-4xl md:text-5xl font-headline font-black tracking-tight text-[#0F172A]">Choose your <span className="text-[#DC2626]">Software Node</span></h1>
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">Select a subscription plan to unlock the master home appliance service hub.</p>
+          <h1 className="text-4xl md:text-5xl font-headline font-black tracking-tight text-white">Choose your <span className="text-[#0066FF]">Software Node</span></h1>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto font-medium">Select a subscription plan to unlock the master home appliance service hub.</p>
         </div>
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -99,13 +101,15 @@ export default function PlansPage() {
             <Card 
               key={plan.id} 
               className={cn(
-                "border-2 transition-all duration-500 rounded-[2.5rem] overflow-hidden group hover:shadow-2xl flex flex-col",
-                plan.highlight ? "border-[#DC2626] shadow-xl shadow-red-600/10 scale-105" : "border-slate-100 hover:border-slate-300"
+                "border-2 transition-all duration-500 rounded-[2.5rem] overflow-hidden group flex flex-col relative",
+                plan.highlight 
+                  ? "bg-slate-900 border-[#0066FF] shadow-2xl shadow-blue-600/10 scale-105 z-10" 
+                  : "bg-slate-900/40 border-slate-800 hover:border-slate-700"
               )}
             >
               {plan.highlight && (
-                 <div className="bg-[#DC2626] text-white py-2 text-center text-[10px] font-black uppercase tracking-[0.3em]">
-                    Best Value Selection
+                 <div className="bg-[#0066FF] text-white py-2 text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+                    <Gem className="w-3 h-3" /> Best Value Selection
                  </div>
               )}
               <CardHeader className="p-8 pb-0 flex flex-col items-center text-center space-y-4">
@@ -113,31 +117,53 @@ export default function PlansPage() {
                     <plan.icon className="w-8 h-8" />
                  </div>
                  <div className="space-y-1">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">{plan.title}</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">{plan.title}</h3>
                     <div className="flex items-baseline gap-1 justify-center">
-                       <span className="text-4xl font-headline font-black text-slate-900">{plan.price}</span>
-                       <span className="text-xs font-bold text-slate-400 uppercase">/ {plan.duration}</span>
+                       <span className="text-4xl font-headline font-black text-white">{plan.price}</span>
+                       <span className="text-xs font-bold text-slate-500 uppercase">/ {plan.duration}</span>
                     </div>
                  </div>
               </CardHeader>
               <CardContent className="p-8 pt-6 flex-1 flex flex-col justify-between space-y-8">
                  <div className="space-y-4">
-                    <p className="text-sm font-medium text-slate-600 leading-relaxed italic border-b border-slate-100 pb-4">"{plan.desc}"</p>
+                    <p className="text-sm font-medium text-slate-400 leading-relaxed italic border-b border-slate-800 pb-4">"{plan.desc}"</p>
                     <ul className="space-y-3 text-left">
-                       {['Universal Call Registry', 'GST Billing Engine', 'Inventory & Stock', 'Workforce Tracking', 'Cloud Sync Matrix'].map((feat, i) => (
-                         <li key={i} className="flex items-center gap-3 text-xs font-bold text-slate-500">
+                       {[
+                         'Universal Call Registry', 
+                         'GST Billing Engine', 
+                         'Inventory & Stock', 
+                         'Workforce Tracking', 
+                         'Cloud Sync Matrix'
+                       ].map((feat, i) => (
+                         <li key={i} className="flex items-center gap-3 text-xs font-bold text-slate-300">
                             <CheckCircle2 className={cn("w-4 h-4 shrink-0", plan.color)} />
                             {feat}
                          </li>
                        ))}
                     </ul>
                  </div>
-                 <Button onClick={() => handleSelectPlan(plan.id)} className={cn("w-full h-14 rounded-2xl font-headline font-bold text-sm uppercase", plan.highlight ? "bg-[#DC2626] hover:bg-[#B91C1C] text-white" : "bg-[#0F172A] hover:bg-[#1E293B] text-white")}>
+                 <Button 
+                   onClick={() => handleSelectPlan(plan.id)} 
+                   className={cn(
+                     "w-full h-14 rounded-2xl font-headline font-bold text-sm uppercase transition-all active:scale-95",
+                     plan.highlight 
+                       ? "bg-[#0066FF] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+                       : "bg-slate-800 hover:bg-slate-700 text-white"
+                   )}
+                 >
                    {plan.button}
                  </Button>
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="max-w-xl mx-auto mt-20 p-6 bg-slate-900/40 border border-slate-800 rounded-3xl text-center space-y-2">
+           <div className="flex justify-center gap-2 mb-2">
+              {[1, 2, 3].map(i => <ShieldCheck key={i} className="w-5 h-5 text-blue-500" />)}
+           </div>
+           <h4 className="text-sm font-bold uppercase tracking-widest text-white">Enterprise Security Node</h4>
+           <p className="text-xs text-slate-500 leading-relaxed">All plans include end-to-end encryption, daily automated backups, and 24/7 industrial support nodes.</p>
         </div>
       </main>
     </div>

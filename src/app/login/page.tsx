@@ -44,7 +44,7 @@ export default function LoginPage() {
     if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
       localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
       localStorage.setItem('gj5_active_user', email);
-      toast({ title: "Identity Verified", description: "Accessing Workspace Console..." });
+      toast({ title: "Identity Verified", description: "Accessing GJ5 ERP Console..." });
       router.push('/dashboard');
     } else {
       toast({ 
@@ -86,8 +86,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 relative overflow-hidden font-body">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px]"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#123C8C]/10 rounded-full blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#E53935]/10 rounded-full blur-[120px]"></div>
 
       <Card className="w-full max-w-md bg-slate-900/40 border-slate-800 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden rounded-[2.5rem]">
         <CardContent className="p-8 flex flex-col items-center">
@@ -96,22 +96,22 @@ export default function LoginPage() {
                <ArrowLeft className="w-5 h-5" />
              </Link>
              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Admin Console V3.5</span>
+                <span className="text-[10px] font-black text-[#123C8C] uppercase tracking-widest">ERP CONSOLE V4.0</span>
                 <span className="text-[8px] text-slate-600 uppercase font-bold">Secure Gateway</span>
              </div>
           </div>
 
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0066FF] to-blue-700 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
-            <LogIn className="w-8 h-8 text-white" />
+          <div className="w-20 h-20 rounded-2xl bg-white p-2 flex items-center justify-center mb-6 shadow-lg shadow-blue-900/20">
+            <img src="https://picsum.photos/seed/gj5-logo-login/200/200" className="w-full h-full object-contain" alt="GJ5 ERP Logo" />
           </div>
 
-          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 HOME SERVICE</h1>
-          <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">Industrial Enterprise Console</p>
+          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 ERP</h1>
+          <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">GOOD JOB 5 ERP</p>
 
           <Tabs defaultValue="admin" className="w-full">
             <TabsList className="grid grid-cols-2 bg-slate-950/50 border border-slate-800 h-11 p-1 rounded-xl mb-8">
-              <TabsTrigger value="admin" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Email Access</TabsTrigger>
-              <TabsTrigger value="associate" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#0066FF] data-[state=active]:text-white">Mobile Access</TabsTrigger>
+              <TabsTrigger value="admin" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#123C8C] data-[state=active]:text-white">Email Access</TabsTrigger>
+              <TabsTrigger value="associate" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#123C8C] data-[state=active]:text-white">Mobile Access</TabsTrigger>
             </TabsList>
 
             <TabsContent value="admin" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
@@ -145,7 +145,7 @@ export default function LoginPage() {
                 <Button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold uppercase text-xs mt-4 shadow-lg shadow-blue-500/20"
+                  className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] rounded-xl font-bold uppercase text-xs mt-4 shadow-lg shadow-blue-500/20"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Dashboard"}
                 </Button>
@@ -173,7 +173,7 @@ export default function LoginPage() {
                     id="send-otp-btn"
                     onClick={handleSendOtp}
                     disabled={loading || !phone}
-                    className="w-full h-12 bg-[#0066FF] hover:bg-blue-600 rounded-xl font-bold uppercase text-xs mt-2"
+                    className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] rounded-xl font-bold uppercase text-xs mt-2"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Dispatch Verification OTP"}
                   </Button>
@@ -199,7 +199,7 @@ export default function LoginPage() {
                     <Button 
                       onClick={handleVerifyOtp}
                       disabled={loading || otp.length < 6}
-                      className="flex-[2] h-12 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold uppercase text-xs"
+                      className="flex-[2] h-12 bg-[#10B981] hover:bg-emerald-700 rounded-xl font-bold uppercase text-xs text-white"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Authenticate Identity"}
                     </Button>

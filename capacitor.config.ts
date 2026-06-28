@@ -2,12 +2,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.gj5.erp',
-  appName: 'GJ5 HOME SERVICE',
+  appName: 'GJ5 ERP',
   webDir: 'out',
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
-    cleartext: true // Allows local API testing if needed
+    cleartext: true
   },
   android: {
     allowMixedContent: true,

@@ -108,7 +108,7 @@ export function SalaryModule({ store }: { store: any }) {
 
   const handlePrintSlip = (record: SalaryRecord) => {
     const doc = new jsPDF('p', 'mm', 'a5');
-    const accent = [0, 102, 255];
+    const accent = [18, 60, 140]; // GJ5 ERP Blue #123C8C
 
     // Header
     doc.setFillColor(15, 23, 42);
@@ -116,10 +116,10 @@ export function SalaryModule({ store }: { store: any }) {
     doc.setTextColor(255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('GJ5 HOME SERVICE', 10, 12);
+    doc.text('GJ5 ERP', 10, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('INDUSTRIAL PAYROLL MANIFEST', 10, 18);
+    doc.text('GOOD JOB 5 ERP - INDUSTRIAL PAYROLL', 10, 18);
     doc.text(`DATE: ${format(new Date(), 'dd/MM/yyyy')}`, 138, 15, { align: 'right' });
 
     // Employee Info
@@ -175,12 +175,12 @@ export function SalaryModule({ store }: { store: any }) {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
+          <div className="p-3 bg-[#123C8C] rounded-xl text-white shadow-lg shadow-blue-900/20">
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-headline font-bold">Payroll Dashboard</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial Disbursement Ledger V4.1</p>
+            <h2 className="text-xl md:text-2xl font-headline font-bold">Payroll Hub</h2>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 ERP Industrial Ledger</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -273,37 +273,17 @@ export function SalaryModule({ store }: { store: any }) {
             {filteredSalaries.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} className="h-48 text-center text-slate-700 font-medium italic">
-                  No payroll records detected for this period. Run the calculation matrix for active employees.
+                  No records found. Run the calculation matrix for active associates.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-
-      <Card className="bg-slate-900/40 border-slate-800 border-dashed">
-         <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-               <div className="p-3 bg-blue-600/10 rounded-2xl text-blue-400"><TrendingUp className="w-6 h-6" /></div>
-               <div>
-                  <h4 className="font-bold text-slate-100 uppercase text-xs tracking-widest">Process Monthly Run</h4>
-                  <p className="text-[10px] text-slate-500 mt-1 italic">Selecting an associate will trigger a real-time audit of attendance records for the active period.</p>
-               </div>
-            </div>
-            <div className="flex gap-2">
-               {store.employees.filter((e: any) => e.status === 'Active').slice(0, 3).map((e: any) => (
-                 <Button key={e.id} onClick={() => processMonthlySalary(e)} size="sm" variant="outline" className="h-9 text-[9px] font-black uppercase border-slate-700 hover:bg-blue-600/10">
-                    Run for {e.name.split(' ')[0]}
-                 </Button>
-               ))}
-               <Button size="sm" className="bg-blue-600 h-9 text-[9px] font-black uppercase shadow-lg shadow-blue-500/20"><Plus className="w-3 h-3 mr-1.5" /> Batch Execute</Button>
-            </div>
-         </CardContent>
-      </Card>
       
       <div className="flex items-center gap-2 p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-         <p className="text-[10px] text-slate-500 italic">Disbursement Logic Node: 30-day base cycle is used for all calculations. Overtime and custom bonuses must be adjusted via manual transaction nodes in the Wallet Module if required.</p>
+         <p className="text-[10px] text-slate-500 italic">GJ5 ERP Payroll Logic: 30-day base cycle is used for all calculations. Manual adjustments can be made via the Wallet Module if required.</p>
       </div>
     </div>
   );

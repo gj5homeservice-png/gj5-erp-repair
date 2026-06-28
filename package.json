@@ -1,9 +1,9 @@
 {
   "name": "gj5-erp",
-  "version": "0.1.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "GJ5 HOME SERVICE ERP - Multi-Platform Mobile & Desktop Console",
+  "description": "GOOD JOB 5 ERP - Smart Business Management Software",
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -p 9002",
@@ -82,8 +82,8 @@
   },
   "build": {
     "appId": "com.gj5.erp",
-    "productName": "GJ5 HOME SERVICE",
-    "copyright": "Copyright © 2024 GJ5 Enterprise",
+    "productName": "GJ5 ERP",
+    "copyright": "Copyright © 2025 GJ5 Enterprise",
     "directories": {
       "output": "dist"
     },

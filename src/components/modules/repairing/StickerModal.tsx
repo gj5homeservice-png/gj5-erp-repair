@@ -45,7 +45,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
                 <Printer className="w-5 h-5" />
               </div>
-              <DialogTitle className="text-xl font-headline font-bold">Sticker Print Preview Console</DialogTitle>
+              <DialogTitle className="text-xl font-headline font-bold">Label Print Console</DialogTitle>
             </div>
           </div>
         </DialogHeader>
@@ -61,10 +61,10 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
           >
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2">
               <div className="flex flex-col">
-                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase text-[#123C8C]">GJ5 ERP</h1>
               </div>
               <div className="text-right">
-                <h2 className="text-xl font-black text-red-600 leading-none">MO-88669 83900</h2>
+                <h2 className="text-xl font-black text-[#E53935] leading-none">88669 83900</h2>
               </div>
             </div>
 
@@ -74,10 +74,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                   {shopLogo ? (
                     <img src={shopLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
-                    <div className="flex flex-col items-center opacity-30">
-                      <ImageIcon className="w-5 h-5" />
-                      <span className="text-[6px] font-bold uppercase">Shop Logo</span>
-                    </div>
+                    <img src="https://picsum.photos/seed/gj5-logo-sticker/100/100" className="max-w-full max-h-full object-contain opacity-40" alt="GJ5 ERP" />
                   )}
                 </div>
 
@@ -87,7 +84,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                 
                 <div className="text-center mt-1">
                   <span className="text-[10px] font-black uppercase tracking-tighter bg-slate-900 text-white px-2 py-0.5 rounded leading-none">
-                    CUSTOMER ID - {call.customerId}
+                    ID: {call.customerId}
                   </span>
                 </div>
               </div>
@@ -104,25 +101,28 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
                   />
                 </div>
                 <div className="text-center w-full">
-                  <span className="text-xl font-black uppercase tracking-widest block leading-none">
-                    JOB ID - {call.id}
+                  <span className="text-xl font-black uppercase tracking-widest block leading-none text-[#123C8C]">
+                    JOB: {call.id}
                   </span>
                   <p className="text-[11px] font-bold text-slate-800 mt-1 uppercase leading-tight">
-                    {call.brand} {call.model} - {call.screenSize}"
+                    {call.brand} {call.model}
                   </p>
                 </div>
               </div>
+            </div>
+            <div className="absolute bottom-1 right-2">
+               <span className="text-[5px] font-black uppercase text-slate-300">Powered by GOOD JOB 5 ERP</span>
             </div>
           </div>
 
           <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 w-full max-w-lg space-y-4">
             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Thermal Calibration
+              <Settings className="w-4 h-4" /> Calibration Logic
             </h4>
-            <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
-              <li>Printer Target: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
-              <li>Left QR encodes <span className="text-emerald-400">Full Metadata Manifest</span>.</li>
-              <li>Right Barcode encodes <span className="text-blue-400">Raw Alphanumeric Job ID</span>.</li>
+            <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4 italic">
+              <li>Printer: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
+              <li>QR Node: <span className="text-emerald-400">Full Metadata Manifest</span>.</li>
+              <li>Barcode Node: <span className="text-blue-400">Raw Alphanumeric Job ID</span>.</li>
             </ul>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
           <Button variant="ghost" onClick={onClose} className="rounded-xl">Cancel</Button>
           <Button 
             onClick={handlePrint} 
-            className="bg-[#0066FF] hover:bg-blue-600 px-10 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-500/20"
+            className="bg-[#123C8C] hover:bg-[#0D2E63] px-10 h-12 rounded-xl font-bold flex gap-2 shadow-lg shadow-blue-900/20"
           >
             <Printer className="w-5 h-5" />
             Print Sticker Label

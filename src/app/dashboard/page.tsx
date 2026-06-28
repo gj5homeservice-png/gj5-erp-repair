@@ -47,7 +47,7 @@ const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-end">
       <div>
-        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Enterprise Console</h2>
+        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">GJ5 ERP Console</h2>
         <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Workspace Status: Operational</p>
       </div>
       <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
@@ -86,7 +86,7 @@ const DashboardModule = ({ store }: { store: any }) => (
       <div className="lg:col-span-2 bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
            <h3 className="text-lg font-headline font-bold text-white flex items-center gap-2">
-             <Bell className="w-5 h-5 text-blue-500" /> Recent Service Activity
+             <Bell className="w-5 h-5 text-blue-500" /> Recent Activity
            </h3>
         </div>
         <div className="divide-y divide-slate-800">
@@ -104,7 +104,7 @@ const DashboardModule = ({ store }: { store: any }) => (
                 <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase">Active</Badge>
              </div>
            ))}
-           {store.calls.length === 0 && <div className="p-10 text-center text-slate-600 text-xs italic">Awaiting service entries...</div>}
+           {store.calls.length === 0 && <div className="p-10 text-center text-slate-600 text-xs italic">Awaiting entries...</div>}
         </div>
       </div>
 
@@ -181,7 +181,7 @@ export default function ErpMainHub() {
   };
 
   const companyLogo = store.companyProfile?.logo;
-  const companyName = store.companyProfile?.companyName || "Home Appliance ERP";
+  const companyName = store.companyProfile?.companyName || "GJ5 ERP Workspace";
   const ownerName = store.companyProfile?.ownerName || "System Admin";
 
   return (
@@ -192,15 +192,17 @@ export default function ErpMainHub() {
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
               {companyLogo ? (
-                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800">
-                   <img src={companyLogo} className="w-full h-full object-cover" alt="Logo" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-800 bg-white">
+                   <img src={companyLogo} className="w-full h-full object-contain" alt="Logo" />
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black italic text-xl shadow-lg">S</div>
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1">
+                  <img src="https://picsum.photos/seed/gj5-logo-sidebar/100/100" className="w-full h-full object-contain" alt="GJ5 ERP" />
+                </div>
               )}
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
-                <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'Enterprise Matrix'}</span>
+                <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'GOOD JOB 5 ERP'}</span>
               </div>
             </div>
           </div>
@@ -213,11 +215,11 @@ export default function ErpMainHub() {
                 className={cn(
                   "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
                   activeTab === item.name 
-                    ? "bg-[#0066FF] text-white shadow-lg shadow-blue-500/20" 
+                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20" 
                     : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                 )}
               >
-                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-blue-400")} />
+                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
                 <span className="text-xs font-bold tracking-tight">{item.name}</span>
                 {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
               </button>
@@ -228,7 +230,7 @@ export default function ErpMainHub() {
             <Button 
               onClick={handleLogout}
               variant="ghost" 
-              className="w-full justify-start gap-4 text-slate-500 hover:text-rose-500 hover:bg-rose-500/5 h-12 rounded-xl"
+              className="w-full justify-start gap-4 text-slate-500 hover:text-[#E53935] hover:bg-red-500/5 h-12 rounded-xl"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-bold">Terminate Session</span>
@@ -244,7 +246,7 @@ export default function ErpMainHub() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
                   <Input 
                     placeholder="Audit: Jobs, Stock, Invoices..." 
-                    className="pl-10 h-11 border-slate-800 focus-visible:ring-blue-500 placeholder:text-slate-600 bg-white text-slate-900"
+                    className="pl-10 h-11 border-slate-800 focus-visible:ring-[#123C8C] placeholder:text-slate-600 bg-white text-slate-900"
                   />
                </div>
             </div>
@@ -252,15 +254,15 @@ export default function ErpMainHub() {
             <div className="flex items-center gap-6">
               <Button size="icon" variant="ghost" className="relative text-slate-400">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0B0F19]"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-[#E53935] rounded-full border-2 border-[#0B0F19]"></span>
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">
                    <p className="text-xs font-bold text-white">{ownerName}</p>
                    <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 overflow-hidden">
-                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner">
+                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-contain" /> : <img src="https://picsum.photos/seed/gj5-avatar/100/100" className="w-full h-full object-contain" />}
                 </div>
               </div>
             </div>

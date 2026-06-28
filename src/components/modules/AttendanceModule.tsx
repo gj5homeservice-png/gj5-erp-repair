@@ -83,14 +83,12 @@ export function AttendanceModule({ store }: { store: any }) {
   const handleSendWhatsAppLink = (emp: Employee) => {
     const token = store.generateAttendanceLink(emp);
     
-    // Logic: In Capacitor apps, window.location.origin is 'https://localhost'. 
-    // We must use the production URL for technicians to open links in their own browsers.
     const isMobileApp = typeof window !== 'undefined' && (window as any).Capacitor;
     const baseUrl = isMobileApp ? PRODUCTION_URL : window.location.origin;
     
     const attendanceUrl = `${baseUrl}/attendance?token=${token}`;
     
-    const msg = `🔐 *GJ5 Secure Smart Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification is required to log your shift. Click below to capture your Biometric Selfie and GPS Node. \n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* One-time use only.\n📍 GPS + Selfie verification mandatory.`;
+    const msg = `🔐 *GJ5 ERP Secure Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification required for shift entry. Click below for GPS + Selfie proof.\n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* Powered by GJ5 ERP.`;
     
     const whatsappUrl = `https://wa.me/91${emp.mobile}?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
@@ -108,25 +106,24 @@ export function AttendanceModule({ store }: { store: any }) {
       'Check Out': a.checkOut ? format(parseISO(a.checkOut), 'hh:mm a') : '--',
       'Work Hours': a.workHours,
       Status: a.status,
-      Address: a.address || 'N/A',
-      Device: a.deviceInfo?.split(')')[0] + ')'
+      Address: a.address || 'N/A'
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-    XLSX.writeFile(wb, `GJ5_Attendance_${dateFilter}.xlsx`);
+    XLSX.writeFile(wb, `GJ5_ERP_Attendance_${dateFilter}.xlsx`);
   };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-[#0066FF] rounded-xl text-white shadow-lg shadow-blue-500/20">
+          <div className="p-3 bg-[#123C8C] rounded-xl text-white shadow-lg shadow-blue-900/20">
             <CalendarCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-headline font-bold">Secure Smart Attendance</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Identity Verified Access V4.2</p>
+            <h2 className="text-xl md:text-2xl font-headline font-bold">Secure Attendance Matrix</h2>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 ERP ID PROTOCOL V4.0</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -137,7 +134,7 @@ export function AttendanceModule({ store }: { store: any }) {
             className="bg-slate-950 border-slate-800 h-10 w-40 text-xs font-bold" 
           />
           <Button onClick={exportExcel} variant="outline" className="border-slate-800 h-10 text-[10px] uppercase font-bold">
-            <Download className="w-4 h-4 mr-2" /> Master Export
+            <Download className="w-4 h-4 mr-2" /> Export Logs
           </Button>
         </div>
       </div>
@@ -151,7 +148,7 @@ export function AttendanceModule({ store }: { store: any }) {
           { label: 'On Shift', value: stats.checkedInCount, sub: 'Check-In Active', icon: Navigation, color: 'text-indigo-400' },
           { label: 'Pending End', value: stats.checkOutPending, sub: 'Wait Check-Out', icon: Clock, color: 'text-orange-400' },
         ].map((s, i) => (
-          <Card key={i} className="bg-slate-900/40 border-slate-800 shadow-lg group hover:border-blue-500/30 transition-all">
+          <Card key={i} className="bg-slate-900/40 border-slate-800 shadow-lg group hover:border-blue-900/30 transition-all">
             <CardContent className="p-4 flex flex-col justify-between h-full gap-2">
               <div className="flex justify-between items-start">
                 <p className="text-[9px] font-bold text-slate-500 uppercase">{s.label}</p>
@@ -171,9 +168,9 @@ export function AttendanceModule({ store }: { store: any }) {
            <Card className="bg-slate-900/40 border-slate-800">
               <CardHeader className="p-5 border-b border-slate-800">
                  <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-blue-400" /> Biometric Link Dispatch
+                    <Camera className="w-4 h-4 text-[#123C8C]" /> Link Dispatch
                  </CardTitle>
-                 <CardDescription className="text-[10px] text-slate-500 uppercase">Selfie + GPS verification required</CardDescription>
+                 <CardDescription className="text-[10px] text-slate-500 uppercase font-bold">GOOD JOB 5 ERP PROTOCOL</CardDescription>
               </CardHeader>
               <CardContent className="p-0 max-h-[500px] overflow-y-auto custom-scrollbar">
                  <div className="divide-y divide-slate-800">
@@ -186,7 +183,7 @@ export function AttendanceModule({ store }: { store: any }) {
                       return (
                         <div key={emp.id} className="p-4 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-blue-500 overflow-hidden border border-slate-700">
+                              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-[#123C8C] overflow-hidden border border-slate-700">
                                  {emp.photo ? <img src={emp.photo} className="w-full h-full object-cover" alt={emp.name} /> : emp.name[0]}
                               </div>
                               <div className="flex flex-col">
@@ -196,7 +193,7 @@ export function AttendanceModule({ store }: { store: any }) {
                            </div>
                            <div className="flex gap-1.5">
                               {!att && (
-                                <Button size="sm" onClick={() => handleSendWhatsAppLink(emp)} className="bg-[#0066FF] hover:bg-blue-600 h-9 px-4 text-[10px] font-black uppercase shadow-lg">
+                                <Button size="sm" onClick={() => handleSendWhatsAppLink(emp)} className="bg-[#123C8C] hover:bg-[#0D2E63] h-9 px-4 text-[10px] font-black uppercase shadow-lg">
                                    <Share2 className="w-3.5 h-3.5 mr-2" /> SEND LINK
                                 </Button>
                               )}
@@ -206,7 +203,7 @@ export function AttendanceModule({ store }: { store: any }) {
                                 </Button>
                               )}
                               {isCheckedOut && (
-                                <Badge className="bg-emerald-500/10 text-emerald-500 text-[8px] uppercase border-0 h-9 px-3 flex items-center">SHIFT DONE</Badge>
+                                <Badge className="bg-emerald-500/10 text-emerald-400 text-[8px] uppercase border-0 h-9 px-3 flex items-center">SHIFT DONE</Badge>
                               )}
                            </div>
                         </div>
@@ -216,38 +213,26 @@ export function AttendanceModule({ store }: { store: any }) {
               </CardContent>
            </Card>
            
-           <Card className="bg-blue-600/5 border-blue-600/20 border-dashed">
+           <Card className="bg-[#123C8C]/5 border-[#123C8C]/20 border-dashed">
               <CardContent className="p-5 space-y-4">
                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />
-                    <h4 className="text-xs font-bold uppercase text-blue-400">Security Matrix 4.2</h4>
+                    <ShieldCheck className="w-5 h-5 text-[#123C8C] shrink-0" />
+                    <h4 className="text-xs font-bold uppercase text-[#123C8C]">GJ5 ERP Integrity</h4>
                  </div>
-                 <p className="text-[10px] text-slate-400 italic leading-relaxed">Identity Integrity Protocol Active. Remote biometric proofs (Selfie) and Geospatial node verification are mandatory for all shifts. Attempts to share links are logged as security breaches.</p>
+                 <p className="text-[10px] text-slate-400 italic leading-relaxed">Identity Integrity Protocol Active. Remote biometric proofs (Selfie) and Geospatial node verification are mandatory. Attempts to share links are logged as security breaches.</p>
               </CardContent>
            </Card>
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
-              <div className="relative w-full">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                 <Input 
-                   placeholder="Search ID, Associate Name..." 
-                   value={searchQuery} 
-                   onChange={e => setSearchQuery(e.target.value)} 
-                   className="pl-10 bg-slate-950 border-slate-800 h-10" 
-                 />
-              </div>
-           </div>
-
            <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
               <Table>
                 <TableHeader className="bg-slate-900/60">
                   <TableRow className="border-slate-800">
                     <TableHead className="text-[10px] font-black uppercase px-6">Associate Node</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase">Session Timeline</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase">Biometric Proof</TableHead>
-                    <TableHead className="text-right text-[10px] font-black uppercase px-6">Status & Audit</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase">Timeline</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase">Proof</TableHead>
+                    <TableHead className="text-right text-[10px] font-black uppercase px-6">Audit Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,37 +269,31 @@ export function AttendanceModule({ store }: { store: any }) {
                               rec.status === 'Checked Out' ? "bg-emerald-500/10 text-emerald-400" : 
                               rec.status === 'Late' ? "bg-amber-500/10 text-amber-500" : 
                               rec.status === 'Checked In' ? "bg-blue-500/10 text-blue-400 animate-pulse" : 
-                              rec.status === 'Half Day' ? "bg-indigo-500/10 text-indigo-400" :
                               "bg-rose-500/10 text-rose-400"
                             )}>
                                {rec.status}
                             </Badge>
                             <Button variant="ghost" size="icon" onClick={() => setViewingRecord(rec)} className="h-8 w-8 text-blue-400"><Eye className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => setDeleteId(rec.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>
                          </div>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredAttendance.length === 0 && (
-                    <TableRow><TableCell colSpan={4} className="h-48 text-center text-slate-700 text-xs italic">No session logs committed for this audit period.</TableCell></TableRow>
-                  )}
                 </TableBody>
               </Table>
            </div>
         </div>
       </div>
 
-      {/* Audit Detail Modal */}
       <Dialog open={!!viewingRecord} onOpenChange={() => setViewingRecord(null)}>
          <DialogContent className="max-w-2xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl">
             <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50">
                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                  <div className="w-10 h-10 rounded-xl bg-[#123C8C] flex items-center justify-center text-white shadow-lg">
                      <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
-                     <DialogTitle className="text-xl font-headline font-bold">Attendance Audit Trail</DialogTitle>
-                     <DialogDescription className="text-[10px] text-slate-500 uppercase font-black">Forensic verification manifest</DialogDescription>
+                     <DialogTitle className="text-xl font-headline font-bold">Manifest Audit Node</DialogTitle>
+                     <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">GOOD JOB 5 ERP FORENSICS</DialogDescription>
                   </div>
                </div>
             </DialogHeader>
@@ -324,46 +303,21 @@ export function AttendanceModule({ store }: { store: any }) {
                   <div className="grid grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-1">
-                           <Label className="text-[10px] uppercase font-black text-slate-500">Biometric Check-In Selfie</Label>
+                           <Label className="text-[10px] uppercase font-black text-slate-500">Check-In Biometric</Label>
                            <div className="aspect-[4/3] rounded-3xl bg-slate-950 border border-slate-800 overflow-hidden">
                               <img src={viewingRecord.selfieCheckIn} className="w-full h-full object-cover scale-x-[-1]" alt="Check In Selfie" />
                            </div>
                         </div>
-                        {viewingRecord.selfieCheckOut && (
-                           <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-black text-slate-500">Check-Out Selfie Proof</Label>
-                              <div className="aspect-[4/3] rounded-3xl bg-slate-950 border border-slate-800 overflow-hidden">
-                                 <img src={viewingRecord.selfieCheckOut} className="w-full h-full object-cover scale-x-[-1]" alt="Check Out Selfie" />
-                              </div>
-                           </div>
-                        )}
                      </div>
                      <div className="space-y-6">
                         <div className="space-y-1">
-                           <Label className="text-[10px] uppercase font-black text-slate-500">Associate Node</Label>
+                           <Label className="text-[10px] uppercase font-black text-slate-500">Associate Authority</Label>
                            <h4 className="text-lg font-bold">{viewingRecord.employeeName}</h4>
-                           <p className="text-xs text-blue-400 font-code">{viewingRecord.employeeId}</p>
+                           <p className="text-xs text-[#123C8C] font-code">{viewingRecord.employeeId}</p>
                         </div>
-                        <div className="space-y-4 p-5 bg-slate-950/50 rounded-3xl border border-slate-800">
-                           <div className="space-y-1">
-                              <span className="text-[9px] font-black uppercase text-slate-600">Verification Timestamp</span>
-                              <p className="text-xs font-medium text-slate-300">{format(parseISO(viewingRecord.checkIn || ""), 'PPP p')}</p>
-                           </div>
-                           <div className="space-y-1">
-                              <span className="text-[9px] font-black uppercase text-slate-600">Geospatial Destination</span>
-                              <p className="text-[11px] font-medium text-emerald-400 italic leading-relaxed">{viewingRecord.address}</p>
-                           </div>
-                           <div className="flex gap-2 pt-2">
-                              <Button variant="outline" size="sm" onClick={() => window.open(`https://www.google.com/maps?q=${viewingRecord.latitude},${viewingRecord.longitude}`)} className="h-8 text-[9px] uppercase font-black border-slate-800 flex-1">
-                                 <MapPin className="w-3.5 h-3.5 mr-2" /> Open in Maps
-                              </Button>
-                           </div>
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="text-[10px] uppercase font-black text-slate-500">Device Fingerprint</Label>
-                           <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                              <p className="text-[9px] text-slate-500 font-code leading-relaxed break-all">{viewingRecord.deviceInfo}</p>
-                           </div>
+                        <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 space-y-2">
+                           <span className="text-[9px] font-black uppercase text-slate-600">Location Node</span>
+                           <p className="text-[11px] text-slate-300 leading-relaxed">{viewingRecord.address}</p>
                         </div>
                      </div>
                   </div>
@@ -371,17 +325,10 @@ export function AttendanceModule({ store }: { store: any }) {
             )}
             
             <DialogFooter className="p-6 border-t border-slate-800 bg-slate-900/50">
-               <Button variant="ghost" onClick={() => setViewingRecord(null)} className="px-8 font-bold uppercase text-[10px]">Close Manifest</Button>
+               <Button variant="ghost" onClick={() => setViewingRecord(null)} className="px-8 font-bold uppercase text-[10px]">Close Node</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>
-
-      <DeleteJobModal 
-        isOpen={!!deleteId} 
-        onClose={() => setDeleteId(null)} 
-        jobId={store.attendance.find((a: any) => a.id === deleteId)?.employeeName || ''} 
-        onConfirm={() => { if (deleteId) store.deleteAttendance(deleteId); setDeleteId(null); }} 
-      />
     </div>
   );
 }

@@ -151,8 +151,8 @@ export function BillingModule({ store }: { store: any }) {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
-    const accentColor = [0, 102, 255]; 
-    const redColor = [220, 38, 38]; 
+    const brandColor = [18, 60, 140]; // GJ5 ERP Blue #123C8C
+    const accentColor = [229, 57, 53]; // GJ5 ERP Red #E53935
     const profile = store.companyProfile || {};
 
     doc.setFillColor(15, 23, 42); 
@@ -161,11 +161,11 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 PLUS', 15, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', 15, 20);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(profile.category?.toUpperCase() || 'INDUSTRIAL SERVICE & REPAIR HUB', 15, 27);
+    doc.text('POWERED BY GOOD JOB 5 ERP', 15, 27);
     doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, 15, 33);
 
     doc.setFontSize(24);
@@ -192,11 +192,12 @@ export function BillingModule({ store }: { store: any }) {
     doc.setFont('helvetica', 'bold');
     doc.text('FROM:', 110, 74);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${profile.address}, ${profile.city}, ${profile.state} - ${profile.pincode}`, 110, 80, { maxWidth: 85 });
+    doc.text(`${profile.address || ''}, ${profile.city || ''}, ${profile.state || ''} - ${profile.pincode || ''}`, 110, 80, { maxWidth: 85 });
 
     let y = 90;
-    doc.setFillColor(241, 245, 249);
+    doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.rect(15, y, 180, 10, 'F');
+    doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
     doc.text('ITEM DESCRIPTION', 20, y + 7);
     doc.text('QTY', 110, y + 7, { align: 'center' });
@@ -205,6 +206,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.text('AMOUNT', 190, y + 7, { align: 'right' });
 
     y += 10;
+    doc.setTextColor(0);
     doc.setFont('helvetica', 'normal');
     items.forEach((item, index) => {
       if (y > 250) { doc.addPage(); y = 20; }
@@ -243,15 +245,16 @@ export function BillingModule({ store }: { store: any }) {
     doc.setFontSize(8);
     doc.text('TERMS & CONDITIONS:', 15, 260);
     doc.text('1. Goods once sold will not be taken back.', 15, 265);
-    doc.text(`2. Warranty claims at: ${profile.whatsapp || '+91 88669 83900'}`, 15, 270);
+    doc.text(`2. Support Hub: ${profile.whatsapp || '+91 88669 83900'}`, 15, 270);
+    doc.text('3. Powered by GOOD JOB 5 ERP Solutions.', 15, 275);
     
     doc.setTextColor(0);
     doc.setFont('helvetica', 'bold');
-    doc.text('AUTHORIZED SIGNATORY', 195, 280, { align: 'right' });
-    doc.line(150, 275, 195, 275);
+    doc.text('AUTHORIZED SIGNATORY', 195, 285, { align: 'right' });
+    doc.line(150, 280, 195, 280);
 
     doc.save(`${nextInvoiceNumber}.pdf`);
-    toast({ title: "PDF Generated", description: "Standard A4 invoice ready for dispatch." });
+    toast({ title: "PDF Generated", description: "Official GJ5 ERP manifest ready for dispatch." });
   };
 
   return (
@@ -262,16 +265,16 @@ export function BillingModule({ store }: { store: any }) {
             <CardHeader className="bg-slate-900/60 border-b border-slate-800 p-6">
                <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                     <div className="p-3 bg-[#0066FF] rounded-xl text-white shadow-lg shadow-blue-500/20">
+                     <div className="p-3 bg-[#123C8C] rounded-xl text-white shadow-lg shadow-blue-900/20">
                         <Receipt className="w-6 h-6" />
                      </div>
                      <div>
-                        <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'BILLING CONSOLE'}</h2>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial GST Engine V3.2</p>
+                        <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP BILLING'}</h2>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GOOD JOB 5 ERP ENGINE v4.0</p>
                      </div>
                   </div>
                   <div className="text-right">
-                     <Badge className="bg-blue-600 font-code text-sm px-3 py-1">{nextInvoiceNumber}</Badge>
+                     <Badge className="bg-[#123C8C] font-code text-sm px-3 py-1">{nextInvoiceNumber}</Badge>
                      <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">Next Sequence</p>
                   </div>
                </div>
@@ -353,7 +356,7 @@ export function BillingModule({ store }: { store: any }) {
                       </div>
                       <div className="space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Rate (₹)</Label>
-                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="h-10 font-code text-xs text-blue-600 font-bold border-slate-800 bg-white text-slate-900" />
+                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="h-10 font-code text-xs text-[#123C8C] font-bold border-slate-800 bg-white text-slate-900" />
                       </div>
                       <div className="flex items-end">
                          <Button onClick={addItem} className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/10"><Plus className="w-4 h-4 mr-2" /> Add</Button>
@@ -383,7 +386,7 @@ export function BillingModule({ store }: { store: any }) {
                               <TableCell className="text-center font-code text-xs">₹{item.rate.toLocaleString()}</TableCell>
                               <TableCell className="text-right font-code text-xs font-bold text-emerald-400">₹{item.amount.toLocaleString()}</TableCell>
                               <TableCell>
-                                 <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-7 w-7 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                 <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-7 w-7 text-[#E53935] hover:bg-red-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
                               </TableCell>
                            </TableRow>
                          ))}
@@ -436,17 +439,17 @@ export function BillingModule({ store }: { store: any }) {
                  </div>
 
                  <div className="bg-slate-950 p-6 rounded-[2rem] border border-slate-800 space-y-4">
-                    <h4 className="text-[11px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2"><ArrowRight className="w-3.5 h-3.5" /> Settlement Ledger</h4>
+                    <h4 className="text-[11px] font-black uppercase text-[#123C8C] tracking-tighter flex items-center gap-2"><ArrowRight className="w-3.5 h-3.5" /> Settlement Ledger</h4>
                     <div className="space-y-2.5">
                        <div className="flex justify-between text-xs">
                           <span className="text-slate-500 uppercase font-bold">Base Assessment</span>
                           <span className="font-code font-bold">₹{calculations.subtotal.toLocaleString()}</span>
                        </div>
-                       <div className="flex justify-between text-xs text-blue-400">
+                       <div className="flex justify-between text-xs text-[#123C8C]">
                           <span className="uppercase font-bold">Integrated CGST (9%)</span>
                           <span className="font-code font-bold">+₹{calculations.cgst.toLocaleString()}</span>
                        </div>
-                       <div className="flex justify-between text-xs text-blue-400">
+                       <div className="flex justify-between text-xs text-[#123C8C]">
                           <span className="uppercase font-bold">Integrated SGST (9%)</span>
                           <span className="font-code font-bold">+₹{calculations.sgst.toLocaleString()}</span>
                        </div>
@@ -468,19 +471,19 @@ export function BillingModule({ store }: { store: any }) {
            <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden sticky top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 PLUS'}</span>
-                    <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest mt-1">Live Manifest Preview</span>
+                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</span>
+                    <span className="text-[6px] font-bold text-[#123C8C] uppercase tracking-widest mt-1">Live Manifest Preview</span>
                  </div>
-                 <Badge className="bg-red-600 text-[8px] uppercase border-0">A4 Calibration</Badge>
+                 <Badge className="bg-[#E53935] text-[8px] uppercase border-0">A4 Calibration</Badge>
               </CardHeader>
               <div className="aspect-[1/1.414] p-8 flex flex-col gap-6">
                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
                     <div className="flex flex-col">
-                       <h2 className="text-xl font-black italic tracking-tighter leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 PLUS'}</h2>
-                       <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address}, {store.companyProfile?.city} • MO: {store.companyProfile?.whatsapp}</span>
+                       <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</h2>
+                       <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address || ''}, {store.companyProfile?.city || ''} • MO: {store.companyProfile?.whatsapp || ''}</span>
                     </div>
                     <div className="text-right">
-                       <h3 className="text-xs font-black uppercase text-red-600">Tax Invoice</h3>
+                       <h3 className="text-xs font-black uppercase text-[#E53935]">Tax Invoice</h3>
                        <span className="text-[7px] font-bold font-code">{nextInvoiceNumber}</span>
                     </div>
                  </div>
@@ -529,14 +532,17 @@ export function BillingModule({ store }: { store: any }) {
                     </div>
                     <div className="flex justify-between text-[11px] font-black border-t border-slate-100 pt-1">
                        <span className="uppercase">Net Payable</span>
-                       <span className="text-red-600 italic">₹{calculations.grandTotal}</span>
+                       <span className="text-[#E53935] italic">₹{calculations.grandTotal}</span>
                     </div>
+                 </div>
+                 <div className="mt-auto pt-4 text-center">
+                    <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">GOOD JOB 5 ERP - Smart Business Solutions</p>
                  </div>
               </div>
            </Card>
 
            <div className="grid grid-cols-2 gap-3">
-              <Button onClick={handleSave} className="h-12 bg-blue-600 hover:bg-blue-700 font-bold uppercase text-xs shadow-xl"><Save className="w-4 h-4 mr-2" /> Commit Invoice</Button>
+              <Button onClick={handleSave} className="h-12 bg-[#123C8C] hover:bg-[#0D2E63] font-bold uppercase text-xs shadow-xl"><Save className="w-4 h-4 mr-2" /> Commit Invoice</Button>
               <Button onClick={handleDownloadPDF} variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs hover:bg-slate-800"><FileDown className="w-4 h-4 mr-2" /> PDF Render</Button>
               <Button onClick={() => window.print()} variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs hover:bg-slate-800"><Printer className="w-4 h-4 mr-2" /> Thermal Print</Button>
               <Button variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs text-emerald-400 hover:bg-emerald-500/10"><MessageSquare className="w-4 h-4 mr-2" /> WhatsApp</Button>

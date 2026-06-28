@@ -8,28 +8,25 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: width,
     height: height,
-    title: "GJ5 HOME SERVICE | Enterprise Console",
+    title: "GJ5 ERP | GOOD JOB 5 ERP",
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // Set to false to simplify Firebase Auth handling in Electron
-      webSecurity: false // Necessary for local file loading and Firebase operations
+      contextIsolation: false, 
+      webSecurity: false 
     },
     backgroundColor: '#0B0F19',
     icon: path.join(__dirname, '../public/icon.ico')
   });
 
-  // Remove menu bar for production feel
   mainWindow.setMenuBarVisibility(false);
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:9002');
     mainWindow.webContents.openDevTools();
   } else {
-    // Load the static index.html from the Next.js export
     mainWindow.loadFile(path.join(__dirname, '../out/index.html'));
   }
 
-  // Maximize on launch
   mainWindow.maximize();
 }
 

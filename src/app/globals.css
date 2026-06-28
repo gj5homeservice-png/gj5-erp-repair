@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    /* Vyapar Style: Clean White Background with Navy and Red accents */
+    /* GJ5 ERP Brand Palette */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 220 77% 31%; /* #123C8C */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 0 72.2% 50.6%; /* Red Accent */
+    --accent: 1 77% 55%; /* #E53935 */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 1 77% 55%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 220 77% 31%;
     --radius: 0.75rem;
   }
 
@@ -34,19 +34,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 220 77% 45%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 1 77% 45%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 220 77% 45%;
   }
 }
 
@@ -63,13 +63,13 @@
 }
 
 .vyapar-gradient {
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  background: linear-gradient(135deg, #123C8C 0%, #0F172A 100%);
 }
 
 .btn-red {
-  @apply bg-[#DC2626] hover:bg-[#B91C1C] text-white transition-all shadow-lg hover:shadow-red-500/20 active:scale-95;
+  @apply bg-[#E53935] hover:bg-[#C62828] text-white transition-all shadow-lg hover:shadow-red-500/20 active:scale-95;
 }
 
 .btn-navy {
-  @apply bg-[#0F172A] hover:bg-[#1E293B] text-white transition-all shadow-lg active:scale-95;
+  @apply bg-[#123C8C] hover:bg-[#0D2E63] text-white transition-all shadow-lg active:scale-95;
 }

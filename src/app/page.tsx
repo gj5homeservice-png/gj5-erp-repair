@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -43,17 +42,19 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50">
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-xl shadow-lg">G</div>
+            <div className="w-12 h-12 overflow-hidden flex items-center justify-center">
+               <img src="https://picsum.photos/seed/gj5-logo-main/200/200" className="w-full h-full object-contain" alt="GJ5 ERP Logo" data-ai-hint="company logo" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</span>
-              <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">SaaS Enterprise Suite</span>
+              <span className="text-lg font-headline font-black tracking-tighter leading-none uppercase text-[#123C8C]">GJ5 ERP</span>
+              <span className="text-[8px] font-black text-[#E53935] uppercase tracking-[0.2em] mt-1">GOOD JOB 5 ERP</span>
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">Features</Link>
-            <Link href="/plans" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">Software Access</Link>
-            <Link href="/login" className="text-xs font-bold uppercase tracking-widest text-slate-900 hover:text-red-600 transition-colors">Login</Link>
-            <Button onClick={() => router.push('/plans')} className="bg-[#DC2626] hover:bg-[#B91C1C] h-10 px-6 rounded-full font-bold uppercase text-[10px] shadow-lg text-white">Start Software</Button>
+            <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-[#123C8C] transition-colors">Features</Link>
+            <Link href="/plans" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-[#123C8C] transition-colors">Software Access</Link>
+            <Link href="/login" className="text-xs font-bold uppercase tracking-widest text-slate-900 hover:text-[#123C8C] transition-colors">Login</Link>
+            <Button onClick={() => router.push('/plans')} className="bg-[#E53935] hover:bg-[#C62828] h-10 px-6 rounded-full font-bold uppercase text-[10px] shadow-lg text-white">Start Software</Button>
           </nav>
         </div>
       </header>
@@ -62,25 +63,25 @@ export default function LandingPage() {
       <section className="pt-40 pb-20 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100">
-              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Enterprise V3.5 Operational</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100">
+              <span className="w-2 h-2 rounded-full bg-[#123C8C] animate-pulse"></span>
+              <span className="text-[10px] font-black text-[#123C8C] uppercase tracking-widest">GJ5 ERP v4.0 Operational</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight leading-[1.1] text-slate-900">
-              Best <span className="text-[#DC2626]">Home Appliance Service</span> & Billing Software
+              Smart <span className="text-[#123C8C]">Business Management</span> & Billing Software
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">
-              The complete ERP solution for AC, Refrigerator, Washing Machine, and Microwave service centers. Manage calls, inventory, and staff in one powerful dashboard.
+              GOOD JOB 5 ERP: The complete solution for Home Appliance Service, Stock Management, and Workforce Tracking. Simplify your operations with a single powerful dashboard.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
+              <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#E53935] hover:bg-[#C62828] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
                 Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               
               <Button 
                 onClick={() => router.push('/login')} 
-                className="h-16 px-10 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] hover:from-[#3B82F6] hover:to-[#2563EB] rounded-[18px] font-headline font-bold text-lg shadow-[0_10px_30px_rgba(37,99,235,0.35)] text-white flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="h-16 px-10 bg-gradient-to-br from-[#123C8C] to-[#0D2E63] hover:from-[#1E56C0] hover:to-[#123C8C] rounded-[18px] font-headline font-bold text-lg shadow-[0_10px_30px_rgba(18,60,140,0.35)] text-white flex items-center justify-center gap-2 transition-all active:scale-95"
               >
                 <LogIn className="w-5 h-5" /> Login
               </Button>
@@ -94,7 +95,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Trusted by <span className="text-slate-900">2,500+ Service Centers</span></p>
+              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Trusted by <span className="text-slate-900">5,000+ Enterprises</span></p>
             </div>
           </div>
 
@@ -102,16 +103,16 @@ export default function LandingPage() {
           <div className="relative animate-in zoom-in duration-1000 lg:h-[600px] flex items-center">
              <div className="relative w-full aspect-[4/3] max-w-[600px] mx-auto">
                 {/* Main Dashboard Window */}
-                <div className="absolute inset-0 bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-slate-100 z-10">
+                <div className="absolute inset-0 bg-[#0F172A] rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-slate-100 z-10">
                    <img 
-                     src="https://picsum.photos/seed/saas-dashboard-main/1200/900" 
+                     src="https://picsum.photos/seed/gj5-erp-preview/1200/900" 
                      className="w-full h-full object-cover opacity-90" 
-                     alt="Dashboard Preview" 
+                     alt="GJ5 ERP Dashboard Preview" 
                      data-ai-hint="erp dashboard"
                    />
                    <div className="absolute top-4 left-6 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white"><LayoutDashboard className="w-4 h-4" /></div>
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">Master Console</span>
+                      <div className="w-8 h-8 rounded-lg bg-[#123C8C] flex items-center justify-center text-white"><LayoutDashboard className="w-4 h-4" /></div>
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">GJ5 ERP Console</span>
                    </div>
                 </div>
 
@@ -119,49 +120,35 @@ export default function LandingPage() {
                 <div className="absolute -top-10 -right-4 w-1/2 aspect-video bg-white rounded-3xl shadow-2xl z-20 border-2 border-slate-100 p-4 transform rotate-2 animate-bounce-slow">
                    <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center text-white"><Receipt className="w-3 h-3" /></div>
-                        <span className="text-[8px] font-black uppercase text-slate-900">Billing Software</span>
+                        <div className="w-5 h-5 rounded-md bg-[#E53935] flex items-center justify-center text-white"><Receipt className="w-3 h-3" /></div>
+                        <span className="text-[8px] font-black uppercase text-slate-900">Billing Node</span>
                       </div>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#E53935]"></div>
                    </div>
                    <div className="space-y-2">
                       <div className="h-1 w-full bg-slate-100 rounded-full"></div>
                       <div className="h-1 w-3/4 bg-slate-100 rounded-full"></div>
                       <div className="pt-2 flex justify-between">
-                         <div className="h-3 w-10 bg-emerald-100 rounded"></div>
-                         <div className="h-3 w-14 bg-emerald-500 rounded"></div>
+                         <div className="h-3 w-10 bg-red-50 rounded"></div>
+                         <div className="h-3 w-14 bg-[#E53935] rounded"></div>
                       </div>
                    </div>
                 </div>
 
                 {/* Floating "Call Management" Window */}
-                <div className="absolute -bottom-8 -left-6 w-1/2 aspect-[4/3] bg-slate-800 rounded-3xl shadow-2xl z-30 border-2 border-slate-700 p-5 transform -rotate-3">
+                <div className="absolute -bottom-8 -left-6 w-1/2 aspect-[4/3] bg-[#123C8C] rounded-3xl shadow-2xl z-30 border-2 border-[#0D2E63] p-5 transform -rotate-3">
                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-6 h-6 rounded-lg bg-[#0066FF] flex items-center justify-center text-white"><Wrench className="w-3.5 h-3.5" /></div>
-                      <span className="text-[9px] font-black uppercase text-white tracking-widest">Call Management</span>
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-[#123C8C]"><Wrench className="w-3.5 h-3.5" /></div>
+                      <span className="text-[9px] font-black uppercase text-white tracking-widest">Call Matrix</span>
                    </div>
                    <div className="space-y-3">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-slate-900 rounded-xl border border-slate-700">
-                           <div className="w-6 h-6 rounded-full bg-slate-700"></div>
-                           <div className="h-1.5 w-16 bg-slate-700 rounded-full"></div>
-                           <div className="w-8 h-3 bg-blue-600/20 rounded-full"></div>
+                        <div key={i} className="flex items-center justify-between p-2 bg-[#0D2E63] rounded-xl border border-blue-900">
+                           <div className="w-6 h-6 rounded-full bg-blue-800"></div>
+                           <div className="h-1.5 w-16 bg-blue-800 rounded-full"></div>
+                           <div className="w-8 h-3 bg-red-600/20 rounded-full"></div>
                         </div>
                       ))}
-                   </div>
-                </div>
-
-                {/* Floating "Invoice History" Window */}
-                <div className="absolute top-1/4 -right-12 w-2/5 aspect-square bg-white rounded-3xl shadow-2xl z-15 border-2 border-slate-50 p-4 transform -rotate-1 hidden xl:block">
-                   <div className="flex items-center gap-2 mb-4">
-                      <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center text-white"><History className="w-3 h-3" /></div>
-                      <span className="text-[8px] font-black uppercase text-slate-900">Invoice History</span>
-                   </div>
-                   <div className="space-y-2">
-                      <div className="h-2 w-full bg-slate-50 rounded"></div>
-                      <div className="h-2 w-full bg-slate-50 rounded"></div>
-                      <div className="h-2 w-full bg-slate-50 rounded"></div>
-                      <div className="h-2 w-full bg-slate-50 rounded"></div>
                    </div>
                 </div>
              </div>
@@ -173,14 +160,14 @@ export default function LandingPage() {
       <section id="features" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4 mb-20">
-            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight text-slate-900">Industrial <span className="text-[#DC2626]">Toolsets</span></h2>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">Professional grade features designed for high-volume appliance service ecosystems.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-black tracking-tight text-slate-900">Smart Business <span className="text-[#123C8C]">Toolsets</span></h2>
+            <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">GOOD JOB 5 ERP provides professional grade features designed for high-growth enterprises.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {features.map((f, i) => (
-              <Card key={i} className="border-0 shadow-lg bg-white rounded-[2rem] group hover:bg-[#DC2626] transition-all duration-500 overflow-hidden">
+              <Card key={i} className="border-0 shadow-lg bg-white rounded-[2rem] group hover:bg-[#123C8C] transition-all duration-500 overflow-hidden">
                 <CardContent className="p-8 space-y-6">
-                  <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center text-[#DC2626] group-hover:bg-white/20 group-hover:text-white transition-colors">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[#123C8C] group-hover:bg-white/20 group-hover:text-white transition-colors">
                     <f.icon className="w-7 h-7" />
                   </div>
                   <div className="space-y-2">
@@ -199,19 +186,21 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left">
           <div className="space-y-6 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 justify-center md:justify-start">
-              <div className="w-8 h-8 rounded-lg bg-[#DC2626] flex items-center justify-center text-white font-black italic text-lg">G</div>
-              <span className="text-sm font-headline font-black text-slate-900 uppercase">GJ5 HOME SERVICE</span>
+              <div className="w-8 h-8 overflow-hidden">
+                <img src="https://picsum.photos/seed/gj5-logo-footer/100/100" className="w-full h-full object-contain" alt="GJ5 ERP" />
+              </div>
+              <span className="text-sm font-headline font-black text-slate-900 uppercase">GJ5 ERP</span>
             </div>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto md:mx-0">Universal ERP for Appliance Service businesses. Designed for reliability, speed, and business growth.</p>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto md:mx-0">GOOD JOB 5 ERP: Smart Business. Simple Management. Designed for reliability and business growth.</p>
           </div>
           <div className="space-y-4">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Contact Node</h4>
             <p className="text-xs font-bold text-slate-500 leading-relaxed">Katargam, Surat, Gujarat</p>
-            <p className="text-xs font-black text-red-600 tracking-widest">+91 88669 83900</p>
+            <p className="text-xs font-black text-[#E53935] tracking-widest">+91 88669 83900</p>
           </div>
           <div className="space-y-4">
              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Secure Access</h4>
-             <Link href="/login" className="text-xs font-bold text-blue-600 hover:underline block">Admin Terminal Login</Link>
+             <Link href="/login" className="text-xs font-bold text-[#123C8C] hover:underline block">Admin Terminal Login</Link>
           </div>
         </div>
       </footer>

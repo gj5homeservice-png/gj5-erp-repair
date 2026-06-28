@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'GJ5 HOME SERVICE | Enterprise Console',
-  description: 'Industrial ERP for Service & Repair Management',
+  title: 'GJ5 ERP | GOOD JOB 5 ERP',
+  description: 'GOOD JOB 5 ERP - Smart Business Management Software',
 };
 
 export default function RootLayout({

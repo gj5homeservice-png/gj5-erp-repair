@@ -9,7 +9,8 @@ import {
   Zap,
   Calendar,
   Clock,
-  Gem
+  Gem,
+  Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -27,7 +28,10 @@ const PLANS = [
     icon: Zap,
     button: 'Start Free Trial',
     color: 'text-blue-400',
-    bg: 'bg-blue-500/10'
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
+    glow: 'group-hover:border-blue-400 group-hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]',
+    btnClass: 'bg-blue-600 hover:bg-blue-700'
   },
   {
     id: '3months',
@@ -38,7 +42,10 @@ const PLANS = [
     icon: Clock,
     button: 'Choose 3 Months',
     color: 'text-amber-400',
-    bg: 'bg-amber-500/10'
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20',
+    glow: 'group-hover:border-amber-400 group-hover:shadow-[0_0_30px_-10px_rgba(251,191,36,0.3)]',
+    btnClass: 'bg-amber-600 hover:bg-amber-700'
   },
   {
     id: '6months',
@@ -49,18 +56,24 @@ const PLANS = [
     icon: Calendar,
     button: 'Choose 6 Months',
     color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10'
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20',
+    glow: 'group-hover:border-emerald-400 group-hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)]',
+    btnClass: 'bg-emerald-600 hover:bg-emerald-700'
   },
   {
     id: '12months',
     title: '12 MONTHS',
-    price: '₹9,999',
+    price: '₹8,999',
     duration: '12 Months',
     desc: 'Master license for full enterprise control.',
     icon: Gem,
     button: 'Choose 12 Months',
-    color: 'text-[#FF3366]',
-    bg: 'bg-rose-500/10',
+    color: 'text-purple-400',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/40',
+    glow: 'group-hover:border-purple-400 group-hover:shadow-[0_0_40px_-5px_rgba(168,85,247,0.4)]',
+    btnClass: 'bg-purple-600 hover:bg-purple-700 border-2 border-yellow-500/50',
     highlight: true
   }
 ];
@@ -96,24 +109,26 @@ export default function PlansPage() {
           <p className="text-slate-400 text-lg max-w-2xl mx-auto font-medium">Select a subscription plan to unlock the master home appliance service hub.</p>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           {PLANS.map((plan) => (
             <Card 
               key={plan.id} 
               className={cn(
-                "border-2 transition-all duration-500 rounded-[2.5rem] overflow-hidden group flex flex-col relative",
+                "border-2 bg-slate-900/40 transition-all duration-500 rounded-[2.5rem] overflow-hidden group flex flex-col relative",
+                plan.border,
+                plan.glow,
                 plan.highlight 
-                  ? "bg-slate-900 border-[#0066FF] shadow-2xl shadow-blue-600/10 scale-105 z-10" 
-                  : "bg-slate-900/40 border-slate-800 hover:border-slate-700"
+                  ? "bg-slate-900 border-purple-500 shadow-2xl lg:scale-110 z-10" 
+                  : "hover:scale-[1.02]"
               )}
             >
               {plan.highlight && (
-                 <div className="bg-[#0066FF] text-white py-2 text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2">
-                    <Gem className="w-3 h-3" /> Best Value Selection
+                 <div className="bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 text-black py-2 text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 shadow-lg">
+                    <Award className="w-3.5 h-3.5" /> Best Value Master Plan
                  </div>
               )}
               <CardHeader className="p-8 pb-0 flex flex-col items-center text-center space-y-4">
-                 <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", plan.bg, plan.color)}>
+                 <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110", plan.bg, plan.color)}>
                     <plan.icon className="w-8 h-8" />
                  </div>
                  <div className="space-y-1">
@@ -145,10 +160,9 @@ export default function PlansPage() {
                  <Button 
                    onClick={() => handleSelectPlan(plan.id)} 
                    className={cn(
-                     "w-full h-14 rounded-2xl font-headline font-bold text-sm uppercase transition-all active:scale-95",
-                     plan.highlight 
-                       ? "bg-[#0066FF] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
-                       : "bg-slate-800 hover:bg-slate-700 text-white"
+                     "w-full h-14 rounded-2xl font-headline font-bold text-sm uppercase transition-all active:scale-95 shadow-lg",
+                     plan.btnClass,
+                     "text-white"
                    )}
                  >
                    {plan.button}

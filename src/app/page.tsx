@@ -73,22 +73,16 @@ export default function LandingPage() {
               The complete ERP solution for AC, Refrigerator, Washing Machine, and Microwave service centers. Manage calls, inventory, and staff in one powerful dashboard.
             </p>
             
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
-                  Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg text-slate-700">
-                  Create New Account
-                </Button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
+                Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
               
               <Button 
                 onClick={() => router.push('/login')} 
-                variant="ghost"
-                className="w-full sm:w-auto h-14 px-10 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-2xl font-headline font-bold text-base flex items-center justify-center gap-2 border-2 border-dashed border-slate-100"
+                className="h-16 px-10 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] hover:from-[#3B82F6] hover:to-[#2563EB] rounded-[18px] font-headline font-bold text-lg shadow-[0_10px_30px_rgba(37,99,235,0.35)] text-white flex items-center justify-center gap-2 transition-all active:scale-95"
               >
-                <LogIn className="w-5 h-5" /> Login to Existing Account
+                <LogIn className="w-5 h-5" /> Login
               </Button>
             </div>
 

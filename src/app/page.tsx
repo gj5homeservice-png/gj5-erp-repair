@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -10,12 +11,15 @@ import {
   History, 
   BarChart3, 
   Wrench,
-  Smartphone
+  Smartphone,
+  LayoutDashboard,
+  LogIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -34,14 +38,14 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 selection:bg-red-100">
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-red-100 font-body">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50">
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#DC2626] flex items-center justify-center text-white font-black italic text-xl shadow-lg">G</div>
             <div className="flex flex-col">
-              <span className="text-sm font-headline font-black tracking-tighter leading-none">GJ5 HOME SERVICE</span>
+              <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 HOME SERVICE</span>
               <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">SaaS Enterprise Suite</span>
             </div>
           </div>
@@ -55,7 +59,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-40 pb-20 px-6">
+      <section className="pt-40 pb-20 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100">
@@ -68,14 +72,26 @@ export default function LandingPage() {
             <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">
               The complete ERP solution for AC, Refrigerator, Washing Machine, and Microwave service centers. Manage calls, inventory, and staff in one powerful dashboard.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
-                Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg text-slate-700">
-                Create New Account
+            
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button onClick={() => router.push('/plans')} className="h-16 px-10 bg-[#DC2626] hover:bg-[#B91C1C] rounded-2xl font-headline font-bold text-lg shadow-xl shadow-red-600/20 group text-white">
+                  Start Software <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button onClick={() => router.push('/register')} variant="outline" className="h-16 px-10 border-slate-200 hover:bg-slate-50 rounded-2xl font-headline font-bold text-lg text-slate-700">
+                  Create New Account
+                </Button>
+              </div>
+              
+              <Button 
+                onClick={() => router.push('/login')} 
+                variant="ghost"
+                className="w-full sm:w-auto h-14 px-10 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-2xl font-headline font-bold text-base flex items-center justify-center gap-2 border-2 border-dashed border-slate-100"
+              >
+                <LogIn className="w-5 h-5" /> Login to Existing Account
               </Button>
             </div>
+
             <div className="flex items-center gap-6 pt-4">
               <div className="flex -space-x-3">
                 {[1, 2, 3, 4].map(i => (
@@ -87,16 +103,74 @@ export default function LandingPage() {
               <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Trusted by <span className="text-slate-900">2,500+ Service Centers</span></p>
             </div>
           </div>
-          <div className="relative animate-in zoom-in duration-1000">
-            <div className="aspect-[4/3] rounded-[3rem] bg-slate-900 p-2 shadow-2xl relative overflow-hidden group border-4 border-slate-100">
-               <img 
-                 src="https://picsum.photos/seed/appliance-repair-erp/1200/900" 
-                 className="w-full h-full object-cover rounded-[2.5rem] opacity-90 group-hover:scale-105 transition-transform duration-700" 
-                 alt="ERP Command Center" 
-                 data-ai-hint="appliance repair"
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent"></div>
-            </div>
+
+          {/* Premium Stacked Software Preview */}
+          <div className="relative animate-in zoom-in duration-1000 lg:h-[600px] flex items-center">
+             <div className="relative w-full aspect-[4/3] max-w-[600px] mx-auto">
+                {/* Main Dashboard Window */}
+                <div className="absolute inset-0 bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-slate-100 z-10">
+                   <img 
+                     src="https://picsum.photos/seed/saas-dashboard-main/1200/900" 
+                     className="w-full h-full object-cover opacity-90" 
+                     alt="Dashboard Preview" 
+                     data-ai-hint="erp dashboard"
+                   />
+                   <div className="absolute top-4 left-6 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white"><LayoutDashboard className="w-4 h-4" /></div>
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">Master Console</span>
+                   </div>
+                </div>
+
+                {/* Floating "Billing Software" Window */}
+                <div className="absolute -top-10 -right-4 w-1/2 aspect-video bg-white rounded-3xl shadow-2xl z-20 border-2 border-slate-100 p-4 transform rotate-2 animate-bounce-slow">
+                   <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center text-white"><Receipt className="w-3 h-3" /></div>
+                        <span className="text-[8px] font-black uppercase text-slate-900">Billing Software</span>
+                      </div>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="h-1 w-full bg-slate-100 rounded-full"></div>
+                      <div className="h-1 w-3/4 bg-slate-100 rounded-full"></div>
+                      <div className="pt-2 flex justify-between">
+                         <div className="h-3 w-10 bg-emerald-100 rounded"></div>
+                         <div className="h-3 w-14 bg-emerald-500 rounded"></div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Floating "Call Management" Window */}
+                <div className="absolute -bottom-8 -left-6 w-1/2 aspect-[4/3] bg-slate-800 rounded-3xl shadow-2xl z-30 border-2 border-slate-700 p-5 transform -rotate-3">
+                   <div className="flex items-center gap-3 mb-4">
+                      <div className="w-6 h-6 rounded-lg bg-[#0066FF] flex items-center justify-center text-white"><Wrench className="w-3.5 h-3.5" /></div>
+                      <span className="text-[9px] font-black uppercase text-white tracking-widest">Call Management</span>
+                   </div>
+                   <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="flex items-center justify-between p-2 bg-slate-900 rounded-xl border border-slate-700">
+                           <div className="w-6 h-6 rounded-full bg-slate-700"></div>
+                           <div className="h-1.5 w-16 bg-slate-700 rounded-full"></div>
+                           <div className="w-8 h-3 bg-blue-600/20 rounded-full"></div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Floating "Invoice History" Window */}
+                <div className="absolute top-1/4 -right-12 w-2/5 aspect-square bg-white rounded-3xl shadow-2xl z-15 border-2 border-slate-50 p-4 transform -rotate-1 hidden xl:block">
+                   <div className="flex items-center gap-2 mb-4">
+                      <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center text-white"><History className="w-3 h-3" /></div>
+                      <span className="text-[8px] font-black uppercase text-slate-900">Invoice History</span>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="h-2 w-full bg-slate-50 rounded"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded"></div>
+                   </div>
+                </div>
+             </div>
           </div>
         </div>
       </section>
@@ -132,7 +206,7 @@ export default function LandingPage() {
           <div className="space-y-6 col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 justify-center md:justify-start">
               <div className="w-8 h-8 rounded-lg bg-[#DC2626] flex items-center justify-center text-white font-black italic text-lg">G</div>
-              <span className="text-sm font-headline font-black text-slate-900">GJ5 HOME SERVICE</span>
+              <span className="text-sm font-headline font-black text-slate-900 uppercase">GJ5 HOME SERVICE</span>
             </div>
             <p className="text-sm text-slate-500 max-w-sm mx-auto md:mx-0">Universal ERP for Appliance Service businesses. Designed for reliability, speed, and business growth.</p>
           </div>
@@ -146,7 +220,17 @@ export default function LandingPage() {
              <Link href="/login" className="text-xs font-bold text-blue-600 hover:underline block">Admin Terminal Login</Link>
           </div>
         </div>
-      </footer >
+      </footer>
+
+      <style jsx global>{`
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0) rotate(2deg); }
+          50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

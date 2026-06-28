@@ -11,7 +11,12 @@ import {
   Loader2,
   CheckCircle2,
   Briefcase,
-  Layers
+  Layers,
+  User,
+  Mail,
+  ShieldCheck,
+  Globe,
+  Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,11 +28,17 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [logo, setLogo] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    ownerName: '',
     companyName: '',
-    category: 'Multi-Appliance Service',
+    category: 'Home Appliance Service',
     services: 'AC, Fridge, Washing Machine, TV',
     address: '',
-    whatsapp: ''
+    whatsapp: '',
+    email: '',
+    gstNumber: '',
+    city: '',
+    state: '',
+    pincode: ''
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,8 +56,8 @@ export default function OnboardingPage() {
 
   const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.companyName || !formData.address) {
-      toast({ variant: "destructive", title: "Missing Node", description: "Company Name and Address are essential for setup." });
+    if (!formData.companyName || !formData.address || !formData.ownerName) {
+      toast({ variant: "destructive", title: "Missing Node", description: "Owner Name, Company Name and Address are essential for setup." });
       return;
     }
 
@@ -72,8 +83,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <Card className="max-w-2xl w-full rounded-[2.5rem] border-0 shadow-2xl overflow-hidden bg-white">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-12">
+      <Card className="max-w-3xl w-full rounded-[2.5rem] border-0 shadow-2xl overflow-hidden bg-white">
         <CardContent className="p-10">
           <div className="flex items-center gap-4 mb-10 border-b border-slate-100 pb-8">
              <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-xl">
@@ -81,7 +92,7 @@ export default function OnboardingPage() {
              </div>
              <div>
                 <h1 className="text-2xl font-headline font-black text-slate-900 uppercase tracking-tight">Workspace Initialization</h1>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Final Step: Configuring Home Appliance Matrix</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Final Step: Configuring Enterprise Matrix</p>
              </div>
           </div>
 
@@ -106,6 +117,18 @@ export default function OnboardingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Owner Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                    <Input 
+                      value={formData.ownerName} 
+                      onChange={e => setFormData({...formData, ownerName: e.target.value})}
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
+                      placeholder="Software owner full name"
+                    />
+                  </div>
+               </div>
+               <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Company Name</Label>
                   <div className="relative">
                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
@@ -117,6 +140,37 @@ export default function OnboardingPage() {
                     />
                   </div>
                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Business Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                    <Input 
+                      type="email"
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
+                      placeholder="business email"
+                    />
+                  </div>
+               </div>
+               <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">WhatsApp Number</Label>
+                  <div className="relative">
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                    <Input 
+                      value={formData.whatsapp} 
+                      onChange={e => setFormData({...formData, whatsapp: e.target.value})}
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-code font-bold" 
+                      placeholder="91XXXXXXXXXX"
+                    />
+                  </div>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Business Category</Label>
                   <div className="relative">
@@ -125,6 +179,18 @@ export default function OnboardingPage() {
                       value={formData.category} 
                       onChange={e => setFormData({...formData, category: e.target.value})}
                       className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
+                    />
+                  </div>
+               </div>
+               <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">GST Number (Optional)</Label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                    <Input 
+                      value={formData.gstNumber} 
+                      onChange={e => setFormData({...formData, gstNumber: e.target.value})}
+                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold uppercase" 
+                      placeholder="24XXXXX..."
                     />
                   </div>
                </div>
@@ -140,30 +206,47 @@ export default function OnboardingPage() {
                />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+               <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Headquarters Address</Label>
+               <div className="relative">
+                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                 <Input 
+                   value={formData.address} 
+                   onChange={e => setFormData({...formData, address: e.target.value})}
+                   className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
+                   placeholder="Street, Area"
+                 />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Headquarters Address</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                    <Input 
-                      value={formData.address} 
-                      onChange={e => setFormData({...formData, address: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl border-slate-200 font-bold" 
-                      placeholder="Full Address"
-                    />
-                  </div>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">City</Label>
+                  <Input 
+                    value={formData.city} 
+                    onChange={e => setFormData({...formData, city: e.target.value})}
+                    className="h-14 rounded-2xl border-slate-200 font-bold" 
+                    placeholder="City"
+                  />
                </div>
                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">WhatsApp Support Number</Label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                    <Input 
-                      value={formData.whatsapp} 
-                      onChange={e => setFormData({...formData, whatsapp: e.target.value})}
-                      className="pl-12 h-14 rounded-2xl border-slate-200 font-code font-bold" 
-                      placeholder="91XXXXXXXXXX"
-                    />
-                  </div>
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">State</Label>
+                  <Input 
+                    value={formData.state} 
+                    onChange={e => setFormData({...formData, state: e.target.value})}
+                    className="h-14 rounded-2xl border-slate-200 font-bold" 
+                    placeholder="State"
+                  />
+               </div>
+               <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Pincode</Label>
+                  <Input 
+                    value={formData.pincode} 
+                    onChange={e => setFormData({...formData, pincode: e.target.value})}
+                    className="h-14 rounded-2xl border-slate-200 font-bold font-code" 
+                    placeholder="6 Digits"
+                    maxLength={6}
+                  />
                </div>
             </div>
 

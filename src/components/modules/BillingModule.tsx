@@ -153,6 +153,7 @@ export function BillingModule({ store }: { store: any }) {
     const doc = new jsPDF('p', 'mm', 'a4');
     const accentColor = [0, 102, 255]; 
     const redColor = [220, 38, 38]; 
+    const profile = store.companyProfile || {};
 
     doc.setFillColor(15, 23, 42); 
     doc.rect(0, 0, 210, 40, 'F');
@@ -160,12 +161,12 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text('GJ5 PLUS', 15, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 PLUS', 15, 20);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('INDUSTRIAL SERVICE & REPAIR HUB', 15, 27);
-    doc.text('GSTIN: 24ABCPG1234F1Z5', 15, 33);
+    doc.text(profile.category?.toUpperCase() || 'INDUSTRIAL SERVICE & REPAIR HUB', 15, 27);
+    doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, 15, 33);
 
     doc.setFontSize(24);
     doc.setTextColor(255, 255, 255);
@@ -187,6 +188,11 @@ export function BillingModule({ store }: { store: any }) {
     doc.text(customer.name || 'Walk-in Customer', 15, 62);
     doc.text(customer.mobile || '--', 15, 68);
     doc.text(customer.address || 'Surat, Gujarat', 15, 74, { maxWidth: 80 });
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('FROM:', 110, 74);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${profile.address}, ${profile.city}, ${profile.state} - ${profile.pincode}`, 110, 80, { maxWidth: 85 });
 
     let y = 90;
     doc.setFillColor(241, 245, 249);
@@ -237,7 +243,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.setFontSize(8);
     doc.text('TERMS & CONDITIONS:', 15, 260);
     doc.text('1. Goods once sold will not be taken back.', 15, 265);
-    doc.text('2. Warranty is subject to manufacturer policies.', 15, 270);
+    doc.text(`2. Warranty claims at: ${profile.whatsapp || '+91 88669 83900'}`, 15, 270);
     
     doc.setTextColor(0);
     doc.setFont('helvetica', 'bold');
@@ -260,7 +266,7 @@ export function BillingModule({ store }: { store: any }) {
                         <Receipt className="w-6 h-6" />
                      </div>
                      <div>
-                        <h2 className="text-xl font-headline font-bold">GJ5 PLUS BILLING CONSOLE</h2>
+                        <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'BILLING CONSOLE'}</h2>
                         <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial GST Engine V3.2</p>
                      </div>
                   </div>
@@ -278,14 +284,14 @@ export function BillingModule({ store }: { store: any }) {
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Official Name</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                        <Input value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="Enter Full Name" />
+                        <Input value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="pl-10 h-11 border-slate-800 bg-white text-slate-900" placeholder="Enter Full Name" />
                       </div>
                    </div>
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Communication Node (Mobile)</Label>
                       <div className="relative">
                         <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                        <Input value={customer.mobile} onChange={e => setCustomer({...customer, mobile: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="10 Digit Number" />
+                        <Input value={customer.mobile} onChange={e => setCustomer({...customer, mobile: e.target.value})} className="pl-10 h-11 border-slate-800 bg-white text-slate-900" placeholder="10 Digit Number" />
                       </div>
                    </div>
                 </div>
@@ -294,14 +300,14 @@ export function BillingModule({ store }: { store: any }) {
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Client GSTIN (Optional)</Label>
                       <div className="relative">
                         <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                        <Input value={customer.gstin} onChange={e => setCustomer({...customer, gstin: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="24XXXXX..." />
+                        <Input value={customer.gstin} onChange={e => setCustomer({...customer, gstin: e.target.value})} className="pl-10 h-11 border-slate-800 bg-white text-slate-900" placeholder="24XXXXX..." />
                       </div>
                    </div>
                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Shipping / Billing Destination</Label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                        <Input value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="pl-10 h-11 border-slate-800" placeholder="Full Address Node" />
+                        <Input value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="pl-10 h-11 border-slate-800 bg-white text-slate-900" placeholder="Full Address Node" />
                       </div>
                    </div>
                 </div>
@@ -316,7 +322,7 @@ export function BillingModule({ store }: { store: any }) {
                         placeholder="Scan Barcode or Search Asset Registry..." 
                         value={searchStock}
                         onChange={e => setSearchStock(e.target.value)}
-                        className="pl-10 h-12 border-slate-800 font-bold" 
+                        className="pl-10 h-12 border-slate-800 font-bold bg-white text-slate-900" 
                       />
                       {filteredStock.length > 0 && (
                         <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 mt-1 rounded-xl shadow-2xl overflow-hidden">
@@ -339,15 +345,15 @@ export function BillingModule({ store }: { store: any }) {
                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <div className="md:col-span-2 space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Asset Label</Label>
-                         <Input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="h-10 text-xs border-slate-800" />
+                         <Input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="h-10 text-xs border-slate-800 bg-white text-slate-900" />
                       </div>
                       <div className="space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Qty</Label>
-                         <Input type="number" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: Number(e.target.value)})} className="h-10 font-code text-xs border-slate-800" />
+                         <Input type="number" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: Number(e.target.value)})} className="h-10 font-code text-xs border-slate-800 bg-white text-slate-900" />
                       </div>
                       <div className="space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Rate (₹)</Label>
-                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="h-10 font-code text-xs text-blue-600 font-bold border-slate-800" />
+                         <Input type="number" value={newItem.rate} onChange={e => setNewItem({...newItem, rate: Number(e.target.value)})} className="h-10 font-code text-xs text-blue-600 font-bold border-slate-800 bg-white text-slate-900" />
                       </div>
                       <div className="flex items-end">
                          <Button onClick={addItem} className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/10"><Plus className="w-4 h-4 mr-2" /> Add</Button>
@@ -420,11 +426,11 @@ export function BillingModule({ store }: { store: any }) {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Invoice Date</Label>
-                          <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-11 text-xs border-slate-800" />
+                          <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-11 text-xs border-slate-800 bg-white text-slate-900" />
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Settlement Deadline</Label>
-                          <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-11 text-xs border-slate-800" />
+                          <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-11 text-xs border-slate-800 bg-white text-slate-900" />
                        </div>
                     </div>
                  </div>
@@ -462,7 +468,7 @@ export function BillingModule({ store }: { store: any }) {
            <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden sticky top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-white italic leading-none">GJ5 PLUS</span>
+                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 PLUS'}</span>
                     <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest mt-1">Live Manifest Preview</span>
                  </div>
                  <Badge className="bg-red-600 text-[8px] uppercase border-0">A4 Calibration</Badge>
@@ -470,8 +476,8 @@ export function BillingModule({ store }: { store: any }) {
               <div className="aspect-[1/1.414] p-8 flex flex-col gap-6">
                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
                     <div className="flex flex-col">
-                       <h2 className="text-xl font-black italic tracking-tighter leading-none">GJ5 PLUS</h2>
-                       <span className="text-[7px] font-bold text-slate-600 mt-1">SURAT, GUJARAT • MO: 88669 83900</span>
+                       <h2 className="text-xl font-black italic tracking-tighter leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 PLUS'}</h2>
+                       <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address}, {store.companyProfile?.city} • MO: {store.companyProfile?.whatsapp}</span>
                     </div>
                     <div className="text-right">
                        <h3 className="text-xs font-black uppercase text-red-600">Tax Invoice</h3>

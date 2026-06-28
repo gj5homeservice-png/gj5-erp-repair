@@ -181,7 +181,8 @@ export default function ErpMainHub() {
   };
 
   const companyLogo = store.companyProfile?.logo;
-  const companyName = store.companyProfile?.companyName || "Home Service ERP";
+  const companyName = store.companyProfile?.companyName || "Home Appliance ERP";
+  const ownerName = store.companyProfile?.ownerName || "System Admin";
 
   return (
     <AuthGuard>
@@ -199,7 +200,7 @@ export default function ErpMainHub() {
               )}
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
-                <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Enterprise Matrix</span>
+                <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'Enterprise Matrix'}</span>
               </div>
             </div>
           </div>
@@ -243,7 +244,7 @@ export default function ErpMainHub() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
                   <Input 
                     placeholder="Audit: Jobs, Stock, Invoices..." 
-                    className="pl-10 h-11 border-slate-800 focus-visible:ring-blue-500 placeholder:text-slate-600"
+                    className="pl-10 h-11 border-slate-800 focus-visible:ring-blue-500 placeholder:text-slate-600 bg-white text-slate-900"
                   />
                </div>
             </div>
@@ -255,11 +256,11 @@ export default function ErpMainHub() {
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">
-                   <p className="text-xs font-bold text-white">{store.companyProfile?.ownerEmail?.split('@')[0] || 'System Admin'}</p>
+                   <p className="text-xs font-bold text-white">{ownerName}</p>
                    <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400">
-                  <User className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 overflow-hidden">
+                  {companyLogo ? <img src={companyLogo} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
                 </div>
               </div>
             </div>

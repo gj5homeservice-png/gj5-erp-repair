@@ -24,6 +24,8 @@ const PLANS = [
     title: 'FREE TRIAL',
     price: '₹0',
     duration: '7 Days',
+    ribbon: 'FREE TRIAL PLAN',
+    ribbonClass: 'bg-blue-600 text-white',
     desc: 'Explore the core appliance service matrix.',
     icon: Zap,
     button: 'Start Free Trial',
@@ -38,6 +40,8 @@ const PLANS = [
     title: '3 MONTHS',
     price: '₹2,999',
     duration: '3 Months',
+    ribbon: 'STARTER PLAN',
+    ribbonClass: 'bg-amber-600 text-white',
     desc: 'Ideal for small service centers.',
     icon: Clock,
     button: 'Choose 3 Months',
@@ -52,6 +56,8 @@ const PLANS = [
     title: '6 MONTHS',
     price: '₹5,999',
     duration: '6 Months',
+    ribbon: 'GROWTH PLAN',
+    ribbonClass: 'bg-emerald-600 text-white',
     desc: 'Standard license for growing businesses.',
     icon: Calendar,
     button: 'Choose 6 Months',
@@ -66,6 +72,8 @@ const PLANS = [
     title: '12 MONTHS',
     price: '₹8,999',
     duration: '12 Months',
+    ribbon: 'BEST VALUE MASTER PLAN',
+    ribbonClass: 'bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 text-black',
     desc: 'Master license for full enterprise control.',
     icon: Gem,
     button: 'Choose 12 Months',
@@ -122,11 +130,10 @@ export default function PlansPage() {
                   : "hover:scale-[1.02]"
               )}
             >
-              {plan.highlight && (
-                 <div className="bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 text-black py-2 text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 shadow-lg">
-                    <Award className="w-3.5 h-3.5" /> Best Value Master Plan
-                 </div>
-              )}
+              <div className={cn("py-2 text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 shadow-lg", plan.ribbonClass)}>
+                {plan.highlight && <Award className="w-3.5 h-3.5" />}
+                {plan.ribbon}
+              </div>
               <CardHeader className="p-8 pb-0 flex flex-col items-center text-center space-y-4">
                  <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110", plan.bg, plan.color)}>
                     <plan.icon className="w-8 h-8" />

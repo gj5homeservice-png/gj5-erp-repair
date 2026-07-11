@@ -19,7 +19,9 @@ import {
   CreditCard,
   Gift,
   FileDown,
-  AlertCircle
+  AlertCircle,
+  ChevronRight,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -224,7 +226,7 @@ export default function CouponManager() {
            />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-           <SelectTrigger className="w-full sm:w-48 h-14 bg-slate-950 border-slate-800 rounded-2xl text-[10px] font-black uppercase">
+           <SelectTrigger className="w-full sm:w-48 h-14 bg-slate-950 border-slate-800 rounded-2xl text-[10px] font-black uppercase text-white">
               <SelectValue />
            </SelectTrigger>
            <SelectContent className="bg-slate-900 border-slate-800">
@@ -341,10 +343,10 @@ export default function CouponManager() {
                    <TicketPercent className="w-6 h-6" />
                 </div>
                 <div>
-                   <DialogTitle className="text-xl font-headline font-bold">
+                   <DialogTitle className="text-xl font-headline font-bold text-white">
                      {editingCoupon.id ? 'Modify Coupon Node' : 'Campaign Identity Entry'}
                    </DialogTitle>
-                   <DialogDescription className="text-slate-500 text-[10px] uppercase font-black tracking-widest">SaaS Enterprise Marketing Matrix</DialogDescription>
+                   <DialogDescription className="text-slate-400 text-[10px] uppercase font-black tracking-widest">SaaS Enterprise Marketing Matrix</DialogDescription>
                 </div>
              </div>
           </DialogHeader>
@@ -352,32 +354,34 @@ export default function CouponManager() {
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-6">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Node Identity</h4>
+                  <h4 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Tag className="w-3.5 h-3.5" /> Node Identity
+                  </h4>
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Coupon Unique Code</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Coupon Unique Code</Label>
                        <Input 
                          value={editingCoupon.code} 
                          onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})}
-                         className="bg-slate-950 border-slate-800 h-11 font-code font-black text-blue-400 tracking-widest" 
+                         className="bg-slate-950 border-slate-700 h-11 font-code font-black text-blue-400 tracking-widest text-lg placeholder:text-slate-500" 
                          placeholder="e.g. GJ5OFF50"
                        />
                     </div>
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Promotion Name</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Promotion Name</Label>
                        <Input 
                          value={editingCoupon.name} 
                          onChange={e => setEditingCoupon({...editingCoupon, name: e.target.value})}
-                         className="bg-slate-950 border-slate-800 h-11" 
+                         className="bg-slate-950 border-slate-700 h-11 text-white placeholder:text-slate-500 font-bold" 
                          placeholder="Internal Campaign Label"
                        />
                     </div>
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Public Description</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Public Description</Label>
                        <Textarea 
                          value={editingCoupon.description} 
                          onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})}
-                         className="bg-slate-950 border-slate-800 min-h-[80px] text-xs resize-none" 
+                         className="bg-slate-950 border-slate-700 min-h-[80px] text-sm text-slate-200 placeholder:text-slate-500 resize-none font-medium" 
                          placeholder="Visual prompt for customer checkout..."
                        />
                     </div>
@@ -385,36 +389,40 @@ export default function CouponManager() {
                </div>
 
                <div className="space-y-6">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Yield & Logic</h4>
+                  <h4 className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <CreditCard className="w-3.5 h-3.5" /> Yield & Logic
+                  </h4>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1.5">
-                          <Label className="text-[10px] uppercase font-bold text-slate-400">Discount Type</Label>
+                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Type</Label>
                           <Select value={editingCoupon.discountType} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
-                             <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
-                             <SelectContent className="bg-slate-900 border-slate-800">
+                             <SelectTrigger className="bg-slate-950 border-slate-700 h-11 text-white font-bold">
+                                <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                 <SelectItem value="Percentage">Percentage (%)</SelectItem>
                                 <SelectItem value="Fixed Amount">Fixed Amount (₹)</SelectItem>
                              </SelectContent>
                           </Select>
                        </div>
                        <div className="space-y-1.5">
-                          <Label className="text-[10px] uppercase font-bold text-slate-400">Discount Value</Label>
+                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Value</Label>
                           <Input 
                             type="number"
                             value={editingCoupon.discountValue} 
                             onChange={e => setEditingCoupon({...editingCoupon, discountValue: Number(e.target.value)})}
-                            className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" 
+                            className="bg-slate-950 border-slate-700 h-11 font-code font-black text-emerald-400 text-lg" 
                           />
                        </div>
                     </div>
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Minimum Order Node (₹)</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Minimum Order Node (₹)</Label>
                        <Input 
                          type="number"
                          value={editingCoupon.minimumOrderAmount} 
                          onChange={e => setEditingCoupon({...editingCoupon, minimumOrderAmount: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-800 h-11 font-code" 
+                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
                     </div>
                   </div>
@@ -423,48 +431,54 @@ export default function CouponManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-6">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Timeline Matrix</h4>
+                  <h4 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" /> Timeline Matrix
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Launch Date</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Launch Date</Label>
                        <Input 
                          type="date"
                          value={editingCoupon.startAt} 
                          onChange={e => setEditingCoupon({...editingCoupon, startAt: e.target.value})}
-                         className="bg-slate-950 border-slate-800 h-11 text-xs" 
+                         className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
+                         style={{ colorScheme: 'dark' }}
                        />
                     </div>
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Terminating Date</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Terminating Date</Label>
                        <Input 
                          type="date"
                          value={editingCoupon.expiresAt} 
                          onChange={e => setEditingCoupon({...editingCoupon, expiresAt: e.target.value})}
-                         className="bg-slate-950 border-slate-800 h-11 text-xs" 
+                         className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
+                         style={{ colorScheme: 'dark' }}
                        />
                     </div>
                   </div>
                </div>
 
                <div className="space-y-6">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5" /> Usage Quotas</h4>
+                  <h4 className="text-[11px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <TrendingUp className="w-3.5 h-3.5" /> Usage Quotas
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Total System Uses</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Total System Uses</Label>
                        <Input 
                          type="number"
                          value={editingCoupon.maxUses} 
                          onChange={e => setEditingCoupon({...editingCoupon, maxUses: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-800 h-11 font-code" 
+                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
                     </div>
                     <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-bold text-slate-400">Per Customer Cap</Label>
+                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Per Customer Cap</Label>
                        <Input 
                          type="number"
                          value={editingCoupon.perCustomerLimit} 
                          onChange={e => setEditingCoupon({...editingCoupon, perCustomerLimit: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-800 h-11 font-code" 
+                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
                     </div>
                   </div>
@@ -472,32 +486,34 @@ export default function CouponManager() {
             </div>
 
             <div className="space-y-6">
-               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Filter className="w-3.5 h-3.5" /> Targeting & Restrictions</h4>
+               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                 <Target className="w-3.5 h-3.5" /> Targeting & Restrictions
+               </h4>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-bold text-slate-400">Restricted Email (Optional)</Label>
+                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Restricted Email</Label>
                      <Input 
                        value={editingCoupon.allowedEmail || ''} 
                        onChange={e => setEditingCoupon({...editingCoupon, allowedEmail: e.target.value})}
-                       className="bg-slate-950 border-slate-800 h-11 text-xs" 
+                       className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-medium placeholder:text-slate-500" 
                        placeholder="user@example.com"
                      />
                   </div>
                   <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-bold text-slate-400">Restricted Mobile (Optional)</Label>
+                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Restricted Mobile</Label>
                      <Input 
                        value={editingCoupon.allowedMobile || ''} 
                        onChange={e => setEditingCoupon({...editingCoupon, allowedMobile: e.target.value})}
-                       className="bg-slate-950 border-slate-800 h-11 font-code" 
+                       className="bg-slate-950 border-slate-700 h-11 font-code text-white font-medium placeholder:text-slate-500" 
                        placeholder="91XXXXXXXXXX"
                      />
                   </div>
                   <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-bold text-slate-400">Company ID Node (Optional)</Label>
+                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Company ID Node</Label>
                      <Input 
                        value={editingCoupon.allowedCompanyId || ''} 
                        onChange={e => setEditingCoupon({...editingCoupon, allowedCompanyId: e.target.value})}
-                       className="bg-slate-950 border-slate-800 h-11 font-code" 
+                       className="bg-slate-950 border-slate-700 h-11 font-code text-blue-400 font-black placeholder:text-slate-500" 
                        placeholder="GJ5-1001"
                      />
                   </div>
@@ -505,9 +521,9 @@ export default function CouponManager() {
             </div>
           </div>
 
-          <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 shrink-0 gap-3">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px]">Discard Entry</Button>
-            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-emerald-900/20">Execute Promotion Node</Button>
+          <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 shrink-0 gap-3 flex flex-row items-center justify-end">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white hover:bg-slate-800">Discard Entry</Button>
+            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 px-12 h-12 rounded-xl font-black uppercase text-[10px] text-white shadow-lg shadow-emerald-900/20">Execute Promotion Node</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

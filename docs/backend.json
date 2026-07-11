@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Customer": {
@@ -56,62 +55,31 @@
       },
       "required": ["customerName", "mobile", "status"]
     },
-    "Order": {
-      "title": "Sales Order",
-      "description": "Direct purchase order tracking.",
+    "Coupon": {
+      "title": "Promotion Coupon",
+      "description": "Marketing coupon for plan discounts.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "customerId": { "type": "string" },
-        "customerName": { "type": "string" },
-        "customerMobile": { "type": "string" },
-        "items": { "type": "array" },
-        "totalAmount": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pending", "Processed", "Shipped", "Delivered", "Cancelled"] },
-        "paymentMode": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["customerName", "totalAmount", "status"]
-    },
-    "Offer": {
-      "title": "Promotional Offer",
-      "description": "Flash deals and seasonal discounts.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "discount": { "type": "string" },
-        "expiryDate": { "type": "string", "format": "date" },
-        "active": { "type": "boolean" }
-      },
-      "required": ["title", "discount"]
-    },
-    "SaaSCompany": {
-      "title": "Enterprise Node",
-      "description": "Registered business using GJ5 ERP.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
+        "code": { "type": "string" },
         "name": { "type": "string" },
-        "ownerEmail": { "type": "string" },
-        "status": { "type": "string", "enum": ["Active", "Trial", "Expired", "Suspended"] },
-        "planId": { "type": "string" },
-        "expiryDate": { "type": "string", "format": "date-time" },
-        "dbPath": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "discountType": { "type": "string", "enum": ["Percentage", "Fixed Amount"] },
+        "discountValue": { "type": "number" },
+        "applicablePlans": { "type": "array" },
+        "maxUses": { "type": "number" },
+        "usedCount": { "type": "number" },
+        "active": { "type": "boolean" },
+        "expiresAt": { "type": "string", "format": "date-time" }
       }
     },
-    "SaaSPlan": {
-      "title": "Subscription Plan",
-      "description": "Defined service level agreement and limits.",
+    "Subscription": {
+      "title": "License Subscription",
+      "description": "Active business license for an enterprise node.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "price": { "type": "number" },
-        "durationDays": { "type": "number" },
-        "limits": { "type": "object" },
+        "companyId": { "type": "string" },
+        "planName": { "type": "string" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "expiryDate": { "type": "string", "format": "date-time" },
         "active": { "type": "boolean" }
       }
     }
@@ -128,13 +96,13 @@
       "schema": "#/backend/entities/SaaSPlan",
       "description": "Subscription tier definitions."
     },
-    "/saas_payments/{paymentId}": {
-      "schema": "object",
-      "description": "Global transaction ledger."
+    "/coupons/{couponId}": {
+      "schema": "#/backend/entities/Coupon",
+      "description": "Global marketing coupons."
     },
-    "/saas_logs/{logId}": {
-      "schema": "object",
-      "description": "System-wide audit trail."
+    "/subscriptions/{subId}": {
+      "schema": "#/backend/entities/Subscription",
+      "description": "Enterprise license records."
     }
   }
 }

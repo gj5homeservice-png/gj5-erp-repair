@@ -1,4 +1,3 @@
-
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface VisitHistoryEntry {
@@ -323,5 +322,63 @@ export interface LeaveRequest {
   type: 'Sick' | 'Casual' | 'Emergency' | 'Paid';
   reason: string;
   status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+}
+
+// SAAS & COUPON TYPES
+export type CouponDiscountType = 'Percentage' | 'Fixed Amount';
+
+export interface Coupon {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  discountType: CouponDiscountType;
+  discountValue: number;
+  applicablePlans: string[]; // ["3 Months", "6 Months", "12 Months", "All Plans"]
+  startAt: string;
+  expiresAt: string;
+  maxUses: number;
+  perCustomerLimit: number;
+  usedCount: number;
+  active: boolean;
+  allowedEmail?: string;
+  allowedMobile?: string;
+  allowedCompanyId?: string;
+  minimumOrderAmount: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CouponRedemption {
+  id: string;
+  couponCode: string;
+  userId: string;
+  companyId: string;
+  email: string;
+  mobile: string;
+  planName: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  redeemedAt: string;
+  status: string;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  companyId: string;
+  planName: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  couponCode?: string;
+  paymentMethod: string; // "Razorpay" | "Coupon" | "Free Trial"
+  paymentStatus: string; // "Paid" | "Fully Discounted"
+  startDate: string;
+  expiryDate: string;
+  active: boolean;
   createdAt: string;
 }

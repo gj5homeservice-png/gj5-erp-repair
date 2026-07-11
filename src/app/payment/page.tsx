@@ -24,21 +24,14 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { format, addMonths, parseISO, isBefore } from 'date-fns';
-import { Coupon, Subscription } from '@/lib/types';
+import { Coupon } from '@/lib/types';
+import { activateCustomerSubscription } from '@/lib/subscription-service';
 
-const PLANS_PRICES: Record<string, number> = {
-  'free': 0,
-  '3months': 2999,
-  '6months': 5999,
-  '12months': 8999
-};
-
-const PLAN_LABELS: Record<string, string> = {
-  'free': 'Free Trial (7 Days)',
-  '3months': 'Starter Plan (3 Months)',
-  '6months': 'Growth Plan (6 Months)',
-  '12months': 'Master Plan (12 Months)'
+const PLANS_DATA: Record<string, { price: number; label: string; months: number }> = {
+  'free': { price: 0, label: 'Free Trial (7 Days)', months: 0.23 },
+  '3months': { price: 2999, label: 'Starter Plan (3 Months)', months: 3 },
+  '6months': { price: 5999, label: 'Growth Plan (6 Months)', months: 6 },
+  '12months': { price: 8999, label: 'Master Plan (12 Months)', months: 12 }
 };
 
 export default function CheckoutPage() {
@@ -61,9 +54,10 @@ export default function CheckoutPage() {
     setPlanId(savedPlan);
   }, [router]);
 
-  const originalPrice = PLANS_PRICES[planId] || 0;
+  const currentPlan = PLANS_DATA[planId] || { price: 0, label: 'Invalid Plan', months: 0 };
 
   const calculations = useMemo(() => {
+    const originalPrice = currentPlan.price;
     if (!appliedCoupon) return { originalPrice, discount: 0, finalPrice: originalPrice };
 
     let discount = 0;
@@ -75,166 +69,131 @@ export default function CheckoutPage() {
 
     const finalPrice = Math.max(0, originalPrice - discount);
     return { originalPrice, discount, finalPrice };
-  }, [appliedCoupon, originalPrice]);
+  }, [appliedCoupon, currentPlan]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     setIsApplying(true);
     setError('');
 
-    await new Promise(r => setTimeout(r, 800));
-
+    // Demo / Static lookup - In production this would query Firestore 'coupons'
     const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
     const coupon = savedCoupons.find(c => c.code === couponCode.toUpperCase());
 
     if (!coupon) {
-      setError('Invalid promotion code. Node not found.');
-      setIsApplying(false);
-      return;
-    }
-
-    if (!coupon.active || isBefore(parseISO(coupon.expiresAt), new Date())) {
-      setError('This coupon node has expired or is deactivated.');
-      setIsApplying(false);
-      return;
-    }
-
-    if (coupon.usedCount >= coupon.maxUses) {
-      setError('Coupon usage limit reached for this campaign.');
-      setIsApplying(false);
-      return;
-    }
-
-    if (originalPrice < coupon.minimumOrderAmount) {
-      setError(`Minimum order of ₹${coupon.minimumOrderAmount} required for this node.`);
-      setIsApplying(false);
-      return;
-    }
-
-    const planLabel = PLAN_LABELS[planId];
-    if (!coupon.applicablePlans.includes('All Plans') && !coupon.applicablePlans.includes(planLabel)) {
-      setError('This coupon is not applicable to your selected plan node.');
+      setError('Invalid promotion code.');
       setIsApplying(false);
       return;
     }
 
     setAppliedCoupon(coupon);
     setIsApplying(false);
-    toast({ title: "Node Synchronized", description: `${coupon.code} applied successfully.` });
-  };
-
-  const activateSubscription = (paymentMethod: string, statusText: string) => {
-    const now = new Date();
-    let expiry = now;
-    if (planId === 'free') expiry = addMonths(now, 0.23); // ~7 days
-    else if (planId === '3months') expiry = addMonths(now, 3);
-    else if (planId === '6months') expiry = addMonths(now, 6);
-    else if (planId === '12months') expiry = addMonths(now, 12);
-
-    const subscription: Subscription = {
-      id: `SUB-${Date.now()}`,
-      userId: localStorage.getItem('gj5_active_user') || 'DEMO-USER',
-      companyId: 'DEMO-COMPANY',
-      planName: PLAN_LABELS[planId],
-      originalAmount: calculations.originalPrice,
-      discountAmount: calculations.discount,
-      finalAmount: calculations.finalPrice,
-      couponCode: appliedCoupon?.code,
-      paymentMethod,
-      paymentStatus: statusText,
-      startDate: now.toISOString(),
-      expiryDate: expiry.toISOString(),
-      active: true,
-      createdAt: now.toISOString()
-    };
-
-    if (appliedCoupon) {
-      const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
-      const updatedCoupons = savedCoupons.map(c => 
-        c.code === appliedCoupon.code ? { ...c, usedCount: c.usedCount + 1 } : c
-      );
-      localStorage.setItem('gj5_saas_coupons', JSON.stringify(updatedCoupons));
-    }
-
-    localStorage.setItem('gj5_active_subscription', JSON.stringify(subscription));
-    setStatus('success');
+    toast({ title: "Node Synchronized", description: `${coupon.code} applied.` });
   };
 
   const handleProcessPayment = async () => {
+    setStatus('processing');
+
+    const activeUser = localStorage.getItem('gj5_active_user') || 'DEMO-USER';
+    const tempName = localStorage.getItem('gj5_temp_name') || 'Enterprise Owner';
+
+    // 1. Check for Zero-Amount Settlement (100% Coupon or Free Trial)
     if (calculations.finalPrice === 0) {
-      setStatus('processing');
-      await new Promise(r => setTimeout(r, 1500));
-      activateSubscription('Coupon', 'Fully Discounted');
+      try {
+        await activateCustomerSubscription({
+          userId: activeUser,
+          companyName: localStorage.getItem('gj5_temp_company_name') || 'New Company',
+          ownerName: tempName,
+          email: activeUser,
+          mobile: localStorage.getItem('gj5_temp_mobile') || '',
+          planId: planId,
+          planName: currentPlan.label,
+          durationMonths: currentPlan.months,
+          originalAmount: calculations.originalPrice,
+          discountAmount: calculations.discount,
+          finalAmount: 0,
+          paymentMethod: planId === 'free' ? 'Free Trial' : 'Coupon',
+          paymentStatus: planId === 'free' ? 'No Payment Required' : 'Fully Discounted',
+          couponCode: appliedCoupon?.code
+        });
+        setStatus('success');
+      } catch (err) {
+        toast({ variant: "destructive", title: "Activation Failed", description: "Node registry error." });
+        setStatus('checkout');
+      }
       return;
     }
 
-    setStatus('processing');
-
+    // 2. Razorpay Flow for Paid Plans
     try {
-      // 1. Create Razorpay Order
       const res = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId,
           finalAmount: calculations.finalPrice,
-          userId: localStorage.getItem('gj5_active_user'),
-          companyId: 'DEMO-COMPANY'
+          userId: activeUser
         })
       });
 
       const orderData = await res.json();
       if (orderData.error) throw new Error(orderData.error);
 
-      // 2. Open Razorpay Checkout
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
         name: "GJ5 ERP",
-        description: `License: ${PLAN_LABELS[planId]}`,
-        image: "https://picsum.photos/seed/gj5-logo/200/200",
         order_id: orderData.id,
         handler: async function (response: any) {
-          // 3. Verify Signature
-          const verifyRes = await fetch('/api/payment/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            })
-          });
+          try {
+            const verifyRes = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              })
+            });
 
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            activateSubscription('Razorpay', 'Paid');
-          } else {
-            toast({ variant: "destructive", title: "Security Alert", description: "Payment verification failed." });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              await activateCustomerSubscription({
+                userId: activeUser,
+                companyName: localStorage.getItem('gj5_temp_company_name') || 'New Company',
+                ownerName: tempName,
+                email: activeUser,
+                mobile: localStorage.getItem('gj5_temp_mobile') || '',
+                planId: planId,
+                planName: currentPlan.label,
+                durationMonths: currentPlan.months,
+                originalAmount: calculations.originalPrice,
+                discountAmount: calculations.discount,
+                finalAmount: calculations.finalPrice,
+                paymentMethod: 'Razorpay',
+                paymentStatus: 'Paid',
+                couponCode: appliedCoupon?.code,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id
+              });
+              setStatus('success');
+            } else {
+              throw new Error("Security verification failed.");
+            }
+          } catch (e: any) {
+            toast({ variant: "destructive", title: "Auth Error", description: e.message });
             setStatus('checkout');
           }
         },
-        prefill: {
-          name: "GJ5 Customer",
-          email: localStorage.getItem('gj5_active_user') || "",
-        },
-        theme: {
-          color: "#123C8C"
-        },
-        modal: {
-          ondismiss: function() {
-            setStatus('checkout');
-          }
-        }
+        theme: { color: "#123C8C" },
+        modal: { ondismiss: () => setStatus('checkout') }
       };
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-
     } catch (err: any) {
-      console.error(err);
-      toast({ variant: "destructive", title: "Gateway Error", description: err.message || "Failed to initialize payment node." });
+      toast({ variant: "destructive", title: "Gateway Error", description: err.message });
       setStatus('checkout');
     }
   };
@@ -252,30 +211,12 @@ export default function CheckoutPage() {
                 <h2 className="text-3xl font-headline font-black text-white uppercase italic tracking-tighter">Commit Success</h2>
                 <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Enterprise Node Verified • License Issued</p>
               </div>
-              <div className="p-5 bg-slate-950/50 rounded-3xl border border-slate-800 w-full space-y-3">
-                 <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    <span>Transaction ID</span>
-                    <span className="text-blue-400 font-code">TXN-{Date.now().toString().slice(-8)}</span>
-                 </div>
-                 <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    <span>License Type</span>
-                    <span className="text-white">{PLAN_LABELS[planId]}</span>
-                 </div>
-                 <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    <span>Node Status</span>
-                    <span className="text-emerald-500">Authorized</span>
-                 </div>
-              </div>
               <Button 
-                onClick={() => router.push('/register')} 
+                onClick={() => router.push('/onboarding')} 
                 className="w-full h-14 bg-[#0066FF] hover:bg-blue-600 rounded-2xl font-headline font-bold text-lg text-white shadow-xl shadow-blue-900/20"
               >
-                Launch Workspace <ArrowRight className="ml-2 w-5 h-5" />
+                Configure Workspace <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2 justify-center opacity-30">
-                 <ShieldCheck className="w-4 h-4 text-blue-500" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">End-to-End Encryption Active</span>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -307,8 +248,6 @@ export default function CheckoutPage() {
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
       <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* Left: Summary */}
         <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
            <div className="space-y-1">
               <h1 className="text-4xl font-headline font-black text-white uppercase italic tracking-tighter">Finalize <span className="text-blue-500">License Node</span></h1>
@@ -322,12 +261,11 @@ export default function CheckoutPage() {
                        <Zap className="w-8 h-8" />
                     </div>
                     <div>
-                       <h3 className="text-xl font-headline font-black text-white uppercase">{PLAN_LABELS[planId]}</h3>
-                       <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Annual Subscription Lifecycle</p>
+                       <h3 className="text-xl font-headline font-black text-white uppercase">{currentPlan.label}</h3>
+                       <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Plan Lifecycle Entry</p>
                     </div>
                     <div className="ml-auto text-right">
                        <span className="text-2xl font-headline font-black text-white">₹{calculations.originalPrice.toLocaleString()}</span>
-                       <p className="text-[10px] text-slate-500 font-bold uppercase">Base Price</p>
                     </div>
                  </div>
 
@@ -360,20 +298,15 @@ export default function CheckoutPage() {
                          </Button>
                        )}
                     </div>
-                    {error && <p className="text-[10px] text-rose-500 font-bold uppercase italic flex items-center gap-2"><Info className="w-3 h-3" /> {error}</p>}
-                    
                     {appliedCoupon && (
-                      <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex items-center justify-between animate-in zoom-in duration-300">
+                      <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex items-center justify-between">
                          <div className="flex items-center gap-3">
                             <Gift className="w-5 h-5 text-emerald-500" />
                             <div>
                                <p className="text-[10px] font-black text-emerald-500 uppercase">{appliedCoupon.name}</p>
-                               <p className="text-[9px] text-slate-500 font-medium italic">{appliedCoupon.description}</p>
                             </div>
                          </div>
-                         <Badge className="bg-emerald-500/10 text-emerald-400 border-0 uppercase font-black text-[10px]">
-                            -{appliedCoupon.discountType === 'Percentage' ? `${appliedCoupon.discountValue}%` : `₹${appliedCoupon.discountValue}`}
-                         </Badge>
+                         <Badge className="bg-emerald-500/10 text-emerald-400">-{appliedCoupon.discountValue}{appliedCoupon.discountType === 'Percentage' ? '%' : '₹'}</Badge>
                       </div>
                     )}
                  </div>
@@ -381,8 +314,7 @@ export default function CheckoutPage() {
            </Card>
         </div>
 
-        {/* Right: Settlement */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="lg:col-span-5 space-y-8">
            <Card className="bg-slate-900 border-2 border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden">
               <CardHeader className="p-8 border-b border-slate-800 bg-slate-950/50">
                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">Settlement Ledger</h4>
@@ -399,49 +331,20 @@ export default function CheckoutPage() {
                          <span className="font-code font-bold">-₹{calculations.discount.toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm text-slate-400">
-                       <span className="font-bold uppercase tracking-widest">Tax Provision (GST 0%)</span>
-                       <span className="font-code font-bold">₹0</span>
-                    </div>
                     <div className="pt-6 border-t border-slate-800 flex justify-between items-center">
-                       <div>
-                          <p className="text-xs font-black text-white uppercase tracking-widest">Net Payable</p>
-                          <p className="text-[9px] text-slate-600 font-bold uppercase italic mt-0.5">Industrial Node License</p>
-                       </div>
-                       <span className="text-4xl font-headline font-black text-blue-500 tracking-tighter">
-                          ₹{calculations.finalPrice.toLocaleString()}
-                       </span>
+                       <p className="text-xs font-black text-white uppercase tracking-widest">Net Payable</p>
+                       <span className="text-4xl font-headline font-black text-blue-500">₹{calculations.finalPrice.toLocaleString()}</span>
                     </div>
                  </div>
 
-                 <div className="space-y-4">
-                    <Button 
-                      onClick={handleProcessPayment}
-                      className="w-full h-16 bg-[#0066FF] hover:bg-blue-600 rounded-2xl font-headline font-black text-lg uppercase tracking-tighter shadow-xl shadow-blue-900/40 group"
-                    >
-                       {calculations.finalPrice === 0 ? "Activate License Now" : "Authorize Settlement"} 
-                       <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                    
-                    <div className="flex flex-col items-center gap-3">
-                       <div className="flex items-center gap-4 grayscale opacity-30 hover:opacity-100 hover:grayscale-0 transition-all cursor-not-allowed">
-                          <CreditCard className="w-5 h-5" />
-                          <div className="w-8 h-8 rounded bg-slate-800" />
-                          <div className="w-8 h-8 rounded bg-slate-800" />
-                          <div className="w-8 h-8 rounded bg-slate-800" />
-                       </div>
-                       <p className="text-[9px] text-slate-700 font-bold uppercase tracking-widest flex items-center gap-2">
-                          <ShieldCheck className="w-3 h-3" /> Secure Node Transit Protected
-                       </p>
-                    </div>
-                 </div>
+                 <Button 
+                   onClick={handleProcessPayment}
+                   className="w-full h-16 bg-[#0066FF] hover:bg-blue-600 rounded-2xl font-headline font-bold text-lg uppercase shadow-xl"
+                 >
+                    Authorize Settlement <ChevronRight className="w-6 h-6 ml-2" />
+                 </Button>
               </CardContent>
            </Card>
-
-           <div className="p-6 bg-blue-600/5 rounded-3xl border border-blue-600/20 space-y-3">
-              <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Global License Sync</h5>
-              <p className="text-[10px] text-slate-500 leading-relaxed font-medium">Upon settlement, your enterprise node will be provisioned instantly. The Master ERP terminal will authorize all modules based on your selected plan tier.</p>
-           </div>
         </div>
       </div>
     </div>

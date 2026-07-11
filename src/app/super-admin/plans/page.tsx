@@ -1,171 +1,151 @@
-
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Zap, 
-  Plus, 
-  Settings2, 
-  ShieldCheck, 
-  Database, 
-  MessageSquare, 
-  Smartphone, 
-  Users2, 
-  Receipt,
-  Edit,
-  Trash2,
-  CheckCircle2,
-  XCircle,
-  MoreHorizontal,
-  ChevronRight
+  Search, 
+  Clock, 
+  CheckCircle2, 
+  User, 
+  Building2, 
+  Calendar,
+  Loader2,
+  Database,
+  History
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { db, collection, query, onSnapshot, orderBy } from '@/firebase';
+import { Subscription } from '@/lib/types';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
 
-export default function PlanManagement() {
-  const plans = [
-    { id: '1', name: 'Free Trial', price: 0, duration: '7 Days', status: 'Enabled', color: 'text-blue-400', border: 'border-blue-500/20', bg: 'bg-blue-500/10' },
-    { id: '2', name: 'Starter Plan', price: 2999, duration: '3 Months', status: 'Enabled', color: 'text-amber-400', border: 'border-amber-500/20', bg: 'bg-amber-500/10' },
-    { id: '3', name: 'Growth Plan', price: 5999, duration: '6 Months', status: 'Enabled', color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/10' },
-    { id: '4', name: 'Master Plan', price: 8999, duration: '12 Months', status: 'Enabled', color: 'text-purple-400', border: 'border-purple-500/20', bg: 'bg-purple-500/10', highlight: true },
-  ];
+export default function SubscriptionManager() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!db) return;
+    const q = query(collection(db, "subscriptions"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setSubscriptions(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Subscription)));
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const filtered = subscriptions.filter(s => 
+    (s.planName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.userId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.companyId || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-headline font-black tracking-tight text-white uppercase italic">SLA & Plan Architect</h1>
-          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.3em]">Configure Resource Quotas & Industrial Tiers</p>
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-headline font-black tracking-tight text-white uppercase italic">Active Subscription Ledger</h1>
+        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.3em]">Master License Deployment Monitor</p>
+      </div>
+
+      <div className="flex items-center gap-4 p-6 bg-slate-900/40 rounded-3xl border border-slate-800/50">
+        <div className="relative w-full sm:max-w-md">
+           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+           <Input 
+             placeholder="Filter by Plan, User, or Company ID..." 
+             value={searchQuery}
+             onChange={e => setSearchQuery(e.target.value)}
+             className="pl-12 h-14 bg-white border-slate-800 rounded-2xl font-bold text-[#111827]"
+           />
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700 px-8 h-12 rounded-2xl font-black uppercase text-xs shadow-xl shadow-purple-900/20 flex gap-2">
-           <Plus className="w-4 h-4" /> Define New Plan
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.id} className={cn(
-            "bg-slate-900/40 border-2 transition-all duration-500 rounded-[2.5rem] overflow-hidden group flex flex-col relative",
-            plan.border,
-            plan.highlight && "ring-2 ring-purple-500/50 shadow-2xl shadow-purple-900/20 scale-[1.02]"
-          )}>
-            <div className="p-8 space-y-6 flex-1">
-               <div className="flex justify-between items-start">
-                  <div className={cn("p-3 rounded-2xl border border-white/5 shadow-lg", plan.bg, plan.color)}>
-                     <Zap className="w-6 h-6" />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800"><MoreHorizontal className="w-4 h-4" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
-                       <DropdownMenuItem className="text-[10px] font-black uppercase gap-2"><Edit className="w-3.5 h-3.5" /> Edit Limits</DropdownMenuItem>
-                       <DropdownMenuItem className="text-[10px] font-black uppercase gap-2 text-rose-500"><Trash2 className="w-3.5 h-3.5" /> Retire Plan</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-               </div>
-
-               <div className="space-y-1">
-                  <h3 className="text-lg font-headline font-black text-white uppercase">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1">
-                     <span className="text-2xl font-headline font-black text-white">₹{plan.price.toLocaleString()}</span>
-                     <span className="text-[10px] font-bold text-slate-500 uppercase">/ {plan.duration}</span>
-                  </div>
-               </div>
-
-               <div className="space-y-4 pt-4 border-t border-slate-800/50">
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Resource Quotas</p>
-                  {[
-                    { label: 'Cloud Storage', val: '5GB', icon: Database },
-                    { label: 'Technician Nodes', val: '20 Active', icon: Users2 },
-                    { label: 'Invoice Cycles', val: 'Unlimited', icon: Receipt },
-                    { label: 'WhatsApp Credits', val: '1,000/mo', icon: MessageSquare },
-                  ].map((limit, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-[11px] font-bold text-slate-300">
-                       <div className="flex items-center gap-2.5">
-                          <limit.icon className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{limit.label}</span>
+      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl">
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4">
+             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Auditing License Matrix...</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
+              <TableRow className="border-transparent">
+                <TableHead className="text-[10px] font-black uppercase px-8">Tenant Node</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">License Tier</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Chronology</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Remittance</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((s) => {
+                const daysLeft = differenceInDays(parseISO(s.expiryDate), new Date());
+                return (
+                  <TableRow key={s.id} className="border-slate-800/40 hover:bg-white/5 transition-all h-20">
+                    <TableCell className="px-8">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                           <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                           <span className="font-bold text-sm text-slate-100">{s.companyId}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                           <User className="w-3 h-3 text-slate-600" />
+                           <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[120px]">{s.userId}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex flex-col">
+                          <span className="text-xs font-black text-white uppercase font-headline tracking-widest">{s.planName}</span>
+                          <span className="text-[9px] text-slate-600 uppercase font-black">Code: {s.couponCode || 'DIRECT'}</span>
                        </div>
-                       <span className="text-white font-black">{limit.val}</span>
-                    </div>
-                  ))}
-               </div>
-            </div>
-
-            <div className="p-6 bg-slate-900/60 border-t border-slate-800/50 flex items-center justify-between">
-               <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{plan.status}</span>
-               </div>
-               <Button variant="ghost" className="h-8 px-4 rounded-xl text-[9px] font-black uppercase text-slate-500 hover:text-white group">
-                  Audit Analytics <ChevronRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
-               </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <Card className="lg:col-span-2 bg-slate-900/40 border-slate-800/50 p-8 space-y-6">
-            <h3 className="font-headline font-black text-white uppercase tracking-widest text-xs flex items-center gap-2">
-               <Settings2 className="w-4 h-4 text-blue-500" /> Global Resource Caps
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-               {[
-                 { label: 'Global Attachment Limit', desc: 'Maximum photo size per repair log', val: '5 MB', color: 'blue' },
-                 { label: 'Auto-Purge Threshold', desc: 'Auto-delete unlogged trial data', val: '30 Days', color: 'amber' },
-                 { label: 'Concurrent Device Node', desc: 'Active sessions per enterprise', val: '5 Nodes', color: 'emerald' },
-                 { label: 'SLA Response Guarantee', desc: 'Support ticket response target', val: '4 Hours', color: 'purple' },
-               ].map((setting, i) => (
-                 <div key={i} className="p-5 bg-slate-950/50 rounded-3xl border border-slate-800/50 flex flex-col justify-between h-full group hover:border-slate-700 transition-colors cursor-pointer">
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black text-slate-200 uppercase tracking-tighter">{setting.label}</p>
-                       <p className="text-[9px] text-slate-600 leading-tight italic">{setting.desc}</p>
-                    </div>
-                    <div className="pt-4 flex justify-between items-center mt-4">
-                       <span className="text-xl font-headline font-black text-white tracking-tighter">{setting.val}</span>
-                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all"><Plus className="w-4 h-4" /></Button>
-                    </div>
-                 </div>
-               ))}
-            </div>
-         </Card>
-
-         <Card className="bg-slate-900/40 border-slate-800/50 p-8 flex flex-col justify-between overflow-hidden relative">
-            <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] bg-purple-600/10 rounded-full blur-[80px] -z-10"></div>
-            <div className="space-y-6 relative z-10">
-               <h3 className="font-headline font-black text-white uppercase tracking-widest text-xs flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-purple-500" /> License Matrix Integrity
-               </h3>
-               <p className="text-[10px] text-slate-400 font-medium leading-relaxed uppercase">License nodes are cryptographically bound to Enterprise IDs. Any modification to resource limits triggers a re-sync event across all active sessions for that node.</p>
-               <div className="space-y-4 pt-4">
-                  <div className="flex items-center gap-3">
-                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                     <span className="text-[10px] font-black text-slate-300 uppercase">Automated Billing Sync</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                     <span className="text-[10px] font-black text-slate-300 uppercase">Resource Guard Active</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                     <span className="text-[10px] font-black text-slate-300 uppercase">License Heartbeat: OK</span>
-                  </div>
-               </div>
-            </div>
-            <Button className="w-full bg-slate-800 hover:bg-slate-700 h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest mt-10">
-               Update Global Pricing Matrix
-            </Button>
-         </Card>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex flex-col">
+                          <span className={cn("text-xs font-bold", daysLeft > 0 ? "text-emerald-400" : "text-rose-500")}>
+                             {daysLeft > 0 ? `${daysLeft} Days Left` : 'Expired'}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-slate-500">
+                             <Calendar className="w-3 h-3" />
+                             <span className="font-black uppercase">{format(parseISO(s.startDate), 'dd MMM')} - {format(parseISO(s.expiryDate), 'dd MMM yy')}</span>
+                          </div>
+                       </div>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex flex-col">
+                          <span className="font-code font-bold text-blue-400">₹{s.finalAmount.toLocaleString()}</span>
+                          <span className="text-[9px] text-slate-600 uppercase font-black">{s.paymentMethod}</span>
+                       </div>
+                    </TableCell>
+                    <TableCell>
+                       <Badge className={cn(
+                         "text-[8px] font-black uppercase px-2 h-5 border-0",
+                         s.active && daysLeft > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                       )}>
+                         {s.active && daysLeft > 0 ? 'Active' : 'Terminated'}
+                       </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filtered.length === 0 && (
+                <TableRow>
+                   <TableCell colSpan={5} className="h-48 text-center text-slate-700 uppercase tracking-widest font-black text-xs">
+                      No active licenses found in matrix.
+                   </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

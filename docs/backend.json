@@ -86,31 +86,55 @@
         "active": { "type": "boolean" }
       },
       "required": ["title", "discount"]
+    },
+    "SaaSCompany": {
+      "title": "Enterprise Node",
+      "description": "Registered business using GJ5 ERP.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Trial", "Expired", "Suspended"] },
+        "planId": { "type": "string" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "dbPath": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "SaaSPlan": {
+      "title": "Subscription Plan",
+      "description": "Defined service level agreement and limits.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "durationDays": { "type": "number" },
+        "limits": { "type": "object" },
+        "active": { "type": "boolean" }
+      }
     }
   },
   "auth": {
-    "providers": ["google.com"]
+    "providers": ["google.com", "password"]
   },
   "firestore": {
-    "/products/{productId}": {
-      "schema": "#/backend/entities/TVProduct",
-      "description": "Master product catalog."
+    "/saas_companies/{companyId}": {
+      "schema": "#/backend/entities/SaaSCompany",
+      "description": "Global enterprise registry."
     },
-    "/customers/{customerId}": {
-      "schema": "#/backend/entities/Customer",
-      "description": "Customer CRM records."
+    "/saas_plans/{planId}": {
+      "schema": "#/backend/entities/SaaSPlan",
+      "description": "Subscription tier definitions."
     },
-    "/inquiries/{inquiryId}": {
-      "schema": "#/backend/entities/Inquiry",
-      "description": "Sales leads and inquiries."
+    "/saas_payments/{paymentId}": {
+      "schema": "object",
+      "description": "Global transaction ledger."
     },
-    "/orders/{orderId}": {
-      "schema": "#/backend/entities/Order",
-      "description": "Transaction ledger."
-    },
-    "/offers/{offerId}": {
-      "schema": "#/backend/entities/Offer",
-      "description": "Seasonal marketing offers."
+    "/saas_logs/{logId}": {
+      "schema": "object",
+      "description": "System-wide audit trail."
     }
   }
 }

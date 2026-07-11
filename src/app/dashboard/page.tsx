@@ -135,8 +135,13 @@ const DashboardModule = ({ store }: { store: any }) => (
 
 export default function ErpMainHub() {
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isMounted, setIsMounted] = useState(false);
   const store = useErpStore();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard },
@@ -155,9 +160,11 @@ export default function ErpMainHub() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('gj5_auth_token');
-    localStorage.removeItem('gj5_active_user');
-    router.push('/');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('gj5_auth_token');
+      localStorage.removeItem('gj5_active_user');
+      router.push('/');
+    }
   };
 
   const renderModule = () => {
@@ -178,7 +185,9 @@ export default function ErpMainHub() {
     }
   };
 
-  if (!store.companyProfile && localStorage.getItem('gj5_active_user')) {
+  const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
+
+  if (isMounted && !store.companyProfile && activeUser) {
     return (
       <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center gap-6">
          <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />

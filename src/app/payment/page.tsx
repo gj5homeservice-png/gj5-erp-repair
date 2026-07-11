@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -25,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Coupon } from '@/lib/types';
-import { activateCustomerSubscription } from '@/lib/subscription-service';
+import { activateCustomerSubscription, activateFreeCouponSubscription } from '@/lib/subscription-service';
 
 const PLANS_DATA: Record<string, { price: number; label: string; months: number }> = {
   'free': { price: 0, label: 'Free Trial (7 Days)', months: 0.23 },
@@ -76,55 +77,65 @@ export default function CheckoutPage() {
     setIsApplying(true);
     setError('');
 
-    // Demo / Static lookup - In production this would query Firestore 'coupons'
-    const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
-    const coupon = savedCoupons.find(c => c.code === couponCode.toUpperCase());
+    try {
+      // In production, this would query Firestore 'coupons' securely
+      const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
+      const coupon = savedCoupons.find(c => c.code === couponCode.toUpperCase());
 
-    if (!coupon) {
-      setError('Invalid promotion code.');
+      if (!coupon) {
+        setError('Invalid promotion code node.');
+        setIsApplying(false);
+        return;
+      }
+
+      setAppliedCoupon(coupon);
+      toast({ title: "Node Synchronized", description: `${coupon.code} applied.` });
+    } catch (e) {
+      setError('Coupon validation failure.');
+    } finally {
       setIsApplying(false);
-      return;
     }
-
-    setAppliedCoupon(coupon);
-    setIsApplying(false);
-    toast({ title: "Node Synchronized", description: `${coupon.code} applied.` });
   };
 
   const handleProcessPayment = async () => {
     setStatus('processing');
 
     const activeUser = localStorage.getItem('gj5_active_user') || 'DEMO-USER';
-    const tempName = localStorage.getItem('gj5_temp_name') || 'Enterprise Owner';
+    const tempName = localStorage.getItem('gj5_temp_name') || 'Authorized Owner';
+    const companyName = localStorage.getItem('gj5_temp_company_name') || 'GJ5 Workspace';
+    const mobile = localStorage.getItem('gj5_temp_mobile') || '';
 
-    // 1. Check for Zero-Amount Settlement (100% Coupon or Free Trial)
+    // 1. Zero-Amount Settlement (100% Coupon or Free Trial)
     if (calculations.finalPrice === 0) {
       try {
-        await activateCustomerSubscription({
+        console.log("Initializing Zero-Amount Secure Activation...");
+        await activateFreeCouponSubscription({
           userId: activeUser,
-          companyName: localStorage.getItem('gj5_temp_company_name') || 'New Company',
+          companyName,
           ownerName: tempName,
           email: activeUser,
-          mobile: localStorage.getItem('gj5_temp_mobile') || '',
-          planId: planId,
+          mobile,
+          planId,
           planName: currentPlan.label,
           durationMonths: currentPlan.months,
           originalAmount: calculations.originalPrice,
           discountAmount: calculations.discount,
-          finalAmount: 0,
-          paymentMethod: planId === 'free' ? 'Free Trial' : 'Coupon',
-          paymentStatus: planId === 'free' ? 'No Payment Required' : 'Fully Discounted',
-          couponCode: appliedCoupon?.code
+          couponCode: appliedCoupon?.code || ''
         });
         setStatus('success');
-      } catch (err) {
-        toast({ variant: "destructive", title: "Activation Failed", description: "Node registry error." });
+      } catch (err: any) {
+        console.error("Free Activation Fault:", err);
+        toast({ 
+          variant: "destructive", 
+          title: "Activation Failed", 
+          description: err.message || "Node registry error." 
+        });
         setStatus('checkout');
       }
       return;
     }
 
-    // 2. Razorpay Flow for Paid Plans
+    // 2. Razorpay Flow for Paid Nodes
     try {
       const res = await fetch('/api/payment/create-order', {
         method: 'POST',
@@ -161,11 +172,11 @@ export default function CheckoutPage() {
             if (verifyData.success) {
               await activateCustomerSubscription({
                 userId: activeUser,
-                companyName: localStorage.getItem('gj5_temp_company_name') || 'New Company',
+                companyName,
                 ownerName: tempName,
                 email: activeUser,
-                mobile: localStorage.getItem('gj5_temp_mobile') || '',
-                planId: planId,
+                mobile,
+                planId,
                 planName: currentPlan.label,
                 durationMonths: currentPlan.months,
                 originalAmount: calculations.originalPrice,
@@ -173,16 +184,16 @@ export default function CheckoutPage() {
                 finalAmount: calculations.finalPrice,
                 paymentMethod: 'Razorpay',
                 paymentStatus: 'Paid',
-                couponCode: appliedCoupon?.code,
+                couponCode: appliedCoupon?.code || '',
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id
               });
               setStatus('success');
             } else {
-              throw new Error("Security verification failed.");
+              throw new Error("Signature verification failed.");
             }
           } catch (e: any) {
-            toast({ variant: "destructive", title: "Auth Error", description: e.message });
+            toast({ variant: "destructive", title: "Settlement Error", description: e.message });
             setStatus('checkout');
           }
         },
@@ -204,7 +215,7 @@ export default function CheckoutPage() {
         <Card className="max-w-md w-full rounded-[2.5rem] border-0 shadow-2xl overflow-hidden bg-slate-900/40 backdrop-blur-xl">
           <CardContent className="p-10 flex flex-col items-center text-center">
             <div className="space-y-8 animate-in zoom-in duration-500">
-              <div className="w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-500 shadow-lg shadow-emerald-500/20">
+              <div className="w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-500 shadow-lg">
                  <CheckCircle2 className="w-12 h-12" />
               </div>
               <div className="space-y-2">
@@ -213,7 +224,7 @@ export default function CheckoutPage() {
               </div>
               <Button 
                 onClick={() => router.push('/onboarding')} 
-                className="w-full h-14 bg-[#0066FF] hover:bg-blue-600 rounded-2xl font-headline font-bold text-lg text-white shadow-xl shadow-blue-900/20"
+                className="w-full h-14 bg-[#0066FF] hover:bg-blue-600 rounded-2xl font-headline font-bold text-lg text-white shadow-xl"
               >
                 Configure Workspace <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -226,19 +237,17 @@ export default function CheckoutPage() {
 
   if (status === 'processing') {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-6">
-           <div className="relative">
-             <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />
-             <div className="absolute inset-0 flex items-center justify-center">
-                <Zap className="w-8 h-8 text-blue-400" />
-             </div>
-           </div>
-           <div className="text-center space-y-2">
-              <h2 className="text-2xl font-headline font-black text-white uppercase italic tracking-tighter">Syncing Enterprise Matrix</h2>
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Initializing Security Handshake...</p>
-           </div>
-        </div>
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-6 p-6">
+         <div className="relative">
+            <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <Zap className="w-8 h-8 text-blue-400" />
+            </div>
+         </div>
+         <div className="text-center space-y-2">
+            <h2 className="text-2xl font-headline font-black text-white uppercase italic tracking-tighter">Syncing Enterprise Matrix</h2>
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Initializing Security Handshake...</p>
+         </div>
       </div>
     );
   }
@@ -298,6 +307,7 @@ export default function CheckoutPage() {
                          </Button>
                        )}
                     </div>
+                    {error && <p className="text-[10px] text-rose-500 font-bold uppercase italic ml-1">{error}</p>}
                     {appliedCoupon && (
                       <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex items-center justify-between">
                          <div className="flex items-center gap-3">
@@ -314,7 +324,7 @@ export default function CheckoutPage() {
            </Card>
         </div>
 
-        <div className="lg:col-span-5 space-y-8">
+        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
            <Card className="bg-slate-900 border-2 border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden">
               <CardHeader className="p-8 border-b border-slate-800 bg-slate-950/50">
                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">Settlement Ledger</h4>
@@ -343,6 +353,11 @@ export default function CheckoutPage() {
                  >
                     Authorize Settlement <ChevronRight className="w-6 h-6 ml-2" />
                  </Button>
+
+                 <div className="flex items-center gap-3 justify-center opacity-30 grayscale pointer-events-none">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Secure 256-Bit Encrypted Transit</span>
+                 </div>
               </CardContent>
            </Card>
         </div>

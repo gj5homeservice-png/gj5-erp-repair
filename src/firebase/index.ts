@@ -1,3 +1,4 @@
+
 'use client';
 
 import { initializeApp, getApps, getApp } from "firebase/app";
@@ -19,7 +20,9 @@ import {
   query, 
   where, 
   getDocs,
-  serverTimestamp 
+  serverTimestamp,
+  runTransaction,
+  writeBatch
 } from "firebase/firestore";
 import { firebaseConfig, isFirebaseConfigured } from "./config";
 
@@ -29,9 +32,13 @@ let auth: any;
 let db: any;
 
 if (isFirebaseConfigured) {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.error("Firebase Initialization Critical Failure:", error);
+  }
 }
 
 export { 
@@ -52,5 +59,7 @@ export {
   where,
   getDocs,
   serverTimestamp,
+  runTransaction,
+  writeBatch,
   isFirebaseConfigured
 };

@@ -126,6 +126,10 @@
     "/customers/{customerId}": {
       "schema": "#/backend/entities/Customer",
       "description": "Global customer records."
+    },
+    "/couponRedemptions/{redemptionId}": {
+      "schema": { "type": "object", "properties": { "couponCode": { "type": "string" } } },
+      "description": "Ledger of coupon usage."
     }
   }
 }

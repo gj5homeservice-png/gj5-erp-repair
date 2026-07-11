@@ -18,6 +18,7 @@ import {
   Package
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { 
   AreaChart, 
@@ -114,7 +115,7 @@ export default function SuperAdminDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={REVENUE_DATA}>
                     <defs>
-                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                       <linearGradient id="colorRev" x1="0" x1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                        </linearGradient>

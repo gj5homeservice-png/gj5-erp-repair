@@ -22,7 +22,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 export default function PlanManagement() {
   const plans = [
@@ -163,9 +170,3 @@ export default function PlanManagement() {
     </div>
   );
 }
-
-// Add these exports at the end to satisfy DropdownMenu imports if not already present globally
-const DropdownMenu = ({ children }: any) => <div>{children}</div>;
-const DropdownMenuTrigger = ({ children }: any) => <div>{children}</div>;
-const DropdownMenuContent = ({ children, className }: any) => <div className={className}>{children}</div>;
-const DropdownMenuItem = ({ children, className }: any) => <div className={className}>{children}</div>;

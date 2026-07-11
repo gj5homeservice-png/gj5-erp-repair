@@ -18,12 +18,13 @@ import {
   Lock,
   Calendar,
   Globe,
-  Plus
+  Plus,
+  Database,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { 
   Table, 
   TableBody, 
@@ -78,7 +79,7 @@ export default function CompanyManager() {
              placeholder="Search by Enterprise ID, Brand Name, or Authorized Owner..." 
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}
-             className="pl-12 h-14 bg-slate-950 border-slate-800 rounded-2xl font-bold placeholder:font-medium placeholder:text-slate-600"
+             className="pl-12 h-14 bg-white border-slate-800 rounded-2xl font-bold placeholder:font-medium placeholder:text-slate-600 text-[#111827]"
            />
         </div>
         <div className="flex gap-3">

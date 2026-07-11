@@ -1,8 +1,9 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, ShieldAlert, Zap } from 'lucide-react';
+import { Loader2, ShieldAlert, Zap, Lock } from 'lucide-react';
 import { isBefore, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 
@@ -13,42 +14,63 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const token = localStorage.getItem('gj5_auth_token');
-    const activeUser = localStorage.getItem('gj5_active_user');
-    const hasOnboarding = activeUser ? localStorage.getItem(`gj5_company_${activeUser}`) : null;
+    console.log("Auth Node: Verifying Identity Integrity...");
     
-    const publicRoutes = ['/', '/login', '/register', '/attendance', '/plans', '/payment', '/onboarding'];
-    const isPublicRoute = publicRoutes.some(route => 
-      pathname === route || (route !== '/' && pathname.startsWith(route))
-    );
-
-    // Subscription Validity Check
-    if (token && !isPublicRoute) {
-      const subData = localStorage.getItem('gj5_active_subscription');
-      if (subData) {
-        const sub = JSON.parse(subData);
-        if (isBefore(parseISO(sub.expiryDate), new Date())) {
-          setIsExpired(true);
-          setLoading(false);
-          return;
-        }
-      } else {
-        // No subscription found for a logged-in user on a private route?
-        // Redirect to plans to ensure they have one
-        router.push('/plans');
-        return;
+    // Fail-safe Timeout
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth Node: Security Handshake Timeout. Proceeding with Fallback...");
+        setLoading(false);
       }
-    }
+    }, 10000);
 
-    if (!token && !isPublicRoute) {
-      router.push('/login');
-    } else if (token && activeUser && !hasOnboarding && pathname !== '/onboarding') {
-      router.push('/onboarding');
-    } else if (token && (pathname === '/login' || pathname === '/register')) {
-      router.push('/dashboard');
-    }
-    
-    setLoading(false);
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('gj5_auth_token');
+        const activeUser = localStorage.getItem('gj5_active_user');
+        const hasOnboarding = activeUser ? localStorage.getItem(`gj5_company_${activeUser}`) : null;
+        
+        const publicRoutes = ['/', '/login', '/register', '/attendance', '/plans', '/payment', '/onboarding'];
+        const isPublicRoute = publicRoutes.some(route => 
+          pathname === route || (route !== '/' && pathname.startsWith(route))
+        );
+
+        console.log("Auth Node: Session status", token ? "ACTIVE" : "NONE", "| Path", pathname);
+
+        // Subscription Validity Check
+        if (token && !isPublicRoute) {
+          const subData = localStorage.getItem('gj5_active_subscription');
+          if (subData) {
+            const sub = JSON.parse(subData);
+            if (isBefore(parseISO(sub.expiryDate), new Date())) {
+              console.warn("Auth Node: License Node Expired.");
+              setIsExpired(true);
+              setLoading(false);
+              return;
+            }
+          } else {
+            console.warn("Auth Node: No active subscription found for secure route.");
+            router.push('/plans');
+            return;
+          }
+        }
+
+        if (!token && !isPublicRoute) {
+          router.push('/login');
+        } else if (token && activeUser && !hasOnboarding && pathname !== '/onboarding') {
+          router.push('/onboarding');
+        } else if (token && (pathname === '/login' || pathname === '/register')) {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        console.error("Auth Node: Critical Failure during Handshake.", err);
+      } finally {
+        setLoading(false);
+        clearTimeout(timeout);
+      }
+    };
+
+    checkAuth();
   }, [pathname, router]);
 
   if (loading) {
@@ -56,8 +78,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center gap-4">
         <div className="relative">
           <Loader2 className="w-16 h-16 text-[#0066FF] animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+             <Lock className="w-5 h-5 text-blue-500 opacity-40" />
+          </div>
         </div>
-        <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Initializing Identity Node...</p>
+        <div className="text-center">
+          <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Initializing Identity Node...</p>
+          <p className="text-[8px] text-slate-700 font-bold uppercase tracking-widest mt-1">Verifying Multi-Tenant Manifest</p>
+        </div>
       </div>
     );
   }

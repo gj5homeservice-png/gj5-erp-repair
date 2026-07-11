@@ -70,52 +70,84 @@ export function useErpStore() {
 
   useEffect(() => {
     const activeUser = localStorage.getItem('gj5_active_user');
-    if (!activeUser) return;
+    if (!activeUser) {
+      console.log("Auth Node: No active session detected.");
+      return;
+    }
+
+    console.log("ERP Store: Initializing Cloud Sync for", activeUser);
 
     const prefix = `gj5_user_${activeUser}_`;
     const companyKey = `gj5_company_${activeUser}`;
     
+    let unsubscribe: (() => void) | undefined;
+
     // 1. Sync / Load Company Profile from Firestore (Real-time)
     if (db) {
-      const q = query(collection(db, "companies"), where("ownerEmail", "==", activeUser));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const data = snapshot.docs[0].data() as Company;
-          setCompanyProfile({ ...data, id: snapshot.docs[0].id });
-        } else {
-          // Fallback to localStorage and push to Firestore (Migration)
-          const compData = localStorage.getItem(companyKey);
-          if (compData) {
-            const localProfile = JSON.parse(compData);
-            const companyId = localProfile.companyName.toLowerCase().replace(/\s+/g, '-');
-            const newCompany: Company = {
-              ...localProfile,
-              id: companyId,
-              userId: activeUser,
-              workspaceId: companyId,
-              subscriptionStatus: 'active',
-              companyStatus: 'active',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              lastLoginAt: new Date().toISOString(),
-              isBlocked: false,
-              planName: 'Master Plan'
-            };
-            setDoc(doc(db, "companies", companyId), newCompany);
+      console.log("Firestore Node: Connected. Synchronizing Database...");
+      try {
+        const q = query(collection(db, "companies"), where("ownerEmail", "==", activeUser));
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            console.log("Company Registry: Loaded from cloud.");
+            const data = snapshot.docs[0].data() as Company;
+            setCompanyProfile({ ...data, id: snapshot.docs[0].id });
+          } else {
+            console.warn("Company Registry: Node empty. Attempting local migration...");
+            const compData = localStorage.getItem(companyKey);
+            if (compData) {
+              const localProfile = JSON.parse(compData);
+              const companyId = localProfile.companyName.toLowerCase().replace(/\s+/g, '-');
+              const newCompany: Company = {
+                ...localProfile,
+                id: companyId,
+                userId: activeUser,
+                workspaceId: companyId,
+                subscriptionStatus: 'active',
+                companyStatus: 'active',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastLoginAt: new Date().toISOString(),
+                isBlocked: false,
+                planName: 'Master Plan'
+              };
+              setDoc(doc(db, "companies", companyId), newCompany)
+                .then(() => console.log("Database Node: Migration successful."))
+                .catch(err => console.error("Database Node: Migration failed.", err));
+              setCompanyProfile(newCompany);
+            } else {
+              console.error("Workspace Node: Critical Failure. No company data found.");
+              setCompanyProfile(null);
+            }
           }
-        }
-      });
-      return () => unsubscribe();
+        }, (error) => {
+          console.error("Firestore Snapshot Failure:", error);
+          // Fallback to local if snapshot fails
+          const compData = localStorage.getItem(companyKey);
+          if (compData) setCompanyProfile(JSON.parse(compData));
+        });
+      } catch (err) {
+        console.error("Firestore Initialization Error:", err);
+      }
+    } else {
+      console.warn("Firestore Node: Disconnected. Reverting to Offline Mode.");
+      const compData = localStorage.getItem(companyKey);
+      if (compData) {
+        try {
+          setCompanyProfile(JSON.parse(compData));
+        } catch (e) { console.error("Local Cache Corruption:", e); }
+      }
     }
 
-    // Load other data from localStorage
+    // Load other data from localStorage with error safety
     const safeGet = (key: string, setter: any) => {
       const val = localStorage.getItem(prefix + key);
       if (val) {
         try {
           setter(JSON.parse(val));
         } catch (e) {
-          console.error(`Error parsing ${key}:`, e);
+          console.error(`Local Registry Failure [${key}]:`, e);
+          setter([]); // Default to empty to prevent UI crash
         }
       }
     };
@@ -132,7 +164,11 @@ export function useErpStore() {
     safeGet('salaries', setSalaries);
     safeGet('leaves', setLeaves);
     safeGet('attendance_links', setAttendanceLinks);
-    safeGet('wallet_balance', setWalletBalance);
+    safeGet('wallet_balance', (v: any) => setWalletBalance(Number(v)));
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Save with User Prefix for isolation
@@ -141,7 +177,11 @@ export function useErpStore() {
     if (!activeUser) return;
     const prefix = `gj5_user_${activeUser}_`;
     
-    const save = (key: string, data: any) => localStorage.setItem(prefix + key, JSON.stringify(data));
+    const save = (key: string, data: any) => {
+       try {
+         localStorage.setItem(prefix + key, JSON.stringify(data));
+       } catch (e) { console.error(`Storage Sync Failure [${key}]:`, e); }
+    };
     
     save('invoices', invoices);
     save('stock', stock);

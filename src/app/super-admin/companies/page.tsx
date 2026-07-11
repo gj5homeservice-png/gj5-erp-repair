@@ -53,14 +53,44 @@ export default function CompanyManager() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!db) return;
-    const q = query(collection(db, "companies"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Company[];
-      setCompanies(data);
+    console.log("Super Admin: Initializing Enterprise Registry...");
+    
+    // Fail-safe Timeout
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Super Admin: Network Sync Timeout (10s). Reverting to Static Cache.");
+        setLoading(false);
+      }
+    }, 10000);
+
+    if (!db) {
+      console.error("Super Admin: Firestore Disconnected. Check Firebase Config.");
       setLoading(false);
-    });
-    return () => unsubscribe();
+      return;
+    }
+
+    let unsubscribe: (() => void) | undefined;
+
+    try {
+      const q = query(collection(db, "companies"));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log("Super Admin: Companies Synced from Cloud Node. Count:", snapshot.size);
+        const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Company[];
+        setCompanies(data);
+        setLoading(false);
+      }, (error) => {
+        console.error("Super Admin: Snapshot Error:", error);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error("Super Admin: Registry Handshake Error:", err);
+      setLoading(false);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const filtered = useMemo(() => {
@@ -107,11 +137,16 @@ export default function CompanyManager() {
         </div>
       </div>
 
-      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl">
+      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl min-h-[400px]">
         {loading ? (
           <div className="h-64 flex flex-col items-center justify-center gap-4">
-             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Syncing Cloud Nodes...</p>
+             <div className="relative">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <Database className="w-4 h-4 text-blue-400 opacity-40" />
+                </div>
+             </div>
+             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Syncing Cloud Matrix Registry...</p>
           </div>
         ) : (
           <Table>
@@ -180,9 +215,14 @@ export default function CompanyManager() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 && (
+              {!loading && filtered.length === 0 && (
                 <TableRow>
-                   <TableCell colSpan={5} className="h-48 text-center text-slate-500 font-medium italic">No companies matching search criteria found in central registry.</TableCell>
+                   <TableCell colSpan={5} className="h-48 text-center text-slate-500 font-medium italic">
+                      <div className="flex flex-col items-center gap-2 opacity-40">
+                         <Search className="w-10 h-10" />
+                         <span>No enterprise nodes matching criteria in central registry.</span>
+                      </div>
+                   </TableCell>
                 </TableRow>
               )}
             </TableBody>

@@ -22,7 +22,8 @@ import {
   User,
   AlertCircle,
   Building2,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,28 +137,21 @@ const DashboardModule = ({ store }: { store: any }) => (
 export default function ErpMainHub() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isMounted, setIsMounted] = useState(false);
+  const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
   const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    console.log("ERP Console: Viewport Mounted. Starting Cloud Handshake...");
+    
+    const timer = setTimeout(() => {
+      console.warn("Global Network Sync: Timeout (10s). Reverting to Fallback Node.");
+      setSyncTimeout(true);
+    }, 10000);
 
-  const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Repairing', icon: Wrench },
-    { name: 'CRM Leads', icon: BarChart3 },
-    { name: 'Billing', icon: Receipt },
-    { name: 'Invoice History', icon: History },
-    { name: 'Stock', icon: Package },
-    { name: 'Employees', icon: Users },
-    { name: 'Attendance', icon: CalendarCheck },
-    { name: 'Salary', icon: DollarSign },
-    { name: 'Analytics', icon: BarChart3 },
-    { name: 'E-Wallet', icon: Wallet },
-    { name: 'Logistics', icon: Truck },
-    { name: 'Settings', icon: Settings },
-  ];
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -187,11 +181,20 @@ export default function ErpMainHub() {
 
   const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
 
-  if (isMounted && !store.companyProfile && activeUser) {
+  // LOADING STATE WITH TIMEOUT FAIL-SAFE
+  if (isMounted && !store.companyProfile && activeUser && !syncTimeout) {
     return (
       <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center gap-6">
-         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-         <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Synchronizing Cloud Workspace...</p>
+         <div className="relative">
+            <Loader2 className="w-16 h-16 text-[#0066FF] animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <Lock className="w-5 h-5 text-blue-500 opacity-40" />
+            </div>
+         </div>
+         <div className="text-center space-y-2">
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Synchronizing Cloud Workspace...</p>
+            <p className="text-[8px] text-slate-700 font-bold uppercase tracking-widest">Attempting Security Handshake</p>
+         </div>
       </div>
     );
   }
@@ -293,3 +296,19 @@ export default function ErpMainHub() {
     </AuthGuard>
   );
 }
+
+const navItems = [
+  { name: 'Dashboard', icon: LayoutDashboard },
+  { name: 'Repairing', icon: Wrench },
+  { name: 'CRM Leads', icon: BarChart3 },
+  { name: 'Billing', icon: Receipt },
+  { name: 'Invoice History', icon: History },
+  { name: 'Stock', icon: Package },
+  { name: 'Employees', icon: Users },
+  { name: 'Attendance', icon: CalendarCheck },
+  { name: 'Salary', icon: DollarSign },
+  { name: 'Analytics', icon: BarChart3 },
+  { name: 'E-Wallet', icon: Wallet },
+  { name: 'Logistics', icon: Truck },
+  { name: 'Settings', icon: Settings },
+];

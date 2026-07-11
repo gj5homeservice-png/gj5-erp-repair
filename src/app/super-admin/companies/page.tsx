@@ -50,6 +50,7 @@ export default function CompanyManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -64,7 +65,8 @@ export default function CompanyManager() {
     }, 10000);
 
     if (!db) {
-      console.error("Super Admin: Firestore Disconnected. Check Firebase Config.");
+      console.warn("Super Admin: Cloud Sync Node Unavailable. Operating in Restricted Mode.");
+      setIsOffline(true);
       setLoading(false);
       return;
     }
@@ -75,15 +77,16 @@ export default function CompanyManager() {
       const q = query(collection(db, "companies"));
       unsubscribe = onSnapshot(q, (snapshot) => {
         console.log("Super Admin: Companies Synced from Cloud Node. Count:", snapshot.size);
-        const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Company[];
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Company[];
         setCompanies(data);
         setLoading(false);
+        setIsOffline(false);
       }, (error) => {
-        console.error("Super Admin: Snapshot Error:", error);
+        console.warn("Super Admin: Snapshot Node Sync Interrupted.", error);
         setLoading(false);
       });
     } catch (err) {
-      console.error("Super Admin: Registry Handshake Error:", err);
+      console.warn("Super Admin: Registry Handshake Interrupted.", err);
       setLoading(false);
     }
 
@@ -147,6 +150,17 @@ export default function CompanyManager() {
                 </div>
              </div>
              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Syncing Cloud Matrix Registry...</p>
+          </div>
+        ) : isOffline ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4">
+             <div className="w-16 h-16 rounded-[2rem] bg-amber-500/10 flex items-center justify-center border-2 border-amber-500/20">
+                <ShieldCheck className="w-8 h-8 text-amber-500" />
+             </div>
+             <div className="text-center space-y-1">
+                <h3 className="font-headline font-bold text-white uppercase tracking-widest">Restricted Node Access</h3>
+                <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em]">Firebase Configuration Required for Cloud Sync</p>
+             </div>
+             <Button variant="link" className="text-blue-500 font-bold uppercase text-[10px]" onClick={() => window.location.reload()}>Reconnect Node</Button>
           </div>
         ) : (
           <Table>
@@ -215,7 +229,7 @@ export default function CompanyManager() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!loading && filtered.length === 0 && (
+              {!loading && !isOffline && filtered.length === 0 && (
                 <TableRow>
                    <TableCell colSpan={5} className="h-48 text-center text-slate-500 font-medium italic">
                       <div className="flex flex-col items-center gap-2 opacity-40">

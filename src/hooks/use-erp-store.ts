@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -15,8 +16,10 @@ import {
   AttendanceRecord,
   SalaryRecord,
   LeaveRequest,
-  AttendanceLink
+  AttendanceLink,
+  Company
 } from '@/lib/types';
+import { db, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from '@/firebase';
 
 const DEFAULT_NAV_ORDER = [
   'Dashboard',
@@ -63,8 +66,7 @@ export function useErpStore() {
   const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
   const [deletePassword, setDeletePassword] = useState<string>('1234');
   
-  // Multi-workspace Company Metadata
-  const [companyProfile, setCompanyProfile] = useState<any>(null);
+  const [companyProfile, setCompanyProfile] = useState<Company | null>(null);
 
   useEffect(() => {
     const activeUser = localStorage.getItem('gj5_active_user');
@@ -73,10 +75,40 @@ export function useErpStore() {
     const prefix = `gj5_user_${activeUser}_`;
     const companyKey = `gj5_company_${activeUser}`;
     
-    // Load Company Metadata
-    const compData = localStorage.getItem(companyKey);
-    if (compData) setCompanyProfile(JSON.parse(compData));
+    // 1. Sync / Load Company Profile from Firestore (Real-time)
+    if (db) {
+      const q = query(collection(db, "companies"), where("ownerEmail", "==", activeUser));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data() as Company;
+          setCompanyProfile({ ...data, id: snapshot.docs[0].id });
+        } else {
+          // Fallback to localStorage and push to Firestore (Migration)
+          const compData = localStorage.getItem(companyKey);
+          if (compData) {
+            const localProfile = JSON.parse(compData);
+            const companyId = localProfile.companyName.toLowerCase().replace(/\s+/g, '-');
+            const newCompany: Company = {
+              ...localProfile,
+              id: companyId,
+              userId: activeUser,
+              workspaceId: companyId,
+              subscriptionStatus: 'active',
+              companyStatus: 'active',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString(),
+              isBlocked: false,
+              planName: 'Master Plan'
+            };
+            setDoc(doc(db, "companies", companyId), newCompany);
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
 
+    // Load other data from localStorage
     const safeGet = (key: string, setter: any) => {
       const val = localStorage.getItem(prefix + key);
       if (val) {
@@ -282,7 +314,7 @@ export function useErpStore() {
     walletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility,
     navOrder, setNavOrder,
-    companyProfile,
+    companyProfile, setCompanyProfile,
     deletePassword,
     transactions, deleteTransaction,
     expenses, addExpense,

@@ -1,5 +1,40 @@
+
 {
   "entities": {
+    "Company": {
+      "title": "Company",
+      "description": "Master enterprise node registry and workspace metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyName": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "ownerEmail": { "type": "string", "format": "email" },
+        "ownerMobile": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "planName": { "type": "string" },
+        "planStartDate": { "type": "string", "format": "date-time" },
+        "planExpiryDate": { "type": "string", "format": "date-time" },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "expired", "trial", "pending"] },
+        "companyStatus": { "type": "string", "enum": ["active", "suspended", "blocked"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "couponCode": { "type": "string" },
+        "isBlocked": { "type": "boolean" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "pincode": { "type": "string" },
+        "category": { "type": "string" },
+        "services": { "type": "string" },
+        "gstNumber": { "type": "string" }
+      },
+      "required": ["companyName", "ownerEmail", "subscriptionStatus"]
+    },
     "Customer": {
       "title": "Customer",
       "description": "Retail customer profile for tracking and CRM.",
@@ -112,8 +147,8 @@
     "providers": ["google.com", "password"]
   },
   "firestore": {
-    "/saas_companies/{companyId}": {
-      "schema": "#/backend/entities/SaaSCompany",
+    "/companies/{companyId}": {
+      "schema": "#/backend/entities/Company",
       "description": "Global enterprise registry."
     },
     "/saas_plans/{planId}": {

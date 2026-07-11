@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Wrench, 
@@ -21,7 +21,8 @@ import {
   Bell,
   User,
   AlertCircle,
-  Building2
+  Building2,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,25 +62,23 @@ const DashboardModule = ({ store }: { store: any }) => (
       {[
         { label: 'Active Jobs', value: store.calls.length, icon: Wrench, color: 'text-blue-400', bg: 'bg-blue-400/10' },
         { label: 'Sales Audit', value: store.invoices.length, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-        { label: 'Asset Units', value: store.stock.reduce((a: any, b: any) => a + b.quantity, 0), icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+        { label: 'Asset Units', value: store.stock.reduce((a: any, b: any) => a + (b.quantity || 0), 0), icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
         { label: 'Staff Roster', value: store.employees.length, icon: Users, color: 'text-rose-400', bg: 'bg-rose-400/10' },
         { label: 'Wallet Matrix', value: `₹${store.walletBalance.toLocaleString()}`, icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         { label: 'CRM Leads', value: store.inquiries.length, icon: BarChart3, color: 'text-amber-400', bg: 'bg-amber-400/10' },
       ].map((stat, i) => (
-        <Card key={i} className="bg-slate-900/40 border-slate-800 shadow-xl overflow-hidden relative">
+        <div key={i} className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl relative overflow-hidden group">
           <div className={cn("absolute top-0 right-0 w-16 h-16 opacity-5 -mr-4 -mt-4", stat.color)}>
             <stat.icon className="w-full h-full" />
           </div>
-          <div className="p-6 space-y-4">
-            <div className={cn("p-2.5 rounded-xl w-fit", stat.bg, stat.color)}>
-              <stat.icon className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-headline font-black text-white">{stat.value}</h3>
-            </div>
+          <div className={cn("p-2.5 rounded-xl w-fit", stat.bg, stat.color)}>
+            <stat.icon className="w-5 h-5" />
           </div>
-        </Card>
+          <div>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+            <h3 className="text-xl font-headline font-black text-white">{stat.value}</h3>
+          </div>
+        </div>
       ))}
     </div>
 
@@ -134,8 +133,6 @@ const DashboardModule = ({ store }: { store: any }) => (
   </div>
 );
 
-const Card = ({ children, className }: any) => <div className={cn("bg-slate-900/40 border-slate-800 rounded-3xl", className)}>{children}</div>;
-
 export default function ErpMainHub() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const store = useErpStore();
@@ -181,9 +178,18 @@ export default function ErpMainHub() {
     }
   };
 
-  const companyLogo = store.companyProfile?.logo;
+  if (!store.companyProfile && localStorage.getItem('gj5_active_user')) {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center gap-6">
+         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+         <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Synchronizing Cloud Workspace...</p>
+      </div>
+    );
+  }
+
+  const companyLogo = store.companyProfile?.logoUrl;
   const companyName = store.companyProfile?.companyName || "GJ5 ERP Workspace";
-  const ownerName = store.companyProfile?.ownerName || "System Admin";
+  const ownerName = store.companyProfile?.ownerName || "Authorized Admin";
 
   return (
     <AuthGuard>
@@ -192,12 +198,12 @@ export default function ErpMainHub() {
         <aside className="w-72 bg-slate-900/40 border-r border-slate-800 backdrop-blur-xl hidden lg:flex flex-col z-20 shrink-0">
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white">
-                <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
+              <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white shadow-lg">
+                <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
-                <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'GOOD JOB 5 ERP'}</span>
+                <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'ERP MASTER NODE'}</span>
               </div>
             </div>
           </div>
@@ -253,11 +259,11 @@ export default function ErpMainHub() {
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">
-                   <p className="text-xs font-bold text-white">{ownerName}</p>
-                   <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Authorized Node</p>
+                   <p className="text-xs font-bold text-white uppercase tracking-tighter">{ownerName}</p>
+                   <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Verified Identity</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner">
-                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Profile" data-ai-hint="official logo" />
+                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Profile" />
                 </div>
               </div>
             </div>

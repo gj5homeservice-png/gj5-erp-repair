@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useRef } from 'react';
@@ -23,6 +24,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { db, doc, setDoc } from '@/firebase';
+import { Company } from '@/lib/types';
 
 export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
@@ -62,24 +65,62 @@ export default function OnboardingPage() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
 
     const email = localStorage.getItem('gj5_temp_email');
-    if (email) {
-      const companyData = {
-        ...formData,
-        logo,
-        ownerEmail: email,
-        setupAt: new Date().toISOString()
-      };
+    if (!email) {
+      setLoading(false);
+      return;
+    }
+
+    const companyId = formData.companyName.toLowerCase().replace(/\s+/g, '-');
+    
+    const companyData: Company = {
+      id: companyId,
+      companyName: formData.companyName,
+      ownerName: formData.ownerName,
+      ownerEmail: email,
+      ownerMobile: formData.whatsapp,
+      logoUrl: logo || undefined,
+      planName: 'Master Plan',
+      planStartDate: new Date().toISOString(),
+      planExpiryDate: new Date(Date.now() + 31536000000).toISOString(), // 1 year default
+      subscriptionStatus: 'active',
+      companyStatus: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: email,
+      workspaceId: companyId,
+      paymentStatus: 'Paid',
+      isBlocked: false,
+      lastLoginAt: new Date().toISOString(),
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      category: formData.category,
+      services: formData.services,
+      gstNumber: formData.gstNumber
+    };
+
+    try {
+      // 1. Save to Firestore
+      if (db) {
+        await setDoc(doc(db, "companies", companyId), companyData);
+      }
+
+      // 2. Save to localStorage for immediate session persistence
       localStorage.setItem(`gj5_company_${email}`, JSON.stringify(companyData));
       localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
       localStorage.setItem('gj5_active_user', email);
-    }
 
-    toast({ title: "Onboarding Complete", description: "Workspace initialized successfully." });
-    router.push('/dashboard');
-    setLoading(false);
+      toast({ title: "Onboarding Complete", description: "Workspace initialized and synchronized." });
+      router.push('/dashboard');
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Sync Failed", description: "Could not provision cloud workspace." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

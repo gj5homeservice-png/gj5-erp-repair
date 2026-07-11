@@ -1,3 +1,4 @@
+
 export type RepairStatus = 'Pending' | 'Completed' | 'Rejected' | 'Exchange' | 'Purchase';
 
 export interface VisitHistoryEntry {
@@ -34,6 +35,35 @@ export interface RepairCall {
   isOldEntry?: boolean;
   entryDate?: string;
   receivedDate?: string;
+}
+
+export interface Company {
+  id: string;
+  companyName: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerMobile: string;
+  logoUrl?: string;
+  planName: string;
+  planStartDate: string;
+  planExpiryDate: string;
+  subscriptionStatus: 'active' | 'expired' | 'trial' | 'pending';
+  companyStatus: 'active' | 'suspended' | 'blocked';
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  workspaceId: string;
+  paymentStatus: string;
+  couponCode?: string;
+  isBlocked: boolean;
+  lastLoginAt: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  category?: string;
+  services?: string;
+  gstNumber?: string;
 }
 
 export interface TVProduct {
@@ -128,6 +158,13 @@ export interface Invoice {
   paymentStatus: 'Paid' | 'Unpaid' | 'Partial';
   paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit' | 'Razorpay' | 'Coupon';
   timestamp: string;
+  jobId?: string;
+  model?: string;
+  brand?: string;
+  labourCharges?: number;
+  total?: number;
+  taxEnabled?: boolean;
+  gst?: number;
 }
 
 export interface StockItem {
@@ -396,3 +433,23 @@ export interface RazorpayPayment {
   planId: string;
   createdAt: string;
 }
+
+export interface EmployeeTask {
+  id: string;
+  title: string;
+  description: string;
+  customerName: string;
+  customerMobile: string;
+  address: string;
+  category: string;
+  assignedToId: string;
+  assignedToName: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+  dueDate: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export type TaskStatus = EmployeeTask['status'];
+export type TaskPriority = EmployeeTask['priority'];

@@ -13,7 +13,6 @@ import {
   TicketPercent,
   Gift,
   Zap,
-  Info,
   ChevronRight,
   X,
   Tag
@@ -27,6 +26,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Coupon } from '@/lib/types';
 import { activateCustomerSubscription, activateFreeCouponSubscription } from '@/lib/subscription-service';
+import { db, collection, query, where, getDocs } from '@/firebase';
+import { isBefore, parseISO, isAfter } from 'date-fns';
 
 const PLANS_DATA: Record<string, { price: number; label: string; months: number }> = {
   'free': { price: 0, label: 'Free Trial (7 Days)', months: 0.23 },
@@ -78,20 +79,31 @@ export default function CheckoutPage() {
     setError('');
 
     try {
-      // In production, this would query Firestore 'coupons' securely
-      const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
-      const coupon = savedCoupons.find(c => c.code === couponCode.toUpperCase());
+      if (!db) throw new Error("Cloud Node Unavailable");
 
-      if (!coupon) {
+      const q = query(collection(db, "coupons"), where("code", "==", couponCode.toUpperCase().trim()));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
         setError('Invalid promotion code node.');
         setIsApplying(false);
         return;
       }
 
-      setAppliedCoupon(coupon);
-      toast({ title: "Node Synchronized", description: `${coupon.code} applied.` });
-    } catch (e) {
-      setError('Coupon validation failure.');
+      const coupon = snap.docs[0].data() as Coupon;
+      const now = new Date();
+
+      // VALIDATION
+      if (!coupon.active) { setError('This coupon is currently inactive.'); setIsApplying(false); return; }
+      if (coupon.startAt && isBefore(now, parseISO(coupon.startAt))) { setError('This campaign hasn\'t launched yet.'); setIsApplying(false); return; }
+      if (coupon.expiresAt && isAfter(now, parseISO(coupon.expiresAt))) { setError('This code has expired.'); setIsApplying(false); return; }
+      if (coupon.usedCount >= coupon.maxUses) { setError('Usage limit reached for this node.'); setIsApplying(false); return; }
+      if (currentPlan.price < (coupon.minimumOrderAmount || 0)) { setError(`Minimum order of ₹${coupon.minimumOrderAmount} required.`); setIsApplying(false); return; }
+
+      setAppliedCoupon({ ...coupon, id: snap.docs[0].id });
+      toast({ title: "Node Synchronized", description: `${coupon.code} successfully applied.` });
+    } catch (e: any) {
+      setError(e.message || 'Coupon validation failure.');
     } finally {
       setIsApplying(false);
     }
@@ -100,17 +112,19 @@ export default function CheckoutPage() {
   const handleProcessPayment = async () => {
     setStatus('processing');
 
-    const activeUser = localStorage.getItem('gj5_active_user') || 'DEMO-USER';
-    const tempName = localStorage.getItem('gj5_temp_name') || 'Authorized Owner';
-    const companyName = localStorage.getItem('gj5_temp_company_name') || 'GJ5 Workspace';
-    const mobile = localStorage.getItem('gj5_temp_mobile') || '';
+    try {
+      const activeUser = localStorage.getItem('gj5_active_user') || 'DEMO-USER';
+      const tempName = localStorage.getItem('gj5_temp_name') || 'Authorized Owner';
+      const companyName = localStorage.getItem('gj5_temp_company_name') || 'GJ5 Workspace';
+      const mobile = localStorage.getItem('gj5_temp_mobile') || '';
+      
+      const companyId = companyName.toLowerCase().replace(/\s+/g, '-');
 
-    // 1. Zero-Amount Settlement (100% Coupon or Free Trial)
-    if (calculations.finalPrice === 0) {
-      try {
-        console.log("Initializing Zero-Amount Secure Activation...");
+      // 1. Zero-Amount Settlement (100% Coupon or Free Trial)
+      if (calculations.finalPrice === 0) {
         await activateFreeCouponSubscription({
           userId: activeUser,
+          companyId,
           companyName,
           ownerName: tempName,
           email: activeUser,
@@ -123,20 +137,10 @@ export default function CheckoutPage() {
           couponCode: appliedCoupon?.code || ''
         });
         setStatus('success');
-      } catch (err: any) {
-        console.error("Free Activation Fault:", err);
-        toast({ 
-          variant: "destructive", 
-          title: "Activation Failed", 
-          description: err.message || "Node registry error." 
-        });
-        setStatus('checkout');
+        return;
       }
-      return;
-    }
 
-    // 2. Razorpay Flow for Paid Nodes
-    try {
+      // 2. Razorpay Flow for Paid Nodes
       const res = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,6 +176,7 @@ export default function CheckoutPage() {
             if (verifyData.success) {
               await activateCustomerSubscription({
                 userId: activeUser,
+                companyId,
                 companyName,
                 ownerName: tempName,
                 email: activeUser,

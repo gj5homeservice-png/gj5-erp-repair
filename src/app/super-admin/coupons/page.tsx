@@ -86,6 +86,7 @@ const INITIAL_COUPON: Partial<Coupon> = {
 export default function CouponManager() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon>>(INITIAL_COUPON);
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,13 +94,44 @@ export default function CouponManager() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!db) return;
-    const q = query(collection(db, "coupons"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCoupons(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Coupon)));
+    if (!db) {
+      setError("Cloud instance not found.");
       setLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        setError("Network handshake timeout. Retrying...");
+      }
+    }, 10000);
+
+    const q = query(collection(db, "coupons"), orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      try {
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Coupon));
+        setCoupons(data);
+        setError(null);
+      } catch (err: any) {
+        console.error("Firestore Registry Sync Error:", err);
+        setError(err.message || "Failed to load coupons.");
+      } finally {
+        setLoading(false);
+        clearTimeout(timer);
+      }
+    }, (err) => {
+      console.error("Firestore Listener Error:", err);
+      setError("Security Access Denied: Verify Admin Permissions.");
+      setLoading(false);
+      clearTimeout(timer);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   const filteredCoupons = useMemo(() => {
@@ -126,44 +158,46 @@ export default function CouponManager() {
   }, [coupons]);
 
   const handleSave = async () => {
-    if (!formDataValid()) return;
+    if (!editingCoupon.code) {
+      toast({ variant: "destructive", title: "Missing Data", description: "Coupon code is mandatory." });
+      return;
+    }
+    
+    if (editingCoupon.discountType === 'Percentage' && (editingCoupon.discountValue! < 1 || editingCoupon.discountValue! > 100)) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Percentage must be between 1 and 100." });
+      return;
+    }
+
     if (!db) return;
 
     const couponId = editingCoupon.id || `CPN-${Date.now()}`;
     const finalCoupon = {
       ...editingCoupon,
       id: couponId,
-      code: editingCoupon.code?.toUpperCase(),
+      code: editingCoupon.code?.toUpperCase().trim(),
       usedCount: editingCoupon.usedCount || 0,
       createdAt: editingCoupon.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: 'Super Admin'
+      createdBy: 'Super Admin',
+      active: editingCoupon.active ?? true
     } as Coupon;
 
     try {
       await setDoc(doc(db, "coupons", couponId), finalCoupon);
       setIsModalOpen(false);
-      toast({ title: "Coupon Committed", description: `Node ${finalCoupon.code} is now live.` });
-    } catch (err) {
-      toast({ variant: "destructive", title: "Sync Failure", description: "Failed to save coupon node." });
+      toast({ title: "Node Committed", description: `Campaign ${finalCoupon.code} is now synchronized.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Sync Failure", description: err.message || "Failed to commit coupon." });
     }
-  };
-
-  const formDataValid = () => {
-    if (!editingCoupon.code || !editingCoupon.discountValue) {
-      toast({ variant: "destructive", title: "Missing Data", description: "Code and Discount Value are required." });
-      return false;
-    }
-    return true;
   };
 
   const handleDelete = async (id: string) => {
     if (!db) return;
     try {
       await deleteDoc(doc(db, "coupons", id));
-      toast({ title: "Node Terminated", description: "Coupon removed from registry." });
-    } catch (err) {
-      toast({ variant: "destructive", title: "Delete Failure", description: "Failed to remove node." });
+      toast({ title: "Node Terminated", description: "Coupon purged from cloud registry." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Delete Failure", description: err.message });
     }
   };
 
@@ -183,6 +217,7 @@ export default function CouponManager() {
     if (!db) return;
     try {
       await setDoc(doc(db, "coupons", c.id), { ...c, active: !c.active, updatedAt: new Date().toISOString() });
+      toast({ title: c.active ? "Campaign Deactivated" : "Campaign Reactivated" });
     } catch (err) {
       toast({ variant: "destructive", title: "Status Update Failure" });
     }
@@ -268,6 +303,12 @@ export default function CouponManager() {
              </div>
              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Syncing Cloud Matrix Registry...</p>
           </div>
+        ) : error ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4 p-8 text-center">
+             <AlertCircle className="w-12 h-12 text-rose-500" />
+             <p className="text-sm font-bold text-rose-400 uppercase tracking-widest">{error}</p>
+             <Button variant="outline" onClick={() => window.location.reload()} className="h-10 text-[10px] uppercase font-black">Retry Handshake</Button>
+          </div>
         ) : (
           <Table>
             <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
@@ -295,7 +336,7 @@ export default function CouponManager() {
                     <TableCell>
                        <div className="flex flex-col">
                           <span className="text-xs font-bold text-slate-300">
-                            {c.discountType === 'Percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue.toLocaleString()} OFF`}
+                            {c.discountType === 'Percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue?.toLocaleString()} OFF`}
                           </span>
                           <span className="text-[8px] text-slate-600 font-black uppercase">Min Order: ₹{c.minimumOrderAmount}</span>
                        </div>
@@ -311,7 +352,7 @@ export default function CouponManager() {
                        <div className="flex flex-col items-center">
                           <span className="text-xs font-bold text-slate-300">{c.usedCount || 0} / {c.maxUses || 0}</span>
                           <div className="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                             <div className="bg-blue-600 h-full" style={{ width: `${(c.usedCount / c.maxUses) * 100}%` }}></div>
+                             <div className="bg-blue-600 h-full" style={{ width: `${Math.min(100, ((c.usedCount || 0) / (c.maxUses || 1)) * 100)}%` }}></div>
                           </div>
                        </div>
                     </TableCell>
@@ -342,7 +383,7 @@ export default function CouponManager() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 p-2 rounded-xl">
                             <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-blue-500/10 transition-colors"><TrendingUp className="w-3.5 h-3.5" /> View Usage History</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-600 text-white transition-colors"><Trash2 className="w-3.5 h-3.5" /> Delete Permanently</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(c.id!)} className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-600 text-white transition-colors"><Trash2 className="w-3.5 h-3.5" /> Delete Permanently</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

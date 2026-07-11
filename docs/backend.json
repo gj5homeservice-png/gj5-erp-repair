@@ -60,6 +60,7 @@
       "description": "Marketing coupon for plan discounts.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "code": { "type": "string" },
         "name": { "type": "string" },
         "discountType": { "type": "string", "enum": ["Percentage", "Fixed Amount"] },
@@ -76,11 +77,34 @@
       "description": "Active business license for an enterprise node.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
         "companyId": { "type": "string" },
         "planName": { "type": "string" },
+        "originalAmount": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "finalAmount": { "type": "number" },
         "startDate": { "type": "string", "format": "date-time" },
         "expiryDate": { "type": "string", "format": "date-time" },
-        "active": { "type": "boolean" }
+        "active": { "type": "boolean" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" }
+      }
+    },
+    "Payment": {
+      "title": "Financial Transaction",
+      "description": "Secure record of fiscal settlement.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "paymentId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string" },
+        "userId": { "type": "string" },
+        "planId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -103,6 +127,10 @@
     "/subscriptions/{subId}": {
       "schema": "#/backend/entities/Subscription",
       "description": "Enterprise license records."
+    },
+    "/payments/{paymentId}": {
+      "schema": "#/backend/entities/Payment",
+      "description": "Financial settlement records."
     }
   }
 }

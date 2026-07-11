@@ -126,7 +126,7 @@ export interface Invoice {
   sgst: number;
   grandTotal: number;
   paymentStatus: 'Paid' | 'Unpaid' | 'Partial';
-  paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit';
+  paymentMode: 'Cash' | 'UPI' | 'Bank Transfer' | 'Credit' | 'Razorpay' | 'Coupon';
   timestamp: string;
 }
 
@@ -380,5 +380,19 @@ export interface Subscription {
   startDate: string;
   expiryDate: string;
   active: boolean;
+  createdAt: string;
+}
+
+export interface RazorpayPayment {
+  id: string;
+  orderId: string;
+  paymentId?: string;
+  signature?: string;
+  amount: number;
+  currency: string;
+  status: 'Pending' | 'Captured' | 'Failed' | 'Refunded';
+  userId: string;
+  companyId: string;
+  planId: string;
   createdAt: string;
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { 
   CheckCircle2, 
   Loader2, 
@@ -81,7 +82,6 @@ export default function CheckoutPage() {
     setIsApplying(true);
     setError('');
 
-    // Simulate Secure Backend Validation
     await new Promise(r => setTimeout(r, 800));
 
     const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
@@ -123,13 +123,7 @@ export default function CheckoutPage() {
     toast({ title: "Node Synchronized", description: `${coupon.code} applied successfully.` });
   };
 
-  const handleProcessPayment = async () => {
-    setStatus('processing');
-    
-    // Simulate API delay
-    await new Promise(r => setTimeout(r, 2000));
-
-    // Plan Activation Logic
+  const activateSubscription = (paymentMethod: string, statusText: string) => {
     const now = new Date();
     let expiry = now;
     if (planId === 'free') expiry = addMonths(now, 0.23); // ~7 days
@@ -139,22 +133,21 @@ export default function CheckoutPage() {
 
     const subscription: Subscription = {
       id: `SUB-${Date.now()}`,
-      userId: 'DEMO-USER',
+      userId: localStorage.getItem('gj5_active_user') || 'DEMO-USER',
       companyId: 'DEMO-COMPANY',
       planName: PLAN_LABELS[planId],
       originalAmount: calculations.originalPrice,
       discountAmount: calculations.discount,
       finalAmount: calculations.finalPrice,
       couponCode: appliedCoupon?.code,
-      paymentMethod: calculations.finalPrice === 0 ? 'Coupon' : 'Razorpay',
-      paymentStatus: calculations.finalPrice === 0 ? 'Fully Discounted' : 'Paid',
+      paymentMethod,
+      paymentStatus: statusText,
       startDate: now.toISOString(),
       expiryDate: expiry.toISOString(),
       active: true,
       createdAt: now.toISOString()
     };
 
-    // Update coupon usage if applicable
     if (appliedCoupon) {
       const savedCoupons: Coupon[] = JSON.parse(localStorage.getItem('gj5_saas_coupons') || '[]');
       const updatedCoupons = savedCoupons.map(c => 
@@ -165,6 +158,85 @@ export default function CheckoutPage() {
 
     localStorage.setItem('gj5_active_subscription', JSON.stringify(subscription));
     setStatus('success');
+  };
+
+  const handleProcessPayment = async () => {
+    if (calculations.finalPrice === 0) {
+      setStatus('processing');
+      await new Promise(r => setTimeout(r, 1500));
+      activateSubscription('Coupon', 'Fully Discounted');
+      return;
+    }
+
+    setStatus('processing');
+
+    try {
+      // 1. Create Razorpay Order
+      const res = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          finalAmount: calculations.finalPrice,
+          userId: localStorage.getItem('gj5_active_user'),
+          companyId: 'DEMO-COMPANY'
+        })
+      });
+
+      const orderData = await res.json();
+      if (orderData.error) throw new Error(orderData.error);
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "GJ5 ERP",
+        description: `License: ${PLAN_LABELS[planId]}`,
+        image: "https://picsum.photos/seed/gj5-logo/200/200",
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          // 3. Verify Signature
+          const verifyRes = await fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            })
+          });
+
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            activateSubscription('Razorpay', 'Paid');
+          } else {
+            toast({ variant: "destructive", title: "Security Alert", description: "Payment verification failed." });
+            setStatus('checkout');
+          }
+        },
+        prefill: {
+          name: "GJ5 Customer",
+          email: localStorage.getItem('gj5_active_user') || "",
+        },
+        theme: {
+          color: "#123C8C"
+        },
+        modal: {
+          ondismiss: function() {
+            setStatus('checkout');
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (err: any) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Gateway Error", description: err.message || "Failed to initialize payment node." });
+      setStatus('checkout');
+    }
   };
 
   if (status === 'success') {
@@ -232,6 +304,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex items-center justify-center p-4 py-12">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      
       <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left: Summary */}

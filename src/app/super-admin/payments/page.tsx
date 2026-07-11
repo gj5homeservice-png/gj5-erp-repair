@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -17,7 +18,9 @@ import {
   Calendar,
   MoreVertical,
   ChevronRight,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,35 +42,38 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { db, collection, onSnapshot, query, orderBy } from '@/firebase';
 import * as XLSX from 'xlsx';
 
 export default function PaymentManager() {
   const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
   useEffect(() => {
-    // Initial fetch logic would go here
-    const mockPayments = [
-      { id: 'PAY12345', orderId: 'ORD56789', amount: 8999, status: 'Captured', method: 'UPI', user: 'admin@matrix.com', company: 'Matrix Services', date: new Date().toISOString(), plan: 'Master Plan' },
-      { id: 'PAY12346', orderId: 'ORD56790', amount: 2999, status: 'Failed', method: 'Card', user: 'info@coolcare.in', company: 'Cool Care', date: new Date().toISOString(), plan: 'Starter Plan' },
-      { id: 'PAY12347', orderId: 'ORD56791', amount: 0, status: 'Captured', method: 'Coupon', user: 'vip@tech.com', company: 'Tech Hub', date: new Date().toISOString(), plan: 'Growth Plan' },
-    ];
-    setPayments(mockPayments);
+    if (!db) return;
+    const q = query(collection(db, "payments"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPayments(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   const filtered = useMemo(() => {
     return payments.filter(p => {
-      const matchesSearch = p.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           p.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           p.company.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = 
+        (p.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (p.userId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.planId || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [payments, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const total = payments.reduce((acc, curr) => acc + curr.amount, 0);
+    const total = payments.filter(p => p.status === 'Captured').reduce((acc, curr) => acc + (curr.amount / 100), 0);
     const successful = payments.filter(p => p.status === 'Captured').length;
     const failed = payments.filter(p => p.status === 'Failed').length;
     return { total, successful, failed };
@@ -129,76 +135,95 @@ export default function PaymentManager() {
         </div>
       </div>
 
-      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl">
-        <Table>
-          <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
-            <TableRow className="border-transparent hover:bg-transparent">
-              <TableHead className="text-[10px] font-black uppercase px-8">Transaction Hub</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Enterprise Context</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Chronology</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Settlement</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
-              <TableHead className="text-right text-[10px] font-black uppercase px-8">Audit</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((p) => (
-              <TableRow key={p.id} className="border-slate-800/40 hover:bg-white/5 transition-all group h-20">
-                <TableCell className="px-8">
-                  <div className="flex flex-col">
-                    <span className="font-code font-black text-blue-400 text-sm tracking-widest">{p.id}</span>
-                    <span className="text-[9px] text-slate-500 font-bold uppercase">{p.orderId}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                   <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                         <Building2 className="w-3 h-3 text-slate-600" />
-                         <span className="text-xs font-bold text-slate-300">{p.company}</span>
-                      </div>
-                      <span className="text-[9px] text-slate-500 italic mt-0.5">{p.user}</span>
-                   </div>
-                </TableCell>
-                <TableCell>
-                   <div className="flex items-center gap-2 text-slate-400">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-bold">{format(parseISO(p.date), 'dd MMM yyyy')}</span>
-                   </div>
-                </TableCell>
-                <TableCell>
-                   <div className="flex flex-col">
-                      <span className="text-sm font-code font-black text-white">₹{p.amount.toLocaleString()}</span>
-                      <span className="text-[8px] text-slate-600 uppercase font-black">{p.method} Node</span>
-                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={cn(
-                    "text-[8px] font-black uppercase px-2 h-5 border-0 tracking-widest",
-                    p.status === 'Captured' ? "bg-emerald-500/10 text-emerald-400" :
-                    p.status === 'Failed' ? "bg-rose-500/10 text-rose-400" :
-                    "bg-slate-800 text-slate-500"
-                  )}>
-                    {p.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right px-8">
-                   <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-blue-400 hover:bg-blue-500/10"><FileText className="w-4 h-4" /></Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><MoreVertical className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 p-2 rounded-xl">
-                          <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-blue-500/10 transition-colors"><ShieldCheck className="w-3.5 h-3.5" /> Verify Integrity</DropdownMenuItem>
-                          <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors"><ArrowUpRight className="w-3.5 h-3.5" /> Manual Payout</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                   </div>
-                </TableCell>
+      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl min-h-[400px]">
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4">
+             <div className="relative">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <Database className="w-4 h-4 text-blue-400 opacity-40" />
+                </div>
+             </div>
+             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Syncing Cloud Matrix Registry...</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
+              <TableRow className="border-transparent hover:bg-transparent">
+                <TableHead className="text-[10px] font-black uppercase px-8">Transaction Hub</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Identity Node</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Chronology</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Settlement</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
+                <TableHead className="text-right text-[10px] font-black uppercase px-8">Audit</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((p) => (
+                <TableRow key={p.id} className="border-slate-800/40 hover:bg-white/5 transition-all group h-20">
+                  <TableCell className="px-8">
+                    <div className="flex flex-col">
+                      <span className="font-code font-black text-blue-400 text-sm tracking-widest">{p.id}</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">{p.orderId}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                     <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                           <User className="w-3 h-3 text-slate-600" />
+                           <span className="text-xs font-bold text-slate-300 truncate max-w-[150px]">{p.userId}</span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-black mt-0.5 uppercase">Plan: {p.planId}</span>
+                     </div>
+                  </TableCell>
+                  <TableCell>
+                     <div className="flex items-center gap-2 text-slate-400">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-bold">{p.createdAt ? format(parseISO(p.createdAt), 'dd MMM yyyy') : 'N/A'}</span>
+                     </div>
+                  </TableCell>
+                  <TableCell>
+                     <div className="flex flex-col">
+                        <span className="text-sm font-code font-black text-white">₹{(p.amount / 100).toLocaleString()}</span>
+                        <span className="text-[8px] text-slate-600 uppercase font-black">{p.currency} Settlement</span>
+                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={cn(
+                      "text-[8px] font-black uppercase px-2 h-5 border-0 tracking-widest",
+                      p.status === 'Captured' ? "bg-emerald-500/10 text-emerald-400" :
+                      p.status === 'Failed' ? "bg-rose-500/10 text-rose-400" :
+                      "bg-slate-800 text-slate-500"
+                    )}>
+                      {p.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right px-8">
+                     <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-blue-400 hover:bg-blue-500/10"><FileText className="w-4 h-4" /></Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><MoreVertical className="w-4 h-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 p-2 rounded-xl">
+                            <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-blue-500/10 transition-colors"><ShieldCheck className="w-3.5 h-3.5" /> Verify Integrity</DropdownMenuItem>
+                            <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors"><ArrowUpRight className="w-3.5 h-3.5" /> Manual Payout</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                     </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!loading && filtered.length === 0 && (
+                <TableRow>
+                   <TableCell colSpan={6} className="h-48 text-center text-slate-700 uppercase tracking-widest font-black text-xs opacity-50 italic">
+                      No transaction records found in central ledger.
+                   </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <div className="p-8 bg-blue-600/5 rounded-[2.5rem] border border-blue-600/10 flex flex-col sm:flex-row items-center justify-between gap-6">

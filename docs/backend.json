@@ -50,46 +50,6 @@
       },
       "required": ["name", "mobile"]
     },
-    "TVProduct": {
-      "title": "TV Product",
-      "description": "Smart TV asset with technical specifications and pricing.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "brand": { "type": "string" },
-        "size": { "type": "string" },
-        "os": { "type": "string" },
-        "resolution": { "type": "string" },
-        "features": { "type": "array" },
-        "mrp": { "type": "number" },
-        "offerPrice": { "type": "number" },
-        "warranty": { "type": "string" },
-        "stock": { "type": "number" },
-        "imageUrl": { "type": "string" },
-        "isOffer": { "type": "boolean" },
-        "lastUpdated": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name", "brand", "offerPrice", "stock"]
-    },
-    "Inquiry": {
-      "title": "Customer Inquiry",
-      "description": "Lead management for potential sales and service.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "customerName": { "type": "string" },
-        "mobile": { "type": "string" },
-        "address": { "type": "string" },
-        "pincode": { "type": "string" },
-        "productId": { "type": "string" },
-        "productName": { "type": "string" },
-        "message": { "type": "string" },
-        "status": { "type": "string", "enum": ["New", "Pending", "Confirmed", "Delivered", "Cancelled"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["customerName", "mobile", "status"]
-    },
     "Coupon": {
       "title": "Promotion Coupon",
       "description": "Marketing coupon for plan discounts.",
@@ -151,10 +111,6 @@
       "schema": "#/backend/entities/Company",
       "description": "Global enterprise registry."
     },
-    "/saas_plans/{planId}": {
-      "schema": "#/backend/entities/SaaSPlan",
-      "description": "Subscription tier definitions."
-    },
     "/coupons/{couponId}": {
       "schema": "#/backend/entities/Coupon",
       "description": "Global marketing coupons."
@@ -166,6 +122,10 @@
     "/payments/{paymentId}": {
       "schema": "#/backend/entities/Payment",
       "description": "Financial settlement records."
+    },
+    "/customers/{customerId}": {
+      "schema": "#/backend/entities/Customer",
+      "description": "Global customer records."
     }
   }
 }

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -21,7 +22,9 @@ import {
   FileDown,
   AlertCircle,
   ChevronRight,
-  Target
+  Target,
+  Loader2,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,12 +62,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, addMonths } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Coupon, CouponDiscountType } from '@/lib/types';
+import { db, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from '@/firebase';
 import * as XLSX from 'xlsx';
 
-// Mock/Initial Data for Demo
 const INITIAL_COUPON: Partial<Coupon> = {
   code: '',
   name: '',
@@ -80,14 +83,9 @@ const INITIAL_COUPON: Partial<Coupon> = {
   active: true
 };
 
-function addMonths(date: Date, months: number) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
 export default function CouponManager() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon>>(INITIAL_COUPON);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,20 +93,21 @@ export default function CouponManager() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const saved = localStorage.getItem('gj5_saas_coupons');
-    if (saved) setCoupons(JSON.parse(saved));
+    if (!db) return;
+    const q = query(collection(db, "coupons"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCoupons(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Coupon)));
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
-
-  const saveToStorage = (newCoupons: Coupon[]) => {
-    setCoupons(newCoupons);
-    localStorage.setItem('gj5_saas_coupons', JSON.stringify(newCoupons));
-  };
 
   const filteredCoupons = useMemo(() => {
     return coupons.filter(c => {
-      const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           c.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const isExpired = isBefore(parseISO(c.expiresAt), new Date());
+      const matchesSearch = 
+        (c.code || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (c.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const isExpired = c.expiresAt ? isBefore(parseISO(c.expiresAt), new Date()) : false;
       let matchesStatus = true;
       if (statusFilter === 'Active') matchesStatus = c.active && !isExpired;
       else if (statusFilter === 'Inactive') matchesStatus = !c.active;
@@ -119,23 +118,21 @@ export default function CouponManager() {
   }, [coupons, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const active = coupons.filter(c => c.active && !isBefore(parseISO(c.expiresAt), new Date())).length;
-    const expired = coupons.filter(c => isBefore(parseISO(c.expiresAt), new Date())).length;
+    const active = coupons.filter(c => c.active && (c.expiresAt ? !isBefore(parseISO(c.expiresAt), new Date()) : true)).length;
+    const expired = coupons.filter(c => c.expiresAt ? isBefore(parseISO(c.expiresAt), new Date()) : false).length;
     const redemptions = coupons.reduce((acc, curr) => acc + (curr.usedCount || 0), 0);
     const fullDiscount = coupons.filter(c => c.discountType === 'Percentage' && c.discountValue === 100).length;
     return { total: coupons.length, active, expired, redemptions, fullDiscount };
   }, [coupons]);
 
-  const handleSave = () => {
-    if (!editingCoupon.code || !editingCoupon.discountValue) {
-      toast({ variant: "destructive", title: "Missing Data", description: "Code and Discount Value are required." });
-      return;
-    }
+  const handleSave = async () => {
+    if (!formDataValid()) return;
+    if (!db) return;
 
-    const isNew = !editingCoupon.id;
+    const couponId = editingCoupon.id || `CPN-${Date.now()}`;
     const finalCoupon = {
       ...editingCoupon,
-      id: editingCoupon.id || `CPN-${Date.now()}`,
+      id: couponId,
       code: editingCoupon.code?.toUpperCase(),
       usedCount: editingCoupon.usedCount || 0,
       createdAt: editingCoupon.createdAt || new Date().toISOString(),
@@ -143,30 +140,52 @@ export default function CouponManager() {
       createdBy: 'Super Admin'
     } as Coupon;
 
-    let newCoupons;
-    if (isNew) newCoupons = [finalCoupon, ...coupons];
-    else newCoupons = coupons.map(c => c.id === finalCoupon.id ? finalCoupon : c);
-
-    saveToStorage(newCoupons);
-    setIsModalOpen(false);
-    toast({ title: "Coupon Committed", description: `Node ${finalCoupon.code} is now live.` });
+    try {
+      await setDoc(doc(db, "coupons", couponId), finalCoupon);
+      setIsModalOpen(false);
+      toast({ title: "Coupon Committed", description: `Node ${finalCoupon.code} is now live.` });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Sync Failure", description: "Failed to save coupon node." });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    const newCoupons = coupons.filter(c => c.id !== id);
-    saveToStorage(newCoupons);
-    toast({ title: "Node Terminated", description: "Coupon removed from registry." });
+  const formDataValid = () => {
+    if (!editingCoupon.code || !editingCoupon.discountValue) {
+      toast({ variant: "destructive", title: "Missing Data", description: "Code and Discount Value are required." });
+      return false;
+    }
+    return true;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, "coupons", id));
+      toast({ title: "Node Terminated", description: "Coupon removed from registry." });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Delete Failure", description: "Failed to remove node." });
+    }
   };
 
   const handleDuplicate = (c: Coupon) => {
-    const duplicate = { ...c, id: `CPN-${Date.now()}`, code: `${c.code}_COPY`, usedCount: 0, createdAt: new Date().toISOString() };
-    saveToStorage([duplicate, ...coupons]);
-    toast({ title: "Node Cloned", description: "New instance created for adjustment." });
+    const { id, usedCount, ...rest } = c;
+    setEditingCoupon({
+      ...rest,
+      code: `${c.code}_COPY`,
+      name: `${c.name} (Copy)`,
+      usedCount: 0,
+      createdAt: new Date().toISOString()
+    });
+    setIsModalOpen(true);
   };
 
-  const toggleActive = (c: Coupon) => {
-    const updated = { ...c, active: !c.active, updatedAt: new Date().toISOString() };
-    saveToStorage(coupons.map(curr => curr.id === c.id ? updated : curr));
+  const toggleActive = async (c: Coupon) => {
+    if (!db) return;
+    try {
+      await setDoc(doc(db, "coupons", c.id), { ...c, active: !c.active, updatedAt: new Date().toISOString() });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Status Update Failure" });
+    }
   };
 
   const handleExport = () => {
@@ -238,103 +257,111 @@ export default function CouponManager() {
         </Select>
       </div>
 
-      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl">
-        <Table>
-          <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
-            <TableRow className="border-transparent hover:bg-transparent">
-              <TableHead className="text-[10px] font-black uppercase px-8">Coupon Identity</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Yield Node</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">License Scope</TableHead>
-              <TableHead className="text-[10px] font-black uppercase text-center">Usage</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Expiry</TableHead>
-              <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
-              <TableHead className="text-right text-[10px] font-black uppercase px-8">Control</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCoupons.map((c) => {
-              const isExpired = isBefore(parseISO(c.expiresAt), new Date());
-              return (
-                <TableRow key={c.id} className="border-slate-800/40 hover:bg-white/5 transition-all group h-20">
-                  <TableCell className="px-8">
-                    <div className="flex flex-col">
-                      <span className="font-code font-black text-blue-400 text-sm tracking-widest">{c.code}</span>
-                      <span className="text-[9px] text-slate-500 font-bold uppercase truncate max-w-[150px]">{c.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                     <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-300">
-                          {c.discountType === 'Percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue.toLocaleString()} OFF`}
-                        </span>
-                        <span className="text-[8px] text-slate-600 font-black uppercase">Min Order: ₹{c.minimumOrderAmount}</span>
-                     </div>
-                  </TableCell>
-                  <TableCell>
-                     <div className="flex flex-wrap gap-1 max-w-[150px]">
-                        {c.applicablePlans.map(p => (
-                          <Badge key={p} variant="outline" className="text-[8px] h-4 px-1.5 border-slate-800 bg-slate-950 text-slate-400 font-black uppercase">{p}</Badge>
-                        ))}
-                     </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                     <div className="flex flex-col items-center">
-                        <span className="text-xs font-bold text-slate-300">{c.usedCount} / {c.maxUses}</span>
-                        <div className="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                           <div className="bg-blue-600 h-full" style={{ width: `${(c.usedCount/c.maxUses)*100}%` }}></div>
-                        </div>
-                     </div>
-                  </TableCell>
-                  <TableCell>
-                     <span className={cn("text-[10px] font-bold uppercase", isExpired ? "text-rose-500" : "text-slate-400")}>
-                       {format(parseISO(c.expiresAt), 'dd MMM yyyy')}
-                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={cn(
-                      "text-[8px] font-black uppercase px-2 h-5 border-0 tracking-widest",
-                      isExpired ? "bg-rose-500/10 text-rose-500" :
-                      c.active ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-500"
-                    )}>
-                      {isExpired ? 'Expired' : (c.active ? 'Active' : 'Paused')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right px-8">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => toggleActive(c)} className={cn("h-9 w-9 rounded-xl", c.active ? "text-amber-500 hover:bg-amber-500/10" : "text-emerald-500 hover:bg-emerald-500/10")}>
-                        {c.active ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDuplicate(c)} className="h-9 w-9 rounded-xl text-slate-500 hover:text-blue-400 hover:bg-blue-500/10"><Copy className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => { setEditingCoupon(c); setIsModalOpen(true); }} className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><Edit className="w-4 h-4" /></Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><MoreVertical className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 p-2 rounded-xl">
-                          <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-blue-500/10 transition-colors"><TrendingUp className="w-3.5 h-3.5" /> View Usage History</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-600 text-white transition-colors"><Trash2 className="w-3.5 h-3.5" /> Delete Permanently</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
+      <div className="rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 overflow-hidden shadow-2xl min-h-[400px]">
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4">
+             <div className="relative">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <Database className="w-4 h-4 text-blue-400 opacity-40" />
+                </div>
+             </div>
+             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest animate-pulse">Syncing Cloud Matrix Registry...</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-slate-900/60 h-16 border-b border-slate-800/50">
+              <TableRow className="border-transparent hover:bg-transparent">
+                <TableHead className="text-[10px] font-black uppercase px-8">Coupon Identity</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Yield Node</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">License Scope</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-center">Usage</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Expiry</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
+                <TableHead className="text-right text-[10px] font-black uppercase px-8">Control</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCoupons.map((c) => {
+                const isExpired = c.expiresAt ? isBefore(parseISO(c.expiresAt), new Date()) : false;
+                return (
+                  <TableRow key={c.id} className="border-slate-800/40 hover:bg-white/5 transition-all group h-20">
+                    <TableCell className="px-8">
+                      <div className="flex flex-col">
+                        <span className="font-code font-black text-blue-400 text-sm tracking-widest">{c.code}</span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase truncate max-w-[150px]">{c.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-300">
+                            {c.discountType === 'Percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue.toLocaleString()} OFF`}
+                          </span>
+                          <span className="text-[8px] text-slate-600 font-black uppercase">Min Order: ₹{c.minimumOrderAmount}</span>
+                       </div>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex flex-wrap gap-1 max-w-[150px]">
+                          {c.applicablePlans?.map(p => (
+                            <Badge key={p} variant="outline" className="text-[8px] h-4 px-1.5 border-slate-800 bg-slate-950 text-slate-400 font-black uppercase">{p}</Badge>
+                          ))}
+                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                       <div className="flex flex-col items-center">
+                          <span className="text-xs font-bold text-slate-300">{c.usedCount || 0} / {c.maxUses || 0}</span>
+                          <div className="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
+                             <div className="bg-blue-600 h-full" style={{ width: `${(c.usedCount / c.maxUses) * 100}%` }}></div>
+                          </div>
+                       </div>
+                    </TableCell>
+                    <TableCell>
+                       <span className={cn("text-[10px] font-bold uppercase", isExpired ? "text-rose-500" : "text-slate-400")}>
+                         {c.expiresAt ? format(parseISO(c.expiresAt), 'dd MMM yyyy') : 'N/A'}
+                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn(
+                        "text-[8px] font-black uppercase px-2 h-5 border-0 tracking-widest",
+                        isExpired ? "bg-rose-500/10 text-rose-500" :
+                        c.active ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-500"
+                      )}>
+                        {isExpired ? 'Expired' : (c.active ? 'Active' : 'Paused')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-8">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => toggleActive(c)} className={cn("h-9 w-9 rounded-xl", c.active ? "text-amber-500 hover:bg-amber-500/10" : "text-emerald-500 hover:bg-emerald-500/10")}>
+                          {c.active ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDuplicate(c)} className="h-9 w-9 rounded-xl text-slate-500 hover:text-blue-400 hover:bg-blue-500/10"><Copy className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { setEditingCoupon(c); setIsModalOpen(true); }} className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><Edit className="w-4 h-4" /></Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800"><MoreVertical className="w-4 h-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100 p-2 rounded-xl">
+                            <DropdownMenuItem className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-blue-500/10 transition-colors"><TrendingUp className="w-3.5 h-3.5" /> View Usage History</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-[10px] uppercase font-bold gap-2 cursor-pointer rounded-lg hover:bg-rose-600 text-white transition-colors"><Trash2 className="w-3.5 h-3.5" /> Delete Permanently</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {!loading && filteredCoupons.length === 0 && (
+                <TableRow>
+                   <TableCell colSpan={7} className="h-48 text-center text-slate-700 uppercase tracking-widest font-black text-xs opacity-50 italic">
+                      No coupon campaigns active in matrix registry.
+                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
-      <div className="p-8 bg-blue-600/5 rounded-[2.5rem] border border-blue-600/10 flex flex-col sm:flex-row items-center justify-between gap-6">
-         <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="w-14 h-14 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500"><AlertCircle className="w-8 h-8" /></div>
-            <div className="space-y-1">
-               <h4 className="text-sm font-black text-white uppercase tracking-widest">Promotion Integrity Node</h4>
-               <p className="text-[10px] text-slate-500 max-w-md font-medium leading-relaxed uppercase">Coupon redemptions are processed via atomic transactions. Ensure multi-use limits are calibrated against business yield targets before activation.</p>
-            </div>
-         </div>
-      </div>
-
-      {/* Coupon Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[90vh] flex flex-col">
           <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 shrink-0">
@@ -361,7 +388,7 @@ export default function CouponManager() {
                     <div className="space-y-1.5">
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Coupon Unique Code</Label>
                        <Input 
-                         value={editingCoupon.code} 
+                         value={editingCoupon.code || ''} 
                          onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})}
                          className="bg-slate-950 border-slate-700 h-11 font-code font-black text-blue-400 tracking-widest text-lg placeholder:text-slate-500" 
                          placeholder="e.g. GJ5OFF50"
@@ -370,7 +397,7 @@ export default function CouponManager() {
                     <div className="space-y-1.5">
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Promotion Name</Label>
                        <Input 
-                         value={editingCoupon.name} 
+                         value={editingCoupon.name || ''} 
                          onChange={e => setEditingCoupon({...editingCoupon, name: e.target.value})}
                          className="bg-slate-950 border-slate-700 h-11 text-white placeholder:text-slate-500 font-bold" 
                          placeholder="Internal Campaign Label"
@@ -379,7 +406,7 @@ export default function CouponManager() {
                     <div className="space-y-1.5">
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Public Description</Label>
                        <Textarea 
-                         value={editingCoupon.description} 
+                         value={editingCoupon.description || ''} 
                          onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})}
                          className="bg-slate-950 border-slate-700 min-h-[80px] text-sm text-slate-200 placeholder:text-slate-500 resize-none font-medium" 
                          placeholder="Visual prompt for customer checkout..."
@@ -396,7 +423,7 @@ export default function CouponManager() {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1.5">
                           <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Type</Label>
-                          <Select value={editingCoupon.discountType} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
+                          <Select value={editingCoupon.discountType || 'Percentage'} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
                              <SelectTrigger className="bg-slate-950 border-slate-700 h-11 text-white font-bold">
                                 <SelectValue />
                              </SelectTrigger>
@@ -410,7 +437,7 @@ export default function CouponManager() {
                           <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Value</Label>
                           <Input 
                             type="number"
-                            value={editingCoupon.discountValue} 
+                            value={editingCoupon.discountValue || 0} 
                             onChange={e => setEditingCoupon({...editingCoupon, discountValue: Number(e.target.value)})}
                             className="bg-slate-950 border-slate-700 h-11 font-code font-black text-emerald-400 text-lg" 
                           />
@@ -420,7 +447,7 @@ export default function CouponManager() {
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Minimum Order Node (₹)</Label>
                        <Input 
                          type="number"
-                         value={editingCoupon.minimumOrderAmount} 
+                         value={editingCoupon.minimumOrderAmount || 0} 
                          onChange={e => setEditingCoupon({...editingCoupon, minimumOrderAmount: Number(e.target.value)})}
                          className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
@@ -439,7 +466,7 @@ export default function CouponManager() {
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Launch Date</Label>
                        <Input 
                          type="date"
-                         value={editingCoupon.startAt} 
+                         value={editingCoupon.startAt || ''} 
                          onChange={e => setEditingCoupon({...editingCoupon, startAt: e.target.value})}
                          className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
                          style={{ colorScheme: 'dark' }}
@@ -449,7 +476,7 @@ export default function CouponManager() {
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Terminating Date</Label>
                        <Input 
                          type="date"
-                         value={editingCoupon.expiresAt} 
+                         value={editingCoupon.expiresAt || ''} 
                          onChange={e => setEditingCoupon({...editingCoupon, expiresAt: e.target.value})}
                          className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
                          style={{ colorScheme: 'dark' }}
@@ -467,7 +494,7 @@ export default function CouponManager() {
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Total System Uses</Label>
                        <Input 
                          type="number"
-                         value={editingCoupon.maxUses} 
+                         value={editingCoupon.maxUses || 0} 
                          onChange={e => setEditingCoupon({...editingCoupon, maxUses: Number(e.target.value)})}
                          className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
@@ -476,46 +503,11 @@ export default function CouponManager() {
                        <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Per Customer Cap</Label>
                        <Input 
                          type="number"
-                         value={editingCoupon.perCustomerLimit} 
+                         value={editingCoupon.perCustomerLimit || 0} 
                          onChange={e => setEditingCoupon({...editingCoupon, perCustomerLimit: Number(e.target.value)})}
                          className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
                        />
                     </div>
-                  </div>
-               </div>
-            </div>
-
-            <div className="space-y-6">
-               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                 <Target className="w-3.5 h-3.5" /> Targeting & Restrictions
-               </h4>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Restricted Email</Label>
-                     <Input 
-                       value={editingCoupon.allowedEmail || ''} 
-                       onChange={e => setEditingCoupon({...editingCoupon, allowedEmail: e.target.value})}
-                       className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-medium placeholder:text-slate-500" 
-                       placeholder="user@example.com"
-                     />
-                  </div>
-                  <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Restricted Mobile</Label>
-                     <Input 
-                       value={editingCoupon.allowedMobile || ''} 
-                       onChange={e => setEditingCoupon({...editingCoupon, allowedMobile: e.target.value})}
-                       className="bg-slate-950 border-slate-700 h-11 font-code text-white font-medium placeholder:text-slate-500" 
-                       placeholder="91XXXXXXXXXX"
-                     />
-                  </div>
-                  <div className="space-y-1.5">
-                     <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Company ID Node</Label>
-                     <Input 
-                       value={editingCoupon.allowedCompanyId || ''} 
-                       onChange={e => setEditingCoupon({...editingCoupon, allowedCompanyId: e.target.value})}
-                       className="bg-slate-950 border-slate-700 h-11 font-code text-blue-400 font-black placeholder:text-slate-500" 
-                       placeholder="GJ5-1001"
-                     />
                   </div>
                </div>
             </div>

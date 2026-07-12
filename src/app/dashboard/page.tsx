@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -179,14 +178,19 @@ export default function ErpMainHub() {
     }
   };
 
-  const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
+  const getActiveUser = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gj5_active_user');
+    }
+    return null;
+  }
 
-  // LOADING STATE WITH TIMEOUT FAIL-SAFE
-  if (isMounted && !store.companyProfile && activeUser && !syncTimeout) {
+  // LOADING STATE WITH HYDRATION SAFETY
+  if (isMounted && !store.companyProfile && getActiveUser() && !syncTimeout) {
     return (
       <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center gap-6">
          <div className="relative">
-            <Loader2 className="w-16 h-16 text-[#0066FF] animate-spin" />
+            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
                <Lock className="w-5 h-5 text-blue-500 opacity-40" />
             </div>

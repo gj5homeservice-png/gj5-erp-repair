@@ -23,9 +23,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Coupon } from '@/lib/types';
 import { activateCustomerSubscription, activateFreeCouponSubscription } from '@/lib/subscription-service';
-import { db, collection, query, where, getDocs, Timestamp } from '@/firebase';
+import { db, collection, query, where, getDocs, Timestamp, doc, getDoc } from '@/firebase';
 import { isBefore, parseISO, isAfter, isValid } from 'date-fns';
 
 const PLANS_DATA: Record<string, { price: number; label: string; months: number }> = {
@@ -81,22 +80,21 @@ export default function CheckoutPage() {
       if (!db) throw new Error("Firebase Service Node Offline. Connection Required.");
 
       const normalizedCode = couponCode.toUpperCase().trim();
-      const q = query(collection(db, "coupons"), where("code", "==", normalizedCode));
-      const snap = await getDocs(q);
+      const couponRef = doc(db, "coupons", normalizedCode);
+      const snap = await getDoc(couponRef);
 
-      if (snap.empty) {
+      if (!snap.exists()) {
         setError('Invalid promotion identity. Code not found in registry.');
         setIsApplying(false);
         return;
       }
 
-      const couponDoc = snap.docs[0];
-      const coupon = couponDoc.data();
+      const coupon = snap.data();
       const now = new Date();
 
       // Lifecycle Handshake
-      const startAt = coupon.startAt instanceof Timestamp ? coupon.startAt.toDate() : parseISO(coupon.startAt);
-      const expiresAt = coupon.expiresAt instanceof Timestamp ? coupon.expiresAt.toDate() : parseISO(coupon.expiresAt);
+      const startAt = coupon.startAt instanceof Timestamp ? coupon.startAt.toDate() : (typeof coupon.startAt === 'string' ? parseISO(coupon.startAt) : new Date(0));
+      const expiresAt = coupon.expiresAt instanceof Timestamp ? coupon.expiresAt.toDate() : (typeof coupon.expiresAt === 'string' ? parseISO(coupon.expiresAt) : new Date(0));
 
       if (!coupon.active) { setError('This campaign node is currently inactive.'); setIsApplying(false); return; }
       if (isValid(startAt) && isBefore(now, startAt)) { setError('This campaign hasn\'t launched yet.'); setIsApplying(false); return; }
@@ -104,7 +102,7 @@ export default function CheckoutPage() {
       if ((coupon.usedCount || 0) >= (coupon.maxUses || 1000)) { setError('Total usage limit reached for this node.'); setIsApplying(false); return; }
       if (currentPlan.price < (coupon.minimumOrderAmount || 0)) { setError(`Minimum order of ₹${coupon.minimumOrderAmount} required.`); setIsApplying(false); return; }
 
-      setAppliedCoupon({ ...coupon, id: couponDoc.id });
+      setAppliedCoupon({ ...coupon, id: snap.id });
       toast({ title: "Node Verified", description: `${normalizedCode} successfully applied.` });
     } catch (e: any) {
       console.error("Coupon Verification Fault:", e);
@@ -136,13 +134,13 @@ export default function CheckoutPage() {
           companyName,
           ownerName: tempName,
           email: activeUser,
-          mobile,
+          ownerMobile: mobile,
           planId,
           planName: currentPlan.label,
           durationMonths: currentPlan.months,
           originalAmount: calculations.originalPrice,
           discountAmount: calculations.discount,
-          couponCode: appliedCoupon?.code || ''
+          couponCode: appliedCoupon?.code || 'GJ5FREE'
         });
         setStatus('success');
         return;

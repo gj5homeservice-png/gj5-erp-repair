@@ -24,7 +24,8 @@ import {
   Target,
   Loader2,
   Database,
-  X
+  X,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,7 +115,6 @@ export default function CouponManager() {
       try {
         const data = snapshot.docs.map(doc => {
           const d = doc.data();
-          // Safe conversion for table display
           return { 
             ...d, 
             id: doc.id,
@@ -175,7 +175,7 @@ export default function CouponManager() {
     }).length;
 
     const redemptions = coupons.reduce((acc, curr) => acc + (curr.usedCount || 0), 0);
-    const fullDiscount = coupons.filter(c => c.discountType === 'Percentage' && c.discountValue === 100).length;
+    const fullDiscount = coupons.filter(c => c.discountType === 'Percentage' && Number(c.discountValue) === 100).length;
     
     return { total: coupons.length, active, expired, redemptions, fullDiscount };
   }, [coupons]);
@@ -191,7 +191,7 @@ export default function CouponManager() {
 
     const normalizedCode = editingCoupon.code.toUpperCase().trim();
     
-    if (editingCoupon.discountType === 'Percentage' && (editingCoupon.discountValue! < 1 || editingCoupon.discountValue! > 100)) {
+    if (editingCoupon.discountType === 'Percentage' && (Number(editingCoupon.discountValue) < 1 || Number(editingCoupon.discountValue) > 100)) {
       toast({ variant: "destructive", title: "Logic Error", description: "Yield percentage must be between 1 and 100." });
       return;
     }
@@ -215,7 +215,6 @@ export default function CouponManager() {
     try {
       const docRef = doc(db, "coupons", normalizedCode);
       
-      // Check for existence if it's a new entry
       if (!editingCoupon.id) {
         console.log("Checking for duplicate identity...");
         const docSnap = await getDoc(docRef);
@@ -224,9 +223,8 @@ export default function CouponManager() {
         }
       }
 
-      console.log("Transmitting payload to Cloud Node...");
+      console.log("Transmitting payload to Firestore...");
       
-      // Convert to Firestore Timestamps
       const finalCoupon = {
         ...editingCoupon,
         id: normalizedCode,

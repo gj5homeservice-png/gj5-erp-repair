@@ -49,7 +49,7 @@ export {
   auth, 
   db, 
   signInWithEmailAndPassword, 
-  signInWithPhoneNumber,
+  signInWithPhoneNumber, 
   RecaptchaVerifier,
   signOut,
   onAuthStateChanged,

@@ -65,7 +65,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO, isAfter, isBefore, addMonths } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Coupon, CouponDiscountType } from '@/lib/types';
-import { db, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from '@/firebase';
+import { db, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, getDoc, serverTimestamp } from '@/firebase';
 import * as XLSX from 'xlsx';
 
 const INITIAL_COUPON: Partial<Coupon> = {
@@ -86,6 +86,7 @@ const INITIAL_COUPON: Partial<Coupon> = {
 export default function CouponManager() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon>>(INITIAL_COUPON);
@@ -157,37 +158,72 @@ export default function CouponManager() {
     return { total: coupons.length, active, expired, redemptions, fullDiscount };
   }, [coupons]);
 
-  const handleSave = async () => {
-    if (!editingCoupon.code) {
-      toast({ variant: "destructive", title: "Missing Data", description: "Coupon code is mandatory." });
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    console.log("Coupon submit started");
+
+    if (!editingCoupon.code || !editingCoupon.name || !editingCoupon.discountType || !editingCoupon.startAt || !editingCoupon.expiresAt) {
+      toast({ variant: "destructive", title: "Missing Data", description: "All required fields must be completed." });
       return;
     }
+
+    const normalizedCode = editingCoupon.code.toUpperCase().trim();
     
     if (editingCoupon.discountType === 'Percentage' && (editingCoupon.discountValue! < 1 || editingCoupon.discountValue! > 100)) {
       toast({ variant: "destructive", title: "Validation Error", description: "Percentage must be between 1 and 100." });
       return;
     }
 
-    if (!db) return;
+    if (new Date(editingCoupon.expiresAt as string) <= new Date(editingCoupon.startAt as string)) {
+      toast({ variant: "destructive", title: "Timeline Error", description: "Terminating date must be after launch date." });
+      return;
+    }
 
-    const couponId = editingCoupon.id || `CPN-${Date.now()}`;
-    const finalCoupon = {
-      ...editingCoupon,
-      id: couponId,
-      code: editingCoupon.code?.toUpperCase().trim(),
-      usedCount: editingCoupon.usedCount || 0,
-      createdAt: editingCoupon.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: 'Super Admin',
-      active: editingCoupon.active ?? true
-    } as Coupon;
+    if (!db) {
+       toast({ variant: "destructive", title: "Sync Error", description: "Cloud Node Unavailable." });
+       return;
+    }
+
+    console.log("Form validation passed");
+    setIsSaving(true);
 
     try {
-      await setDoc(doc(db, "coupons", couponId), finalCoupon);
+      console.log("Checking duplicate coupon:", normalizedCode);
+      const docRef = doc(db, "coupons", normalizedCode);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists() && !editingCoupon.id) {
+         throw new Error(`Coupon code ${normalizedCode} already exists in registry.`);
+      }
+
+      console.log("Writing coupon to Firestore...");
+      const finalCoupon = {
+        ...editingCoupon,
+        id: normalizedCode,
+        code: normalizedCode,
+        discountValue: Number(editingCoupon.discountValue || 0),
+        minimumOrderAmount: Number(editingCoupon.minimumOrderAmount || 0),
+        maxUses: Number(editingCoupon.maxUses || 0),
+        perCustomerLimit: Number(editingCoupon.perCustomerLimit || 1),
+        usedCount: editingCoupon.usedCount || 0,
+        createdAt: editingCoupon.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: 'Super Admin',
+        active: editingCoupon.active ?? true,
+        applicablePlans: editingCoupon.applicablePlans || ['All Plans']
+      };
+
+      await setDoc(docRef, finalCoupon);
+      console.log("Coupon saved successfully");
+      
+      toast({ title: "Node Committed", description: `Coupon ${normalizedCode} created successfully.` });
       setIsModalOpen(false);
-      toast({ title: "Node Committed", description: `Campaign ${finalCoupon.code} is now synchronized.` });
+      setEditingCoupon(INITIAL_COUPON);
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Sync Failure", description: err.message || "Failed to commit coupon." });
+      console.error("Coupon creation failed:", err);
+      toast({ variant: "destructive", title: "Submission Failure", description: err.message || "Failed to commit coupon." });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -202,13 +238,12 @@ export default function CouponManager() {
   };
 
   const handleDuplicate = (c: Coupon) => {
-    const { id, usedCount, ...rest } = c;
+    const { id, usedCount, createdAt, updatedAt, ...rest } = c;
     setEditingCoupon({
       ...rest,
       code: `${c.code}_COPY`,
       name: `${c.name} (Copy)`,
-      usedCount: 0,
-      createdAt: new Date().toISOString()
+      usedCount: 0
     });
     setIsModalOpen(true);
   };
@@ -216,7 +251,7 @@ export default function CouponManager() {
   const toggleActive = async (c: Coupon) => {
     if (!db) return;
     try {
-      await setDoc(doc(db, "coupons", c.id), { ...c, active: !c.active, updatedAt: new Date().toISOString() });
+      await setDoc(doc(db, "coupons", c.id), { ...c, active: !c.active, updatedAt: serverTimestamp() }, { merge: true });
       toast({ title: c.active ? "Campaign Deactivated" : "Campaign Reactivated" });
     } catch (err) {
       toast({ variant: "destructive", title: "Status Update Failure" });
@@ -324,7 +359,7 @@ export default function CouponManager() {
             </TableHeader>
             <TableBody>
               {filteredCoupons.map((c) => {
-                const isExpired = c.expiresAt ? isBefore(parseISO(c.expiresAt), new Date()) : false;
+                const isExpired = c.expiresAt ? isBefore(parseISO(c.expiresAt as string), new Date()) : false;
                 return (
                   <TableRow key={c.id} className="border-slate-800/40 hover:bg-white/5 transition-all group h-20">
                     <TableCell className="px-8">
@@ -358,7 +393,7 @@ export default function CouponManager() {
                     </TableCell>
                     <TableCell>
                        <span className={cn("text-[10px] font-bold uppercase", isExpired ? "text-rose-500" : "text-slate-400")}>
-                         {c.expiresAt ? format(parseISO(c.expiresAt), 'dd MMM yyyy') : 'N/A'}
+                         {c.expiresAt ? format(parseISO(c.expiresAt as string), 'dd MMM yyyy') : 'N/A'}
                        </span>
                     </TableCell>
                     <TableCell>
@@ -405,159 +440,176 @@ export default function CouponManager() {
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[90vh] flex flex-col">
-          <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 shrink-0">
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
-                   <TicketPercent className="w-6 h-6" />
-                </div>
-                <div>
-                   <DialogTitle className="text-xl font-headline font-bold text-white">
-                     {editingCoupon.id ? 'Modify Coupon Node' : 'Campaign Identity Entry'}
-                   </DialogTitle>
-                   <DialogDescription className="text-slate-400 text-[10px] uppercase font-black tracking-widest">SaaS Enterprise Marketing Matrix</DialogDescription>
-                </div>
-             </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-6">
-                  <h4 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5" /> Node Identity
-                  </h4>
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Coupon Unique Code</Label>
-                       <Input 
-                         value={editingCoupon.code || ''} 
-                         onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})}
-                         className="bg-slate-950 border-slate-700 h-11 font-code font-black text-blue-400 tracking-widest text-lg placeholder:text-slate-500" 
-                         placeholder="e.g. GJ5OFF50"
-                       />
-                    </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Promotion Name</Label>
-                       <Input 
-                         value={editingCoupon.name || ''} 
-                         onChange={e => setEditingCoupon({...editingCoupon, name: e.target.value})}
-                         className="bg-slate-950 border-slate-700 h-11 text-white placeholder:text-slate-500 font-bold" 
-                         placeholder="Internal Campaign Label"
-                       />
-                    </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Public Description</Label>
-                       <Textarea 
-                         value={editingCoupon.description || ''} 
-                         onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})}
-                         className="bg-slate-950 border-slate-700 min-h-[80px] text-sm text-slate-200 placeholder:text-slate-500 resize-none font-medium" 
-                         placeholder="Visual prompt for customer checkout..."
-                       />
-                    </div>
+          <form onSubmit={handleSave} className="flex flex-col h-full">
+            <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 shrink-0">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
+                     <TicketPercent className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <DialogTitle className="text-xl font-headline font-bold text-white">
+                       {editingCoupon.id ? 'Modify Coupon Node' : 'Campaign Identity Entry'}
+                     </DialogTitle>
+                     <DialogDescription className="text-slate-400 text-[10px] uppercase font-black tracking-widest">SaaS Enterprise Marketing Matrix</DialogDescription>
                   </div>
                </div>
+            </DialogHeader>
 
-               <div className="space-y-6">
-                  <h4 className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <CreditCard className="w-3.5 h-3.5" /> Yield & Logic
-                  </h4>
-                  <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5" /> Node Identity
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Coupon Unique Code *</Label>
+                         <Input 
+                           required
+                           value={editingCoupon.code || ''} 
+                           onChange={e => setEditingCoupon({...editingCoupon, code: e.target.value.toUpperCase()})}
+                           className="bg-slate-950 border-slate-700 h-11 font-code font-black text-blue-400 tracking-widest text-lg placeholder:text-slate-500" 
+                           placeholder="e.g. GJ55009"
+                         />
+                      </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Promotion Name *</Label>
+                         <Input 
+                           required
+                           value={editingCoupon.name || ''} 
+                           onChange={e => setEditingCoupon({...editingCoupon, name: e.target.value})}
+                           className="bg-slate-950 border-slate-700 h-11 text-white placeholder:text-slate-500 font-bold" 
+                           placeholder="e.g. GJ5100"
+                         />
+                      </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Public Description</Label>
+                         <Textarea 
+                           value={editingCoupon.description || ''} 
+                           onChange={e => setEditingCoupon({...editingCoupon, description: e.target.value})}
+                           className="bg-slate-950 border-slate-700 min-h-[80px] text-sm text-slate-200 placeholder:text-slate-500 resize-none font-medium" 
+                           placeholder="Visual prompt for customer checkout..."
+                         />
+                      </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <CreditCard className="w-3.5 h-3.5" /> Yield & Logic
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Type *</Label>
+                            <Select required value={editingCoupon.discountType || 'Percentage'} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
+                               <SelectTrigger className="bg-slate-950 border-slate-700 h-11 text-white font-bold">
+                                  <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                  <SelectItem value="Percentage">Percentage (%)</SelectItem>
+                                  <SelectItem value="Fixed Amount">Fixed Amount (₹)</SelectItem>
+                               </SelectContent>
+                            </Select>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Value *</Label>
+                            <Input 
+                              required
+                              type="number"
+                              value={editingCoupon.discountValue || 0} 
+                              onChange={e => setEditingCoupon({...editingCoupon, discountValue: Number(e.target.value)})}
+                              className="bg-slate-950 border-slate-700 h-11 font-code font-black text-emerald-400 text-lg" 
+                            />
+                         </div>
+                      </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Minimum Order Node (₹)</Label>
+                         <Input 
+                           type="number"
+                           value={editingCoupon.minimumOrderAmount || 0} 
+                           onChange={e => setEditingCoupon({...editingCoupon, minimumOrderAmount: Number(e.target.value)})}
+                           className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
+                         />
+                      </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5" /> Timeline Matrix
+                    </h4>
                     <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-1.5">
-                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Type</Label>
-                          <Select value={editingCoupon.discountType || 'Percentage'} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
-                             <SelectTrigger className="bg-slate-950 border-slate-700 h-11 text-white font-bold">
-                                <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                <SelectItem value="Percentage">Percentage (%)</SelectItem>
-                                <SelectItem value="Fixed Amount">Fixed Amount (₹)</SelectItem>
-                             </SelectContent>
-                          </Select>
-                       </div>
-                       <div className="space-y-1.5">
-                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Value</Label>
-                          <Input 
-                            type="number"
-                            value={editingCoupon.discountValue || 0} 
-                            onChange={e => setEditingCoupon({...editingCoupon, discountValue: Number(e.target.value)})}
-                            className="bg-slate-950 border-slate-700 h-11 font-code font-black text-emerald-400 text-lg" 
-                          />
-                       </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Launch Date *</Label>
+                         <Input 
+                           required
+                           type="date"
+                           value={editingCoupon.startAt || ''} 
+                           onChange={e => setEditingCoupon({...editingCoupon, startAt: e.target.value})}
+                           className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
+                           style={{ colorScheme: 'dark' }}
+                         />
+                      </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Terminating Date *</Label>
+                         <Input 
+                           required
+                           type="date"
+                           value={editingCoupon.expiresAt || ''} 
+                           onChange={e => setEditingCoupon({...editingCoupon, expiresAt: e.target.value})}
+                           className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
+                           style={{ colorScheme: 'dark' }}
+                         />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Minimum Order Node (₹)</Label>
-                       <Input 
-                         type="number"
-                         value={editingCoupon.minimumOrderAmount || 0} 
-                         onChange={e => setEditingCoupon({...editingCoupon, minimumOrderAmount: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
-                       />
+                 </div>
+
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5" /> Usage Quotas
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Total System Uses *</Label>
+                         <Input 
+                           required
+                           type="number"
+                           value={editingCoupon.maxUses || 0} 
+                           onChange={e => setEditingCoupon({...editingCoupon, maxUses: Number(e.target.value)})}
+                           className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
+                         />
+                      </div>
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Per Customer Cap *</Label>
+                         <Input 
+                           required
+                           type="number"
+                           value={editingCoupon.perCustomerLimit || 0} 
+                           onChange={e => setEditingCoupon({...editingCoupon, perCustomerLimit: Number(e.target.value)})}
+                           className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
+                         />
+                      </div>
                     </div>
-                  </div>
-               </div>
+                 </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-6">
-                  <h4 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5" /> Timeline Matrix
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Launch Date</Label>
-                       <Input 
-                         type="date"
-                         value={editingCoupon.startAt || ''} 
-                         onChange={e => setEditingCoupon({...editingCoupon, startAt: e.target.value})}
-                         className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
-                         style={{ colorScheme: 'dark' }}
-                       />
-                    </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Terminating Date</Label>
-                       <Input 
-                         type="date"
-                         value={editingCoupon.expiresAt || ''} 
-                         onChange={e => setEditingCoupon({...editingCoupon, expiresAt: e.target.value})}
-                         className="bg-slate-950 border-slate-700 h-11 text-white text-xs font-bold" 
-                         style={{ colorScheme: 'dark' }}
-                       />
-                    </div>
-                  </div>
-               </div>
-
-               <div className="space-y-6">
-                  <h4 className="text-[11px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <TrendingUp className="w-3.5 h-3.5" /> Usage Quotas
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Total System Uses</Label>
-                       <Input 
-                         type="number"
-                         value={editingCoupon.maxUses || 0} 
-                         onChange={e => setEditingCoupon({...editingCoupon, maxUses: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
-                       />
-                    </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Per Customer Cap</Label>
-                       <Input 
-                         type="number"
-                         value={editingCoupon.perCustomerLimit || 0} 
-                         onChange={e => setEditingCoupon({...editingCoupon, perCustomerLimit: Number(e.target.value)})}
-                         className="bg-slate-950 border-slate-700 h-11 font-code text-white font-bold" 
-                       />
-                    </div>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 shrink-0 gap-3 flex flex-row items-center justify-end">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white hover:bg-slate-800">Discard Entry</Button>
-            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 px-12 h-12 rounded-xl font-black uppercase text-[10px] text-white shadow-lg shadow-emerald-900/20">Execute Promotion Node</Button>
-          </DialogFooter>
+            <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 shrink-0 gap-3 flex flex-row items-center justify-end">
+              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white hover:bg-slate-800">Discard Entry</Button>
+              <Button 
+                type="submit" 
+                disabled={isSaving}
+                className="bg-emerald-600 hover:bg-emerald-700 px-12 min-w-[240px] h-12 rounded-xl font-black uppercase text-[10px] text-white shadow-lg shadow-emerald-900/20"
+              >
+                {isSaving ? (
+                  <span className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> SAVING COUPON...</span>
+                ) : "EXECUTE PROMOTION NODE"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

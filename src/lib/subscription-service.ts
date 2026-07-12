@@ -1,7 +1,6 @@
-
 'use client';
 
-import { db, doc, setDoc, collection, runTransaction, getDoc } from '@/firebase';
+import { db, doc, setDoc, collection, runTransaction, getDoc, getDocs, query, where, Timestamp } from '@/firebase';
 import { Company, Subscription } from '@/lib/types';
 import { addMonths } from 'date-fns';
 
@@ -11,7 +10,6 @@ import { addMonths } from 'date-fns';
  */
 
 export async function activateCustomerSubscription(data: any) {
-  // Validate Required Input Matrix
   const requiredFields = [
     'userId', 'companyId', 'companyName', 'ownerName', 'email', 'planId', 
     'planName', 'durationMonths'
@@ -19,12 +17,12 @@ export async function activateCustomerSubscription(data: any) {
   
   for (const field of requiredFields) {
     if (!data[field]) {
-      throw new Error(`Activation Logic Failure: ${field} is missing.`);
+      throw new Error(`Activation Node Error: ${field} is missing.`);
     }
   }
 
   if (!db) {
-    throw new Error("Cloud Node Failure: Firestore instance unavailable.");
+    throw new Error("Cloud Registry Node Offline. Initialization failure.");
   }
 
   const now = new Date();
@@ -33,8 +31,7 @@ export async function activateCustomerSubscription(data: any) {
   const subscriptionId = `SUB-${Date.now()}`;
   const paymentId = data.razorpayPaymentId || `PAY-${Date.now()}`;
 
-  // 1. Company Manifest
-  const companyData: Partial<Company> = {
+  const companyData: any = {
     id: companyId,
     companyName: data.companyName,
     ownerName: data.ownerName,
@@ -44,14 +41,14 @@ export async function activateCustomerSubscription(data: any) {
     planName: data.planName,
     planStartDate: now.toISOString(),
     planExpiryDate: expiryDate.toISOString(),
-    subscriptionStatus: data.durationMonths < 1 ? 'trial' : 'active',
+    subscriptionStatus: 'active',
     companyStatus: 'active',
     paymentStatus: data.paymentStatus,
     paymentMethod: data.paymentMethod,
     couponCode: data.couponCode || '',
-    originalAmount: data.originalAmount,
-    discountAmount: data.discountAmount,
-    finalPaidAmount: data.finalAmount,
+    originalAmount: Number(data.originalAmount),
+    discountAmount: Number(data.discountAmount),
+    finalPaidAmount: Number(data.finalAmount),
     updatedAt: now.toISOString(),
     lastLoginAt: now.toISOString(),
     isBlocked: false,
@@ -59,16 +56,15 @@ export async function activateCustomerSubscription(data: any) {
     userId: data.userId
   };
 
-  // 2. Subscription History Node
-  const subData: Subscription = {
+  const subData: any = {
     id: subscriptionId,
     userId: data.userId,
     companyId: companyId,
     planId: data.planId,
     planName: data.planName,
-    originalAmount: data.originalAmount,
-    discountAmount: data.discountAmount,
-    finalAmount: data.finalAmount,
+    originalAmount: Number(data.originalAmount),
+    discountAmount: Number(data.discountAmount),
+    finalAmount: Number(data.finalAmount),
     couponCode: data.couponCode,
     paymentMethod: data.paymentMethod,
     paymentStatus: data.paymentStatus,
@@ -80,46 +76,40 @@ export async function activateCustomerSubscription(data: any) {
 
   try {
     await runTransaction(db, async (transaction) => {
-      // Create/Update Company Node
       transaction.set(doc(db, "companies", companyId), companyData, { merge: true });
-      
-      // Log Subscription
       transaction.set(doc(db, "subscriptions", subscriptionId), subData);
-      
-      // Log Payment Audit
       transaction.set(doc(db, "payments", paymentId), {
         id: paymentId,
         userId: data.userId,
         companyId,
         planName: data.planName,
-        amount: data.finalAmount * 100, // Normalized to paisa for consistency
+        amount: Number(data.finalAmount) * 100,
         status: 'Captured',
         createdAt: now.toISOString(),
         paymentMethod: data.paymentMethod,
         couponCode: data.couponCode || ''
       });
-
-      // Increment Coupon Count if applicable
-      if (data.couponCode) {
-        const couponId = `CPN-${data.couponCode.toUpperCase()}`; // Assuming consistent ID naming or lookup required
-        // Note: For real world we lookup by code property first if ID is randomized
-      }
     });
 
     localStorage.setItem(`gj5_company_${data.email}`, JSON.stringify(companyData));
     return { success: true, companyId };
   } catch (err: any) {
-    console.error("Activation Node Error:", err);
+    console.error("Cloud Node Transaction Fault:", err);
     throw new Error(`Registry Commitment Failure: ${err.message}`);
   }
 }
 
 export async function activateFreeCouponSubscription(data: any) {
-  if (!db) throw new Error("Cloud synchronization failure.");
+  if (!db) throw new Error("Firebase Service Node Offline.");
+
+  const requiredFields = ['userId', 'companyId', 'companyName', 'ownerName', 'email', 'planId', 'couponCode'];
+  for (const field of requiredFields) {
+    if (!data[field]) throw new Error(`Handshake Fault: ${field} required.`);
+  }
 
   try {
     return await runTransaction(db, async (transaction) => {
-      // 1. Re-validate Coupon Status
+      // 1. Coupon Node Validation
       const q = query(collection(db, "coupons"), where("code", "==", data.couponCode.toUpperCase().trim()));
       const couponSnap = await getDocs(q);
       
@@ -128,13 +118,11 @@ export async function activateFreeCouponSubscription(data: any) {
         const couponData = couponDoc.data();
         
         if (couponData.usedCount >= couponData.maxUses) {
-          throw new Error("This coupon node has reached its usage limit.");
+          throw new Error("Promotion Identity has reached its usage limit.");
         }
         
-        // Increment usage count atomically
         transaction.update(couponDoc.ref, { usedCount: (couponData.usedCount || 0) + 1 });
         
-        // Log redemption details
         const redemptionId = `RED-${Date.now()}`;
         transaction.set(doc(db, "couponRedemptions", redemptionId), {
           id: redemptionId,
@@ -143,15 +131,15 @@ export async function activateFreeCouponSubscription(data: any) {
           companyId: data.companyId,
           email: data.email,
           planName: data.planName,
-          originalAmount: data.originalAmount,
-          discountAmount: data.discountAmount,
+          originalAmount: Number(data.originalAmount),
+          discountAmount: Number(data.discountAmount),
           finalAmount: 0,
           redeemedAt: new Date().toISOString(),
           status: 'success'
         });
       }
 
-      // 2. Perform Standard Activation
+      // 2. Identity & License Provisioning
       const now = new Date();
       const expiryDate = addMonths(now, data.durationMonths);
       const companyId = data.companyId;
@@ -159,18 +147,28 @@ export async function activateFreeCouponSubscription(data: any) {
       const paymentId = `PAY-FREE-${Date.now()}`;
 
       const companyData = {
-        ...data,
+        id: companyId,
+        companyName: data.companyName,
+        ownerName: data.ownerName,
+        ownerEmail: data.email,
+        ownerMobile: data.mobile || '',
+        planId: data.planId,
+        planName: data.planName,
         planStartDate: now.toISOString(),
         planExpiryDate: expiryDate.toISOString(),
         subscriptionStatus: 'active',
         companyStatus: 'active',
         paymentMethod: 'Coupon',
         paymentStatus: 'Fully Discounted',
+        originalAmount: Number(data.originalAmount),
+        discountAmount: Number(data.discountAmount),
         finalPaidAmount: 0,
+        couponCode: data.couponCode,
         updatedAt: now.toISOString(),
         lastLoginAt: now.toISOString(),
         isBlocked: false,
         workspaceId: companyId,
+        userId: data.userId,
         createdAt: now.toISOString()
       };
 
@@ -181,8 +179,8 @@ export async function activateFreeCouponSubscription(data: any) {
         planId: data.planId,
         planName: data.planName,
         durationMonths: data.durationMonths,
-        originalAmount: data.originalAmount,
-        discountAmount: data.discountAmount,
+        originalAmount: Number(data.originalAmount),
+        discountAmount: Number(data.discountAmount),
         finalAmount: 0,
         couponCode: data.couponCode,
         paymentMethod: 'Coupon',
@@ -203,13 +201,14 @@ export async function activateFreeCouponSubscription(data: any) {
         amount: 0,
         status: 'Captured',
         createdAt: now.toISOString(),
-        paymentMethod: 'Coupon'
+        paymentMethod: 'Coupon',
+        couponCode: data.couponCode
       });
 
       return { success: true, companyId };
     });
   } catch (err: any) {
-    console.error("Free Activation Transaction Fault:", err);
-    throw new Error(err.message || "Atomic registry commit failed.");
+    console.error("Free Activation Atomic Fault:", err);
+    throw new Error(err.message || "Failed to commit atomic license node.");
   }
 }

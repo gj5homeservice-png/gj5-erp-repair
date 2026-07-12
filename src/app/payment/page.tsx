@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -26,8 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Coupon } from '@/lib/types';
 import { activateCustomerSubscription, activateFreeCouponSubscription } from '@/lib/subscription-service';
-import { db, collection, query, where, getDocs } from '@/firebase';
-import { isBefore, parseISO, isAfter } from 'date-fns';
+import { db, collection, query, where, getDocs, Timestamp } from '@/firebase';
+import { isBefore, parseISO, isAfter, isValid } from 'date-fns';
 
 const PLANS_DATA: Record<string, { price: number; label: string; months: number }> = {
   'free': { price: 0, label: 'Free Trial (7 Days)', months: 0.23 },
@@ -39,7 +38,7 @@ const PLANS_DATA: Record<string, { price: number; label: string; months: number 
 export default function CheckoutPage() {
   const [status, setStatus] = useState<'checkout' | 'processing' | 'success'>('checkout');
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState('');
   const [planId, setPlanId] = useState<string>('');
@@ -79,31 +78,37 @@ export default function CheckoutPage() {
     setError('');
 
     try {
-      if (!db) throw new Error("Cloud Node Unavailable");
+      if (!db) throw new Error("Firebase Service Node Offline. Connection Required.");
 
-      const q = query(collection(db, "coupons"), where("code", "==", couponCode.toUpperCase().trim()));
+      const normalizedCode = couponCode.toUpperCase().trim();
+      const q = query(collection(db, "coupons"), where("code", "==", normalizedCode));
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        setError('Invalid promotion code node.');
+        setError('Invalid promotion identity. Code not found in registry.');
         setIsApplying(false);
         return;
       }
 
-      const coupon = snap.docs[0].data() as Coupon;
+      const couponDoc = snap.docs[0];
+      const coupon = couponDoc.data();
       const now = new Date();
 
-      // VALIDATION
-      if (!coupon.active) { setError('This coupon is currently inactive.'); setIsApplying(false); return; }
-      if (coupon.startAt && isBefore(now, parseISO(coupon.startAt))) { setError('This campaign hasn\'t launched yet.'); setIsApplying(false); return; }
-      if (coupon.expiresAt && isAfter(now, parseISO(coupon.expiresAt))) { setError('This code has expired.'); setIsApplying(false); return; }
-      if (coupon.usedCount >= coupon.maxUses) { setError('Usage limit reached for this node.'); setIsApplying(false); return; }
+      // Lifecycle Handshake
+      const startAt = coupon.startAt instanceof Timestamp ? coupon.startAt.toDate() : parseISO(coupon.startAt);
+      const expiresAt = coupon.expiresAt instanceof Timestamp ? coupon.expiresAt.toDate() : parseISO(coupon.expiresAt);
+
+      if (!coupon.active) { setError('This campaign node is currently inactive.'); setIsApplying(false); return; }
+      if (isValid(startAt) && isBefore(now, startAt)) { setError('This campaign hasn\'t launched yet.'); setIsApplying(false); return; }
+      if (isValid(expiresAt) && isAfter(now, expiresAt)) { setError('This promotion identity has expired.'); setIsApplying(false); return; }
+      if ((coupon.usedCount || 0) >= (coupon.maxUses || 1000)) { setError('Total usage limit reached for this node.'); setIsApplying(false); return; }
       if (currentPlan.price < (coupon.minimumOrderAmount || 0)) { setError(`Minimum order of ₹${coupon.minimumOrderAmount} required.`); setIsApplying(false); return; }
 
-      setAppliedCoupon({ ...coupon, id: snap.docs[0].id });
-      toast({ title: "Node Synchronized", description: `${coupon.code} successfully applied.` });
+      setAppliedCoupon({ ...coupon, id: couponDoc.id });
+      toast({ title: "Node Verified", description: `${normalizedCode} successfully applied.` });
     } catch (e: any) {
-      setError(e.message || 'Coupon validation failure.');
+      console.error("Coupon Verification Fault:", e);
+      setError(e.message || 'Promotion validation failure.');
     } finally {
       setIsApplying(false);
     }
@@ -113,15 +118,18 @@ export default function CheckoutPage() {
     setStatus('processing');
 
     try {
-      const activeUser = localStorage.getItem('gj5_active_user') || 'DEMO-USER';
-      const tempName = localStorage.getItem('gj5_temp_name') || 'Authorized Owner';
+      const activeUser = localStorage.getItem('gj5_active_user') || 'ANONYMOUS';
+      const tempName = localStorage.getItem('gj5_temp_name') || 'Enterprise Owner';
       const companyName = localStorage.getItem('gj5_temp_company_name') || 'GJ5 Workspace';
       const mobile = localStorage.getItem('gj5_temp_mobile') || '';
       
       const companyId = companyName.toLowerCase().replace(/\s+/g, '-');
 
+      if (!db) throw new Error("Cloud Registry Unavailable. Verification aborted.");
+
       // 1. Zero-Amount Settlement (100% Coupon or Free Trial)
       if (calculations.finalPrice === 0) {
+        console.log("Processing Zero-Amount Atomic Transaction...");
         await activateFreeCouponSubscription({
           userId: activeUser,
           companyId,
@@ -147,7 +155,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           planId,
           finalAmount: calculations.finalPrice,
-          userId: activeUser
+          userId: activeUser,
+          companyId
         })
       });
 
@@ -198,7 +207,7 @@ export default function CheckoutPage() {
               throw new Error("Signature verification failed.");
             }
           } catch (e: any) {
-            toast({ variant: "destructive", title: "Settlement Error", description: e.message });
+            toast({ variant: "destructive", title: "Settlement Fault", description: e.message });
             setStatus('checkout');
           }
         },
@@ -209,7 +218,8 @@ export default function CheckoutPage() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Gateway Error", description: err.message });
+      console.error("Gateway Transaction Fault:", err);
+      toast({ variant: "destructive", title: "Authorization Error", description: err.message });
       setStatus('checkout');
     }
   };
@@ -224,7 +234,7 @@ export default function CheckoutPage() {
                  <CheckCircle2 className="w-12 h-12" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-3xl font-headline font-black text-white uppercase italic tracking-tighter">Commit Success</h2>
+                <h2 className="text-3xl font-headline font-black text-white uppercase italic tracking-tighter">Identity Authorized</h2>
                 <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Enterprise Node Verified • License Issued</p>
               </div>
               <Button 
@@ -250,8 +260,8 @@ export default function CheckoutPage() {
             </div>
          </div>
          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-headline font-black text-white uppercase italic tracking-tighter">Syncing Enterprise Matrix</h2>
-            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Initializing Security Handshake...</p>
+            <h2 className="text-2xl font-headline font-black text-white uppercase italic tracking-tighter">Synchronizing Network Registry</h2>
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Establishing Secure Atomic Handshake...</p>
          </div>
       </div>
     );
@@ -264,7 +274,7 @@ export default function CheckoutPage() {
       <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
            <div className="space-y-1">
-              <h1 className="text-4xl font-headline font-black text-white uppercase italic tracking-tighter">Finalize <span className="text-blue-500">License Node</span></h1>
+              <h1 className="text-4xl font-headline font-black text-white uppercase italic tracking-tighter">Authorize <span className="text-blue-500">License Node</span></h1>
               <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.3em]">Configure Deployment & Fiscal Settlement</p>
            </div>
 
@@ -293,7 +303,7 @@ export default function CheckoutPage() {
                           <Input 
                             value={couponCode}
                             onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                            placeholder="Enter Code (e.g. GJ5OFF25)"
+                            placeholder="Enter Code (e.g. GJ5FREE)"
                             className="pl-10 h-12 bg-slate-950 border-slate-800 rounded-xl font-code font-black tracking-widest text-blue-400"
                             disabled={!!appliedCoupon}
                           />
@@ -308,7 +318,7 @@ export default function CheckoutPage() {
                            disabled={isApplying || !couponCode}
                            className="h-12 px-6 bg-slate-800 hover:bg-slate-700 rounded-xl font-black text-[10px] uppercase"
                          >
-                            {isApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply Node"}
+                            {isApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify Code"}
                          </Button>
                        )}
                     </div>

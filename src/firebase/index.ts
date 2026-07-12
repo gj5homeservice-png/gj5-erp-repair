@@ -1,4 +1,3 @@
-
 'use client';
 
 import { initializeApp, getApps, getApp } from "firebase/app";
@@ -22,7 +21,11 @@ import {
   getDocs,
   serverTimestamp,
   runTransaction,
-  writeBatch
+  writeBatch,
+  Timestamp,
+  deleteDoc,
+  orderBy,
+  onSnapshot
 } from "firebase/firestore";
 import { firebaseConfig, isFirebaseConfigured } from "./config";
 
@@ -61,5 +64,9 @@ export {
   serverTimestamp,
   runTransaction,
   writeBatch,
+  Timestamp,
+  deleteDoc,
+  orderBy,
+  onSnapshot,
   isFirebaseConfigured
 };

@@ -1,72 +1,40 @@
 'use client';
 
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  signOut,
-  onAuthStateChanged
-} from "firebase/auth";
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  collection, 
-  updateDoc, 
-  query, 
-  where, 
-  getDocs,
-  serverTimestamp,
-  runTransaction,
-  writeBatch,
-  Timestamp,
-  deleteDoc,
-  orderBy,
-  onSnapshot
-} from "firebase/firestore";
-import { firebaseConfig, isFirebaseConfigured } from "./config";
+/**
+ * @fileOverview Firebase Initialization.
+ * Exports the initialization function and all specialized hooks for Firestore and Auth.
+ */
 
-// Initialize only if config is present
-let app;
-let auth: any;
-let db: any;
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
+import { firebaseConfig, isFirebaseConfigured } from './config';
 
-if (isFirebaseConfigured) {
-  try {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-  } catch (error) {
-    console.error("Firebase Initialization Critical Failure:", error);
+let app: FirebaseApp | null = null;
+let firestore: Firestore | null = null;
+let auth: Auth | null = null;
+
+export function initializeFirebase() {
+  if (!isFirebaseConfigured) {
+    return { app: null, firestore: null, auth: null };
   }
+
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    firestore = getFirestore(app);
+    auth = getAuth(app);
+  } else {
+    app = getApps()[0];
+    firestore = getFirestore(app);
+    auth = getAuth(app);
+  }
+
+  return { app, firestore, auth };
 }
 
-export { 
-  app, 
-  auth, 
-  db, 
-  signInWithEmailAndPassword, 
-  signInWithPhoneNumber, 
-  RecaptchaVerifier,
-  signOut,
-  onAuthStateChanged,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  updateDoc,
-  query,
-  where,
-  getDocs,
-  serverTimestamp,
-  runTransaction,
-  writeBatch,
-  Timestamp,
-  deleteDoc,
-  orderBy,
-  onSnapshot,
-  isFirebaseConfigured
-};
+export * from './provider';
+export * from './client-provider';
+export * from './firestore/use-collection';
+export * from './firestore/use-doc';
+export * from './auth/use-user';
+export { Timestamp, serverTimestamp, doc, setDoc, updateDoc, getDoc, runTransaction, collection, query, where, getDocs, onSnapshot, orderBy, writeBatch } from 'firebase/firestore';

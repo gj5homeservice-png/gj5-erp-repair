@@ -12,7 +12,11 @@ interface FirebaseContextProps {
   auth: Auth | null;
 }
 
-const FirebaseContext = createContext<FirebaseContextProps | undefined>(undefined);
+const FirebaseContext = createContext<FirebaseContextProps>({
+  app: null,
+  firestore: null,
+  auth: null
+});
 
 export function FirebaseProvider({
   children,
@@ -21,9 +25,9 @@ export function FirebaseProvider({
   auth,
 }: {
   children: ReactNode;
-  app: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
+  app: FirebaseApp | null;
+  firestore: Firestore | null;
+  auth: Auth | null;
 }) {
   return (
     <FirebaseContext.Provider value={{ app, firestore, auth }}>
@@ -34,12 +38,7 @@ export function FirebaseProvider({
 }
 
 export function useFirebase() {
-  const context = useContext(FirebaseContext);
-  if (!context) {
-    // Return a null state if used outside provider (e.g. before config is set)
-    return { app: null, firestore: null, auth: null };
-  }
-  return context;
+  return useContext(FirebaseContext);
 }
 
 export function useFirebaseApp() {
@@ -51,5 +50,8 @@ export function useFirestore() {
 }
 
 export function useAuth() {
-  return useFirebase().auth;
+  // If useAuth is called when Firebase is not configured, we return a mock auth object 
+  // that doesn't throw, but won't do anything. This prevents crashes in components 
+  // that assume auth is always there.
+  return useFirebase().auth as Auth;
 }

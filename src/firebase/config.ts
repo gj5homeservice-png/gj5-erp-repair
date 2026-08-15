@@ -14,4 +14,10 @@ export const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+// Robust check to ensure we don't try to init with placeholders or empty strings
+export const isFirebaseConfigured = 
+  !!firebaseConfig.apiKey && 
+  firebaseConfig.apiKey !== 'undefined' && 
+  firebaseConfig.apiKey !== '' &&
+  !!firebaseConfig.projectId &&
+  firebaseConfig.projectId !== 'undefined';

@@ -12,10 +12,11 @@ import { firebaseConfig, isFirebaseConfigured } from './config';
 
 let app: FirebaseApp | null = null;
 let firestore: Firestore | null = null;
-let auth: Auth | null = null;
+let authInstance: Auth | null = null;
 
 export function initializeFirebase() {
   if (!isFirebaseConfigured) {
+    console.warn("Firebase Node: Configuration missing. Cloud features will be unavailable.");
     return { app: null, firestore: null, auth: null };
   }
 
@@ -27,14 +28,19 @@ export function initializeFirebase() {
     }
     
     firestore = getFirestore(app);
-    auth = getAuth(app);
+    authInstance = getAuth(app);
 
-    return { app, firestore, auth };
+    return { app, firestore, auth: authInstance };
   } catch (error) {
     console.error("Firebase Initialization Error:", error);
     return { app: null, firestore: null, auth: null };
   }
 }
+
+// Initialize and export instances for direct usage in non-hook contexts (e.g., services)
+const instances = initializeFirebase();
+export const db = instances.firestore;
+export const auth = instances.auth;
 
 export * from './provider';
 export * from './client-provider';

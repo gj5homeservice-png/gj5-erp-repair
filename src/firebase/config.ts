@@ -20,4 +20,5 @@ export const isFirebaseConfigured =
   firebaseConfig.apiKey !== 'undefined' && 
   firebaseConfig.apiKey !== '' &&
   !!firebaseConfig.projectId &&
-  firebaseConfig.projectId !== 'undefined';
+  firebaseConfig.projectId !== 'undefined' &&
+  firebaseConfig.projectId !== '';

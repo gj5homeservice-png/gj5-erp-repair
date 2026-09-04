@@ -22,7 +22,8 @@ import {
   AlertCircle,
   Building2,
   Loader2,
-  Lock
+  Lock,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
+import { createAutoBackupIfDue } from '@/lib/data-management';
 
 // Module Imports
 import { RepairingModule } from '@/components/modules/RepairingModule';
@@ -43,7 +45,9 @@ import { AttendanceModule } from '@/components/modules/AttendanceModule';
 import { SalaryModule } from '@/components/modules/SalaryModule';
 import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
 import { WalletModule } from '@/components/modules/WalletModule';
+import { SettingsModule } from '@/components/modules/SettingsModule';
 import { TransportationModule } from '@/components/modules/TransportationModule';
+import { RepairJobsModule } from '@/components/modules/repair/RepairJobsModule';
 
 const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
@@ -152,6 +156,12 @@ export default function ErpMainHub() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!isMounted) return;
+    createAutoBackupIfDue(store);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, store.settings?.autoBackup]);
+
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('gj5_auth_token');
@@ -174,6 +184,8 @@ export default function ErpMainHub() {
       case 'Analytics': return <AnalyticsModule store={store} />;
       case 'E-Wallet': return <WalletModule store={store} />;
       case 'Logistics': return <TransportationModule store={store} />;
+      case 'Settings': return <SettingsModule store={store} onNavigate={setActiveTab} />;
+      case 'Repair Jobs': return <RepairJobsModule store={store} />;
       default: return <DashboardModule store={store} />;
     }
   };
@@ -225,14 +237,48 @@ export default function ErpMainHub() {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
-            {navItems.map((item) => (
+            {navItems.slice(0, 2).map((item) => (
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
                 className={cn(
                   "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
-                  activeTab === item.name 
-                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20" 
+                  activeTab === item.name
+                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
+                <span className="text-xs font-bold tracking-tight">{item.name}</span>
+                {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
+              </button>
+            ))}
+
+            {STANDALONE_REPAIR_ITEMS.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => setActiveTab(item.name)}
+                className={cn(
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
+                  activeTab === item.name
+                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
+                <span className="text-xs font-bold tracking-tight">{item.name}</span>
+                {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
+              </button>
+            ))}
+
+            {navItems.slice(2).map((item) => (
+              <button
+                key={item.name}
+                onClick={() => setActiveTab(item.name)}
+                className={cn(
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
+                  activeTab === item.name
+                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                 )}
               >
@@ -315,4 +361,8 @@ const navItems = [
   { name: 'E-Wallet', icon: Wallet },
   { name: 'Logistics', icon: Truck },
   { name: 'Settings', icon: Settings },
+];
+
+const STANDALONE_REPAIR_ITEMS = [
+  { name: 'Repair Jobs', icon: ClipboardList },
 ];

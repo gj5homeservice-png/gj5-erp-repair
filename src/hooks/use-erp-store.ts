@@ -16,7 +16,15 @@ import {
   SalaryRecord,
   LeaveRequest,
   AttendanceLink,
-  Company
+  Company,
+  SystemSettings,
+  SalesOrder,
+  SalesInvoice,
+  SalesDelivery,
+  SalesDeliveryStatus,
+  Customer,
+  RepairJob,
+  RepairJobPayment
 } from '@/lib/types';
 import { db, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from '@/firebase';
 
@@ -34,6 +42,34 @@ const DEFAULT_NAV_ORDER = [
   'E-Wallet',
   'Logistics'
 ];
+
+const DEFAULT_SETTINGS: SystemSettings = {
+  gstEnabled: true,
+  gstRate: 18,
+  whatsappNotifications: true,
+  emailNotifications: true,
+  customerNotifications: true,
+  repairNotifications: true,
+  salesNotifications: true,
+  invoiceNotifications: true,
+  deliveryNotifications: true,
+  warrantyNotifications: true,
+  soundNotifications: true,
+  autoNotifications: true,
+  autoBackup: false,
+  smsNotifications: true,
+  deletePassword: '1234',
+  invoicePrefix: 'INV',
+  customerIdPrefix: 'GJ5',
+  defaultWarrantyDuration: 'No Warranty',
+  defaultPickupRequired: false,
+  defaultMinStockLevel: 5,
+  defaultPaymentMode: 'UPI',
+  defaultDueDays: 0,
+  warrantyExpiringSoonDays: 30,
+  standardCheckInTime: '10:00',
+  lateThresholdMinutes: 15
+};
 
 const DEFAULT_VISIBILITY = {
   tabs: {
@@ -61,10 +97,18 @@ export function useErpStore() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [attendanceLinks, setAttendanceLinks] = useState<AttendanceLink[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(50000);
+  // SALES MODULE — separate collections, never shared with Repairing/Billing state above.
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
+  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
+  const [salesDeliveries, setSalesDeliveries] = useState<SalesDelivery[]>([]);
+  const [salesCustomers, setSalesCustomers] = useState<Customer[]>([]);
+  // REPAIR MODULE — separate collection, new module distinct from Repairing (calls) above.
+  const [repairJobs, setRepairJobs] = useState<RepairJob[]>([]);
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
   const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
-  const [deletePassword, setDeletePassword] = useState<string>('1234');
-  
+  const [settings, setSettingsState] = useState<SystemSettings>(DEFAULT_SETTINGS);
+  const [backupMeta, setBackupMeta] = useState<{ lastBackupAt: string; status: string; recordCounts: Record<string, number> } | null>(null);
+
   const [companyProfile, setCompanyProfile] = useState<Company | null>(null);
 
   useEffect(() => {
@@ -145,6 +189,13 @@ export function useErpStore() {
     safeGet('leaves', setLeaves);
     safeGet('attendance_links', setAttendanceLinks);
     safeGet('wallet_balance', (v: any) => setWalletBalance(Number(v)));
+    safeGet('settings', (v: any) => setSettingsState({ ...DEFAULT_SETTINGS, ...v }));
+    safeGet('backup_meta', setBackupMeta);
+    safeGet('sales_orders', setSalesOrders);
+    safeGet('sales_invoices', setSalesInvoices);
+    safeGet('sales_deliveries', setSalesDeliveries);
+    safeGet('sales_customers', setSalesCustomers);
+    safeGet('repair_jobs', setRepairJobs);
 
     return () => {
       if (unsubscribe) unsubscribe();
@@ -177,7 +228,41 @@ export function useErpStore() {
     save('leaves', leaves);
     save('attendance_links', attendanceLinks);
     save('wallet_balance', walletBalance);
-  }, [invoices, stock, calls, inquiries, expenses, transactions, transportationLogs, employees, attendance, salaries, leaves, attendanceLinks, walletBalance]);
+    save('settings', settings);
+    if (backupMeta) save('backup_meta', backupMeta);
+    save('sales_orders', salesOrders);
+    save('sales_invoices', salesInvoices);
+    save('sales_deliveries', salesDeliveries);
+    save('sales_customers', salesCustomers);
+    save('repair_jobs', repairJobs);
+  }, [invoices, stock, calls, inquiries, expenses, transactions, transportationLogs, employees, attendance, salaries, leaves, attendanceLinks, walletBalance, settings, backupMeta, salesOrders, salesInvoices, salesDeliveries, salesCustomers, repairJobs]);
+
+  const updateSettings = (patch: Partial<SystemSettings>) => {
+    setSettingsState(prev => ({ ...prev, ...patch }));
+  };
+
+  const updateCompanyProfile = async (patch: Partial<Company>) => {
+    const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
+    let merged: Company | null = null;
+    setCompanyProfile(prev => {
+      merged = { ...(prev || {}), ...patch } as Company;
+      return merged;
+    });
+    if (activeUser && typeof window !== 'undefined' && merged) {
+      localStorage.setItem(`gj5_company_${activeUser}`, JSON.stringify(merged));
+    }
+    if (db && merged && (merged as Company).id) {
+      try {
+        await setDoc(doc(db, 'companies', (merged as Company).id), patch, { merge: true });
+      } catch (e) {
+        console.error('Company Profile Cloud Sync Failure:', e);
+      }
+    }
+  };
+
+  const recordBackup = (status: 'success' | 'failed', recordCounts: Record<string, number>) => {
+    setBackupMeta({ lastBackupAt: new Date().toISOString(), status, recordCounts });
+  };
 
   // HRMS ACTIONS
   const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
@@ -249,9 +334,126 @@ export function useErpStore() {
 
   const deleteStockItem = (id: string) => setStock(prev => prev.filter(s => s.id !== id));
 
+  // SALES MODULE ACTIONS — a separate module from Repairing/Billing. Reuses the
+  // same `stock` collection/updateStockItem (one real inventory, not two), and
+  // reuses customer identity by mobile across Repairs + Sales, but never writes
+  // to `calls`/`invoices`/`transportationLogs` — those stay exactly as they are.
+  const findOrCreateSalesCustomerId = (mobile: string, existingId?: string): string => {
+    if (existingId) return existingId;
+    const fromCalls = calls.find(c => c.mobile === mobile);
+    if (fromCalls?.customerId) return fromCalls.customerId;
+    const fromSales = salesOrders.find(o => o.mobile === mobile);
+    if (fromSales?.customerId) return fromSales.customerId;
+    const prefix = settings.customerIdPrefix || 'GJ5';
+    // Repair's own ID scheme (CallModal) is independent of this one and isn't
+    // aware of Sales-minted IDs, so scan for a genuinely free suffix here
+    // rather than a single arithmetic guess that could collide with it.
+    const used = new Set<string>([
+      ...calls.map((c: any) => c.customerId),
+      ...salesOrders.map(o => o.customerId),
+      ...salesCustomers.map(c => c.id)
+    ]);
+    let n = 1001;
+    while (used.has(`${prefix}${n}`)) n++;
+    return `${prefix}${n}`;
+  };
+
+  const addSalesOrder = (order: SalesOrder) => {
+    if (order.productId) {
+      const stockItem = stock.find(s => s.id === order.productId);
+      if (stockItem) {
+        updateStockItem({
+          ...stockItem,
+          quantity: Math.max(0, (stockItem.quantity || 0) - (order.quantity || 0)),
+          lastUpdated: new Date().toISOString()
+        });
+      }
+    }
+    setSalesOrders(prev => [order, ...prev]);
+    if (order.deliveryRequired) {
+      const delivery: SalesDelivery = {
+        id: `SDEL-${String(salesDeliveries.length + 1).padStart(6, '0')}`,
+        orderId: order.id,
+        customerName: order.customerName,
+        mobile: order.mobile,
+        address: order.address,
+        product: `${order.brand} ${order.model}`.trim(),
+        deliveryStatus: 'Pending Pickup',
+        paymentStatus: order.paymentStatus,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setSalesDeliveries(prev => [delivery, ...prev]);
+    }
+  };
+
+  const updateSalesOrder = (order: SalesOrder) => {
+    setSalesOrders(prev => prev.map(o => o.id === order.id ? { ...order, updatedAt: new Date().toISOString() } : o));
+  };
+
+  const deleteSalesOrder = (id: string) => {
+    setSalesOrders(prev => prev.filter(o => o.id !== id));
+    setSalesDeliveries(prev => prev.filter(d => d.orderId !== id));
+  };
+
+  const generateSalesInvoice = (order: SalesOrder): SalesInvoice => {
+    const invoiceNumber = `SINV-${String(salesInvoices.length + 1).padStart(6, '0')}`;
+    const invoice: SalesInvoice = {
+      id: invoiceNumber,
+      invoiceNumber,
+      orderId: order.id,
+      invoiceDate: new Date().toISOString(),
+      customerName: order.customerName,
+      mobile: order.mobile,
+      amount: order.grandTotal,
+      gstAmount: order.gstAmount,
+      paymentStatus: order.paymentStatus,
+      createdAt: new Date().toISOString()
+    };
+    setSalesInvoices(prev => [invoice, ...prev]);
+    setSalesOrders(prev => prev.map(o => o.id === order.id ? { ...o, invoiceId: invoiceNumber } : o));
+    return invoice;
+  };
+
+  const updateSalesDelivery = (delivery: SalesDelivery) => {
+    setSalesDeliveries(prev => prev.map(d => d.id === delivery.id ? { ...delivery, updatedAt: new Date().toISOString() } : d));
+  };
+
+  const updateSalesDeliveryStatus = (id: string, status: SalesDeliveryStatus) => {
+    const delivery = salesDeliveries.find(d => d.id === id);
+    setSalesDeliveries(prev => prev.map(d => d.id === id ? { ...d, deliveryStatus: status, updatedAt: new Date().toISOString() } : d));
+    if (delivery) {
+      setSalesOrders(prev => prev.map(o => o.id === delivery.orderId ? { ...o, deliveryStatus: status } : o));
+    }
+  };
+
+  const addSalesCustomer = (customer: Customer) => setSalesCustomers(prev => [customer, ...prev]);
+  const updateSalesCustomer = (customer: Customer) => setSalesCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
+  const deleteSalesCustomer = (id: string) => setSalesCustomers(prev => prev.filter(c => c.id !== id));
+
   const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
   const updateCall = (call: RepairCall) => setCalls(prev => prev.map(c => c.id === call.id ? call : c));
   const deleteCall = (id: string) => setCalls(prev => prev.filter(c => c.id !== id));
+
+  const addRepairJob = (job: RepairJob) => setRepairJobs(prev => [job, ...prev]);
+  const updateRepairJob = (job: RepairJob) =>
+    setRepairJobs(prev => prev.map(j => j.id === job.id ? { ...job, updatedAt: new Date().toISOString() } : j));
+  const deleteRepairJob = (id: string) => setRepairJobs(prev => prev.filter(j => j.id !== id));
+  const addRepairJobPayment = (jobId: string, payment: RepairJobPayment) => {
+    setRepairJobs(prev => prev.map(j => j.id === jobId
+      ? { ...j, payments: [...j.payments, payment], updatedAt: new Date().toISOString() }
+      : j));
+    const job = repairJobs.find(j => j.id === jobId);
+    const tx: WalletTransaction = {
+      id: `TX-RJ-${payment.id}`,
+      amount: payment.amount,
+      date: payment.date,
+      time: new Date().toLocaleTimeString(),
+      type: 'REPAIR_JOB_PAYMENT',
+      description: `Repair Payment: ${jobId}${job ? ' - ' + job.customerName : ''} (${payment.method})`
+    };
+    setTransactions(prev => [tx, ...prev]);
+  };
 
   const addInquiry = (inq: Inquiry) => setInquiries(prev => [inq, ...prev]);
   const updateInquiry = (inq: Inquiry) => setInquiries(prev => prev.map(i => i.id === inq.id ? i : inq));
@@ -309,18 +511,59 @@ export function useErpStore() {
   const updateTransportLogStatus = (id: string, status: LogisticsStatus) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   const deleteTransportLog = (id: string) => setTransportationLogs(prev => prev.filter(l => l.id !== id));
 
+  // Merges incoming records by permanent `id`: existing records are never dropped,
+  // a matching id is updated in place, and only unmatched ids are appended —
+  // so importing the same file twice never creates duplicates.
+  const mergeById = (existing: any[], incoming: any[]) => {
+    const map = new Map((existing || []).map((r: any) => [r.id, r]));
+    let added = 0, updated = 0, skipped = 0;
+    (incoming || []).forEach((rec: any) => {
+      if (!rec || !rec.id) { skipped++; return; }
+      if (map.has(rec.id)) {
+        map.set(rec.id, { ...map.get(rec.id), ...rec, id: rec.id });
+        updated++;
+      } else {
+        map.set(rec.id, rec);
+        added++;
+      }
+    });
+    return { merged: Array.from(map.values()), added, updated, skipped };
+  };
+
   const importAllData = (data: any) => {
-    if (data.calls) setCalls(data.calls);
-    if (data.inquiries) setInquiries(data.inquiries);
-    if (data.expenses) setExpenses(data.expenses);
-    if (data.transactions) setTransactions(data.transactions);
-    if (data.transportationLogs) setTransportationLogs(data.transportationLogs);
-    if (data.invoices) setInvoices(data.invoices);
-    if (data.stock) setStock(data.stock);
-    if (data.employees) setEmployees(data.employees);
-    if (data.attendance) setAttendance(data.attendance);
-    if (data.salaries) setSalaries(data.salaries);
-    if (data.walletBalance !== undefined) setWalletBalance(data.walletBalance);
+    const stats: Record<string, { added: number; updated: number; skipped: number }> = {};
+
+    const mergeInto = (key: string, current: any[], setter: (v: any[]) => void) => {
+      if (!Array.isArray(data[key])) return;
+      const { merged, added, updated, skipped } = mergeById(current, data[key]);
+      setter(merged);
+      stats[key] = { added, updated, skipped };
+    };
+
+    mergeInto('calls', calls, setCalls);
+    mergeInto('inquiries', inquiries, setInquiries);
+    mergeInto('expenses', expenses, setExpenses);
+    mergeInto('transactions', transactions, setTransactions);
+    mergeInto('transportationLogs', transportationLogs, setTransportationLogs);
+    mergeInto('invoices', invoices, setInvoices);
+    mergeInto('stock', stock, setStock);
+    mergeInto('employees', employees, setEmployees);
+    mergeInto('attendance', attendance, setAttendance);
+    mergeInto('salaries', salaries, setSalaries);
+    mergeInto('leaves', leaves, setLeaves);
+    mergeInto('attendanceLinks', attendanceLinks, setAttendanceLinks);
+    mergeInto('salesOrders', salesOrders, setSalesOrders);
+    mergeInto('salesInvoices', salesInvoices, setSalesInvoices);
+    mergeInto('salesDeliveries', salesDeliveries, setSalesDeliveries);
+    mergeInto('salesCustomers', salesCustomers, setSalesCustomers);
+
+    // walletBalance is a single running total, not an ID-keyed record — it is
+    // intentionally never overwritten by an import so a backup can't silently
+    // corrupt today's live balance. It is still included in exports for reference.
+    if (data.companyProfile) updateCompanyProfile(data.companyProfile);
+    if (data.settings) updateSettings(data.settings);
+
+    return stats;
   };
 
   return {
@@ -335,11 +578,19 @@ export function useErpStore() {
     walletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility,
     navOrder, setNavOrder,
-    companyProfile, setCompanyProfile,
-    deletePassword,
+    companyProfile, setCompanyProfile, updateCompanyProfile,
+    deletePassword: settings.deletePassword,
+    settings, updateSettings,
+    backupMeta, recordBackup,
     transactions, deleteTransaction,
     expenses, addExpense,
+    leaves,
     transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
+    salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, findOrCreateSalesCustomerId,
+    salesInvoices, generateSalesInvoice,
+    salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,
+    salesCustomers, addSalesCustomer, updateSalesCustomer, deleteSalesCustomer,
+    repairJobs, addRepairJob, updateRepairJob, deleteRepairJob, addRepairJobPayment,
     importAllData
   };
 }

@@ -34,8 +34,9 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
   TableBody, 
   TableCell, 
   TableHead, 
@@ -44,7 +45,7 @@ import {
 } from '@/components/ui/table';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Invoice, InvoiceItem } from '@/lib/types';
 import { jsPDF } from 'jspdf';
 import { cn } from '@/lib/utils';
@@ -54,15 +55,19 @@ export function BillingModule({ store }: { store: any }) {
   const [customer, setCustomer] = useState({ name: '', mobile: '', address: '', gstin: '', id: '' });
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [newItem, setNewItem] = useState({ name: '', brand: '', size: '', qty: 1, rate: 0, gst: 18, discount: 0 });
-  const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Bank Transfer' | 'Credit'>('UPI');
+  const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Bank Transfer' | 'Credit'>((store.settings?.defaultPaymentMode as any) || 'UPI');
   const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Unpaid' | 'Partial'>('Paid');
-  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [dueDate, setDueDate] = useState(format(addDays(new Date(), store.settings?.defaultDueDays ?? 0), 'yyyy-MM-dd'));
   const [invoiceDate, setInvoiceDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [searchStock, setSearchStock] = useState('');
+  const [gstEnabled, setGstEnabled] = useState(false);
+  const gstCapable = store.settings?.gstEnabled !== false;
+  const gstRate = store.settings?.gstRate ?? 18;
+  const invoicePrefix = store.settings?.invoicePrefix || 'INV';
 
   const nextInvoiceNumber = useMemo(() => {
-    return `INV-${String(store.invoices.length + 1).padStart(6, '0')}`;
-  }, [store.invoices]);
+    return `${invoicePrefix}-${String(store.invoices.length + 1).padStart(6, '0')}`;
+  }, [store.invoices, invoicePrefix]);
 
   const filteredStock = useMemo(() => {
     if (!searchStock) return [];
@@ -109,11 +114,12 @@ export function BillingModule({ store }: { store: any }) {
     const subtotal = items.reduce((acc, curr) => acc + curr.amount, 0);
     const totalDiscount = items.reduce((acc, curr) => acc + (curr.discount || 0), 0);
     const taxableAmount = subtotal - totalDiscount;
-    const cgst = taxableAmount * 0.09; 
-    const sgst = taxableAmount * 0.09;
+    const halfRate = gstEnabled ? gstRate / 2 : 0;
+    const cgst = taxableAmount * (halfRate / 100);
+    const sgst = taxableAmount * (halfRate / 100);
     const grandTotal = taxableAmount + cgst + sgst;
     return { subtotal, totalDiscount, cgst, sgst, grandTotal };
-  }, [items]);
+  }, [items, gstEnabled, gstRate]);
 
   const handleSave = () => {
     if (!customer.name || items.length === 0) {
@@ -139,14 +145,17 @@ export function BillingModule({ store }: { store: any }) {
       grandTotal: calculations.grandTotal,
       paymentStatus: paymentStatus,
       paymentMode: paymentMode,
+      taxEnabled: gstEnabled,
+      gst: gstEnabled ? gstRate : 0,
       timestamp: new Date().toISOString()
     };
 
     store.addInvoice(newInvoice);
     toast({ title: "Invoice Committed", description: `Billing record ${newInvoice.invoiceNumber} saved and inventory adjusted.` });
-    
+
     setCustomer({ name: '', mobile: '', address: '', gstin: '', id: '' });
     setItems([]);
+    setGstEnabled(false);
   };
 
   const handleDownloadPDF = () => {
@@ -233,8 +242,10 @@ export function BillingModule({ store }: { store: any }) {
 
     drawTotalRow('Subtotal:', calculations.subtotal.toLocaleString());
     drawTotalRow('Discount:', `-${calculations.totalDiscount.toLocaleString()}`);
-    drawTotalRow('CGST (9%):', calculations.cgst.toLocaleString());
-    drawTotalRow('SGST (9%):', calculations.sgst.toLocaleString());
+    if (gstEnabled) {
+      drawTotalRow(`CGST (${(gstRate / 2).toFixed(1)}%):`, calculations.cgst.toLocaleString());
+      drawTotalRow(`SGST (${(gstRate / 2).toFixed(1)}%):`, calculations.sgst.toLocaleString());
+    }
     
     doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
     doc.rect(labelX - 10, y - 5, 55, 12, 'F');
@@ -436,6 +447,15 @@ export function BillingModule({ store }: { store: any }) {
                           <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-11 text-xs border-slate-800 bg-white text-slate-900" />
                        </div>
                     </div>
+                    {gstCapable && (
+                      <div className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-slate-800">
+                         <div className="flex flex-col gap-0.5">
+                            <Label className="text-xs font-bold text-slate-100">GST Enabled</Label>
+                            <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Apply {gstRate}% tax to this invoice</p>
+                         </div>
+                         <Switch checked={gstEnabled} onCheckedChange={setGstEnabled} />
+                      </div>
+                    )}
                  </div>
 
                  <div className="bg-slate-950 p-6 rounded-[2rem] border border-slate-800 space-y-4">
@@ -445,14 +465,18 @@ export function BillingModule({ store }: { store: any }) {
                           <span className="text-slate-500 uppercase font-bold">Base Assessment</span>
                           <span className="font-code font-bold">₹{calculations.subtotal.toLocaleString()}</span>
                        </div>
-                       <div className="flex justify-between text-xs text-[#123C8C]">
-                          <span className="uppercase font-bold">Integrated CGST (9%)</span>
-                          <span className="font-code font-bold">+₹{calculations.cgst.toLocaleString()}</span>
-                       </div>
-                       <div className="flex justify-between text-xs text-[#123C8C]">
-                          <span className="uppercase font-bold">Integrated SGST (9%)</span>
-                          <span className="font-code font-bold">+₹{calculations.sgst.toLocaleString()}</span>
-                       </div>
+                       {gstEnabled && (
+                         <>
+                           <div className="flex justify-between text-xs text-[#123C8C]">
+                              <span className="uppercase font-bold">Integrated CGST ({(gstRate / 2).toFixed(1)}%)</span>
+                              <span className="font-code font-bold">+₹{calculations.cgst.toLocaleString()}</span>
+                           </div>
+                           <div className="flex justify-between text-xs text-[#123C8C]">
+                              <span className="uppercase font-bold">Integrated SGST ({(gstRate / 2).toFixed(1)}%)</span>
+                              <span className="font-code font-bold">+₹{calculations.sgst.toLocaleString()}</span>
+                           </div>
+                         </>
+                       )}
                        <div className="pt-4 border-t border-slate-800 mt-4 flex justify-between items-center">
                           <div>
                             <span className="text-xs font-black uppercase text-slate-100">Total Receivable</span>

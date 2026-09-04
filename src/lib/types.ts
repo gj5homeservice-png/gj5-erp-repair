@@ -35,6 +35,7 @@ export interface RepairCall {
   isOldEntry?: boolean;
   entryDate?: string;
   receivedDate?: string;
+  photos?: string[];
 }
 
 export interface Company {
@@ -64,6 +65,11 @@ export interface Company {
   category?: string;
   services?: string;
   gstNumber?: string;
+  alternateMobile?: string;
+  website?: string;
+  country?: string;
+  tagline?: string;
+  panNumber?: string;
 }
 
 export interface TVProduct {
@@ -187,6 +193,10 @@ export interface StockItem {
   description?: string;
   addedBy?: string;
   editedBy?: string;
+  model?: string;
+  screenSize?: string;
+  serialNumber?: string;
+  storeLocation?: string;
 }
 
 export interface WalletTransaction {
@@ -453,3 +463,199 @@ export interface EmployeeTask {
 
 export type TaskStatus = EmployeeTask['status'];
 export type TaskPriority = EmployeeTask['priority'];
+
+// SYSTEM SETTINGS
+export interface SystemSettings {
+  gstEnabled: boolean;
+  gstRate: number;
+  whatsappNotifications: boolean;
+  emailNotifications: boolean;
+  customerNotifications: boolean;
+  repairNotifications: boolean;
+  salesNotifications: boolean;
+  invoiceNotifications: boolean;
+  deliveryNotifications: boolean;
+  warrantyNotifications: boolean;
+  soundNotifications: boolean;
+  autoNotifications: boolean;
+  autoBackup: boolean;
+  smsNotifications: boolean;
+  deletePassword: string;
+  invoicePrefix: string;
+  customerIdPrefix: string;
+  defaultWarrantyDuration: string;
+  defaultPickupRequired: boolean;
+  defaultMinStockLevel: number;
+  defaultPaymentMode: string;
+  defaultDueDays: number;
+  warrantyExpiringSoonDays: number;
+  standardCheckInTime: string;
+  lateThresholdMinutes: number;
+}
+
+export interface BackupMeta {
+  lastBackupAt: string;
+  status: 'success' | 'failed';
+  recordCounts: Record<string, number>;
+}
+
+// SALES MODULE — a separate module from Repairing/Billing. Sales orders,
+// invoices, and deliveries live in their own collections so nothing here
+// can ever touch Repairing data or the existing Billing/Invoice History flow.
+export type SalesPaymentStatus = 'Paid' | 'Unpaid' | 'Partial';
+export type SalesOrderStatus = 'New' | 'Processing' | 'Completed' | 'Cancelled';
+export type SalesDeliveryStatus = 'Not Required' | 'Pending Pickup' | 'Picked Up' | 'In Transit' | 'Out for Delivery' | 'Delivered' | 'Failed Delivery';
+
+export interface SalesOrder {
+  id: string;
+  customerId: string;
+  customerName: string;
+  mobile: string;
+  email?: string;
+  address?: string;
+  pincode?: string;
+  productId?: string;
+  brand: string;
+  model: string;
+  screenSize?: string;
+  serialNumber?: string;
+  quantity: number;
+  unitPrice: number;
+  saleDate: string;
+  salesperson?: string;
+  storeLocation?: string;
+  paymentMethod: string;
+  paymentStatus: SalesPaymentStatus;
+  deliveryRequired: boolean;
+  deliveryStatus: SalesDeliveryStatus;
+  subtotal: number;
+  discount: number;
+  gstEnabled: boolean;
+  gstRate: number;
+  gstAmount: number;
+  deliveryCharge: number;
+  grandTotal: number;
+  amountPaid: number;
+  balanceDue: number;
+  orderStatus: SalesOrderStatus;
+  invoiceId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesInvoice {
+  id: string;
+  invoiceNumber: string;
+  orderId: string;
+  invoiceDate: string;
+  customerName: string;
+  mobile: string;
+  amount: number;
+  gstAmount: number;
+  paymentStatus: SalesPaymentStatus;
+  createdAt: string;
+}
+
+export interface SalesDelivery {
+  id: string;
+  orderId: string;
+  runnerName?: string;
+  customerName: string;
+  mobile: string;
+  address?: string;
+  product: string;
+  deliveryDate?: string;
+  deliveryStatus: SalesDeliveryStatus;
+  paymentStatus: SalesPaymentStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// REPAIR MODULE — new module, fully separate from Repairing (RepairCall/RepairStatus above).
+export type RepairJobStatus =
+  | 'Received' | 'Inspection' | 'Estimate Sent' | 'Approved' | 'In Progress'
+  | 'Waiting for Parts' | 'Ready' | 'Delivered' | 'Cancelled';
+
+export interface RepairJobPart {
+  id: string;
+  partName: string;
+  partId: string;
+  qty: number;
+  purchaseCost: number;
+  sellingPrice: number;
+  total: number;
+  notes?: string;
+}
+
+export type RepairJobPaymentMethod = 'Cash' | 'UPI' | 'Card' | 'Bank Transfer';
+
+export interface RepairJobPayment {
+  id: string;
+  date: string;
+  amount: number;
+  method: RepairJobPaymentMethod;
+  notes?: string;
+}
+
+export interface RepairJobNote {
+  id: string;
+  date: string;
+  text: string;
+}
+
+export interface RepairStatusHistoryEntry {
+  id: string;
+  status: RepairJobStatus;
+  changedAt: string;
+  note?: string;
+}
+
+export type RepairNotificationTrigger =
+  | 'Repair Received' | 'Estimate Approved' | 'In Progress' | 'Ready for Delivery'
+  | 'Completed' | 'Payment Pending';
+
+export interface RepairJobNotification {
+  id: string;
+  trigger: RepairNotificationTrigger;
+  message: string;
+  sentAt: string | null;
+}
+
+export interface RepairJob {
+  id: string; // 'RJ' prefix, e.g. RJ1001
+  customerName: string;
+  mobile: string;
+  email?: string;
+  address?: string;
+  customerId?: string;
+  pincode?: string;
+  techTags?: string[];
+  photos?: string[];
+  storeLocation?: string;
+  warrantyDuration?: string;
+  warrantyExpiry?: string;
+  productType: string;
+  brand: string;
+  model: string;
+  serialNumber?: string;
+  productSize?: string;
+  problemDescription: string;
+  customerNotes?: string;
+  technicianId?: string;
+  technicianName?: string;
+  receivedDate: string;
+  expectedDeliveryDate?: string;
+  estimatedCost: number;
+  advancePayment: number;
+  status: RepairJobStatus;
+  parts: RepairJobPart[];
+  labourCharges: number;
+  otherCharges: number;
+  discount: number;
+  payments: RepairJobPayment[];
+  notesLog: RepairJobNote[];
+  statusHistory: RepairStatusHistoryEntry[];
+  notifications: RepairJobNotification[];
+  createdAt: string;
+  updatedAt: string;
+}

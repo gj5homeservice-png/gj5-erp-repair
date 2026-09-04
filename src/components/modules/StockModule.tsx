@@ -111,7 +111,7 @@ export function StockModule({ store }: { store: any }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState<Partial<StockItem>>(INITIAL_FORM);
+  const [formData, setFormData] = useState<Partial<StockItem>>({ ...INITIAL_FORM, minStockLevel: store.settings?.defaultMinStockLevel ?? 5 });
 
   const stats = useMemo(() => {
     const totalItems = store.stock.length;
@@ -187,7 +187,7 @@ export function StockModule({ store }: { store: any }) {
     store.updateStockItem(item);
     setModalOpen(false);
     setEditingItem(null);
-    setFormData(INITIAL_FORM);
+    setFormData({ ...INITIAL_FORM, minStockLevel: store.settings?.defaultMinStockLevel ?? 5 });
     toast({ title: "Asset Registry Updated", description: `${item.name} has been securely recorded.` });
   };
 
@@ -269,7 +269,7 @@ export function StockModule({ store }: { store: any }) {
           <Button variant="outline" onClick={exportToExcel} className="border-slate-800 h-10 font-bold uppercase text-[10px]">
             <FileSpreadsheet className="w-4 h-4 mr-2" /> Export Inventory
           </Button>
-          <Button onClick={() => { setEditingItem(null); setFormData(INITIAL_FORM); setModalOpen(true); }} className="bg-[#0066FF] h-10 font-bold uppercase text-[10px] px-6">
+          <Button onClick={() => { setEditingItem(null); setFormData({ ...INITIAL_FORM, minStockLevel: store.settings?.defaultMinStockLevel ?? 5 }); setModalOpen(true); }} className="bg-[#0066FF] h-10 font-bold uppercase text-[10px] px-6">
             <Plus className="w-4 h-4 mr-2" /> Register New Asset
           </Button>
         </div>

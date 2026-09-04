@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 export function RepairingModule({ store }: { store: any }) {
+  const [showNewRepairForm, setShowNewRepairForm] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<RepairCall | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairCall | null>(null);
@@ -135,6 +136,10 @@ export function RepairingModule({ store }: { store: any }) {
     { id: 'warranty', title: 'Warranty', value: stats.warranty, icon: History, color: 'bg-amber-600', filter: 'Warranty' },
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
+  if (showNewRepairForm) {
+    return <CallModal renderAsPage isOpen={true} onClose={() => setShowNewRepairForm(false)} editingCall={null} store={store} />;
+  }
+
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
@@ -167,7 +172,7 @@ export function RepairingModule({ store }: { store: any }) {
             <span className="hidden xs:inline">{viewMode === 'Repairing' ? "Inquiries" : "Repair Hub"}</span>
             <span className="xs:hidden">Inq</span>
           </Button>
-          <Button className="flex-1 sm:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 shadow-lg shadow-blue-500/20 px-3 md:px-4" onClick={() => { setEditingCall(null); setModalOpen(true); }}>
+          <Button className="flex-1 sm:flex-none rounded-xl bg-[#0066FF] hover:bg-[#0052CC] h-11 shadow-lg shadow-blue-500/20 px-3 md:px-4" onClick={() => setShowNewRepairForm(true)}>
             <Plus className="w-5 h-5 mr-2" /> 
             <span className="hidden xs:inline">Log New Case</span>
             <span className="xs:hidden">New</span>

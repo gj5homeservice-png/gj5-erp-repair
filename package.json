@@ -11,14 +11,14 @@
     "start": "next start",
     "lint": "next lint",
     "tauri": "tauri",
-    "static": "next build",
-    "mobile:build": "next build && npx cap sync",
+    "static": "cross-env STATIC_EXPORT=true next build",
+    "mobile:build": "cross-env STATIC_EXPORT=true next build && npx cap sync",
     "mobile:sync": "npx cap sync",
     "mobile:open": "npx cap open android",
     "tauri:dev": "tauri dev",
-    "tauri:build": "npm run build && tauri build",
+    "tauri:build": "npm run static && tauri build",
     "electron": "electron .",
-    "build-win": "npm run build && electron-builder --win"
+    "build-win": "npm run static && electron-builder --win"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
@@ -77,6 +77,7 @@
     "@tauri-apps/cli": "^2.0.0",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "cross-env": "^7.0.3",
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
     "postcss": "^8",

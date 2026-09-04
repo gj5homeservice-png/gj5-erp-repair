@@ -1,8 +1,13 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  // Required for Capacitor/Mobile APK builds
-  output: 'export',
+  // Static export is only needed for Capacitor/Mobile APK and Tauri/Electron desktop
+  // packaging (`npm run mobile:build` / `tauri:build` / `build-win`), which set
+  // STATIC_EXPORT=true before building. The regular `npm run build` used for
+  // Hostinger (Node.js) deployment runs as a normal Next.js server build, which is
+  // required for the dynamic /attendance/[token] page and the /api/* route handlers
+  // (payment order creation, verification, wallet top-up) to work at all.
+  ...(process.env.STATIC_EXPORT === 'true' ? { output: 'export' as const } : {}),
   trailingSlash: true,
   images: {
     unoptimized: true,

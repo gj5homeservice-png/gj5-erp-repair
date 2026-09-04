@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
-
 const PLANS_PRICES: Record<string, number> = {
   'free': 0,
   '3months': 2999,
@@ -15,6 +10,14 @@ const PLANS_PRICES: Record<string, number> = {
 
 export async function POST(request: Request) {
   try {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+      console.error("Razorpay Order Error: RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are not configured.");
+      return NextResponse.json({ error: "Payment gateway is not configured." }, { status: 503 });
+    }
+
     const { planId, finalAmount, userId, companyId } = await request.json();
 
     // Secure Verification: Re-calculate or validate amount server-side
@@ -42,6 +45,9 @@ export async function POST(request: Request) {
       }
     };
 
+    // Initialized per-request (not at module load) so builds without payment
+    // credentials configured don't fail during Next.js page-data collection.
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
     const order = await razorpay.orders.create(options);
 
     return NextResponse.json({

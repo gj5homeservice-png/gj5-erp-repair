@@ -140,8 +140,9 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
         createdAt: now,
         updatedAt: now
       };
-      store.addRepairJob(newJob);
-      toast({ title: 'Repair Job Created', description: `${newJob.id} saved successfully.` });
+      store.addRepairJob(newJob)
+        .then(() => toast({ title: 'Repair Job Created', description: `${newJob.id} saved successfully.` }))
+        .catch((err: any) => toast({ variant: 'destructive', title: 'Save Failed', description: err?.message || `Could not save ${newJob.id} to the server. Please try again.` }));
     }
 
     resetForm();

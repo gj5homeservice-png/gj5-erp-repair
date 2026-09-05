@@ -336,6 +336,12 @@ export default function ErpMainHub() {
           </header>
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            {store.dataError && (
+              <div className="mb-4 flex items-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>Could not load your data from the server: {store.dataError}. Your records are not lost — try refreshing the page. If this keeps happening, your session may need to be renewed by logging out and back in.</span>
+              </div>
+            )}
             {renderModule()}
           </div>
         </main>

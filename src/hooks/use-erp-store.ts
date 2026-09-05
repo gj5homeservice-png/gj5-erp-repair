@@ -172,11 +172,15 @@ export function useErpStore() {
     setActiveUser(localStorage.getItem('gj5_active_user'));
   }, []);
 
-  const { data } = useSWR(bootstrapKey(activeUser), fetchBootstrap, {
+  // `error` used to be discarded here — a failed load rendered as a silently
+  // empty dashboard, indistinguishable from "you genuinely have no data yet."
+  // Exposed below as `dataError` so the UI can show a real message instead.
+  const { data, error: bootstrapError } = useSWR(bootstrapKey(activeUser), fetchBootstrap, {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   });
   const snap = data || EMPTY_SNAPSHOT;
+  const dataError: string | null = bootstrapError ? (bootstrapError.message || 'Failed to load data from the server.') : null;
 
   // Company profile stays exactly as it was: Firestore real-time sync with a
   // localStorage fallback cache. Out of scope for the MySQL migration — this
@@ -491,11 +495,17 @@ export function useErpStore() {
   };
 
   // ---- Repair Jobs module ----
-  const addRepairJob = (job: RepairJob) => {
+  // Returns a promise that rejects on failure (was fire-and-forget, silently
+  // swallowing errors) so the caller can show an accurate success/failure
+  // toast instead of always claiming "saved successfully."
+  const addRepairJob = (job: RepairJob): Promise<void> => {
     optimisticUpdate(activeUser, s => ({ ...s, repairJobs: [job, ...s.repairJobs] }));
-    apiFetch('/api/erp/repair-jobs', { method: 'POST', body: JSON.stringify(job) })
-      .catch(err => console.error('addRepairJob failed:', err))
-      .finally(() => refresh(activeUser));
+    return apiFetch('/api/erp/repair-jobs', { method: 'POST', body: JSON.stringify(job) })
+      .then(() => { refresh(activeUser); })
+      .catch(err => {
+        refresh(activeUser); // roll the optimistic entry back to real server state
+        throw err;
+      });
   };
   const updateRepairJob = (job: RepairJob) => {
     const updated = { ...job, updatedAt: new Date().toISOString() };
@@ -599,6 +609,7 @@ export function useErpStore() {
   };
 
   return {
+    dataError,
     invoices: snap.invoices, addInvoice, deleteInvoice,
     stock: snap.stock, updateStockItem, deleteStockItem,
     calls: snap.calls, addCall, updateCall, deleteCall,

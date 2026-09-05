@@ -400,8 +400,9 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
         createdAt: now,
         updatedAt: now
       };
-      store.addRepairJob(newJob);
-      toast({ title: 'Repair Job Created', description: `${newJob.id} saved successfully.` });
+      store.addRepairJob(newJob)
+        .then(() => toast({ title: 'Repair Job Created', description: `${newJob.id} saved successfully.` }))
+        .catch((err: any) => toast({ variant: 'destructive', title: 'Save Failed', description: err?.message || `Could not save ${newJob.id} to the server. Please try again.` }));
       onClose();
       return;
     }

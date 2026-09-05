@@ -479,7 +479,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                     </div>
 
                     {isOldEntry && (
-                      <div className="grid grid-cols-2 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl animate-in slide-in-from-top-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl animate-in slide-in-from-top-2">
                          <div className="space-y-1">
                             <Label className="text-[10px] uppercase font-bold text-amber-500/80 flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Entry Date</Label>
                             <Input
@@ -958,7 +958,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                       </div>
 
                       {isOldEntry && (
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl animate-in slide-in-from-top-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl animate-in slide-in-from-top-2">
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-amber-500/80 flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Entry Date</Label>
                               <Input 

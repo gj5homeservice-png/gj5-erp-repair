@@ -23,11 +23,13 @@ import {
   Building2,
   Loader2,
   Lock,
-  ClipboardList
+  ClipboardList,
+  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -139,6 +141,7 @@ const DashboardModule = ({ store }: { store: any }) => (
 
 export default function ErpMainHub() {
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
@@ -305,20 +308,76 @@ export default function ErpMainHub() {
           </div>
         </aside>
 
+        {/* Mobile / Tablet Nav Drawer — same nav items/state as the desktop sidebar above */}
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetContent side="left" className="w-72 p-0 bg-slate-900/95 border-slate-800 backdrop-blur-xl flex flex-col z-50">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <div className="p-8 border-b border-slate-800 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white shadow-lg">
+                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
+                  <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'ERP MASTER NODE'}</span>
+                </div>
+              </div>
+            </div>
+
+            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
+              {ALL_NAV_ITEMS.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => { setActiveTab(item.name); setMobileNavOpen(false); }}
+                  className={cn(
+                    "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
+                    activeTab === item.name
+                      ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  )}
+                >
+                  <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
+                  <span className="text-xs font-bold tracking-tight">{item.name}</span>
+                  {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
+                </button>
+              ))}
+            </nav>
+
+            <div className="p-6 border-t border-slate-800">
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                className="w-full justify-start gap-4 text-slate-500 hover:text-[#E53935] hover:bg-red-500/5 h-12 rounded-xl"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-bold">Terminate Session</span>
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {/* Main Viewport */}
         <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-          <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-[#0B0F19]/80 backdrop-blur-md z-10 shrink-0">
-            <div className="flex items-center gap-6">
-               <div className="relative w-96 hidden md:block">
+          <header className="h-20 border-b border-slate-800 flex items-center justify-between px-4 md:px-8 bg-[#0B0F19]/80 backdrop-blur-md z-10 shrink-0 gap-3">
+            <div className="flex items-center gap-3 md:gap-6 min-w-0">
+               <Button
+                 size="icon"
+                 variant="ghost"
+                 className="lg:hidden text-slate-400 shrink-0"
+                 onClick={() => setMobileNavOpen(true)}
+               >
+                 <Menu className="w-5 h-5" />
+               </Button>
+               <div className="relative w-full max-w-xs sm:max-w-sm hidden sm:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
-                  <Input 
-                    placeholder="Audit: Jobs, Stock, Invoices..." 
+                  <Input
+                    placeholder="Audit: Jobs, Stock, Invoices..."
                     className="pl-10 h-11 border-slate-800 focus-visible:ring-[#123C8C] placeholder:text-slate-600 bg-white text-slate-900"
                   />
                </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6 shrink-0">
               <Button size="icon" variant="ghost" className="relative text-slate-400">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-[#E53935] rounded-full border-2 border-[#0B0F19]"></span>
@@ -328,7 +387,7 @@ export default function ErpMainHub() {
                    <p className="text-xs font-bold text-white uppercase tracking-tighter">{ownerName}</p>
                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Verified Identity</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner">
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner shrink-0">
                   <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Profile" />
                 </div>
               </div>
@@ -376,3 +435,7 @@ const navItems = [
 const STANDALONE_REPAIR_ITEMS = [
   { name: 'Repair Jobs', icon: ClipboardList },
 ];
+
+// Same items as the desktop sidebar (navItems.slice(0,2) + STANDALONE_REPAIR_ITEMS + navItems.slice(2)),
+// in the same order, for the mobile/tablet nav drawer.
+const ALL_NAV_ITEMS = [...navItems.slice(0, 2), ...STANDALONE_REPAIR_ITEMS, ...navItems.slice(2)];

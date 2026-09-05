@@ -292,7 +292,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
           {viewingInvoice && (
             <>
               <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div className="space-y-1">
                     <Label className="text-[9px] text-slate-500 uppercase font-black">Customer Details</Label>
                     <p className="font-bold">{viewingInvoice.customerName || "N/A"}</p>

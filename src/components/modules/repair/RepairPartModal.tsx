@@ -59,7 +59,7 @@ export function RepairPartModal({ isOpen, onClose, job, store }: RepairPartModal
           <DialogTitle>Add Part {job ? `— ${job.id}` : ''}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase font-bold text-slate-500">Part Name</Label>
               <Input value={form.partName} onChange={e => setForm({ ...form, partName: e.target.value })} className="bg-slate-900 border-slate-800 h-10 text-[#F8FAFC]" />

@@ -150,7 +150,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
         </DialogHeader>
 
         <div id="repair-receipt-print" className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="aspect-[1/1.414] p-8 flex flex-col gap-5 text-xs">
+          <div className="aspect-[1/1.414] p-4 sm:p-8 flex flex-col gap-5 text-xs">
             <div className="flex justify-between items-start border-b-4 border-[#123C8C] pb-4">
               <div>
                 <h1 className="text-2xl font-black text-[#123C8C]">{profile.companyName?.toUpperCase() || 'GJ5 PLUS'}</h1>
@@ -163,7 +163,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <p className="font-bold text-slate-500 uppercase text-[9px] mb-1">Customer</p>
                 <p className="font-bold">{job.customerName}</p>
@@ -183,29 +183,31 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
               <p>{job.problemDescription}</p>
             </div>
 
-            <table className="w-full border-collapse mt-2">
-              <thead>
-                <tr className="bg-[#123C8C] text-white">
-                  <th className="text-left p-2 font-bold">Part</th>
-                  <th className="text-center p-2 font-bold">Qty</th>
-                  <th className="text-right p-2 font-bold">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {job.parts.length === 0 && (
-                  <tr><td colSpan={3} className="p-2 text-center text-slate-400 italic">No parts used</td></tr>
-                )}
-                {job.parts.map(p => (
-                  <tr key={p.id} className="border-b border-slate-200">
-                    <td className="p-2">{p.partName}</td>
-                    <td className="p-2 text-center">{p.qty}</td>
-                    <td className="p-2 text-right">₹{p.total.toLocaleString()}</td>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full border-collapse mt-2 min-w-[280px]">
+                <thead>
+                  <tr className="bg-[#123C8C] text-white">
+                    <th className="text-left p-2 font-bold">Part</th>
+                    <th className="text-center p-2 font-bold">Qty</th>
+                    <th className="text-right p-2 font-bold">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {job.parts.length === 0 && (
+                    <tr><td colSpan={3} className="p-2 text-center text-slate-400 italic">No parts used</td></tr>
+                  )}
+                  {job.parts.map(p => (
+                    <tr key={p.id} className="border-b border-slate-200">
+                      <td className="p-2">{p.partName}</td>
+                      <td className="p-2 text-center">{p.qty}</td>
+                      <td className="p-2 text-right">₹{p.total.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            <div className="ml-auto w-56 space-y-1 mt-2">
+            <div className="ml-auto w-full sm:w-56 space-y-1 mt-2">
               <div className="flex justify-between"><span>Parts Total</span><span>₹{partsAmount.toLocaleString()}</span></div>
               <div className="flex justify-between"><span>Labour Charges</span><span>₹{job.labourCharges.toLocaleString()}</span></div>
               <div className="flex justify-between"><span>Other Charges</span><span>₹{job.otherCharges.toLocaleString()}</span></div>

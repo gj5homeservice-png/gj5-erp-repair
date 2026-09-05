@@ -90,7 +90,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
         <div className="p-6 space-y-6">
           <div className="space-y-4">
             <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Amount</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {PRESETS.map((p) => (
                 <Button
                   key={p}

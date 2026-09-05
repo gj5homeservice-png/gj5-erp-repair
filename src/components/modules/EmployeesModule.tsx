@@ -139,7 +139,7 @@ export function EmployeesModule({ store }: { store: any }) {
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial Associate Registry V3.2</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportToExcel} className="border-slate-800 h-10 font-bold uppercase text-[10px]">
             <FileDown className="w-4 h-4 mr-2" /> Excel Export
           </Button>

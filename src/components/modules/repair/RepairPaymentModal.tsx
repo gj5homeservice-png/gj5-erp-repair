@@ -67,7 +67,7 @@ export function RepairPaymentModal({ isOpen, onClose, job, store }: RepairPaymen
             <Label className="text-[10px] uppercase font-bold text-slate-500">Amount</Label>
             <Input type="number" value={amount} onChange={e => setAmount(Number(e.target.value) || 0)} className="bg-slate-900 border-slate-800 h-10 text-[#F8FAFC]" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase font-bold text-slate-500">Method</Label>
               <Select value={method} onValueChange={v => setMethod(v as RepairJobPaymentMethod)}>

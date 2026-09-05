@@ -96,21 +96,21 @@ export function RepairJobsModule({ store }: { store: any }) {
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Repair ID, Customer, Mobile, Serial..." className="pl-10 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44 h-10 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44 h-10 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
           <SelectContent className="bg-slate-900 border-slate-800">
             <SelectItem value="All">All Status</SelectItem>
             {ALL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
-          <SelectTrigger className="w-44 h-10 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44 h-10 bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
           <SelectContent className="bg-slate-900 border-slate-800">
             <SelectItem value="All">All Technicians</SelectItem>
             {technicians.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
-        <Input value={brandFilter} onChange={e => setBrandFilter(e.target.value)} placeholder="Filter by Brand..." className="w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+        <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-full sm:w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+        <Input value={brandFilter} onChange={e => setBrandFilter(e.target.value)} placeholder="Filter by Brand..." className="w-full sm:w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
       </div>
 
       <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">

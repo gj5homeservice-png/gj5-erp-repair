@@ -272,7 +272,7 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
 
         {/* Billing summary */}
         <div className="space-y-6">
-          <div className="bg-slate-950 p-6 rounded-[2rem] border border-slate-800 space-y-4 sticky top-4">
+          <div className="bg-slate-950 p-6 rounded-[2rem] border border-slate-800 space-y-4 lg:sticky lg:top-4">
             <h4 className="text-[11px] font-black uppercase text-[#123C8C] tracking-tighter flex items-center gap-2"><Wallet className="w-3.5 h-3.5" /> Estimate</h4>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase font-bold text-slate-500">Estimated Cost</Label>

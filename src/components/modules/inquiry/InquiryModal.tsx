@@ -105,7 +105,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
                        <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Mobile</Label>
                           <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
@@ -119,7 +119,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Address / Area</Label>
                        <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Pincode</Label>
                           <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
@@ -140,7 +140,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
               <div className="space-y-6">
                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Product Context</h4>
                  <div className="grid grid-cols-1 gap-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Product Class</Label>
                           <Select value={formData.productType} onValueChange={v => setFormData({...formData, productType: v})}>
@@ -163,7 +163,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Problem Summary</Label>
                        <Input value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Screen not working" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Priority</Label>
                           <Select value={formData.priority} onValueChange={v => setFormData({...formData, priority: v as any})}>

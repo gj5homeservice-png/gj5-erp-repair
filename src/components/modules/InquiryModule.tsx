@@ -149,7 +149,7 @@ export function InquiryModule({ store }: { store: any }) {
              className="pl-10 bg-slate-950 border-slate-800 h-11" 
            />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
            <Button variant="outline" className="border-slate-800 h-11 font-bold uppercase text-[10px]">
               <FileDown className="w-4 h-4 mr-2" /> Export CRM
            </Button>

@@ -356,8 +356,8 @@ export function BillingModule({ store }: { store: any }) {
                       )}
                    </div>
 
-                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                      <div className="md:col-span-2 space-y-1">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                      <div className="sm:col-span-2 space-y-1">
                          <Label className="text-[9px] uppercase font-bold text-slate-500">Asset Label</Label>
                          <Input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="h-10 text-xs border-slate-800 bg-white text-slate-900" />
                       </div>
@@ -375,7 +375,7 @@ export function BillingModule({ store }: { store: any }) {
                    </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-x-auto">
                    <Table>
                       <TableHeader className="bg-slate-900/60">
                          <TableRow className="border-slate-800">
@@ -412,7 +412,7 @@ export function BillingModule({ store }: { store: any }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div className="space-y-6">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Fiscal Node</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Payment Mode</Label>
                           <Select value={paymentMode} onValueChange={v => setPaymentMode(v as any)}>
@@ -437,7 +437,7 @@ export function BillingModule({ store }: { store: any }) {
                           </Select>
                        </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[9px] uppercase font-bold text-slate-500">Invoice Date</Label>
                           <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-11 text-xs border-slate-800 bg-white text-slate-900" />
@@ -492,7 +492,7 @@ export function BillingModule({ store }: { store: any }) {
         </div>
 
         <div className="space-y-6">
-           <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden sticky top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
+           <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden lg:sticky lg:top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
                  <div className="flex flex-col">
                     <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</span>
@@ -500,7 +500,7 @@ export function BillingModule({ store }: { store: any }) {
                  </div>
                  <Badge className="bg-[#E53935] text-[8px] uppercase border-0">A4 Calibration</Badge>
               </CardHeader>
-              <div className="aspect-[1/1.414] p-8 flex flex-col gap-6">
+              <div className="aspect-[1/1.414] p-4 sm:p-8 flex flex-col gap-6">
                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
                     <div className="flex flex-col">
                        <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</h2>
@@ -565,7 +565,7 @@ export function BillingModule({ store }: { store: any }) {
               </div>
            </Card>
 
-           <div className="grid grid-cols-2 gap-3">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button onClick={handleSave} className="h-12 bg-[#123C8C] hover:bg-[#0D2E63] font-bold uppercase text-xs shadow-xl"><Save className="w-4 h-4 mr-2" /> Commit Invoice</Button>
               <Button onClick={handleDownloadPDF} variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs hover:bg-slate-800"><FileDown className="w-4 h-4 mr-2" /> PDF Render</Button>
               <Button onClick={() => window.print()} variant="outline" className="h-12 border-slate-800 bg-slate-900/50 font-bold uppercase text-xs hover:bg-slate-800"><Printer className="w-4 h-4 mr-2" /> Thermal Print</Button>

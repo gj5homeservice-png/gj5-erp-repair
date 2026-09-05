@@ -538,7 +538,7 @@ export default function CouponManager() {
                       <CreditCard className="w-3.5 h-3.5" /> Yield & Logic
                     </h4>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                          <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Discount Type *</Label>
                             <Select required value={editingCoupon.discountType || 'Percentage'} onValueChange={v => setEditingCoupon({...editingCoupon, discountType: v as CouponDiscountType})}>
@@ -580,7 +580,7 @@ export default function CouponManager() {
                     <h4 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
                       <Calendar className="w-3.5 h-3.5" /> Timeline Matrix
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Launch Date *</Label>
                          <Input 
@@ -610,7 +610,7 @@ export default function CouponManager() {
                     <h4 className="text-[11px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-2">
                       <TrendingUp className="w-3.5 h-3.5" /> Usage Quotas
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                          <Label className="text-[10px] uppercase font-semibold text-slate-100 tracking-widest ml-1">Total System Uses *</Label>
                          <Input 

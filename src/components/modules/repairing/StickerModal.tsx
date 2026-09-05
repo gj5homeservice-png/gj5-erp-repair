@@ -51,10 +51,11 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
           </div>
         </DialogHeader>
 
-        <div className="p-10 flex flex-col items-center gap-8">
-          <div 
+        <div className="p-4 sm:p-10 flex flex-col items-center gap-8">
+          <div className="w-full overflow-x-auto">
+          <div
             id="thermal-sticker"
-            className="w-[600px] h-[300px] bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0"
+            className="w-[600px] h-[300px] mx-auto bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0"
             style={{ 
               aspectRatio: '2/1',
               fontFamily: 'Inter, system-ui, sans-serif'
@@ -110,6 +111,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
             <div className="absolute bottom-1 right-2">
                <span className="text-[5px] font-black uppercase text-slate-300">Powered by GOOD JOB 5 ERP</span>
             </div>
+          </div>
           </div>
 
           <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 w-full max-w-lg space-y-4">

@@ -385,8 +385,8 @@ export function WalletModule({ store }: { store: any }) {
               <DialogTitle className="flex items-center gap-2"><Filter className="w-5 h-5 text-blue-400" /> Manual Wallet Adjustment</DialogTitle>
            </DialogHeader>
            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-3">
-                 <Button 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 <Button
                    onClick={() => setAdjustment({...adjustment, type: 'CREDIT'})}
                    variant={adjustment.type === 'CREDIT' ? 'default' : 'outline'}
                    className={cn("h-12 font-bold uppercase", adjustment.type === 'CREDIT' && "bg-emerald-600 hover:bg-emerald-700")}
@@ -441,7 +441,7 @@ export function WalletModule({ store }: { store: any }) {
                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Label / Description</Label>
                    <Input value={txToEdit.description} onChange={e => setTxToEdit({...txToEdit, description: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <Label className="text-[10px] font-bold text-slate-500 uppercase">Amount (₹)</Label>
                       <Input type="number" value={txToEdit.amount} onChange={e => setTxToEdit({...txToEdit, amount: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />

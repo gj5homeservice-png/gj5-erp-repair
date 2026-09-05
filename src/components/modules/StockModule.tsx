@@ -418,7 +418,7 @@ export function StockModule({ store }: { store: any }) {
                          <div className="lg:col-span-5 space-y-6">
                             <div className="space-y-4">
                                <h4 className="text-[11px] uppercase font-bold text-slate-500 flex items-center gap-2 tracking-widest"><ImageIcon className="w-3.5 h-3.5" /> High-Res Asset Gallery</h4>
-                               <div className="grid grid-cols-2 gap-3">
+                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                   {viewingItem.images?.map((img, i) => (
                                     <div key={i} className="aspect-square rounded-2xl border border-slate-800 overflow-hidden bg-slate-950 group">
                                        <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={`Asset ${i}`} />
@@ -453,7 +453,7 @@ export function StockModule({ store }: { store: any }) {
                          </div>
 
                          <div className="lg:col-span-7 space-y-8">
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
                                   <span className="text-[9px] text-slate-500 font-bold uppercase">Avg Purchase</span>
                                   <p className="text-xl font-code font-bold">₹{viewingItem.purchasePrice?.toLocaleString() || 0}</p>
@@ -478,7 +478,7 @@ export function StockModule({ store }: { store: any }) {
                                
                                {isAdjusting ? (
                                  <div className="p-6 bg-slate-950 rounded-3xl border border-blue-500/30 space-y-6 animate-in slide-in-from-top-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                        <div className="space-y-1">
                                           <Label className="text-[10px] uppercase font-bold text-slate-400">Movement Class</Label>
                                           <select 
@@ -501,7 +501,7 @@ export function StockModule({ store }: { store: any }) {
                                     <Button onClick={handleStockAdjustment} disabled={!adjQty} className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 font-bold uppercase text-xs shadow-lg shadow-emerald-500/20">Commit Ledger Balance</Button>
                                  </div>
                                ) : (
-                                 <div className="grid grid-cols-2 gap-4">
+                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex flex-col justify-center items-center text-center gap-2">
                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Current Assets In-Hand</p>
                                        <h3 className={cn("text-5xl font-headline font-black", (viewingItem.quantity || 0) <= (viewingItem.minStockLevel || 0) ? "text-amber-500" : "text-white")}>{viewingItem.quantity || 0}</h3>
@@ -581,7 +581,8 @@ export function StockModule({ store }: { store: any }) {
                    </TabsContent>
 
                    <TabsContent value="labels" className="mt-0 flex flex-col items-center gap-12 animate-in fade-in slide-in-from-bottom-2">
-                      <div id="print-label-area" className="bg-white p-6 rounded-xl text-black shadow-2xl flex flex-col items-center gap-6 w-[500px]">
+                      <div className="w-full overflow-x-auto">
+                      <div id="print-label-area" className="bg-white p-6 rounded-xl text-black shadow-2xl flex flex-col items-center gap-6 w-[500px] mx-auto">
                          <div className="flex justify-between items-start w-full border-b-2 border-slate-900 pb-3 mb-2">
                             <div className="flex flex-col">
                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">GJ5 HOME SERVICE</h2>
@@ -610,6 +611,7 @@ export function StockModule({ store }: { store: any }) {
                                </div>
                             </div>
                          </div>
+                      </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
@@ -671,7 +673,7 @@ export function StockModule({ store }: { store: any }) {
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Official Asset Name</Label>
                           <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Backlight Strips 32\" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Brand Hierarchy</Label>
                               <Input value={formData.brand || ''} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Sony" />
@@ -741,7 +743,7 @@ export function StockModule({ store }: { store: any }) {
                         <span className="text-[10px] text-slate-600 uppercase font-black">Upload ID Photos</span>
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
                      </div>
-                     <div className="grid grid-cols-4 gap-2">
+                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {formData.images?.map((img, i) => (
                            <div key={i} className="relative group aspect-square rounded-lg border border-slate-800 overflow-hidden bg-slate-900">
                               <img src={img} className="w-full h-full object-cover" alt={`Preview ${i}`} />

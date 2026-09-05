@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { 
-  RepairCall, 
-  Inquiry, 
-  Expense, 
-  TransportationLog, 
+import useSWR, { mutate as globalMutate } from 'swr';
+import {
+  RepairCall,
+  Inquiry,
+  Expense,
+  TransportationLog,
   Invoice,
   WalletTransaction,
   StockItem,
@@ -26,7 +27,7 @@ import {
   RepairJob,
   RepairJobPayment
 } from '@/lib/types';
-import { db, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from '@/firebase';
+import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
 
 const DEFAULT_NAV_ORDER = [
   'Dashboard',
@@ -71,7 +72,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   lateThresholdMinutes: 15
 };
 
-const DEFAULT_VISIBILITY = {
+const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: {
     'Dashboard': true, 'Repairing': true, 'CRM Leads': true, 'Billing': true,
     'Invoice History': true, 'Stock': true, 'Employees': true, 'Attendance': true,
@@ -83,68 +84,119 @@ const DEFAULT_VISIBILITY = {
   }
 };
 
-export function useErpStore() {
-  const [calls, setCalls] = useState<RepairCall[]>([]);
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [transportationLogs, setTransportationLogs] = useState<TransportationLog[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [stock, setStock] = useState<StockItem[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [attendanceLinks, setAttendanceLinks] = useState<AttendanceLink[]>([]);
-  const [walletBalance, setWalletBalance] = useState<number>(50000);
-  // SALES MODULE — separate collections, never shared with Repairing/Billing state above.
-  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
-  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
-  const [salesDeliveries, setSalesDeliveries] = useState<SalesDelivery[]>([]);
-  const [salesCustomers, setSalesCustomers] = useState<Customer[]>([]);
-  // REPAIR MODULE — separate collection, new module distinct from Repairing (calls) above.
-  const [repairJobs, setRepairJobs] = useState<RepairJob[]>([]);
-  const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
-  const [navOrder, setNavOrder] = useState<string[]>(DEFAULT_NAV_ORDER);
-  const [settings, setSettingsState] = useState<SystemSettings>(DEFAULT_SETTINGS);
-  const [backupMeta, setBackupMeta] = useState<{ lastBackupAt: string; status: string; recordCounts: Record<string, number> } | null>(null);
+interface Snapshot {
+  calls: RepairCall[];
+  inquiries: Inquiry[];
+  stock: StockItem[];
+  invoices: Invoice[];
+  employees: Employee[];
+  attendance: AttendanceRecord[];
+  salaries: SalaryRecord[];
+  leaves: LeaveRequest[];
+  transportationLogs: TransportationLog[];
+  salesOrders: SalesOrder[];
+  salesInvoices: SalesInvoice[];
+  salesDeliveries: SalesDelivery[];
+  repairJobs: RepairJob[];
+  salesCustomers: Customer[];
+  expenses: Expense[];
+  walletBalance: number;
+  transactions: WalletTransaction[];
+  attendanceLinks: AttendanceLink[];
+  settings: SystemSettings | null;
+  visibility: { tabs: Record<string, boolean>; kpis: Record<string, boolean> } | null;
+  navOrder: string[] | null;
+  backupMeta: { lastBackupAt: string; status: string; recordCounts: Record<string, number> } | null;
+}
 
+const EMPTY_SNAPSHOT: Snapshot = {
+  calls: [], inquiries: [], stock: [], invoices: [], employees: [], attendance: [],
+  salaries: [], leaves: [], transportationLogs: [], salesOrders: [], salesInvoices: [],
+  salesDeliveries: [], repairJobs: [], salesCustomers: [], expenses: [], walletBalance: 50000,
+  transactions: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
+};
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('gj5_auth_token');
+}
+
+async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
+  const token = getToken();
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  let json: any = null;
+  try { json = await res.json(); } catch { /* no body */ }
+  if (!res.ok || (json && json.success === false)) {
+    throw new Error(json?.error || `Request to ${path} failed`);
+  }
+  return json;
+}
+
+function bootstrapKey(email: string | null) {
+  return email ? ['erp-bootstrap', email] as const : null;
+}
+
+async function fetchBootstrap(): Promise<Snapshot> {
+  const json = await apiFetch('/api/erp/bootstrap');
+  return { ...EMPTY_SNAPSHOT, ...json.data };
+}
+
+// Revalidates the shared cache after a write. Every useErpStore() call site
+// (dashboard, both attendance portals, the two delete-modals) resolves to the
+// same SWR key for a given signed-in email, so this refreshes all of them —
+// no Context/Provider wiring needed.
+function refresh(email: string | null) {
+  const key = bootstrapKey(email);
+  if (key) globalMutate(key);
+}
+
+function optimisticUpdate(email: string | null, updater: (snap: Snapshot) => Snapshot) {
+  const key = bootstrapKey(email);
+  if (!key) return;
+  globalMutate(key, (current: Snapshot | undefined) => updater(current || EMPTY_SNAPSHOT), { revalidate: false });
+}
+
+export function useErpStore() {
+  const [activeUser, setActiveUser] = useState<string | null>(null);
   const [companyProfile, setCompanyProfile] = useState<Company | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setActiveUser(localStorage.getItem('gj5_active_user'));
+  }, []);
 
-    const activeUser = localStorage.getItem('gj5_active_user');
-    if (!activeUser) {
-      console.log("Auth Node: No active session detected.");
-      return;
-    }
+  const { data } = useSWR(bootstrapKey(activeUser), fetchBootstrap, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+  const snap = data || EMPTY_SNAPSHOT;
 
-    console.log("ERP Store: Initializing Cloud Sync for", activeUser);
-
-    const prefix = `gj5_user_${activeUser}_`;
+  // Company profile stays exactly as it was: Firestore real-time sync with a
+  // localStorage fallback cache. Out of scope for the MySQL migration — this
+  // is SaaS/subscription metadata, not ERP business data.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !activeUser) return;
     const companyKey = `gj5_company_${activeUser}`;
-    
     let unsubscribe: (() => void) | undefined;
 
-    // 1. Sync / Load Company Profile from Firestore (Real-time)
     if (db) {
-      console.log("Firestore Node: Connected. Synchronizing Database...");
       try {
         const q = query(collection(db, "companies"), where("ownerEmail", "==", activeUser));
         unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-            console.log("Company Registry: Loaded from cloud.");
             const data = snapshot.docs[0].data() as Company;
             setCompanyProfile({ ...data, id: snapshot.docs[0].id });
           } else {
-            console.warn("Company Registry: Node empty. Checking local fallback...");
             const compData = localStorage.getItem(companyKey);
             if (compData) {
-              try {
-                const localProfile = JSON.parse(compData);
-                setCompanyProfile(localProfile);
-              } catch (e) { console.error("Local Cache Corruption:", e); }
+              try { setCompanyProfile(JSON.parse(compData)); } catch (e) { console.error("Local Cache Corruption:", e); }
             }
           }
         }, (error) => {
@@ -154,95 +206,41 @@ export function useErpStore() {
         console.error("Firestore Initialization Error:", err);
       }
     } else {
-      console.warn("Firestore Node: Disconnected. Reverting to Offline Mode.");
       const compData = localStorage.getItem(companyKey);
       if (compData) {
-        try {
-          setCompanyProfile(JSON.parse(compData));
-        } catch (e) { console.error("Local Cache Corruption:", e); }
+        try { setCompanyProfile(JSON.parse(compData)); } catch (e) { console.error("Local Cache Corruption:", e); }
       }
     }
 
-    // Load other data from localStorage
-    const safeGet = (key: string, setter: any) => {
-      const val = localStorage.getItem(prefix + key);
-      if (val) {
-        try {
-          setter(JSON.parse(val));
-        } catch (e) {
-          console.error(`Local Registry Failure [${key}]:`, e);
-          setter([]);
-        }
-      }
-    };
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [activeUser]);
 
-    safeGet('invoices', setInvoices);
-    safeGet('stock', setStock);
-    safeGet('calls', setCalls);
-    safeGet('inquiries', setInquiries);
-    safeGet('expenses', setExpenses);
-    safeGet('transactions', setTransactions);
-    safeGet('transport_logs', setTransportationLogs);
-    safeGet('employees', setEmployees);
-    safeGet('attendance', setAttendance);
-    safeGet('salaries', setSalaries);
-    safeGet('leaves', setLeaves);
-    safeGet('attendance_links', setAttendanceLinks);
-    safeGet('wallet_balance', (v: any) => setWalletBalance(Number(v)));
-    safeGet('settings', (v: any) => setSettingsState({ ...DEFAULT_SETTINGS, ...v }));
-    safeGet('backup_meta', setBackupMeta);
-    safeGet('sales_orders', setSalesOrders);
-    safeGet('sales_invoices', setSalesInvoices);
-    safeGet('sales_deliveries', setSalesDeliveries);
-    safeGet('sales_customers', setSalesCustomers);
-    safeGet('repair_jobs', setRepairJobs);
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  // Save with User Prefix for isolation
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const activeUser = localStorage.getItem('gj5_active_user');
-    if (!activeUser) return;
-    const prefix = `gj5_user_${activeUser}_`;
-    
-    const save = (key: string, data: any) => {
-       try {
-         localStorage.setItem(prefix + key, JSON.stringify(data));
-       } catch (e) { console.error(`Storage Sync Failure [${key}]:`, e); }
-    };
-    
-    save('invoices', invoices);
-    save('stock', stock);
-    save('calls', calls);
-    save('inquiries', inquiries);
-    save('expenses', expenses);
-    save('transactions', transactions);
-    save('transport_logs', transportationLogs);
-    save('employees', employees);
-    save('attendance', attendance);
-    save('salaries', salaries);
-    save('leaves', leaves);
-    save('attendance_links', attendanceLinks);
-    save('wallet_balance', walletBalance);
-    save('settings', settings);
-    if (backupMeta) save('backup_meta', backupMeta);
-    save('sales_orders', salesOrders);
-    save('sales_invoices', salesInvoices);
-    save('sales_deliveries', salesDeliveries);
-    save('sales_customers', salesCustomers);
-    save('repair_jobs', repairJobs);
-  }, [invoices, stock, calls, inquiries, expenses, transactions, transportationLogs, employees, attendance, salaries, leaves, attendanceLinks, walletBalance, settings, backupMeta, salesOrders, salesInvoices, salesDeliveries, salesCustomers, repairJobs]);
+  const settings: SystemSettings = { ...DEFAULT_SETTINGS, ...(snap.settings || {}) };
+  const visibility: VisibilitySettings = (snap.visibility as VisibilitySettings) || DEFAULT_VISIBILITY;
+  const navOrder: string[] = snap.navOrder || DEFAULT_NAV_ORDER;
 
   const updateSettings = (patch: Partial<SystemSettings>) => {
-    setSettingsState(prev => ({ ...prev, ...patch }));
+    optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, ...patch } }));
+    apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(patch) })
+      .catch(err => console.error('Settings sync failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+
+  const setVisibility = (v: VisibilitySettings) => {
+    optimisticUpdate(activeUser, s => ({ ...s, visibility: v }));
+    apiFetch('/api/erp/visibility', { method: 'PUT', body: JSON.stringify(v) })
+      .catch(err => console.error('Visibility sync failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+
+  const setNavOrder = (order: string[]) => {
+    optimisticUpdate(activeUser, s => ({ ...s, navOrder: order }));
+    apiFetch('/api/erp/nav-order', { method: 'PUT', body: JSON.stringify(order) })
+      .catch(err => console.error('Nav order sync failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
   const updateCompanyProfile = async (patch: Partial<Company>) => {
-    const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
     let merged: Company | null = null;
     setCompanyProfile(prev => {
       merged = { ...(prev || {}), ...patch } as Company;
@@ -261,97 +259,124 @@ export function useErpStore() {
   };
 
   const recordBackup = (status: 'success' | 'failed', recordCounts: Record<string, number>) => {
-    setBackupMeta({ lastBackupAt: new Date().toISOString(), status, recordCounts });
+    const meta = { lastBackupAt: new Date().toISOString(), status, recordCounts };
+    optimisticUpdate(activeUser, s => ({ ...s, backupMeta: meta }));
+    apiFetch('/api/erp/backup-meta', { method: 'PUT', body: JSON.stringify(meta) })
+      .catch(err => console.error('Backup meta sync failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  // HRMS ACTIONS
-  const addEmployee = (emp: Employee) => setEmployees(prev => [emp, ...prev]);
-  const updateEmployee = (emp: Employee) => setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
-  const deleteEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id));
+  // ---- HRMS ----
+  const addEmployee = (emp: Employee) => {
+    optimisticUpdate(activeUser, s => ({ ...s, employees: [emp, ...s.employees] }));
+    apiFetch('/api/erp/employees', { method: 'POST', body: JSON.stringify(emp) })
+      .catch(err => console.error('addEmployee failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateEmployee = (emp: Employee) => {
+    optimisticUpdate(activeUser, s => ({ ...s, employees: s.employees.map(e => e.id === emp.id ? emp : e) }));
+    apiFetch(`/api/erp/employees/${emp.id}`, { method: 'PUT', body: JSON.stringify(emp) })
+      .catch(err => console.error('updateEmployee failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteEmployee = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, employees: s.employees.filter(e => e.id !== id) }));
+    apiFetch(`/api/erp/employees/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteEmployee failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
-  const addAttendance = (record: AttendanceRecord) => setAttendance(prev => [record, ...prev]);
-  const updateAttendance = (record: AttendanceRecord) => setAttendance(prev => prev.map(a => a.id === record.id ? record : a));
-  const deleteAttendance = (id: string) => setAttendance(prev => prev.filter(a => a.id !== id));
+  const addAttendance = (record: AttendanceRecord) => {
+    optimisticUpdate(activeUser, s => ({ ...s, attendance: [record, ...s.attendance] }));
+    apiFetch('/api/erp/attendance', { method: 'POST', body: JSON.stringify(record) })
+      .catch(err => console.error('addAttendance failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateAttendance = (record: AttendanceRecord) => {
+    optimisticUpdate(activeUser, s => ({ ...s, attendance: s.attendance.map(a => a.id === record.id ? record : a) }));
+    apiFetch(`/api/erp/attendance/${record.id}`, { method: 'PUT', body: JSON.stringify(record) })
+      .catch(err => console.error('updateAttendance failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteAttendance = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, attendance: s.attendance.filter(a => a.id !== id) }));
+    apiFetch(`/api/erp/attendance/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteAttendance failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
-  const addSalary = (record: SalaryRecord) => setSalaries(prev => [record, ...prev]);
-  const updateSalary = (record: SalaryRecord) => setSalaries(prev => prev.map(s => s.id === record.id ? record : s));
+  const addSalary = (record: SalaryRecord) => {
+    optimisticUpdate(activeUser, s => ({ ...s, salaries: [record, ...s.salaries] }));
+    apiFetch('/api/erp/salaries', { method: 'POST', body: JSON.stringify(record) })
+      .catch(err => console.error('addSalary failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateSalary = (record: SalaryRecord) => {
+    optimisticUpdate(activeUser, s => ({ ...s, salaries: s.salaries.map(sr => sr.id === record.id ? record : sr) }));
+    apiFetch(`/api/erp/salaries/${record.id}`, { method: 'PUT', body: JSON.stringify(record) })
+      .catch(err => console.error('updateSalary failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
-  const generateAttendanceLink = (emp: Employee): string => {
-    const token = Math.random().toString(36).substring(2, 15);
-    const expiresAt = new Date(Date.now() + 120000).toISOString();
-    const newLink: AttendanceLink = {
-      id: `LINK-${Date.now()}`,
-      token,
-      employeeId: emp.employeeId,
-      employeeName: emp.name,
-      mobile: emp.mobile,
-      expiresAt,
-      used: false,
-      createdAt: new Date().toISOString()
-    };
-    setAttendanceLinks(prev => [newLink, ...prev]);
-    return token;
+  // Now mints a real server-side token (stored in MySQL, checked from any
+  // device) instead of a client-generated one — the token returned here MUST
+  // be the exact one the server stored, or the resulting share link would
+  // never match any record. Async now (was sync); the one caller
+  // (AttendanceModule's WhatsApp-link button) awaits it.
+  const generateAttendanceLink = async (emp: Employee): Promise<string> => {
+    const result = await apiFetch('/api/erp/attendance-links', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId: emp.employeeId, name: emp.name, mobile: emp.mobile }),
+    });
+    refresh(activeUser);
+    return result.token as string;
   };
 
   const useAttendanceLink = (token: string) => {
-    setAttendanceLinks(prev => prev.map(l => l.token === token ? { ...l, used: true } : l));
+    optimisticUpdate(activeUser, s => ({ ...s, attendanceLinks: s.attendanceLinks.map(l => l.token === token ? { ...l, used: true } : l) }));
   };
 
-  // CORE ACTIONS
+  // ---- Billing ----
   const addInvoice = (invoice: Invoice) => {
-    setInvoices(prev => [invoice, ...prev]);
-    invoice.items?.forEach(item => {
-      const stockItem = stock.find(s => s.name === item.name || s.barcode === item.id);
-      if (stockItem) {
-        const updatedItem = {
-          ...stockItem,
-          quantity: Math.max(0, (stockItem.quantity || 0) - (item.quantity || 0)),
-          lastUpdated: new Date().toISOString()
-        } as StockItem;
-        updateStockItem(updatedItem);
-      }
-    });
-    const tx: WalletTransaction = {
-      id: `TX-${Date.now()}`,
-      amount: invoice.grandTotal,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      type: 'INVOICE_SALE',
-      description: `Sale: ${invoice.invoiceNumber} - ${invoice.customerName}`
-    };
-    setTransactions(prev => [tx, ...prev]);
+    apiFetch('/api/erp/invoices', { method: 'POST', body: JSON.stringify(invoice) })
+      .catch(err => console.error('addInvoice failed:', err))
+      .finally(() => refresh(activeUser));
   };
-
-  const deleteInvoice = (id: string) => setInvoices(prev => prev.filter(i => i.id !== id));
+  const deleteInvoice = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, invoices: s.invoices.filter(i => i.id !== id) }));
+    apiFetch(`/api/erp/invoices/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteInvoice failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
   const updateStockItem = (item: StockItem) => {
-    setStock(prev => {
-      const exists = prev.find(i => i.id === item.id);
-      if (exists) return prev.map(i => i.id === item.id ? item : i);
-      return [item, ...prev];
+    optimisticUpdate(activeUser, s => {
+      const exists = s.stock.find(i => i.id === item.id);
+      return { ...s, stock: exists ? s.stock.map(i => i.id === item.id ? item : i) : [item, ...s.stock] };
     });
+    apiFetch('/api/erp/stock-items', { method: 'POST', body: JSON.stringify(item) })
+      .catch(err => console.error('updateStockItem failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteStockItem = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, stock: s.stock.filter(i => i.id !== id) }));
+    apiFetch(`/api/erp/stock-items/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteStockItem failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  const deleteStockItem = (id: string) => setStock(prev => prev.filter(s => s.id !== id));
-
-  // SALES MODULE ACTIONS — a separate module from Repairing/Billing. Reuses the
-  // same `stock` collection/updateStockItem (one real inventory, not two), and
-  // reuses customer identity by mobile across Repairs + Sales, but never writes
-  // to `calls`/`invoices`/`transportationLogs` — those stay exactly as they are.
+  // ---- Sales module ----
   const findOrCreateSalesCustomerId = (mobile: string, existingId?: string): string => {
     if (existingId) return existingId;
-    const fromCalls = calls.find(c => c.mobile === mobile);
+    const fromCalls = snap.calls.find(c => c.mobile === mobile);
     if (fromCalls?.customerId) return fromCalls.customerId;
-    const fromSales = salesOrders.find(o => o.mobile === mobile);
+    const fromSales = snap.salesOrders.find(o => o.mobile === mobile);
     if (fromSales?.customerId) return fromSales.customerId;
     const prefix = settings.customerIdPrefix || 'GJ5';
-    // Repair's own ID scheme (CallModal) is independent of this one and isn't
-    // aware of Sales-minted IDs, so scan for a genuinely free suffix here
-    // rather than a single arithmetic guess that could collide with it.
     const used = new Set<string>([
-      ...calls.map((c: any) => c.customerId),
-      ...salesOrders.map(o => o.customerId),
-      ...salesCustomers.map(c => c.id)
+      ...snap.calls.map((c: any) => c.customerId),
+      ...snap.salesOrders.map(o => o.customerId),
+      ...snap.salesCustomers.map(c => c.id)
     ]);
     let n = 1001;
     while (used.has(`${prefix}${n}`)) n++;
@@ -359,45 +384,30 @@ export function useErpStore() {
   };
 
   const addSalesOrder = (order: SalesOrder) => {
-    if (order.productId) {
-      const stockItem = stock.find(s => s.id === order.productId);
-      if (stockItem) {
-        updateStockItem({
-          ...stockItem,
-          quantity: Math.max(0, (stockItem.quantity || 0) - (order.quantity || 0)),
-          lastUpdated: new Date().toISOString()
-        });
-      }
-    }
-    setSalesOrders(prev => [order, ...prev]);
-    if (order.deliveryRequired) {
-      const delivery: SalesDelivery = {
-        id: `SDEL-${String(salesDeliveries.length + 1).padStart(6, '0')}`,
-        orderId: order.id,
-        customerName: order.customerName,
-        mobile: order.mobile,
-        address: order.address,
-        product: `${order.brand} ${order.model}`.trim(),
-        deliveryStatus: 'Pending Pickup',
-        paymentStatus: order.paymentStatus,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setSalesDeliveries(prev => [delivery, ...prev]);
-    }
+    apiFetch('/api/erp/sales-orders', { method: 'POST', body: JSON.stringify(order) })
+      .catch(err => console.error('addSalesOrder failed:', err))
+      .finally(() => refresh(activeUser));
   };
-
   const updateSalesOrder = (order: SalesOrder) => {
-    setSalesOrders(prev => prev.map(o => o.id === order.id ? { ...order, updatedAt: new Date().toISOString() } : o));
+    const updated = { ...order, updatedAt: new Date().toISOString() };
+    optimisticUpdate(activeUser, s => ({ ...s, salesOrders: s.salesOrders.map(o => o.id === order.id ? updated : o) }));
+    apiFetch(`/api/erp/sales-orders/${order.id}`, { method: 'PUT', body: JSON.stringify(updated) })
+      .catch(err => console.error('updateSalesOrder failed:', err))
+      .finally(() => refresh(activeUser));
   };
-
   const deleteSalesOrder = (id: string) => {
-    setSalesOrders(prev => prev.filter(o => o.id !== id));
-    setSalesDeliveries(prev => prev.filter(d => d.orderId !== id));
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      salesOrders: s.salesOrders.filter(o => o.id !== id),
+      salesDeliveries: s.salesDeliveries.filter(d => d.orderId !== id),
+    }));
+    apiFetch(`/api/erp/sales-orders/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteSalesOrder failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
   const generateSalesInvoice = (order: SalesOrder): SalesInvoice => {
-    const invoiceNumber = `SINV-${String(salesInvoices.length + 1).padStart(6, '0')}`;
+    const invoiceNumber = `SINV-${String(snap.salesInvoices.length + 1).padStart(6, '0')}`;
     const invoice: SalesInvoice = {
       id: invoiceNumber,
       invoiceNumber,
@@ -410,187 +420,209 @@ export function useErpStore() {
       paymentStatus: order.paymentStatus,
       createdAt: new Date().toISOString()
     };
-    setSalesInvoices(prev => [invoice, ...prev]);
-    setSalesOrders(prev => prev.map(o => o.id === order.id ? { ...o, invoiceId: invoiceNumber } : o));
+    // Optimistic placeholder — the server computes the authoritative invoice
+    // number from its own count, so this is superseded on the refresh below.
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      salesInvoices: [invoice, ...s.salesInvoices],
+      salesOrders: s.salesOrders.map(o => o.id === order.id ? { ...o, invoiceId: invoiceNumber } : o),
+    }));
+    apiFetch(`/api/erp/sales-orders/${order.id}/invoice`, { method: 'POST' })
+      .catch(err => console.error('generateSalesInvoice failed:', err))
+      .finally(() => refresh(activeUser));
     return invoice;
   };
 
   const updateSalesDelivery = (delivery: SalesDelivery) => {
-    setSalesDeliveries(prev => prev.map(d => d.id === delivery.id ? { ...delivery, updatedAt: new Date().toISOString() } : d));
+    const updated = { ...delivery, updatedAt: new Date().toISOString() };
+    optimisticUpdate(activeUser, s => ({ ...s, salesDeliveries: s.salesDeliveries.map(d => d.id === delivery.id ? updated : d) }));
+    refresh(activeUser);
   };
 
   const updateSalesDeliveryStatus = (id: string, status: SalesDeliveryStatus) => {
-    const delivery = salesDeliveries.find(d => d.id === id);
-    setSalesDeliveries(prev => prev.map(d => d.id === id ? { ...d, deliveryStatus: status, updatedAt: new Date().toISOString() } : d));
-    if (delivery) {
-      setSalesOrders(prev => prev.map(o => o.id === delivery.orderId ? { ...o, deliveryStatus: status } : o));
-    }
+    const delivery = snap.salesDeliveries.find(d => d.id === id);
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      salesDeliveries: s.salesDeliveries.map(d => d.id === id ? { ...d, deliveryStatus: status, updatedAt: new Date().toISOString() } : d),
+      salesOrders: delivery ? s.salesOrders.map(o => o.id === delivery.orderId ? { ...o, deliveryStatus: status } : o) : s.salesOrders,
+    }));
+    apiFetch(`/api/erp/sales-deliveries/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) })
+      .catch(err => console.error('updateSalesDeliveryStatus failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  const addSalesCustomer = (customer: Customer) => setSalesCustomers(prev => [customer, ...prev]);
-  const updateSalesCustomer = (customer: Customer) => setSalesCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
-  const deleteSalesCustomer = (id: string) => setSalesCustomers(prev => prev.filter(c => c.id !== id));
+  const addSalesCustomer = (customer: Customer) => {
+    optimisticUpdate(activeUser, s => ({ ...s, salesCustomers: [customer, ...s.salesCustomers] }));
+    apiFetch('/api/erp/customers', { method: 'POST', body: JSON.stringify({ ...customer, source: 'sales' }) })
+      .catch(err => console.error('addSalesCustomer failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateSalesCustomer = (customer: Customer) => {
+    optimisticUpdate(activeUser, s => ({ ...s, salesCustomers: s.salesCustomers.map(c => c.id === customer.id ? customer : c) }));
+    apiFetch(`/api/erp/customers/${customer.id}`, { method: 'PUT', body: JSON.stringify({ ...customer, source: 'sales' }) })
+      .catch(err => console.error('updateSalesCustomer failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteSalesCustomer = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, salesCustomers: s.salesCustomers.filter(c => c.id !== id) }));
+    apiFetch(`/api/erp/customers/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteSalesCustomer failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
-  const addCall = (call: RepairCall) => setCalls(prev => [call, ...prev]);
-  const updateCall = (call: RepairCall) => setCalls(prev => prev.map(c => c.id === call.id ? call : c));
-  const deleteCall = (id: string) => setCalls(prev => prev.filter(c => c.id !== id));
+  // ---- Repairing (legacy calls) ----
+  const addCall = (call: RepairCall) => {
+    optimisticUpdate(activeUser, s => ({ ...s, calls: [call, ...s.calls] }));
+    apiFetch('/api/erp/repair-calls', { method: 'POST', body: JSON.stringify(call) })
+      .catch(err => console.error('addCall failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateCall = (call: RepairCall) => {
+    optimisticUpdate(activeUser, s => ({ ...s, calls: s.calls.map(c => c.id === call.id ? call : c) }));
+    apiFetch(`/api/erp/repair-calls/${call.id}`, { method: 'PUT', body: JSON.stringify(call) })
+      .catch(err => console.error('updateCall failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteCall = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, calls: s.calls.filter(c => c.id !== id) }));
+    apiFetch(`/api/erp/repair-calls/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteCall failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
-  const addRepairJob = (job: RepairJob) => setRepairJobs(prev => [job, ...prev]);
-  const updateRepairJob = (job: RepairJob) =>
-    setRepairJobs(prev => prev.map(j => j.id === job.id ? { ...job, updatedAt: new Date().toISOString() } : j));
-  const deleteRepairJob = (id: string) => setRepairJobs(prev => prev.filter(j => j.id !== id));
+  // ---- Repair Jobs module ----
+  const addRepairJob = (job: RepairJob) => {
+    optimisticUpdate(activeUser, s => ({ ...s, repairJobs: [job, ...s.repairJobs] }));
+    apiFetch('/api/erp/repair-jobs', { method: 'POST', body: JSON.stringify(job) })
+      .catch(err => console.error('addRepairJob failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateRepairJob = (job: RepairJob) => {
+    const updated = { ...job, updatedAt: new Date().toISOString() };
+    optimisticUpdate(activeUser, s => ({ ...s, repairJobs: s.repairJobs.map(j => j.id === job.id ? updated : j) }));
+    apiFetch(`/api/erp/repair-jobs/${job.id}`, { method: 'PUT', body: JSON.stringify(updated) })
+      .catch(err => console.error('updateRepairJob failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteRepairJob = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, repairJobs: s.repairJobs.filter(j => j.id !== id) }));
+    apiFetch(`/api/erp/repair-jobs/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteRepairJob failed:', err))
+      .finally(() => refresh(activeUser));
+  };
   const addRepairJobPayment = (jobId: string, payment: RepairJobPayment) => {
-    setRepairJobs(prev => prev.map(j => j.id === jobId
-      ? { ...j, payments: [...j.payments, payment], updatedAt: new Date().toISOString() }
-      : j));
-    const job = repairJobs.find(j => j.id === jobId);
-    const tx: WalletTransaction = {
-      id: `TX-RJ-${payment.id}`,
-      amount: payment.amount,
-      date: payment.date,
-      time: new Date().toLocaleTimeString(),
-      type: 'REPAIR_JOB_PAYMENT',
-      description: `Repair Payment: ${jobId}${job ? ' - ' + job.customerName : ''} (${payment.method})`
-    };
-    setTransactions(prev => [tx, ...prev]);
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      repairJobs: s.repairJobs.map(j => j.id === jobId ? { ...j, payments: [...j.payments, payment], updatedAt: new Date().toISOString() } : j),
+    }));
+    apiFetch(`/api/erp/repair-jobs/${jobId}/payments`, { method: 'POST', body: JSON.stringify(payment) })
+      .catch(err => console.error('addRepairJobPayment failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  const addInquiry = (inq: Inquiry) => setInquiries(prev => [inq, ...prev]);
-  const updateInquiry = (inq: Inquiry) => setInquiries(prev => prev.map(i => i.id === inq.id ? i : inq));
-  const deleteInquiry = (id: string) => setInquiries(prev => prev.filter(i => i.id !== id));
+  // ---- CRM ----
+  const addInquiry = (inq: Inquiry) => {
+    optimisticUpdate(activeUser, s => ({ ...s, inquiries: [inq, ...s.inquiries] }));
+    apiFetch('/api/erp/inquiries', { method: 'POST', body: JSON.stringify(inq) })
+      .catch(err => console.error('addInquiry failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateInquiry = (inq: Inquiry) => {
+    optimisticUpdate(activeUser, s => ({ ...s, inquiries: s.inquiries.map(i => i.id === inq.id ? inq : i) }));
+    apiFetch(`/api/erp/inquiries/${inq.id}`, { method: 'PUT', body: JSON.stringify(inq) })
+      .catch(err => console.error('updateInquiry failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteInquiry = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, inquiries: s.inquiries.filter(i => i.id !== id) }));
+    apiFetch(`/api/erp/inquiries/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteInquiry failed:', err))
+      .finally(() => refresh(activeUser));
+  };
 
+  // ---- Wallet / Expenses ----
   const addExpense = (exp: Expense) => {
-    setExpenses(prev => [exp, ...prev]);
-    const tx: WalletTransaction = {
-      id: `TX-EXP-${exp.id}`,
-      amount: exp.amount,
-      date: exp.date,
-      time: new Date().toLocaleTimeString(),
-      type: 'EXPENSE',
-      description: `${exp.category}: ${exp.vendorName}`
-    };
-    setTransactions(prev => [tx, ...prev]);
-    setWalletBalance(curr => curr - exp.amount);
+    apiFetch('/api/erp/expenses', { method: 'POST', body: JSON.stringify(exp) })
+      .catch(err => console.error('addExpense failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
   const topUpWallet = (amount: number) => {
-    setWalletBalance(curr => curr + amount);
-    const tx: WalletTransaction = {
-      id: `TX-TOP-${Date.now()}`,
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      type: 'TOPUP',
-      description: 'Wallet Credit Top-Up'
-    };
-    setTransactions(prev => [tx, ...prev]);
+    apiFetch('/api/erp/wallet/topup', { method: 'POST', body: JSON.stringify({ amount }) })
+      .catch(err => console.error('topUpWallet failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
   const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', desc: string) => {
-    setWalletBalance(curr => type === 'CREDIT' ? curr + amount : curr - amount);
-    const tx: WalletTransaction = {
-      id: `TX-ADJ-${Date.now()}`,
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
-      description: desc || `Manual ${type}`
-    };
-    setTransactions(prev => [tx, ...prev]);
+    apiFetch('/api/erp/wallet/adjust', {
+      method: 'POST',
+      body: JSON.stringify({ amount, type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT', description: desc }),
+    })
+      .catch(err => console.error('manualAdjust failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
   const deleteTransaction = (id: string) => {
-    const tx = transactions.find(t => t.id === id);
-    if (!tx) return;
-    const isCredit = tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT' || tx.type === 'INVOICE_SALE';
-    setWalletBalance(curr => isCredit ? curr - tx.amount : curr + tx.amount);
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    apiFetch(`/api/erp/wallet/transactions/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteTransaction failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  const addTransportLog = (log: TransportationLog) => setTransportationLogs(prev => [log, ...prev]);
-  const updateTransportLogStatus = (id: string, status: LogisticsStatus) => setTransportationLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-  const deleteTransportLog = (id: string) => setTransportationLogs(prev => prev.filter(l => l.id !== id));
-
-  // Merges incoming records by permanent `id`: existing records are never dropped,
-  // a matching id is updated in place, and only unmatched ids are appended —
-  // so importing the same file twice never creates duplicates.
-  const mergeById = (existing: any[], incoming: any[]) => {
-    const map = new Map((existing || []).map((r: any) => [r.id, r]));
-    let added = 0, updated = 0, skipped = 0;
-    (incoming || []).forEach((rec: any) => {
-      if (!rec || !rec.id) { skipped++; return; }
-      if (map.has(rec.id)) {
-        map.set(rec.id, { ...map.get(rec.id), ...rec, id: rec.id });
-        updated++;
-      } else {
-        map.set(rec.id, rec);
-        added++;
-      }
-    });
-    return { merged: Array.from(map.values()), added, updated, skipped };
+  // ---- Logistics ----
+  const addTransportLog = (log: TransportationLog) => {
+    optimisticUpdate(activeUser, s => ({ ...s, transportationLogs: [log, ...s.transportationLogs] }));
+    apiFetch('/api/erp/transportation-logs', { method: 'POST', body: JSON.stringify(log) })
+      .catch(err => console.error('addTransportLog failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const updateTransportLogStatus = (id: string, status: LogisticsStatus) => {
+    optimisticUpdate(activeUser, s => ({ ...s, transportationLogs: s.transportationLogs.map(l => l.id === id ? { ...l, status } : l) }));
+    apiFetch(`/api/erp/transportation-logs/${id}`, { method: 'PUT', body: JSON.stringify({ status }) })
+      .catch(err => console.error('updateTransportLogStatus failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const deleteTransportLog = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, transportationLogs: s.transportationLogs.filter(l => l.id !== id) }));
+    apiFetch(`/api/erp/transportation-logs/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteTransportLog failed:', err))
+      .finally(() => refresh(activeUser));
   };
 
-  const importAllData = (data: any) => {
-    const stats: Record<string, { added: number; updated: number; skipped: number }> = {};
-
-    const mergeInto = (key: string, current: any[], setter: (v: any[]) => void) => {
-      if (!Array.isArray(data[key])) return;
-      const { merged, added, updated, skipped } = mergeById(current, data[key]);
-      setter(merged);
-      stats[key] = { added, updated, skipped };
-    };
-
-    mergeInto('calls', calls, setCalls);
-    mergeInto('inquiries', inquiries, setInquiries);
-    mergeInto('expenses', expenses, setExpenses);
-    mergeInto('transactions', transactions, setTransactions);
-    mergeInto('transportationLogs', transportationLogs, setTransportationLogs);
-    mergeInto('invoices', invoices, setInvoices);
-    mergeInto('stock', stock, setStock);
-    mergeInto('employees', employees, setEmployees);
-    mergeInto('attendance', attendance, setAttendance);
-    mergeInto('salaries', salaries, setSalaries);
-    mergeInto('leaves', leaves, setLeaves);
-    mergeInto('attendanceLinks', attendanceLinks, setAttendanceLinks);
-    mergeInto('salesOrders', salesOrders, setSalesOrders);
-    mergeInto('salesInvoices', salesInvoices, setSalesInvoices);
-    mergeInto('salesDeliveries', salesDeliveries, setSalesDeliveries);
-    mergeInto('salesCustomers', salesCustomers, setSalesCustomers);
-
-    // walletBalance is a single running total, not an ID-keyed record — it is
-    // intentionally never overwritten by an import so a backup can't silently
-    // corrupt today's live balance. It is still included in exports for reference.
-    if (data.companyProfile) updateCompanyProfile(data.companyProfile);
-    if (data.settings) updateSettings(data.settings);
-
-    return stats;
+  // Bulk restore (Settings "Restore Backup") and the one-time localStorage ->
+  // cloud migration action both funnel through this same server-side,
+  // id-keyed upsert — safe to call more than once.
+  const importAllData = async (data: any) => {
+    const result = await apiFetch('/api/erp/import', { method: 'POST', body: JSON.stringify(data) });
+    if (data.companyProfile) await updateCompanyProfile(data.companyProfile);
+    refresh(activeUser);
+    return result.counts as Record<string, number>;
   };
 
   return {
-    invoices, addInvoice, deleteInvoice,
-    stock, updateStockItem, deleteStockItem,
-    calls, addCall, updateCall, deleteCall,
-    inquiries, addInquiry, updateInquiry, deleteInquiry,
-    employees, addEmployee, updateEmployee, deleteEmployee,
-    attendance, addAttendance, updateAttendance, deleteAttendance,
-    salaries, addSalary, updateSalary,
-    attendanceLinks, generateAttendanceLink, useAttendanceLink,
-    walletBalance, topUpWallet, manualAdjust,
+    invoices: snap.invoices, addInvoice, deleteInvoice,
+    stock: snap.stock, updateStockItem, deleteStockItem,
+    calls: snap.calls, addCall, updateCall, deleteCall,
+    inquiries: snap.inquiries, addInquiry, updateInquiry, deleteInquiry,
+    employees: snap.employees, addEmployee, updateEmployee, deleteEmployee,
+    attendance: snap.attendance, addAttendance, updateAttendance, deleteAttendance,
+    salaries: snap.salaries, addSalary, updateSalary,
+    attendanceLinks: snap.attendanceLinks, generateAttendanceLink, useAttendanceLink,
+    walletBalance: snap.walletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility,
     navOrder, setNavOrder,
     companyProfile, setCompanyProfile, updateCompanyProfile,
     deletePassword: settings.deletePassword,
     settings, updateSettings,
-    backupMeta, recordBackup,
-    transactions, deleteTransaction,
-    expenses, addExpense,
-    leaves,
-    transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
-    salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, findOrCreateSalesCustomerId,
-    salesInvoices, generateSalesInvoice,
-    salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,
-    salesCustomers, addSalesCustomer, updateSalesCustomer, deleteSalesCustomer,
-    repairJobs, addRepairJob, updateRepairJob, deleteRepairJob, addRepairJobPayment,
+    backupMeta: snap.backupMeta, recordBackup,
+    transactions: snap.transactions, deleteTransaction,
+    expenses: snap.expenses, addExpense,
+    leaves: snap.leaves,
+    transportationLogs: snap.transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
+    salesOrders: snap.salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, findOrCreateSalesCustomerId,
+    salesInvoices: snap.salesInvoices, generateSalesInvoice,
+    salesDeliveries: snap.salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,
+    salesCustomers: snap.salesCustomers, addSalesCustomer, updateSalesCustomer, deleteSalesCustomer,
+    repairJobs: snap.repairJobs, addRepairJob, updateRepairJob, deleteRepairJob, addRepairJobPayment,
     importAllData
   };
 }

@@ -89,8 +89,9 @@ export function BackupCenter({ store }: { store: any }) {
         const content = event.target?.result as string;
         if (file.name.endsWith('.json')) {
           const data = JSON.parse(content);
-          store.importAllData(data);
-          toast({ title: "Restore Complete", description: "Database synchronized from JSON backup." });
+          store.importAllData(data)
+            .then(() => toast({ title: "Restore Complete", description: "Database synchronized from JSON backup." }))
+            .catch((err: any) => toast({ variant: "destructive", title: "Restore Failed", description: err?.message || "Could not sync to the cloud database." }));
         } else if (file.name.endsWith('.xlsx')) {
           const workbook = XLSX.read(content, { type: 'binary' });
           // Logic for multi-sheet import could be complex, for MVP we focus on JSON for full restore

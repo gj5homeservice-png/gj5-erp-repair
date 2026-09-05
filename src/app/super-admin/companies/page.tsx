@@ -82,11 +82,22 @@ export default function CompanyManager() {
     );
   }, [searchQuery, companies]);
 
-  const handleLoginAs = (company: Company) => {
-    localStorage.setItem('gj5_active_user', company.ownerEmail);
-    localStorage.setItem('gj5_auth_token', `super-admin-token-${Date.now()}`);
-    localStorage.setItem(`gj5_company_${company.ownerEmail}`, JSON.stringify(company));
-    router.push('/dashboard');
+  const handleLoginAs = async (company: Company) => {
+    try {
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: company.ownerEmail }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
+      localStorage.setItem('gj5_active_user', company.ownerEmail);
+      localStorage.setItem('gj5_auth_token', json.token);
+      localStorage.setItem(`gj5_company_${company.ownerEmail}`, JSON.stringify(company));
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Impersonation session failed:', err);
+    }
   };
 
   return (

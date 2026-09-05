@@ -164,6 +164,10 @@ export default function ErpMainHub() {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('gj5_auth_token');
+      if (token) {
+        fetch('/api/auth/session', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+      }
       localStorage.removeItem('gj5_auth_token');
       localStorage.removeItem('gj5_active_user');
       router.push('/');

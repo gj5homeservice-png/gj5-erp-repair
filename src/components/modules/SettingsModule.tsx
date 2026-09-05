@@ -16,6 +16,7 @@ import {
   Mail,
   SlidersHorizontal,
   DatabaseBackup,
+  CloudUpload,
   Users,
   Camera,
   Save,
@@ -106,6 +107,9 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [pendingImport, setPendingImport] = useState<{ data: Record<string, any>; preview: CategoryPreview[]; mode: 'import' | 'restore' } | null>(null);
+
+  const [migrating, setMigrating] = useState(false);
+  const [migrated, setMigrated] = useState<{ at: string; total: number } | null>(null);
 
   const settings: SystemSettings = store.settings;
 
@@ -231,6 +235,56 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
     toast({ title: 'Backup Created', description: 'A full backup has been downloaded and logged.' });
   };
 
+  // One-time migration of this browser's pre-existing localStorage data into
+  // the Hostinger MySQL database. Reads the raw gj5_user_<email>_* keys
+  // directly (the exact keys the app used before this device's data moved to
+  // the cloud) rather than `store`, since `store` now reflects MySQL. Safe to
+  // click more than once — the server upserts by each record's own id — and
+  // never deletes anything from localStorage, which stays as a local backup.
+  const handleMigrateToCloud = async () => {
+    const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
+    if (!activeUser) return;
+    setMigrating(true);
+    try {
+      const prefix = `gj5_user_${activeUser}_`;
+      const read = (key: string) => {
+        const raw = localStorage.getItem(prefix + key);
+        if (!raw) return undefined;
+        try { return JSON.parse(raw); } catch { return undefined; }
+      };
+      const snapshot: Record<string, any> = {
+        calls: read('calls') || [],
+        inquiries: read('inquiries') || [],
+        expenses: read('expenses') || [],
+        transactions: read('transactions') || [],
+        transportationLogs: read('transport_logs') || [],
+        invoices: read('invoices') || [],
+        stock: read('stock') || [],
+        employees: read('employees') || [],
+        attendance: read('attendance') || [],
+        salaries: read('salaries') || [],
+        leaves: read('leaves') || [],
+        attendanceLinks: read('attendance_links') || [],
+        walletBalance: read('wallet_balance'),
+        settings: read('settings'),
+        backupMeta: read('backup_meta'),
+        salesOrders: read('sales_orders') || [],
+        salesInvoices: read('sales_invoices') || [],
+        salesDeliveries: read('sales_deliveries') || [],
+        salesCustomers: read('sales_customers') || [],
+        repairJobs: read('repair_jobs') || [],
+      };
+      const counts = await store.importAllData(snapshot);
+      const total = Object.values(counts || {}).reduce((sum: number, n: any) => sum + (Number(n) || 0), 0);
+      setMigrated({ at: new Date().toISOString(), total });
+      toast({ title: 'Migration Complete', description: `${total} record(s) synced to the cloud database. Your original local data was not deleted.` });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Migration Failed', description: err?.message || 'Could not sync to the cloud database. Nothing was lost — your local data is untouched.' });
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   const readAndPreview = (file: File, mode: 'import' | 'restore') => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -258,7 +312,7 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
     if (file) readAndPreview(file, 'restore');
   };
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!pendingImport) return;
     if (pendingImport.mode === 'restore') {
       const activeUser = typeof window !== 'undefined' ? localStorage.getItem('gj5_active_user') : null;
@@ -266,9 +320,13 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
         localStorage.setItem(`gj5_prerestore_backup_${activeUser}`, JSON.stringify(getFullSnapshot(store)));
       }
     }
-    const stats = store.importAllData(pendingImport.data);
-    const totals = Object.values(stats || {}).reduce((acc: any, s: any) => ({ added: acc.added + s.added, updated: acc.updated + s.updated }), { added: 0, updated: 0 });
-    toast({ title: pendingImport.mode === 'restore' ? 'Restore Complete' : 'Import Complete', description: `${totals.added} record(s) added, ${totals.updated} updated. No existing records were deleted.` });
+    try {
+      const counts = await store.importAllData(pendingImport.data);
+      const total = Object.values(counts || {}).reduce((sum: number, n: any) => sum + (Number(n) || 0), 0);
+      toast({ title: pendingImport.mode === 'restore' ? 'Restore Complete' : 'Import Complete', description: `${total} record(s) synced to the cloud database. No existing records were deleted.` });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Sync Failed', description: err?.message || 'Could not sync to the cloud database.' });
+    }
     setPendingImport(null);
   };
 
@@ -541,6 +599,23 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
                   </span>
                 ) : <span>No backup has been created yet.</span>}
               </div>
+            </div>
+
+            <div className="space-y-3 pt-4 mt-4 border-t border-slate-800">
+              <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Cloud Database</h4>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                One-time sync of this device's locally-stored data into the Hostinger MySQL database, so every device signed in to this account sees the same records. Safe to run more than once — nothing on this device is deleted.
+              </p>
+              <Button onClick={handleMigrateToCloud} disabled={migrating} className="bg-[#0066FF] hover:bg-blue-600 h-10 text-xs font-bold">
+                {migrating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CloudUpload className="w-4 h-4 mr-2" />}
+                {migrating ? 'Migrating...' : 'Migrate to Cloud Database'}
+              </Button>
+              {migrated && (
+                <div className="flex items-center gap-2 text-[10px] text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{migrated.total} record(s) synced at {new Date(migrated.at).toLocaleString()}.</span>
+                </div>
+              )}
             </div>
           </div>
         );

@@ -43,10 +43,21 @@ export default function LoginPage() {
     const localUser = users.find((u: any) => u.email === email && u.password === password);
 
     if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
-      localStorage.setItem('gj5_auth_token', 'demo-token-' + Date.now());
-      localStorage.setItem('gj5_active_user', email);
-      toast({ title: "Identity Verified", description: "Accessing GJ5 ERP Console..." });
-      router.push('/dashboard');
+      try {
+        const res = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
+        localStorage.setItem('gj5_auth_token', json.token);
+        localStorage.setItem('gj5_active_user', email);
+        toast({ title: "Identity Verified", description: "Accessing GJ5 ERP Console..." });
+        router.push('/dashboard');
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+      }
     } else {
       toast({ 
         variant: "destructive", 
@@ -75,10 +86,21 @@ export default function LoginPage() {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     if (otp === '123456') {
-      localStorage.setItem('gj5_auth_token', 'demo-user-token-' + Date.now());
-      localStorage.setItem('gj5_active_user', phone);
-      toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
-      router.push('/dashboard');
+      try {
+        const res = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: phone }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
+        localStorage.setItem('gj5_auth_token', json.token);
+        localStorage.setItem('gj5_active_user', phone);
+        toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
+        router.push('/dashboard');
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+      }
     } else {
       toast({ variant: "destructive", title: "Invalid OTP", description: "The code entered is incorrect. Use 123456" });
     }

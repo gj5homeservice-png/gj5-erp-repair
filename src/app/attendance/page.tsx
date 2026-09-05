@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useErpStore } from '@/hooks/use-erp-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,13 +19,12 @@ import {
   Camera,
   RefreshCw
 } from 'lucide-react';
-import { format, parseISO, isAfter } from 'date-fns';
+import { format } from 'date-fns';
 import { AttendanceStatus, AttendanceRecord } from '@/lib/types';
 
 function AttendancePortalContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const store = useErpStore();
   const token = searchParams.get('token');
 
   const [loading, setLoading] = useState(true);
@@ -45,31 +43,26 @@ function AttendancePortalContent() {
 
   useEffect(() => {
     const validateToken = async () => {
-      // Small delay for store hydration
-      await new Promise(r => setTimeout(r, 1000));
-      
       if (!token) {
         setError("Attendance token missing from request.");
         setLoading(false);
         return;
       }
 
-      const link = store.attendanceLinks.find(l => l.token === token);
-      
-      if (!link) {
-        setError("Invalid attendance token. Access Denied.");
-        setLoading(false);
-        return;
-      }
-
-      if (link.used) {
-        setError("This secure link has already been used.");
-        setLoading(false);
-        return;
-      }
-
-      if (isAfter(new Date(), parseISO(link.expiresAt))) {
-        setError("Security window expired. Generate a new link.");
+      // Real server-side lookup — works from any device, not just the admin's
+      // own browser, since the token and its expiry now live in MySQL.
+      let link: any = null;
+      try {
+        const res = await fetch(`/api/erp/attendance-links/${token}`);
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          setError(json.error || "Invalid attendance token. Access Denied.");
+          setLoading(false);
+          return;
+        }
+        link = json.data;
+      } catch (e) {
+        setError("Could not reach the server. Check your connection and try again.");
         setLoading(false);
         return;
       }
@@ -105,7 +98,7 @@ function AttendancePortalContent() {
     };
 
     validateToken();
-  }, [token, store.attendanceLinks]);
+  }, [token]);
 
   const startCamera = async () => {
     setIsCameraActive(true);
@@ -172,33 +165,35 @@ function AttendancePortalContent() {
         ipAddress: ip,
         attendanceType: 'WhatsAppLink'
       };
-      store.addAttendance(newRecord);
-    } else {
-      const record = store.attendance.find((a: any) => a.employeeId === linkData.employeeId && a.date === today && !a.checkOut);
-      if (!record) {
-        setError("No active check-in session found for today.");
+      try {
+        const res = await fetch(`/api/erp/attendance-links/${token}/checkin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRecord),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Check-in failed');
+      } catch (e: any) {
+        setError(e?.message || "Check-in failed. Please try again.");
         setIsSubmitting(false);
         return;
       }
-      
-      const inTime = parseISO(record.checkIn!);
-      const diffMinutes = Math.floor((now.getTime() - inTime.getTime()) / 60000);
-      const hours = Math.floor(diffMinutes / 60);
-      const mins = diffMinutes % 60;
-      const workHours = `${hours}h ${mins}m`;
-      const overtime = hours > 9 ? `${hours - 9}h` : '0h';
-
-      store.updateAttendance({
-        ...record,
-        checkOut: now.toISOString(),
-        selfieCheckOut: selfie,
-        workHours,
-        overtime,
-        status: 'Checked Out'
-      });
+    } else {
+      try {
+        const res = await fetch(`/api/erp/attendance-links/${token}/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: today, selfieCheckOut: selfie }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'No active check-in session found for today.');
+      } catch (e: any) {
+        setError(e?.message || "Check-out failed. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
     }
 
-    store.useAttendanceLink(token!);
     setCompleted(true);
     setIsSubmitting(false);
   };

@@ -80,19 +80,31 @@ export function AttendanceModule({ store }: { store: any }) {
     return { total: activeEmployees.length, present, late, absent, checkedInCount, checkOutPending };
   }, [store.attendance, dateFilter, activeEmployees]);
 
-  const handleSendWhatsAppLink = (emp: Employee) => {
-    const token = store.generateAttendanceLink(emp);
-    
+  const handleSendWhatsAppLink = async (emp: Employee) => {
+    // Open the tab synchronously, inside the click handler's own gesture, so
+    // browsers don't block it as a popup once we await the token below —
+    // we just point it at the real WhatsApp URL once that resolves.
+    const pendingTab = window.open('', '_blank');
+    let token: string;
+    try {
+      token = await store.generateAttendanceLink(emp);
+    } catch (err: any) {
+      pendingTab?.close();
+      toast({ variant: 'destructive', title: 'Could Not Generate Link', description: err?.message || 'Please try again.' });
+      return;
+    }
+
     const isMobileApp = typeof window !== 'undefined' && (window as any).Capacitor;
     const baseUrl = isMobileApp ? PRODUCTION_URL : window.location.origin;
-    
+
     const attendanceUrl = `${baseUrl}/attendance?token=${token}`;
-    
+
     const msg = `🔐 *GJ5 ERP Secure Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification required for shift entry. Click below for GPS + Selfie proof.\n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* Powered by GJ5 ERP.`;
-    
+
     const whatsappUrl = `https://wa.me/91${emp.mobile}?text=${encodeURIComponent(msg)}`;
-    window.open(whatsappUrl, '_blank');
-    
+    if (pendingTab) pendingTab.location.href = whatsappUrl;
+    else window.open(whatsappUrl, '_blank');
+
     toast({ title: "Smart Link Dispatched", description: `Secure token sent to ${emp.name}.` });
   };
 

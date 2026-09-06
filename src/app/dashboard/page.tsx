@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { 
   LayoutDashboard, 
   Wrench, 
@@ -36,20 +37,36 @@ import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { createAutoBackupIfDue } from '@/lib/data-management';
 
-// Module Imports
-import { RepairingModule } from '@/components/modules/RepairingModule';
-import { InquiryModule } from '@/components/modules/InquiryModule';
-import { BillingModule } from '@/components/modules/BillingModule';
-import { InvoiceHistoryModule } from '@/components/modules/InvoiceHistoryModule';
-import { StockModule } from '@/components/modules/StockModule';
-import { EmployeesModule } from '@/components/modules/EmployeesModule';
-import { AttendanceModule } from '@/components/modules/AttendanceModule';
-import { SalaryModule } from '@/components/modules/SalaryModule';
-import { AnalyticsModule } from '@/components/modules/AnalyticsModule';
-import { WalletModule } from '@/components/modules/WalletModule';
-import { SettingsModule } from '@/components/modules/SettingsModule';
-import { TransportationModule } from '@/components/modules/TransportationModule';
-import { RepairJobsModule } from '@/components/modules/repair/RepairJobsModule';
+// Module Imports — dynamically code-split, not bundled into /dashboard's own
+// chunk. Previously these 13 modules (every ERP feature: Employees, Repair
+// Jobs, Billing, Stock, etc.) were imported eagerly at the top of this file,
+// which made /dashboard by far the largest route in the app (769 kB First
+// Load JS — nearly double the next-largest route) even though renderModule()
+// below only ever displays ONE of them at a time based on activeTab. Live
+// production deploys were intermittently missing one or more of the largest
+// generated chunks (confirmed via direct network inspection: 404s on
+// specific chunk files, a different specific chunk each deploy, always
+// among the largest ones) — splitting each module into its own
+// independently-loaded chunk means no single chunk is anywhere near as large,
+// and a module's code is only ever fetched when its tab is actually opened.
+const ModuleLoading = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+  </div>
+);
+const RepairingModule = dynamic(() => import('@/components/modules/RepairingModule').then(m => m.RepairingModule), { loading: ModuleLoading, ssr: false });
+const InquiryModule = dynamic(() => import('@/components/modules/InquiryModule').then(m => m.InquiryModule), { loading: ModuleLoading, ssr: false });
+const BillingModule = dynamic(() => import('@/components/modules/BillingModule').then(m => m.BillingModule), { loading: ModuleLoading, ssr: false });
+const InvoiceHistoryModule = dynamic(() => import('@/components/modules/InvoiceHistoryModule').then(m => m.InvoiceHistoryModule), { loading: ModuleLoading, ssr: false });
+const StockModule = dynamic(() => import('@/components/modules/StockModule').then(m => m.StockModule), { loading: ModuleLoading, ssr: false });
+const EmployeesModule = dynamic(() => import('@/components/modules/EmployeesModule').then(m => m.EmployeesModule), { loading: ModuleLoading, ssr: false });
+const AttendanceModule = dynamic(() => import('@/components/modules/AttendanceModule').then(m => m.AttendanceModule), { loading: ModuleLoading, ssr: false });
+const SalaryModule = dynamic(() => import('@/components/modules/SalaryModule').then(m => m.SalaryModule), { loading: ModuleLoading, ssr: false });
+const AnalyticsModule = dynamic(() => import('@/components/modules/AnalyticsModule').then(m => m.AnalyticsModule), { loading: ModuleLoading, ssr: false });
+const WalletModule = dynamic(() => import('@/components/modules/WalletModule').then(m => m.WalletModule), { loading: ModuleLoading, ssr: false });
+const SettingsModule = dynamic(() => import('@/components/modules/SettingsModule').then(m => m.SettingsModule), { loading: ModuleLoading, ssr: false });
+const TransportationModule = dynamic(() => import('@/components/modules/TransportationModule').then(m => m.TransportationModule), { loading: ModuleLoading, ssr: false });
+const RepairJobsModule = dynamic(() => import('@/components/modules/repair/RepairJobsModule').then(m => m.RepairJobsModule), { loading: ModuleLoading, ssr: false });
 
 const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">

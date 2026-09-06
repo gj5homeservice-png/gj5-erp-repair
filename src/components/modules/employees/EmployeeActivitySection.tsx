@@ -20,9 +20,10 @@ const EVENT_META: Record<AuditEventType, { label: string; icon: typeof History; 
   kyc_verified: { label: 'KYC Verified', icon: CheckCircle2, color: 'text-emerald-400' },
   kyc_rejected: { label: 'KYC Rejected', icon: XCircle, color: 'text-rose-400' },
   kyc_deleted: { label: 'KYC Deleted', icon: XCircle, color: 'text-slate-400' },
-  employee_suspended: { label: 'Employee Suspended', icon: Ban, color: 'text-rose-400' },
+  employee_suspended: { label: 'Employee Suspended', icon: Ban, color: 'text-amber-400' },
   employee_activated: { label: 'Employee Activated', icon: CheckCircle2, color: 'text-emerald-400' },
   employee_terminated: { label: 'Employee Terminated', icon: XCircle, color: 'text-rose-400' },
+  employee_disabled: { label: 'Employee Disabled', icon: Ban, color: 'text-rose-400' },
 };
 
 // Read-only by design — there is deliberately no delete action anywhere in

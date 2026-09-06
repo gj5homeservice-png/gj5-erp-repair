@@ -323,7 +323,7 @@ export interface EmployeeLoginAccess {
 }
 
 export type KycVerificationStatus = 'Pending' | 'Verified' | 'Rejected';
-export type KycDocumentType = 'Aadhaar Card' | 'PAN Card' | 'Address Proof' | 'Bank Proof' | 'Employee Photo' | 'Other ID' | 'Other Document';
+export type KycDocumentType = 'Aadhaar Card' | 'PAN Card' | 'Address Proof' | 'Bank Proof' | 'Photo' | 'Other ID' | 'Other Document';
 
 export interface EmployeeDocument {
   id: string;
@@ -344,7 +344,7 @@ export type AuditEventType =
   | 'employee_created' | 'employee_edited' | 'password_reset' | 'login' | 'logout'
   | 'account_blocked' | 'account_unblocked' | 'permission_changed'
   | 'kyc_uploaded' | 'kyc_verified' | 'kyc_rejected' | 'kyc_deleted'
-  | 'employee_suspended' | 'employee_activated' | 'employee_terminated';
+  | 'employee_suspended' | 'employee_activated' | 'employee_terminated' | 'employee_disabled';
 
 export interface EmployeeAuditLogEntry {
   id: string;

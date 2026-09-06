@@ -7,9 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Employee } from '@/lib/types';
+import { PRESET_ROLES } from '@/lib/permissions';
+
+const CUSTOM_ROLE = '__custom__';
 
 // Local-only helper — never sent anywhere as-is except into the password
 // field the Admin can see and copy; the server hashes it same as any other
@@ -34,9 +40,19 @@ function generateStrongPassword(): string {
 export function EmployeeLoginAccessSection({
   employee,
   store,
+  onRoleChange,
+  onCustomRoleChange,
+  customRoleDraft,
 }: {
   employee: Partial<Employee>;
   store: any;
+  // Role lives on the same editingEmployee object the Profile tab edits —
+  // these callbacks are shared with that tab (see EmployeesModule.tsx) so
+  // changing the role here or there always stays in sync and applies the
+  // same "seed role defaults, never reduce Admin access" logic.
+  onRoleChange: (role: string) => void;
+  onCustomRoleChange: (role: string) => void;
+  customRoleDraft: string;
 }) {
   const { toast } = useToast();
   const [username, setUsername] = useState(employee.loginAccess?.username || '');
@@ -193,6 +209,29 @@ export function EmployeeLoginAccessSection({
             <p className="text-[9px] text-slate-400 uppercase tracking-widest">Require a new password the first time they sign in</p>
           </div>
           <Switch checked={forcePasswordChange} onCheckedChange={setForcePasswordChange} />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase font-bold text-slate-300">Role</Label>
+          <Select
+            value={(PRESET_ROLES as readonly string[]).includes(employee.role || '') ? employee.role : CUSTOM_ROLE}
+            onValueChange={onRoleChange}
+          >
+            <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              {PRESET_ROLES.map((r) => <SelectItem key={r} value={r} className="text-slate-100 focus:bg-slate-800 focus:text-white">{r}</SelectItem>)}
+              <SelectItem value={CUSTOM_ROLE} className="text-slate-100 focus:bg-slate-800 focus:text-white">Custom Role...</SelectItem>
+            </SelectContent>
+          </Select>
+          {!(PRESET_ROLES as readonly string[]).includes(employee.role || '') && (
+            <Input
+              value={customRoleDraft}
+              onChange={(e) => onCustomRoleChange(e.target.value)}
+              placeholder="Enter custom role name"
+              className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
+            />
+          )}
+          <p className="text-[9px] text-slate-400 mt-1">Also editable from the Profile tab — both stay in sync.</p>
         </div>
       </div>
 

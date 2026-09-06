@@ -203,14 +203,51 @@ export function EmployeesModule({ store }: { store: any }) {
     } as Employee;
 
     try {
-      if (isNew) await store.addEmployee(finalEmp);
-      else await store.updateEmployee(finalEmp);
+      if (isNew) {
+        // createEmployee() persists modulePermissions inline as part of the
+        // same insert transaction — nothing further needed for a brand-new
+        // associate.
+        await store.addEmployee(finalEmp);
+      } else {
+        // updateEmployee() only ever touches the `employees` row itself — it
+        // deliberately does not know about the separate `employee_permissions`
+        // table, so any edits made in the Permissions tab (including Enable
+        // All/Disable All/Reset to Role Defaults) must be persisted through
+        // their own dedicated endpoint or they would silently vanish on save.
+        await store.updateEmployee(finalEmp);
+        await store.saveEmployeePermissions(finalEmp.id, finalEmp.modulePermissions);
+      }
       setIsModalOpen(false);
       setEditingEmployee(INITIAL_EMP);
       toast({ title: "Ledger Updated", description: `Associate ${finalEmp.name} registered in Master HR Node.` });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Save Failed", description: err?.message || `Could not save ${finalEmp.name} to the server. Please try again.` });
     }
+  };
+
+  // Shared by the Profile tab's "System Role" picker and the Login &
+  // Security tab's "Role" picker — both edit the exact same
+  // editingEmployee.role field, so they always stay in sync no matter which
+  // tab the Admin used.
+  const handleRoleChange = (v: string) => {
+    if (v === CUSTOM_ROLE) {
+      setEditingEmployee({ ...editingEmployee, role: customRoleDraft || '' });
+      return;
+    }
+    // Admin/Super Admin always get full access, and can never be reduced
+    // from here. For a brand-new associate, picking a role seeds sensible
+    // defaults. Editing an existing associate's role does NOT overwrite
+    // their already-saved, possibly-customized permissions (per the
+    // "don't reset on edit" rule).
+    const nextPermissions = (v === 'Admin' || v === 'Super Admin')
+      ? allFullAccess()
+      : (editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v));
+    setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: nextPermissions });
+  };
+
+  const handleCustomRoleChange = (v: string) => {
+    setCustomRoleDraft(v);
+    setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v) });
   };
 
   const handleChangeStatus = async (emp: Employee, nextStatus: EmployeeStatus) => {
@@ -386,6 +423,9 @@ export function EmployeesModule({ store }: { store: any }) {
                         <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('login'); }}>
                           <KeyRound className="w-3.5 h-3.5" /> Login Account
                         </DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('login'); }}>
+                          <RotateCcw className="w-3.5 h-3.5" /> Reset Password
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('access'); }}>
                           <ShieldCheck className="w-3.5 h-3.5" /> Permissions
                         </DropdownMenuItem>
@@ -403,13 +443,13 @@ export function EmployeesModule({ store }: { store: any }) {
                           <QrCode className="w-3.5 h-3.5" /> QR Identity Card
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-slate-800" />
-                        {emp.status === 'Suspended' || emp.status === 'Inactive' ? (
-                          <DropdownMenuItem className="text-xs gap-2 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-400" onClick={() => handleChangeStatus(emp, 'Active')}>
-                            <Unlock className="w-3.5 h-3.5" /> Activate
+                        {emp.status === 'Active' ? (
+                          <DropdownMenuItem className="text-xs gap-2 text-amber-400 focus:bg-amber-500/10 focus:text-amber-400" onClick={() => handleChangeStatus(emp, 'Inactive')}>
+                            <Lock className="w-3.5 h-3.5" /> Disable
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem className="text-xs gap-2 text-amber-400 focus:bg-amber-500/10 focus:text-amber-400" onClick={() => handleChangeStatus(emp, 'Suspended')}>
-                            <Lock className="w-3.5 h-3.5" /> Suspend
+                          <DropdownMenuItem className="text-xs gap-2 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-400" onClick={() => handleChangeStatus(emp, 'Active')}>
+                            <Unlock className="w-3.5 h-3.5" /> Enable
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem className="text-xs gap-2 text-orange-400 focus:bg-orange-500/10 focus:text-orange-400" onClick={() => setTerminateEmpId(emp.id)}>
@@ -484,23 +524,7 @@ export function EmployeesModule({ store }: { store: any }) {
                             <Label className="text-[9px] uppercase text-slate-300 font-bold">System Role</Label>
                             <Select
                               value={ROLES.includes(editingEmployee.role || '') ? editingEmployee.role : CUSTOM_ROLE}
-                              onValueChange={(v: string) => {
-                                // Admin/Super Admin always get full access, and
-                                // can never be reduced from here. For a
-                                // brand-new associate, picking a role seeds
-                                // sensible defaults. Editing an existing
-                                // associate's role does NOT overwrite their
-                                // already-saved, possibly-customized
-                                // permissions (per the "don't reset on edit" rule).
-                                if (v === CUSTOM_ROLE) {
-                                  setEditingEmployee({ ...editingEmployee, role: customRoleDraft || '' });
-                                  return;
-                                }
-                                const nextPermissions = (v === 'Admin' || v === 'Super Admin')
-                                  ? allFullAccess()
-                                  : (editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v));
-                                setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: nextPermissions });
-                              }}
+                              onValueChange={handleRoleChange}
                             >
                                <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs text-slate-100"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
@@ -511,10 +535,7 @@ export function EmployeesModule({ store }: { store: any }) {
                             {!ROLES.includes(editingEmployee.role || '') && (
                               <Input
                                 value={customRoleDraft}
-                                onChange={(e) => {
-                                  setCustomRoleDraft(e.target.value);
-                                  setEditingEmployee({ ...editingEmployee, role: e.target.value, modulePermissions: editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(e.target.value) });
-                                }}
+                                onChange={(e) => handleCustomRoleChange(e.target.value)}
                                 placeholder="Enter custom role name"
                                 className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
                               />
@@ -677,7 +698,13 @@ export function EmployeesModule({ store }: { store: any }) {
               </TabsContent>
 
               <TabsContent value="login" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-                <EmployeeLoginAccessSection employee={editingEmployee} store={store} />
+                <EmployeeLoginAccessSection
+                  employee={editingEmployee}
+                  store={store}
+                  onRoleChange={handleRoleChange}
+                  onCustomRoleChange={handleCustomRoleChange}
+                  customRoleDraft={customRoleDraft}
+                />
               </TabsContent>
 
               <TabsContent value="access" className="mt-0 animate-in fade-in slide-in-from-bottom-2">

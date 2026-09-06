@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Employee, EmployeeDocument, KycDocumentType } from '@/lib/types';
 
-const DOCUMENT_TYPES: KycDocumentType[] = ['Aadhaar Card', 'PAN Card', 'Address Proof', 'Bank Proof', 'Employee Photo', 'Other ID', 'Other Document'];
+const DOCUMENT_TYPES: KycDocumentType[] = ['Aadhaar Card', 'PAN Card', 'Address Proof', 'Bank Proof', 'Photo', 'Other ID', 'Other Document'];
 
 const STATUS_META: Record<string, { color: string; icon: typeof Clock }> = {
   Pending: { color: 'bg-amber-500/10 text-amber-400', icon: Clock },

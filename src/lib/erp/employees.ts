@@ -215,9 +215,9 @@ export async function updateEmployee(userEmail: string, id: string, emp: any, pe
   }
 }
 
-// Dedicated status-change path (Suspend / Activate / Terminate quick actions
-// on the list page) — separate from the generic updateEmployee() so the
-// audit trail records a specific, human-readable event type instead of a
+// Dedicated status-change path (Enable/Disable, Suspend, Terminate quick
+// actions on the list page) — separate from the generic updateEmployee() so
+// the audit trail records a specific, human-readable event type instead of a
 // generic "employee_edited" for what is otherwise the most security-relevant
 // change an Admin makes to an employee record.
 export async function changeEmployeeStatus(userEmail: string, employeeId: string, status: EmployeeStatus, performedBy: string) {
@@ -233,6 +233,7 @@ export async function changeEmployeeStatus(userEmail: string, employeeId: string
       const eventType: AuditEventType =
         status === 'Suspended' ? 'employee_suspended' :
         status === 'Active' ? 'employee_activated' :
+        status === 'Inactive' ? 'employee_disabled' :
         status === 'Terminated' ? 'employee_terminated' : 'employee_edited';
       await writeAudit(conn, userEmail, employeeId, eventType, performedBy, `Status changed to ${status}`);
     }

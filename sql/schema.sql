@@ -341,6 +341,7 @@ CREATE TABLE IF NOT EXISTS employee_documents (
   verified_by           VARCHAR(191) NULL,
   verified_at           VARCHAR(40) NULL,
   notes                 VARCHAR(255) NULL,
+  rejection_reason      TEXT NULL,
   FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
   INDEX idx_employee_documents_employee (employee_id),
   INDEX idx_employee_documents_user (user_email)

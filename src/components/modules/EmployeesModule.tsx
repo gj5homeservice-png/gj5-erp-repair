@@ -72,7 +72,7 @@ const INITIAL_EMP: Partial<Employee> = {
 };
 
 const DEPARTMENTS = ['Service', 'Sales', 'Logistics', 'Accounts', 'Management', 'IT Support'];
-const ROLES: UserRole[] = ['Super Admin', 'Admin', 'Manager', 'Accountant', 'Service Manager', 'Technician', 'Sales Executive', 'Delivery Executive', 'Employee'];
+const ROLES: UserRole[] = ['Super Admin', 'Admin', 'Manager', 'Service Manager', 'Technician', 'Sales', 'Accountant', 'HR', 'Employee'];
 const EMPLOYMENT_TYPES: EmploymentType[] = ['Full Time', 'Part Time', 'Contract', 'Temporary'];
 const EMPLOYEE_STATUSES: EmployeeStatus[] = ['Active', 'Inactive', 'Blocked', 'Resigned'];
 const SALARY_TYPES = ['Monthly', 'Daily', 'Hourly'];
@@ -97,6 +97,13 @@ export function EmployeesModule({ store }: { store: any }) {
   const [viewingQr, setViewingQr] = useState<Employee | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // KYC Vault is its own permission module, separate from the generic
+  // Employees grid — the tab is hidden here as a UI convenience for whoever
+  // is currently logged in, but the real boundary is server-side: every
+  // /api/erp/employees/:id/documents* route independently checks 'KYC Vault'
+  // permission and 403s regardless of what this tab shows.
+  const canAccessKyc = !store.session?.permissions || !!store.session.permissions['KYC Vault']?.view;
 
   const filteredEmployees = useMemo(() => {
     return (store.employees || []).filter((emp: Employee) => {
@@ -367,7 +374,7 @@ export function EmployeesModule({ store }: { store: any }) {
                 <TabsTrigger value="profile" className="text-xs uppercase font-bold">Profile</TabsTrigger>
                 <TabsTrigger value="login" className="text-xs uppercase font-bold">Login Access</TabsTrigger>
                 <TabsTrigger value="access" className="text-xs uppercase font-bold">Module Access</TabsTrigger>
-                <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>
+                {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>}
               </TabsList>
             </DialogHeader>
 
@@ -528,13 +535,15 @@ export function EmployeesModule({ store }: { store: any }) {
                 />
               </TabsContent>
 
-              <TabsContent value="kyc" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-                <EmployeeKYCSection
-                  formData={editingEmployee}
-                  setFormData={setEditingEmployee}
-                  store={store}
-                />
-              </TabsContent>
+              {canAccessKyc && (
+                <TabsContent value="kyc" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+                  <EmployeeKYCSection
+                    formData={editingEmployee}
+                    setFormData={setEditingEmployee}
+                    store={store}
+                  />
+                </TabsContent>
+              )}
             </div>
             {loadingDetail && (
               <div className="px-8 pb-2 -mt-2 text-[9px] text-slate-500 uppercase font-black tracking-widest">Loading full associate record...</div>

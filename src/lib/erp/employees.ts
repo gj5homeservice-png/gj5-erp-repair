@@ -138,13 +138,13 @@ export async function getEmployeeDetail(userEmail: string, id: string) {
   obj.modulePermissions = resolvePermissions(obj.role as UserRole, savedPermissions);
 
   const [docRows] = await pool.execute<any[]>(
-    'SELECT id, document_type, file_data, uploaded_at, uploaded_by, verification_status, verified_by, verified_at, notes FROM employee_documents WHERE employee_id = ? ORDER BY uploaded_at DESC',
+    'SELECT id, document_type, file_data, uploaded_at, uploaded_by, verification_status, verified_by, verified_at, notes, rejection_reason FROM employee_documents WHERE employee_id = ? ORDER BY uploaded_at DESC',
     [id]
   );
   obj.documents = (docRows as any[]).map((d) => ({
     id: d.id, documentType: d.document_type, fileData: d.file_data, uploadedAt: d.uploaded_at,
     uploadedBy: d.uploaded_by, verificationStatus: d.verification_status, verifiedBy: d.verified_by,
-    verifiedAt: d.verified_at, notes: d.notes,
+    verifiedAt: d.verified_at, notes: d.notes, rejectionReason: d.rejection_reason,
   }));
 
   return obj;
@@ -337,13 +337,13 @@ export async function revokeAllSessionsForEmployee(employeeId: string) {
 export async function listEmployeeDocuments(userEmail: string, employeeId: string) {
   const pool = getPool();
   const [rows] = await pool.execute<any[]>(
-    'SELECT id, document_type, file_data, uploaded_at, uploaded_by, verification_status, verified_by, verified_at, notes FROM employee_documents WHERE employee_id = ? AND user_email = ? ORDER BY uploaded_at DESC',
+    'SELECT id, document_type, file_data, uploaded_at, uploaded_by, verification_status, verified_by, verified_at, notes, rejection_reason FROM employee_documents WHERE employee_id = ? AND user_email = ? ORDER BY uploaded_at DESC',
     [employeeId, userEmail]
   );
   return (rows as any[]).map((d) => ({
     id: d.id, documentType: d.document_type, fileData: d.file_data, uploadedAt: d.uploaded_at,
     uploadedBy: d.uploaded_by, verificationStatus: d.verification_status, verifiedBy: d.verified_by,
-    verifiedAt: d.verified_at, notes: d.notes,
+    verifiedAt: d.verified_at, notes: d.notes, rejectionReason: d.rejection_reason,
   }));
 }
 
@@ -370,17 +370,21 @@ export async function uploadEmployeeDocument(userEmail: string, employeeId: stri
   }
 }
 
-export async function setDocumentVerification(userEmail: string, employeeId: string, docId: string, status: 'Verified' | 'Rejected', verifiedBy: string, notes?: string) {
+export async function setDocumentVerification(userEmail: string, employeeId: string, docId: string, status: 'Verified' | 'Rejected', verifiedBy: string, notes?: string, rejectionReason?: string) {
   const pool = getPool();
   const conn: PoolConnection = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    // Verifying a previously-rejected document clears the old reason so it
+    // never lingers on a now-approved document.
+    const reasonToStore = status === 'Rejected' ? (rejectionReason ?? null) : null;
     const [result]: any = await conn.execute(
-      `UPDATE employee_documents SET verification_status = ?, verified_by = ?, verified_at = ?, notes = ? WHERE id = ? AND employee_id = ? AND user_email = ?`,
-      [status, verifiedBy, new Date().toISOString(), notes ?? null, docId, employeeId, userEmail]
+      `UPDATE employee_documents SET verification_status = ?, verified_by = ?, verified_at = ?, notes = ?, rejection_reason = ? WHERE id = ? AND employee_id = ? AND user_email = ?`,
+      [status, verifiedBy, new Date().toISOString(), notes ?? null, reasonToStore, docId, employeeId, userEmail]
     );
     if (result.affectedRows > 0) {
-      await writeAudit(conn, userEmail, employeeId, status === 'Verified' ? 'kyc_verified' : 'kyc_rejected', verifiedBy, notes, docId);
+      const details = status === 'Rejected' ? (rejectionReason || notes) : notes;
+      await writeAudit(conn, userEmail, employeeId, status === 'Verified' ? 'kyc_verified' : 'kyc_rejected', verifiedBy, details, docId);
     }
     await conn.commit();
     return result.affectedRows > 0;

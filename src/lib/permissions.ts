@@ -19,6 +19,13 @@ export const ERP_MODULES = [
   'E-Wallet',
   'Logistics',
   'Settings',
+  // A distinct permission namespace from 'Employees' — an Admin can grant
+  // someone the ability to manage the employee roster (create/edit/salary)
+  // without also handing them Aadhaar/PAN/bank-detail access, and vice versa.
+  // Enforced on every /api/erp/employees/:id/documents* route via
+  // requirePermission(request, 'KYC Vault', <action>) — not just hidden in
+  // the UI (see src/app/api/erp/employees/[id]/documents/**).
+  'KYC Vault',
 ] as const;
 
 export type ErpModule = typeof ERP_MODULES[number];
@@ -50,43 +57,43 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, ModulePermissions> = 
     Dashboard: FULL, Repairing: FULL, 'Repair Jobs': FULL, 'CRM Leads': FULL,
     Billing: FULL, 'Invoice History': FULL, Stock: FULL, Employees: FULL,
     Attendance: FULL, Salary: VIEW_ONLY, Analytics: FULL, 'E-Wallet': FULL,
-    Logistics: FULL, Settings: VIEW_ONLY,
+    Logistics: FULL, Settings: VIEW_ONLY, 'KYC Vault': VIEW_ONLY,
   },
   Accountant: {
     Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': VIEW_ONLY, 'CRM Leads': NONE,
     Billing: FULL, 'Invoice History': FULL, Stock: VIEW_ONLY, Employees: NONE,
     Attendance: NONE, Salary: FULL, Analytics: VIEW_ONLY, 'E-Wallet': FULL,
-    Logistics: NONE, Settings: NONE,
+    Logistics: NONE, Settings: NONE, 'KYC Vault': NONE,
   },
   'Service Manager': {
     Dashboard: VIEW_ONLY, Repairing: FULL, 'Repair Jobs': FULL, 'CRM Leads': VIEW_CREATE,
     Billing: VIEW_ONLY, 'Invoice History': VIEW_ONLY, Stock: FULL_NO_DELETE, Employees: NONE,
     Attendance: FULL_NO_DELETE, Salary: NONE, Analytics: VIEW_ONLY, 'E-Wallet': NONE,
-    Logistics: VIEW_ONLY, Settings: NONE,
+    Logistics: VIEW_ONLY, Settings: NONE, 'KYC Vault': NONE,
   },
   Technician: {
     Dashboard: VIEW_ONLY, Repairing: FULL, 'Repair Jobs': FULL_NO_DELETE, 'CRM Leads': VIEW_ONLY,
     Billing: NONE, 'Invoice History': VIEW_ONLY, Stock: VIEW_ONLY, Employees: NONE,
     Attendance: VIEW_CREATE, Salary: NONE, Analytics: NONE, 'E-Wallet': NONE,
-    Logistics: VIEW_ONLY, Settings: NONE,
+    Logistics: VIEW_ONLY, Settings: NONE, 'KYC Vault': NONE,
   },
-  'Sales Executive': {
+  Sales: {
     Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': NONE, 'CRM Leads': FULL_NO_DELETE,
     Billing: VIEW_CREATE, 'Invoice History': VIEW_ONLY, Stock: VIEW_ONLY, Employees: NONE,
     Attendance: VIEW_CREATE, Salary: NONE, Analytics: VIEW_ONLY, 'E-Wallet': NONE,
-    Logistics: VIEW_ONLY, Settings: NONE,
+    Logistics: VIEW_ONLY, Settings: NONE, 'KYC Vault': NONE,
   },
-  'Delivery Executive': {
-    Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': VIEW_ONLY, 'CRM Leads': NONE,
-    Billing: NONE, 'Invoice History': NONE, Stock: NONE, Employees: NONE,
-    Attendance: VIEW_CREATE, Salary: NONE, Analytics: NONE, 'E-Wallet': NONE,
-    Logistics: FULL_NO_DELETE, Settings: NONE,
+  HR: {
+    Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': NONE, 'CRM Leads': NONE,
+    Billing: NONE, 'Invoice History': NONE, Stock: NONE, Employees: FULL_NO_DELETE,
+    Attendance: FULL_NO_DELETE, Salary: FULL_NO_DELETE, Analytics: NONE, 'E-Wallet': NONE,
+    Logistics: NONE, Settings: NONE, 'KYC Vault': FULL_NO_DELETE,
   },
   Employee: {
     Dashboard: VIEW_ONLY, Repairing: FULL, 'Repair Jobs': FULL, 'CRM Leads': VIEW_ONLY,
     Billing: NONE, 'Invoice History': VIEW_ONLY, Stock: VIEW_ONLY, Employees: NONE,
     Attendance: FULL, Salary: NONE, Analytics: NONE, 'E-Wallet': NONE,
-    Logistics: VIEW_ONLY, Settings: NONE,
+    Logistics: VIEW_ONLY, Settings: NONE, 'KYC Vault': NONE,
   },
 };
 

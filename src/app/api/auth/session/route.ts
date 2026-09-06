@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSession, deleteSession } from '@/lib/session';
+import { createSession, deleteSession, validateSession } from '@/lib/session';
 
 // Called by login/page.tsx immediately AFTER its existing demo-credential
 // check (email/password or mobile/OTP) already passed. This route does not
@@ -25,7 +25,16 @@ export async function DELETE(request: Request) {
   try {
     const authHeader = request.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    if (token) await deleteSession(token);
+    if (token) {
+      // Only employee sessions get a logout audit entry — an owner/admin
+      // session (employeeId === null) has no employee row to attach it to.
+      const identity = await validateSession(token);
+      if (identity?.employeeId) {
+        const { logLoginAudit } = await import('@/lib/erp/employees');
+        await logLoginAudit(identity.email, identity.employeeId, identity.employeeId, 'logout').catch(() => {});
+      }
+      await deleteSession(token);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });

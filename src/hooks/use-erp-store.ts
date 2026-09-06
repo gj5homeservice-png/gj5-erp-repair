@@ -337,8 +337,8 @@ export function useErpStore() {
   const verifyEmployeeDocument = (id: string, docId: string, notes?: string): Promise<void> =>
     apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'PUT', body: JSON.stringify({ status: 'Verified', notes }) }).then(() => {});
 
-  const rejectEmployeeDocument = (id: string, docId: string, notes?: string): Promise<void> =>
-    apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'PUT', body: JSON.stringify({ status: 'Rejected', notes }) }).then(() => {});
+  const rejectEmployeeDocument = (id: string, docId: string, reason: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'PUT', body: JSON.stringify({ status: 'Rejected', reason }) }).then(() => {});
 
   const deleteEmployeeDocument = (id: string, docId: string): Promise<void> =>
     apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'DELETE' }).then(() => {});

@@ -2,17 +2,21 @@ import { NextResponse } from 'next/server';
 import { requirePermission, isAuthError } from '@/lib/api-auth';
 import { setDocumentVerification, deleteEmployeeDocument } from '@/lib/erp/employees';
 
-// Verify/Reject a document — requires 'edit' on Employees.
+// Verify/Reject a document — requires 'edit' on the dedicated KYC Vault
+// permission module, kept separate from the generic Employees grid.
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; docId: string }> }) {
   const { id, docId } = await params;
-  const auth = await requirePermission(request, 'Employees', 'edit');
+  const auth = await requirePermission(request, 'KYC Vault', 'edit');
   if (isAuthError(auth)) return auth;
   try {
-    const { status, notes } = await request.json();
+    const { status, notes, reason } = await request.json();
     if (status !== 'Verified' && status !== 'Rejected') {
       return NextResponse.json({ success: false, error: 'status must be Verified or Rejected' }, { status: 400 });
     }
-    const ok = await setDocumentVerification(auth.email, id, docId, status, auth.employeeId || auth.email, notes);
+    if (status === 'Rejected' && !reason) {
+      return NextResponse.json({ success: false, error: 'A rejection reason is required' }, { status: 400 });
+    }
+    const ok = await setDocumentVerification(auth.email, id, docId, status, auth.employeeId || auth.email, notes, reason);
     if (!ok) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -22,7 +26,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string; docId: string }> }) {
   const { id, docId } = await params;
-  const auth = await requirePermission(request, 'Employees', 'delete');
+  const auth = await requirePermission(request, 'KYC Vault', 'delete');
   if (isAuthError(auth)) return auth;
   try {
     const ok = await deleteEmployeeDocument(auth.email, id, docId, auth.employeeId || auth.email);

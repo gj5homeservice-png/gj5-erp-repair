@@ -281,11 +281,11 @@ export type UserRole =
   | 'Super Admin'
   | 'Admin'
   | 'Manager'
-  | 'Accountant'
   | 'Service Manager'
   | 'Technician'
-  | 'Sales Executive'
-  | 'Delivery Executive'
+  | 'Sales'
+  | 'Accountant'
+  | 'HR'
   | 'Employee';
 
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Checked In' | 'Checked Out';
@@ -340,6 +340,9 @@ export interface EmployeeDocument {
   verifiedBy?: string | null;
   verifiedAt?: string | null;
   notes?: string;
+  // Populated only when verificationStatus is 'Rejected' — shown to whoever
+  // manages this associate's KYC so they know what to fix and re-upload.
+  rejectionReason?: string | null;
 }
 
 export type AuditEventType =

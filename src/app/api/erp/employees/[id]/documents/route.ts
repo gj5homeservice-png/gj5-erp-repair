@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { requirePermission, isAuthError } from '@/lib/api-auth';
 import { listEmployeeDocuments, uploadEmployeeDocument } from '@/lib/erp/employees';
 
-// KYC vault access is gated by the same 'Employees' module permission grid
-// (view/create) rather than a separate KYC_* permission namespace — this
-// still satisfies "no public access, must be authenticated and authorized,
-// 403 for unauthorized" without doubling the permission model.
+// KYC vault access is gated by its own 'KYC Vault' permission module —
+// separate from the generic 'Employees' grid — so an Admin can grant someone
+// employee-roster access without also handing them Aadhaar/PAN/bank-detail
+// access, or vice versa. Enforced here server-side; never just hidden in UI.
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requirePermission(request, 'Employees', 'view');
+  const auth = await requirePermission(request, 'KYC Vault', 'view');
   if (isAuthError(auth)) return auth;
   try {
     const data = await listEmployeeDocuments(auth.email, id);
@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requirePermission(request, 'Employees', 'create');
+  const auth = await requirePermission(request, 'KYC Vault', 'create');
   if (isAuthError(auth)) return auth;
   try {
     const { documentType, fileData } = await request.json();

@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { FileStack, Upload, CheckCircle2, XCircle, Trash2, Clock, Eye } from 'lucide-react';
+import { FileStack, Upload, CheckCircle2, XCircle, Trash2, Clock, Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -29,6 +30,8 @@ export function EmployeeDocumentsSection({ employee, store }: { employee: Partia
   const [docType, setDocType] = useState<KycDocumentType>('Aadhaar');
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const refresh = async () => {
     if (!employee.id) return;
@@ -76,9 +79,15 @@ export function EmployeeDocumentsSection({ employee, store }: { employee: Partia
   };
 
   const handleReject = async (docId: string) => {
+    if (!rejectReason.trim()) {
+      toast({ variant: 'destructive', title: 'Reason required', description: 'Enter a rejection reason before rejecting this document.' });
+      return;
+    }
     try {
-      await store.rejectEmployeeDocument(employee.id, docId);
+      await store.rejectEmployeeDocument(employee.id, docId, rejectReason.trim());
       toast({ title: 'Document Rejected' });
+      setRejectingId(null);
+      setRejectReason('');
       await refresh();
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Failed', description: err?.message });
@@ -124,29 +133,48 @@ export function EmployeeDocumentsSection({ employee, store }: { employee: Partia
         {documents.map((doc) => {
           const meta = STATUS_META[doc.verificationStatus] || STATUS_META.Pending;
           const StatusIcon = meta.icon;
+          const isRejecting = rejectingId === doc.id;
           return (
-            <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="flex items-center gap-3 min-w-0">
-                <a href={doc.fileData} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 hover:bg-slate-700">
-                  <Eye className="w-4 h-4 text-slate-300" />
-                </a>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-200">{doc.documentType}</p>
-                  <p className="text-[9px] text-slate-500">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+            <div key={doc.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <a href={doc.fileData} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 hover:bg-slate-700">
+                    <Eye className="w-4 h-4 text-slate-300" />
+                  </a>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-200">{doc.documentType}</p>
+                    <p className="text-[9px] text-slate-500">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge className={cn('text-[9px] font-black uppercase px-2 h-5 border-0 flex items-center gap-1', meta.color)}>
+                    <StatusIcon className="w-3 h-3" /> {doc.verificationStatus}
+                  </Badge>
+                  {doc.verificationStatus === 'Pending' && !isRejecting && (
+                    <>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-500/10" onClick={() => handleVerify(doc.id)}><CheckCircle2 className="w-4 h-4" /></Button>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:bg-rose-500/10" onClick={() => { setRejectingId(doc.id); setRejectReason(''); }}><XCircle className="w-4 h-4" /></Button>
+                    </>
+                  )}
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-slate-800" onClick={() => handleDelete(doc.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge className={cn('text-[9px] font-black uppercase px-2 h-5 border-0 flex items-center gap-1', meta.color)}>
-                  <StatusIcon className="w-3 h-3" /> {doc.verificationStatus}
-                </Badge>
-                {doc.verificationStatus === 'Pending' && (
-                  <>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-500/10" onClick={() => handleVerify(doc.id)}><CheckCircle2 className="w-4 h-4" /></Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:bg-rose-500/10" onClick={() => handleReject(doc.id)}><XCircle className="w-4 h-4" /></Button>
-                  </>
-                )}
-                <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-slate-800" onClick={() => handleDelete(doc.id)}><Trash2 className="w-4 h-4" /></Button>
-              </div>
+              {isRejecting && (
+                <div className="flex flex-wrap items-center gap-2 pl-1">
+                  <Input
+                    autoFocus
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Reason for rejection (required)..."
+                    className="bg-slate-900 border-slate-800 h-9 text-xs flex-1 min-w-[200px]"
+                  />
+                  <Button type="button" size="sm" className="h-9 bg-rose-600 hover:bg-rose-700 text-[10px] font-bold uppercase" onClick={() => handleReject(doc.id)}>Confirm Reject</Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-slate-500" onClick={() => { setRejectingId(null); setRejectReason(''); }}><X className="w-4 h-4" /></Button>
+                </div>
+              )}
+              {doc.verificationStatus === 'Rejected' && doc.rejectionReason && (
+                <p className="text-[10px] text-rose-400 pl-1"><span className="font-bold uppercase">Reason:</span> {doc.rejectionReason}</p>
+              )}
             </div>
           );
         })}

@@ -277,20 +277,15 @@ export interface StockMovement {
 }
 
 // HRMS TYPES
-export type UserRole =
-  | 'Super Admin'
-  | 'Admin'
-  | 'Manager'
-  | 'Service Manager'
-  | 'Technician'
-  | 'Sales'
-  | 'Accountant'
-  | 'HR'
-  | 'Employee';
+// Loosened to a plain string (rather than a strict union) so an Admin can
+// assign a "Custom Role" free-text value that isn't one of the presets in
+// src/lib/permissions.ts's PRESET_ROLES — permission defaults simply fall
+// back to a conservative baseline for any role name outside that list.
+export type UserRole = string;
 
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Checked In' | 'Checked Out';
 export type EmploymentType = 'Full Time' | 'Part Time' | 'Contract' | 'Temporary';
-export type EmployeeStatus = 'Active' | 'Inactive' | 'Blocked' | 'Resigned';
+export type EmployeeStatus = 'Active' | 'Inactive' | 'Suspended' | 'Resigned' | 'Terminated';
 
 // Per-module, per-action ERP access grid — see src/lib/permissions.ts for the
 // module list, role defaults, and helpers. Kept here (not there) since
@@ -328,7 +323,7 @@ export interface EmployeeLoginAccess {
 }
 
 export type KycVerificationStatus = 'Pending' | 'Verified' | 'Rejected';
-export type KycDocumentType = 'Aadhaar' | 'PAN' | 'Address Proof' | 'Bank Proof' | 'Passport' | 'Driving Licence' | 'Other';
+export type KycDocumentType = 'Aadhaar Card' | 'PAN Card' | 'Address Proof' | 'Bank Proof' | 'Employee Photo' | 'Other ID' | 'Other Document';
 
 export interface EmployeeDocument {
   id: string;
@@ -348,7 +343,8 @@ export interface EmployeeDocument {
 export type AuditEventType =
   | 'employee_created' | 'employee_edited' | 'password_reset' | 'login' | 'logout'
   | 'account_blocked' | 'account_unblocked' | 'permission_changed'
-  | 'kyc_uploaded' | 'kyc_verified' | 'kyc_rejected' | 'kyc_deleted';
+  | 'kyc_uploaded' | 'kyc_verified' | 'kyc_rejected' | 'kyc_deleted'
+  | 'employee_suspended' | 'employee_activated' | 'employee_terminated';
 
 export interface EmployeeAuditLogEntry {
   id: string;
@@ -381,6 +377,8 @@ export interface Employee {
   createdAt: string;
   emergencyContactName?: string;
   emergencyContactMobile?: string;
+  dateOfBirth?: string;
+  gender?: string;
   // Fetched/saved via GET|PUT /api/erp/employees/:id/permissions — never part
   // of the generic employee list payload.
   modulePermissions?: ModulePermissions;

@@ -4,7 +4,7 @@ import { revokeAllSessionsForEmployee } from '@/lib/erp/employees';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requirePermission(request, 'Employees', 'edit');
+  const auth = await requirePermission(request, 'Employee Login', 'edit');
   if (isAuthError(auth)) return auth;
   try {
     await revokeAllSessionsForEmployee(id);

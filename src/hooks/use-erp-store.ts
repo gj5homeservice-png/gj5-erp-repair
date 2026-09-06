@@ -310,6 +310,12 @@ export function useErpStore() {
       .catch(err => console.error('deleteEmployee failed:', err))
       .finally(() => refresh(activeUser));
   };
+  const changeEmployeeStatus = (id: string, status: string): Promise<void> => {
+    optimisticUpdate(activeUser, s => ({ ...s, employees: s.employees.map(e => e.id === id ? { ...e, status: status as any } : e) }));
+    return apiFetch(`/api/erp/employees/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) })
+      .then(() => { refresh(activeUser); })
+      .catch(err => { refresh(activeUser); throw err; });
+  };
 
   // Full detail (permissions grid, login access status, documents) for the
   // Associate modal — fetched on demand, not part of the bootstrap list.
@@ -675,7 +681,7 @@ export function useErpStore() {
     stock: snap.stock, updateStockItem, deleteStockItem,
     calls: snap.calls, addCall, updateCall, deleteCall,
     inquiries: snap.inquiries, addInquiry, updateInquiry, deleteInquiry,
-    employees: snap.employees, addEmployee, updateEmployee, deleteEmployee,
+    employees: snap.employees, addEmployee, updateEmployee, deleteEmployee, changeEmployeeStatus,
     getEmployeeDetail, saveEmployeePermissions, setEmployeeLoginAccess, resetEmployeePassword, revokeEmployeeSessions,
     uploadEmployeeDocument, listEmployeeDocuments, verifyEmployeeDocument, rejectEmployeeDocument, deleteEmployeeDocument,
     listEmployeeAuditLog,

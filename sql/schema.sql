@@ -250,10 +250,12 @@ CREATE TABLE IF NOT EXISTS employees (
   employment_type       VARCHAR(30) NULL,
   joining_date          VARCHAR(30) NULL,
   status                VARCHAR(20) NULL,
-  role                  VARCHAR(30) NULL,
+  role                  VARCHAR(50) NULL,
   created_at            VARCHAR(40) NULL,
   emergency_contact_name    VARCHAR(191) NULL,
   emergency_contact_mobile  VARCHAR(20) NULL,
+  date_of_birth         VARCHAR(20) NULL,
+  gender                VARCHAR(20) NULL,
   -- KYC identity/address (existing fields unchanged; a few new ones appended)
   aadhar_number         VARCHAR(20) NULL,
   pan_number            VARCHAR(20) NULL,

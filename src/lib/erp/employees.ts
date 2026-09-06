@@ -22,6 +22,8 @@ const EMPLOYEE_COLUMNS: { js: string; sql: string; type?: 'number' }[] = [
   { js: 'createdAt', sql: 'created_at' },
   { js: 'emergencyContactName', sql: 'emergency_contact_name' },
   { js: 'emergencyContactMobile', sql: 'emergency_contact_mobile' },
+  { js: 'dateOfBirth', sql: 'date_of_birth' },
+  { js: 'gender', sql: 'gender' },
   { js: 'aadharNumber', sql: 'aadhar_number' },
   { js: 'panNumber', sql: 'pan_number' },
   { js: 'otherIdType', sql: 'other_id_type' },
@@ -202,6 +204,37 @@ export async function updateEmployee(userEmail: string, id: string, emp: any, pe
     );
     if (result.affectedRows > 0) {
       await writeAudit(conn, userEmail, id, 'employee_edited', performedBy, `${emp.name || 'Associate'} updated`);
+    }
+    await conn.commit();
+    return result.affectedRows > 0;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+// Dedicated status-change path (Suspend / Activate / Terminate quick actions
+// on the list page) — separate from the generic updateEmployee() so the
+// audit trail records a specific, human-readable event type instead of a
+// generic "employee_edited" for what is otherwise the most security-relevant
+// change an Admin makes to an employee record.
+export async function changeEmployeeStatus(userEmail: string, employeeId: string, status: EmployeeStatus, performedBy: string) {
+  const pool = getPool();
+  const conn: PoolConnection = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [result]: any = await conn.execute(
+      'UPDATE employees SET status = ? WHERE id = ? AND user_email = ?',
+      [status, employeeId, userEmail]
+    );
+    if (result.affectedRows > 0) {
+      const eventType: AuditEventType =
+        status === 'Suspended' ? 'employee_suspended' :
+        status === 'Active' ? 'employee_activated' :
+        status === 'Terminated' ? 'employee_terminated' : 'employee_edited';
+      await writeAudit(conn, userEmail, employeeId, eventType, performedBy, `Status changed to ${status}`);
     }
     await conn.commit();
     return result.affectedRows > 0;

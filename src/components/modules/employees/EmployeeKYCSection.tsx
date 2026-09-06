@@ -50,7 +50,7 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
         </div>
         <div>
           <h2 className="text-xl font-headline font-bold text-white">KYC & Identity Verification</h2>
-          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Secure Associate Documentation</p>
+          <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Secure Associate Documentation</p>
         </div>
       </div>
 
@@ -127,64 +127,26 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
         ))}
       </div>
 
+      {/* Address / City / State / Pincode now live on the Profile tab (see
+          EmployeesModule.tsx) so an associate's contact address is edited in
+          one place — this tab keeps only the KYC-specific permanent/domicile
+          address used for address-proof verification. */}
       <div className="space-y-6">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Geographical Node Details</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Current Residence</Label>
-            <Input
-              name="currentAddress"
-              value={formData.currentAddress || ""}
-              onChange={handleChange}
-              className="bg-slate-950 border-slate-800 h-11"
-              placeholder="Full local address"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Permanent Domicile</Label>
-            <Input
-              name="permanentAddress"
-              value={formData.permanentAddress || ""}
-              onChange={handleChange}
-              className="bg-slate-950 border-slate-800 h-11"
-              placeholder="Full hometown address"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">City</Label>
-            <Input
-              name="city"
-              value={formData.city || ""}
-              onChange={handleChange}
-              className="bg-slate-950 border-slate-800 h-11"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">State</Label>
-            <Input
-              name="state"
-              value={formData.state || ""}
-              onChange={handleChange}
-              className="bg-slate-950 border-slate-800 h-11"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Pincode</Label>
-            <Input
-              name="pincode"
-              value={formData.pincode || ""}
-              onChange={handleChange}
-              className="bg-slate-950 border-slate-800 h-11 font-code"
-            />
-          </div>
+        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Address Proof Reference</h4>
+        <div className="space-y-1.5 max-w-lg">
+          <Label className="text-[10px] uppercase font-bold text-slate-300">Permanent / Domicile Address</Label>
+          <Input
+            name="permanentAddress"
+            value={formData.permanentAddress || ""}
+            onChange={handleChange}
+            className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500"
+            placeholder="Full hometown / permanent address, as per address proof"
+          />
         </div>
       </div>
 
       <div className="space-y-6">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Other Identification</h4>
+        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Other Identification</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-[10px] uppercase font-bold text-slate-400">Other ID Type</Label>
@@ -202,7 +164,7 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
       </div>
 
       <div className="space-y-6">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bank Details</h4>
+        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Bank Details</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-[10px] uppercase font-bold text-slate-400">Bank Name</Label>

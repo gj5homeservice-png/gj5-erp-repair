@@ -7,7 +7,7 @@ import { resetEmployeePassword } from '@/lib/erp/employees';
 // anywhere in this system. The hash is never selected by any route.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requirePermission(request, 'Employees', 'edit');
+  const auth = await requirePermission(request, 'Employee Login', 'edit');
   if (isAuthError(auth)) return auth;
   try {
     const { newPassword } = await request.json();

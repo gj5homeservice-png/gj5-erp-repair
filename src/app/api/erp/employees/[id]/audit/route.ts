@@ -4,7 +4,7 @@ import { listEmployeeAuditLog } from '@/lib/erp/employees';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requirePermission(request, 'Employees', 'view');
+  const auth = await requirePermission(request, 'Audit Logs', 'view');
   if (isAuthError(auth)) return auth;
   try {
     const data = await listEmployeeAuditLog(auth.email, id);

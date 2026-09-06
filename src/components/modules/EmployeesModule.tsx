@@ -1,43 +1,48 @@
 "use client"
 
 import React, { useState, useMemo, useRef } from 'react';
-import { 
-  Users, 
-  UserPlus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  ShieldCheck, 
+import {
+  Users,
+  UserPlus,
+  Search,
+  Edit,
+  Trash2,
+  ShieldCheck,
   Smartphone,
-  Calendar,
   Briefcase,
   FileDown,
   Camera,
   QrCode,
   Tag,
   Building2,
-  Mail,
   MoreVertical,
   CheckCircle2,
-  Shield
+  Lock,
+  Unlock,
+  Filter,
+  KeyRound,
+  History,
+  Ban,
+  RotateCcw,
+  Eye,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
@@ -49,20 +54,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Employee, EmployeeStatus, EmploymentType, UserRole } from '@/lib/types';
-import { allFullAccess, getDefaultPermissions } from '@/lib/permissions';
+import { allFullAccess, getDefaultPermissions, PRESET_ROLES } from '@/lib/permissions';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { EmployeeKYCSection } from './employees/EmployeeKYCSection';
 import { ModuleAccessSection } from './employees/ModuleAccessSection';
 import { EmployeeLoginAccessSection } from './employees/EmployeeLoginAccessSection';
-import { Lock, Unlock, Filter } from 'lucide-react';
+import { EmployeeActivitySection } from './employees/EmployeeActivitySection';
 
 const INITIAL_EMP: Partial<Employee> = {
   name: '', mobile: '', email: '', designation: 'Technician', department: 'Service',
@@ -71,17 +82,24 @@ const INITIAL_EMP: Partial<Employee> = {
   modulePermissions: getDefaultPermissions('Employee'),
 };
 
-const DEPARTMENTS = ['Service', 'Sales', 'Logistics', 'Accounts', 'Management', 'IT Support'];
-const ROLES: UserRole[] = ['Super Admin', 'Admin', 'Manager', 'Service Manager', 'Technician', 'Sales', 'Accountant', 'HR', 'Employee'];
+const DEPARTMENTS = ['Service', 'Sales', 'Repair', 'Delivery', 'Accounts', 'HR', 'Stock', 'Admin', 'Other'];
+const DESIGNATIONS = [
+  'Technician', 'Senior Technician', 'Service Manager', 'Sales Executive', 'Delivery Executive',
+  'Accountant', 'HR Executive', 'Store Manager', 'Admin', 'Other',
+];
+const ROLES: UserRole[] = [...PRESET_ROLES];
+const CUSTOM_ROLE = '__custom__';
+const GENDERS = ['Male', 'Female', 'Other', 'Prefer not to say'];
 const EMPLOYMENT_TYPES: EmploymentType[] = ['Full Time', 'Part Time', 'Contract', 'Temporary'];
-const EMPLOYEE_STATUSES: EmployeeStatus[] = ['Active', 'Inactive', 'Blocked', 'Resigned'];
-const SALARY_TYPES = ['Monthly', 'Daily', 'Hourly'];
+const EMPLOYEE_STATUSES: EmployeeStatus[] = ['Active', 'Inactive', 'Suspended', 'Resigned', 'Terminated'];
+const SALARY_TYPES = ['Monthly', 'Daily', 'Hourly', 'Commission'];
 
 const STATUS_COLORS: Record<EmployeeStatus, string> = {
   Active: 'bg-emerald-500/10 text-emerald-400',
-  Inactive: 'bg-slate-500/10 text-slate-400',
-  Blocked: 'bg-rose-500/10 text-rose-400',
-  Resigned: 'bg-amber-500/10 text-amber-400',
+  Inactive: 'bg-slate-500/10 text-slate-300',
+  Suspended: 'bg-amber-500/10 text-amber-400',
+  Resigned: 'bg-orange-500/10 text-orange-400',
+  Terminated: 'bg-rose-500/10 text-rose-400',
 };
 
 export function EmployeesModule({ store }: { store: any }) {
@@ -90,20 +108,30 @@ export function EmployeesModule({ store }: { store: any }) {
   const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>(INITIAL_EMP);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleteEmpId, setDeleteEmpId] = useState<string | null>(null);
+  const [terminateEmpId, setTerminateEmpId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingQr, setViewingQr] = useState<Employee | null>(null);
+  const [customRoleDraft, setCustomRoleDraft] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // KYC Vault is its own permission module, separate from the generic
-  // Employees grid — the tab is hidden here as a UI convenience for whoever
-  // is currently logged in, but the real boundary is server-side: every
-  // /api/erp/employees/:id/documents* route independently checks 'KYC Vault'
-  // permission and 403s regardless of what this tab shows.
+  // KYC Vault and Audit Logs are their own permission modules, separate from
+  // the generic Employees grid — these tabs are hidden here as a UI
+  // convenience for whoever is currently logged in, but the real boundary is
+  // server-side: every /api/erp/employees/:id/documents* and .../audit route
+  // independently checks its own permission and 403s regardless of what
+  // these tabs show.
   const canAccessKyc = !store.session?.permissions || !!store.session.permissions['KYC Vault']?.view;
+  const canAccessAuditLogs = !store.session?.permissions || !!store.session.permissions['Audit Logs']?.view;
+
+  const roleOptions = useMemo(() => {
+    const known = new Set<string>(ROLES);
+    (store.employees || []).forEach((e: Employee) => { if (e.role) known.add(e.role); });
+    return Array.from(known);
+  }, [store.employees]);
 
   const filteredEmployees = useMemo(() => {
     return (store.employees || []).filter((emp: Employee) => {
@@ -120,6 +148,7 @@ export function EmployeesModule({ store }: { store: any }) {
 
   const openEditModal = async (emp: Employee) => {
     setEditingEmployee(emp);
+    setCustomRoleDraft(ROLES.includes(emp.role) ? '' : (emp.role || ''));
     setIsModalOpen(true);
     setActiveTab('profile');
     // The list-view Employee object intentionally omits permissions/login
@@ -156,7 +185,7 @@ export function EmployeesModule({ store }: { store: any }) {
     }
 
     const isNew = !editingEmployee.id;
-    const employeeId = editingEmployee.employeeId || `GJ5-EMP-${String(store.employees.length + 1001)}`;
+    const employeeId = editingEmployee.employeeId || `EMP${String(store.employees.length + 1001)}`;
     const role = editingEmployee.role || 'Employee';
 
     const finalEmp = {
@@ -166,10 +195,11 @@ export function EmployeesModule({ store }: { store: any }) {
       qrCode: `GJ5-IDENTITY-${employeeId}`,
       createdAt: editingEmployee.createdAt || new Date().toISOString(),
       role,
-      // Admin must never be saved with reduced access, regardless of what the
-      // permission grid happens to show — enforced here as a hard safety net,
-      // not just in the UI.
-      modulePermissions: role === 'Admin' ? allFullAccess() : (editingEmployee.modulePermissions || getDefaultPermissions(role)),
+      // Admin/Super Admin must never be saved with reduced access, regardless
+      // of what the permission grid happens to show — enforced here as a
+      // hard safety net (the server enforces this again independently in
+      // enforceRolePermissions()), not just in the UI.
+      modulePermissions: (role === 'Admin' || role === 'Super Admin') ? allFullAccess() : (editingEmployee.modulePermissions || getDefaultPermissions(role)),
     } as Employee;
 
     try {
@@ -183,11 +213,10 @@ export function EmployeesModule({ store }: { store: any }) {
     }
   };
 
-  const handleToggleBlock = async (emp: Employee) => {
-    const nextStatus: EmployeeStatus = emp.status === 'Blocked' ? 'Active' : 'Blocked';
+  const handleChangeStatus = async (emp: Employee, nextStatus: EmployeeStatus) => {
     try {
-      await store.updateEmployee({ ...emp, status: nextStatus });
-      toast({ title: nextStatus === 'Blocked' ? 'Associate Blocked' : 'Associate Unblocked', description: `${emp.name} is now ${nextStatus}.` });
+      await store.changeEmployeeStatus(emp.id, nextStatus);
+      toast({ title: `Associate ${nextStatus}`, description: `${emp.name} is now ${nextStatus}.` });
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Failed', description: err?.message });
     }
@@ -209,7 +238,7 @@ export function EmployeesModule({ store }: { store: any }) {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-headline font-bold">Workforce Management</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Industrial Associate Registry V3.2</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Industrial Associate Registry V3.2</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -245,7 +274,7 @@ export function EmployeesModule({ store }: { store: any }) {
             <SelectTrigger className="bg-slate-950 border-slate-800 h-9 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Role" /></SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800">
               <SelectItem value="all">All Roles</SelectItem>
-              {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              {roleOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -268,7 +297,8 @@ export function EmployeesModule({ store }: { store: any }) {
               <TableHead className="text-[10px] font-black uppercase">Login</TableHead>
               <TableHead className="text-[10px] font-black uppercase">KYC</TableHead>
               <TableHead className="text-[10px] font-black uppercase">Base Compensation</TableHead>
-              <TableHead className="text-right text-[10px] font-black uppercase px-6">Identity Control</TableHead>
+              <TableHead className="text-[10px] font-black uppercase">Last Login</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase px-6">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -286,22 +316,22 @@ export function EmployeesModule({ store }: { store: any }) {
                       <p className="font-bold text-sm text-slate-100">{emp.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                          <Badge variant="outline" className="text-[8px] uppercase font-bold border-blue-500/20 text-blue-400 bg-blue-500/5 px-1">{emp.employeeId}</Badge>
-                         <span className="text-[10px] text-slate-500 font-code">{emp.mobile}</span>
+                         <span className="text-[10px] text-slate-400 font-code">{emp.mobile}</span>
                       </div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-slate-300">
+                      <div className="flex items-center gap-2 text-slate-200">
                          <Building2 className="w-3.5 h-3.5 text-blue-500" />
                          <span className="text-xs font-bold">{emp.department}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-500">
+                      <div className="flex items-center gap-2 text-slate-400">
                          <Briefcase className="w-3.5 h-3.5" />
                          <span className="text-[10px] uppercase font-black">{emp.designation}</span>
                       </div>
-                      <Badge variant="outline" className="text-[8px] uppercase font-bold border-slate-700 text-slate-400 w-fit">{emp.role}</Badge>
+                      <Badge variant="outline" className="text-[8px] uppercase font-bold border-slate-700 text-slate-300 w-fit">{emp.role}</Badge>
                    </div>
                 </TableCell>
                 <TableCell>
@@ -315,13 +345,13 @@ export function EmployeesModule({ store }: { store: any }) {
                       {emp.loginAccess.loginEnabled ? 'Enabled' : 'Disabled'}
                     </Badge>
                   ) : (
-                    <span className="text-[9px] text-slate-600 uppercase font-black">No Access</span>
+                    <span className="text-[9px] text-slate-400 uppercase font-black">No Access</span>
                   )}
                 </TableCell>
                 <TableCell>
                   {(() => {
                     const docs = emp.documents || [];
-                    if (docs.length === 0) return <span className="text-[9px] text-slate-600 uppercase font-black">None</span>;
+                    if (docs.length === 0) return <span className="text-[9px] text-slate-400 uppercase font-black">None</span>;
                     const allVerified = docs.every(d => d.verificationStatus === 'Verified');
                     const anyRejected = docs.some(d => d.verificationStatus === 'Rejected');
                     const label = allVerified ? 'Verified' : anyRejected ? 'Rejected' : 'Pending';
@@ -332,23 +362,71 @@ export function EmployeesModule({ store }: { store: any }) {
                 <TableCell>
                    <div className="flex flex-col">
                       <span className="font-code font-bold text-xs text-emerald-400">₹{emp.salary.toLocaleString()}</span>
-                      <span className="text-[8px] text-slate-600 uppercase font-black">{emp.salaryType || 'Monthly'} Node</span>
+                      <span className="text-[8px] text-slate-400 uppercase font-black">{emp.salaryType || 'Monthly'} Node</span>
                    </div>
                 </TableCell>
+                <TableCell>
+                  <span className="text-[10px] text-slate-300 font-code">
+                    {emp.loginAccess?.lastLoginAt ? new Date(emp.loginAccess.lastLoginAt).toLocaleString() : '—'}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right px-6">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingQr(emp)} className="h-8 w-8 text-slate-400 hover:text-white" title="QR Identity"><QrCode className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEditModal(emp)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="Edit / Permissions / KYC"><Edit className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleToggleBlock(emp)} className={cn("h-8 w-8 hover:bg-amber-500/10", emp.status === 'Blocked' ? "text-emerald-400" : "text-amber-400")} title={emp.status === 'Blocked' ? 'Unblock' : 'Block'}>
-                      {emp.status === 'Blocked' ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeleteEmpId(emp.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10" title="Delete"><Trash2 className="w-4 h-4" /></Button>
+                  <div className="flex justify-end items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEditModal(emp)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="View / Edit"><Eye className="w-4 h-4" /></Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:bg-slate-800 hover:text-white" title="More Actions">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-56">
+                        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => openEditModal(emp)}>
+                          <Edit className="w-3.5 h-3.5" /> Edit Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('login'); }}>
+                          <KeyRound className="w-3.5 h-3.5" /> Login Account
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('access'); }}>
+                          <ShieldCheck className="w-3.5 h-3.5" /> Permissions
+                        </DropdownMenuItem>
+                        {canAccessKyc && (
+                          <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('kyc'); }}>
+                            <ShieldCheck className="w-3.5 h-3.5" /> KYC Vault
+                          </DropdownMenuItem>
+                        )}
+                        {canAccessAuditLogs && (
+                          <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('activity'); }}>
+                            <History className="w-3.5 h-3.5" /> Activity Log
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setViewingQr(emp)}>
+                          <QrCode className="w-3.5 h-3.5" /> QR Identity Card
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-slate-800" />
+                        {emp.status === 'Suspended' || emp.status === 'Inactive' ? (
+                          <DropdownMenuItem className="text-xs gap-2 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-400" onClick={() => handleChangeStatus(emp, 'Active')}>
+                            <Unlock className="w-3.5 h-3.5" /> Activate
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem className="text-xs gap-2 text-amber-400 focus:bg-amber-500/10 focus:text-amber-400" onClick={() => handleChangeStatus(emp, 'Suspended')}>
+                            <Lock className="w-3.5 h-3.5" /> Suspend
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="text-xs gap-2 text-orange-400 focus:bg-orange-500/10 focus:text-orange-400" onClick={() => setTerminateEmpId(emp.id)}>
+                          <Ban className="w-3.5 h-3.5" /> Terminate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-slate-800" />
+                        <DropdownMenuItem className="text-xs gap-2 text-rose-400 focus:bg-rose-500/10 focus:text-rose-400" onClick={() => setDeleteEmpId(emp.id)}>
+                          <Trash2 className="w-3.5 h-3.5" /> Delete Record
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
             {filteredEmployees.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="h-48 text-center text-slate-700 text-xs italic">No associate nodes found in active HR registry.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="h-48 text-center text-slate-500 text-xs italic">No associate nodes found in active HR registry.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -367,14 +445,15 @@ export function EmployeesModule({ store }: { store: any }) {
                    <DialogTitle className="text-xl font-headline font-bold">
                      {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
                    </DialogTitle>
-                   <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
+                   <DialogDescription className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
                  </div>
               </div>
               <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto">
                 <TabsTrigger value="profile" className="text-xs uppercase font-bold">Profile</TabsTrigger>
-                <TabsTrigger value="login" className="text-xs uppercase font-bold">Login Access</TabsTrigger>
-                <TabsTrigger value="access" className="text-xs uppercase font-bold">Module Access</TabsTrigger>
+                <TabsTrigger value="login" className="text-xs uppercase font-bold">Login &amp; Security</TabsTrigger>
+                <TabsTrigger value="access" className="text-xs uppercase font-bold">Permissions</TabsTrigger>
                 {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>}
+                {canAccessAuditLogs && <TabsTrigger value="activity" className="text-xs uppercase font-bold">Activity</TabsTrigger>}
               </TabsList>
             </DialogHeader>
 
@@ -395,128 +474,201 @@ export function EmployeesModule({ store }: { store: any }) {
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                          </div>
                          <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">High-Res ID Visual</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">High-Res ID Visual</p>
                          </div>
                       </div>
 
                       <div className="p-5 bg-blue-600/5 rounded-2xl border border-blue-600/20 space-y-4">
                          <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2">Security Clearance</h4>
                          <div className="space-y-1">
-                            <Label className="text-[9px] uppercase text-slate-500 font-bold">System Role</Label>
-                            <Select value={editingEmployee.role} onValueChange={(v: any) => {
-                              // Admin always gets full access, and can never be
-                              // reduced from here. For a brand-new associate,
-                              // picking a role seeds sensible defaults. Editing
-                              // an existing associate's role does NOT overwrite
-                              // their already-saved, possibly-customized
-                              // permissions (per the "don't reset on edit" rule).
-                              const nextPermissions = v === 'Admin'
-                                ? allFullAccess()
-                                : (editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v));
-                              setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: nextPermissions });
-                            }}>
-                               <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs"><SelectValue /></SelectTrigger>
+                            <Label className="text-[9px] uppercase text-slate-300 font-bold">System Role</Label>
+                            <Select
+                              value={ROLES.includes(editingEmployee.role || '') ? editingEmployee.role : CUSTOM_ROLE}
+                              onValueChange={(v: string) => {
+                                // Admin/Super Admin always get full access, and
+                                // can never be reduced from here. For a
+                                // brand-new associate, picking a role seeds
+                                // sensible defaults. Editing an existing
+                                // associate's role does NOT overwrite their
+                                // already-saved, possibly-customized
+                                // permissions (per the "don't reset on edit" rule).
+                                if (v === CUSTOM_ROLE) {
+                                  setEditingEmployee({ ...editingEmployee, role: customRoleDraft || '' });
+                                  return;
+                                }
+                                const nextPermissions = (v === 'Admin' || v === 'Super Admin')
+                                  ? allFullAccess()
+                                  : (editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v));
+                                setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: nextPermissions });
+                              }}
+                            >
+                               <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs text-slate-100"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
-                                  {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                  {ROLES.map(r => <SelectItem key={r} value={r} className="text-slate-100 focus:bg-slate-800 focus:text-white">{r}</SelectItem>)}
+                                  <SelectItem value={CUSTOM_ROLE} className="text-slate-100 focus:bg-slate-800 focus:text-white">Custom Role...</SelectItem>
                                </SelectContent>
                             </Select>
+                            {!ROLES.includes(editingEmployee.role || '') && (
+                              <Input
+                                value={customRoleDraft}
+                                onChange={(e) => {
+                                  setCustomRoleDraft(e.target.value);
+                                  setEditingEmployee({ ...editingEmployee, role: e.target.value, modulePermissions: editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(e.target.value) });
+                                }}
+                                placeholder="Enter custom role name"
+                                className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
+                              />
+                            )}
                          </div>
                       </div>
                    </div>
 
                    <div className="md:col-span-2 space-y-8">
                       <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Core Identity</h4>
+                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Core Identity</h4>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
-                              <Input value={editingEmployee.name} onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Official Identity" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Full Name</Label>
+                              <Input value={editingEmployee.name} onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="Official Identity" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Identity ID</Label>
-                              <Input readOnly value={editingEmployee.employeeId || 'AUTO-GEN'} className="bg-slate-900 border-slate-800 h-11 font-code text-blue-400 font-bold" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Employee ID</Label>
+                              <Input readOnly value={editingEmployee.employeeId || 'EMP1001 (Auto-Generated)'} className="bg-slate-900 border-slate-800 h-11 font-code text-blue-400 font-bold" />
                             </div>
                          </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Mobile (10-Digit)</Label>
-                              <Input value={editingEmployee.mobile} onChange={e => setEditingEmployee({...editingEmployee, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Mobile (10-Digit)</Label>
+                              <Input value={editingEmployee.mobile} onChange={e => setEditingEmployee({...editingEmployee, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" maxLength={10} />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Email Hub</Label>
-                              <Input value={editingEmployee.email} onChange={e => setEditingEmployee({...editingEmployee, email: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Email Address</Label>
+                              <Input type="email" value={editingEmployee.email} onChange={e => setEditingEmployee({...editingEmployee, email: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Date of Birth</Label>
+                              <Input type="date" value={editingEmployee.dateOfBirth || ''} onChange={e => setEditingEmployee({...editingEmployee, dateOfBirth: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Gender</Label>
+                              <Select value={editingEmployee.gender || ''} onValueChange={v => setEditingEmployee({...editingEmployee, gender: v})}>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue placeholder="Select" /></SelectTrigger>
+                                 <SelectContent className="bg-slate-900 border-slate-800">
+                                    {GENDERS.map(g => <SelectItem key={g} value={g} className="text-slate-100 focus:bg-slate-800 focus:text-white">{g}</SelectItem>)}
+                                 </SelectContent>
+                              </Select>
                             </div>
                          </div>
                       </div>
 
                       <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Placement Node</h4>
+                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> Address</h4>
+                         <div className="space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-slate-300">Address</Label>
+                            <Input value={editingEmployee.currentAddress || ''} onChange={e => setEditingEmployee({...editingEmployee, currentAddress: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="House/Street, Area" />
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">City</Label>
+                              <Input value={editingEmployee.city || ''} onChange={e => setEditingEmployee({...editingEmployee, city: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">State</Label>
+                              <Input value={editingEmployee.state || ''} onChange={e => setEditingEmployee({...editingEmployee, state: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Pincode</Label>
+                              <Input value={editingEmployee.pincode || ''} onChange={e => setEditingEmployee({...editingEmployee, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" maxLength={6} />
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="space-y-6">
+                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Placement Node</h4>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Department</Label>
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Department</Label>
                               <Select value={editingEmployee.department} onValueChange={v => setEditingEmployee({...editingEmployee, department: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
                                  <SelectContent className="bg-slate-900 border-slate-800">
-                                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
                                  </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Designation</Label>
-                              <Input value={editingEmployee.designation} onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Master Tech" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Designation</Label>
+                              <Select
+                                value={DESIGNATIONS.includes(editingEmployee.designation || '') ? editingEmployee.designation : 'Other'}
+                                onValueChange={v => setEditingEmployee({...editingEmployee, designation: v === 'Other' ? '' : v})}
+                              >
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="bg-slate-900 border-slate-800">
+                                    {DESIGNATIONS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
+                                 </SelectContent>
+                              </Select>
+                              {!DESIGNATIONS.includes(editingEmployee.designation || '') && (
+                                <Input
+                                  value={editingEmployee.designation || ''}
+                                  onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})}
+                                  placeholder="Enter custom designation"
+                                  className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
+                                />
+                              )}
                             </div>
                          </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Monthly Node (₹)</Label>
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Monthly Salary (₹)</Label>
                               <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Salary Type</Label>
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Salary Type</Label>
                               <Select value={editingEmployee.salaryType || 'Monthly'} onValueChange={v => setEditingEmployee({...editingEmployee, salaryType: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
                                  <SelectContent className="bg-slate-900 border-slate-800">
-                                    {SALARY_TYPES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    {SALARY_TYPES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
                                  </SelectContent>
                               </Select>
                             </div>
                          </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Joining Date</Label>
-                              <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Joining Date</Label>
+                              <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Employment Type</Label>
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Employment Type</Label>
                               <Select value={editingEmployee.employmentType || 'Full Time'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, employmentType: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
                                  <SelectContent className="bg-slate-900 border-slate-800">
-                                    {EMPLOYMENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    {EMPLOYMENT_TYPES.map(t => <SelectItem key={t} value={t} className="text-slate-100 focus:bg-slate-800 focus:text-white">{t}</SelectItem>)}
                                  </SelectContent>
                               </Select>
                             </div>
                          </div>
                          <div className="space-y-1 max-w-xs">
-                            <Label className="text-[10px] uppercase font-bold text-slate-400">Employee Status</Label>
+                            <Label className="text-[10px] uppercase font-bold text-slate-300">Employee Status</Label>
                             <Select value={editingEmployee.status || 'Active'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, status: v})}>
-                               <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                               <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
-                                  {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                  {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
                                </SelectContent>
                             </Select>
                          </div>
                       </div>
 
                       <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Smartphone className="w-3.5 h-3.5" /> Emergency Contact</h4>
+                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Smartphone className="w-3.5 h-3.5" /> Emergency Contact</h4>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Contact Name</Label>
-                              <Input value={editingEmployee.emergencyContactName || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Name</Label>
+                              <Input value={editingEmployee.emergencyContactName || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactName: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-400">Contact Mobile</Label>
-                              <Input value={editingEmployee.emergencyContactMobile || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                              <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Mobile</Label>
+                              <Input value={editingEmployee.emergencyContactMobile || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" />
                             </div>
                          </div>
                       </div>
@@ -544,14 +696,20 @@ export function EmployeesModule({ store }: { store: any }) {
                   />
                 </TabsContent>
               )}
+
+              {canAccessAuditLogs && (
+                <TabsContent value="activity" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+                  <EmployeeActivitySection employee={editingEmployee} store={store} />
+                </TabsContent>
+              )}
             </div>
             {loadingDetail && (
-              <div className="px-8 pb-2 -mt-2 text-[9px] text-slate-500 uppercase font-black tracking-widest">Loading full associate record...</div>
+              <div className="px-8 pb-2 -mt-2 text-[9px] text-slate-400 uppercase font-black tracking-widest">Loading full associate record...</div>
             )}
 
             <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3 shrink-0">
-              <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px]">Terminate Entry</Button>
-              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-blue-500/20">Commit Associate Node</Button>
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white">Cancel</Button>
+              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-blue-500/20">Save Associate</Button>
             </DialogFooter>
           </Tabs>
         </DialogContent>
@@ -596,11 +754,25 @@ export function EmployeesModule({ store }: { store: any }) {
          </DialogContent>
       </Dialog>
 
-      <DeleteJobModal 
-        isOpen={!!deleteEmpId} 
-        onClose={() => setDeleteEmpId(null)} 
-        jobId={store.employees.find((e: any) => e.id === deleteEmpId)?.name || ''} 
-        onConfirm={() => { if (deleteEmpId) store.deleteEmployee(deleteEmpId); setDeleteEmpId(null); }} 
+      <DeleteJobModal
+        isOpen={!!deleteEmpId}
+        onClose={() => setDeleteEmpId(null)}
+        jobId={store.employees.find((e: any) => e.id === deleteEmpId)?.name || ''}
+        onConfirm={() => { if (deleteEmpId) store.deleteEmployee(deleteEmpId); setDeleteEmpId(null); }}
+      />
+
+      {/* Terminate is a soft, reversible status change (unlike Delete, which
+          removes the DB row entirely) — still routed through the same
+          master-password confirmation gate since it's a serious HR action. */}
+      <DeleteJobModal
+        isOpen={!!terminateEmpId}
+        onClose={() => setTerminateEmpId(null)}
+        jobId={store.employees.find((e: any) => e.id === terminateEmpId)?.name || ''}
+        onConfirm={() => {
+          const emp = store.employees.find((e: any) => e.id === terminateEmpId);
+          if (emp) handleChangeStatus(emp, 'Terminated');
+          setTerminateEmpId(null);
+        }}
       />
     </div>
   );

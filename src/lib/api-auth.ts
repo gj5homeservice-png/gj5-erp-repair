@@ -25,8 +25,14 @@ export async function requireUser(request: Request): Promise<{ email: string } |
   try {
     email = await validateSession(token);
   } catch (err: any) {
-    console.error('[api-auth] validateSession threw (likely a database connectivity/config issue):', err?.message || err);
-    return NextResponse.json({ success: false, error: `Session check failed: ${err?.message || 'database error'}` }, { status: 503 });
+    // err.code (e.g. ECONNREFUSED, ENOTFOUND, ETIMEDOUT, ER_ACCESS_DENIED_ERROR,
+    // ER_BAD_DB_ERROR) pinpoints exactly what's misconfigured — wrong host,
+    // wrong port, wrong user/password, or wrong database name — without ever
+    // touching the password itself. Safe to surface: mysql2's own access-denied
+    // message only ever confirms whether a password was supplied, never its value.
+    const detail = err?.code ? `${err.code}: ${err?.message || ''}`.trim() : (err?.message || 'database error');
+    console.error('[api-auth] validateSession threw (likely a database connectivity/config issue):', detail);
+    return NextResponse.json({ success: false, error: `Session check failed: ${detail}` }, { status: 503 });
   }
 
   if (!email) {

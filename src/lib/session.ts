@@ -8,9 +8,21 @@ export async function createSession(userEmail: string, deviceInfo?: string): Pro
   const now = new Date();
   const expiresAt = new Date(now.getTime() + TTL_DAYS * 24 * 60 * 60 * 1000);
   const pool = getPool();
+  // Store explicit UTC ISO strings, not raw Date objects. A bound Date object
+  // gets serialized to a MySQL DATETIME literal using the driver's "local"
+  // timezone by default (no `timezone` option is set on the pool), then read
+  // back later as a bare, timezone-less string (dateStrings: true) and
+  // re-parsed with `new Date()` — which only round-trips correctly if the
+  // write and read both happen under the same assumed local timezone. On
+  // shared hosting that's an unverifiable assumption, not a guarantee, and a
+  // mismatch here makes sessions look expired/invalid unpredictably. An ISO
+  // string with a trailing "Z" removes the ambiguity entirely in both
+  // directions — this is the same reasoning already applied to every other
+  // date/time column in this schema (see sql/schema.sql's comments), just
+  // missed for this table originally.
   await pool.execute(
     'INSERT INTO sessions (token, user_email, created_at, expires_at, device_info) VALUES (?, ?, ?, ?, ?)',
-    [token, userEmail, now, expiresAt, deviceInfo ?? null]
+    [token, userEmail, now.toISOString(), expiresAt.toISOString(), deviceInfo ?? null]
   );
   return { token, expiresAt: expiresAt.toISOString() };
 }

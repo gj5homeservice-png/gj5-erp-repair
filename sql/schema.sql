@@ -27,8 +27,15 @@ SET NAMES utf8mb4;
 CREATE TABLE IF NOT EXISTS sessions (
   token         VARCHAR(128) PRIMARY KEY,
   user_email    VARCHAR(191) NOT NULL,
-  created_at    DATETIME NOT NULL,
-  expires_at    DATETIME NOT NULL,
+  -- Stored as explicit UTC ISO strings by session.ts (e.g.
+  -- "2026-10-06T05:46:56.789Z"), not native DATETIME — a bound Date object
+  -- would be serialized using the driver's local-timezone default on write,
+  -- then re-parsed as local time again on read (dateStrings: true elsewhere
+  -- in this schema), which only round-trips correctly if both happen to
+  -- agree on timezone. An explicit ISO string removes that ambiguity in
+  -- both directions, same reasoning as every other date/time column here.
+  created_at    VARCHAR(40) NOT NULL,
+  expires_at    VARCHAR(40) NOT NULL,
   device_info   VARCHAR(255) NULL,
   INDEX idx_sessions_user_email (user_email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

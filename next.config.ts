@@ -62,6 +62,33 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // Root cause of the live "Application error: a client-side exception has
+  // occurred" incident: Hostinger's edge CDN (`hcdn`, server header on every
+  // response) caches full HTML page responses using the `Cache-Control:
+  // s-maxage=31536000` header Next.js attaches to statically-generated pages,
+  // but — unlike Vercel's deployment-aware edge network — hcdn has no concept
+  // of "this is a new deployment, invalidate the old cache." Confirmed live:
+  // fetching /dashboard/ and /login/ normally returned `x-hcdn-cache-status:
+  // HIT` with `age` headers of 24-30 hours and `x-nextjs-cache: HIT`, spanning
+  // multiple deployments — while the exact same URL with a cache-busting query
+  // param (forcing a CDN miss straight to origin) returned a healthy, fully
+  // current response (`x-hcdn-cache-status: DYNAMIC`). So the origin/build was
+  // never broken; visitors were just being served year-old cached HTML that
+  // references JS/CSS chunk files deleted by later clean builds, which 404
+  // and crash the client. This forces every page/API response (everything
+  // except Next's own content-hashed, safe-to-cache-forever /_next/static
+  // assets) to be non-cacheable, so hcdn can never again strand visitors on
+  // an old build after a deploy.
+  async headers() {
+    return [
+      {
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

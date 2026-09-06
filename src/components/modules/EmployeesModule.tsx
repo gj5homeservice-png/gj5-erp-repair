@@ -442,18 +442,18 @@ export function EmployeesModule({ store }: { store: any }) {
                     <UserPlus className="w-5 h-5" />
                  </div>
                  <div>
-                   <DialogTitle className="text-xl font-headline font-bold">
+                   <DialogTitle className="text-xl font-headline font-bold text-white">
                      {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
                    </DialogTitle>
-                   <DialogDescription className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
+                   <DialogDescription className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
                  </div>
               </div>
               <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto">
-                <TabsTrigger value="profile" className="text-xs uppercase font-bold">Profile</TabsTrigger>
-                <TabsTrigger value="login" className="text-xs uppercase font-bold">Login &amp; Security</TabsTrigger>
-                <TabsTrigger value="access" className="text-xs uppercase font-bold">Permissions</TabsTrigger>
-                {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>}
-                {canAccessAuditLogs && <TabsTrigger value="activity" className="text-xs uppercase font-bold">Activity</TabsTrigger>}
+                <TabsTrigger value="profile" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Profile</TabsTrigger>
+                <TabsTrigger value="login" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Login &amp; Security</TabsTrigger>
+                <TabsTrigger value="access" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Permissions</TabsTrigger>
+                {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">KYC Vault</TabsTrigger>}
+                {canAccessAuditLogs && <TabsTrigger value="activity" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Activity</TabsTrigger>}
               </TabsList>
             </DialogHeader>
 
@@ -709,7 +709,7 @@ export function EmployeesModule({ store }: { store: any }) {
 
             <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3 shrink-0">
               <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white">Cancel</Button>
-              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] shadow-lg shadow-blue-500/20">Save Associate</Button>
+              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] text-white shadow-lg shadow-blue-500/20">Save Associate</Button>
             </DialogFooter>
           </Tabs>
         </DialogContent>

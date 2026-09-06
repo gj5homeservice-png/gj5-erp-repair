@@ -53,12 +53,12 @@ export function EmployeeActivitySection({ employee, store }: { employee: Partial
         </div>
         <div>
           <h2 className="text-xl font-headline font-bold text-white">Activity &amp; Audit Log</h2>
-          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Security and change history for this associate</p>
+          <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Security and change history for this associate</p>
         </div>
       </div>
 
-      {loading && <p className="text-xs text-slate-500 italic">Loading activity...</p>}
-      {!loading && logs.length === 0 && <p className="text-xs text-slate-500 italic">No recorded activity yet.</p>}
+      {loading && <p className="text-xs text-slate-400 italic">Loading activity...</p>}
+      {!loading && logs.length === 0 && <p className="text-xs text-slate-400 italic">No recorded activity yet.</p>}
 
       <div className="space-y-2">
         {logs.map((log) => {
@@ -77,7 +77,7 @@ export function EmployeeActivitySection({ employee, store }: { employee: Partial
                 <p className="text-[10px] text-slate-400 mt-0.5">Performed by <span className="text-slate-200 font-bold">{log.performedBy}</span></p>
                 {log.details && <p className="text-[10px] text-slate-400 mt-1">{log.details}</p>}
                 {(log.ipAddress || log.deviceInfo) && (
-                  <p className="text-[9px] text-slate-500 mt-1 font-code truncate">
+                  <p className="text-[9px] text-slate-400 mt-1 font-code truncate">
                     {log.ipAddress && <>IP: {log.ipAddress} </>}
                     {log.deviceInfo && <>· {log.deviceInfo.slice(0, 60)}</>}
                   </p>

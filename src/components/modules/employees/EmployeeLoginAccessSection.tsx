@@ -129,7 +129,7 @@ export function EmployeeLoginAccessSection({
         </div>
         <div>
           <h2 className="text-xl font-headline font-bold text-white">Login &amp; Security</h2>
-          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Manage this associate's own sign-in access</p>
+          <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Manage this associate's own sign-in access</p>
         </div>
       </div>
 
@@ -157,12 +157,12 @@ export function EmployeeLoginAccessSection({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-slate-300">Username / Login ID</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} disabled={hasExistingAccess} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100 placeholder:text-slate-600 disabled:text-slate-500" placeholder="e.g. raj.technician" />
-            {hasExistingAccess && <p className="text-[9px] text-slate-500">Username cannot be changed once set.</p>}
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} disabled={hasExistingAccess} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100 placeholder:text-slate-500 disabled:text-slate-400" placeholder="e.g. raj.technician" />
+            {hasExistingAccess && <p className="text-[9px] text-slate-400">Username cannot be changed once set.</p>}
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-slate-300">Login Email</Label>
-            <Input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-600" placeholder="Optional — can also log in with this" />
+            <Input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="Optional — can also log in with this" />
           </div>
         </div>
 
@@ -170,7 +170,7 @@ export function EmployeeLoginAccessSection({
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-slate-300">{hasExistingAccess ? 'New Password (leave blank to keep current)' : 'Password'}</Label>
             <div className="relative">
-              <Input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 pr-10 text-slate-100 placeholder:text-slate-600" placeholder="••••••••" />
+              <Input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 pr-10 text-slate-100 placeholder:text-slate-500" placeholder="••••••••" />
               <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -179,7 +179,7 @@ export function EmployeeLoginAccessSection({
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-slate-300">Confirm Password</Label>
             <div className="flex gap-2">
-              <Input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-600" placeholder="••••••••" />
+              <Input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="••••••••" />
               <Button type="button" variant="outline" onClick={handleGeneratePassword} className="border-slate-700 text-slate-200 h-11 px-3 shrink-0 hover:bg-slate-800" title="Generate Password">
                 <Wand2 className="w-4 h-4" />
               </Button>
@@ -196,7 +196,7 @@ export function EmployeeLoginAccessSection({
         </div>
       </div>
 
-      <Button type="button" onClick={handleSaveAccess} disabled={!canSave || saving} className="bg-[#0066FF] hover:bg-blue-600 h-11 px-8 font-bold uppercase text-xs">
+      <Button type="button" onClick={handleSaveAccess} disabled={!canSave || saving} className="bg-[#0066FF] hover:bg-blue-600 h-11 px-8 font-bold uppercase text-xs text-white">
         {saving ? 'Saving...' : 'Save Login Access'}
       </Button>
 
@@ -212,7 +212,7 @@ export function EmployeeLoginAccessSection({
           <div className="flex flex-wrap items-end gap-3 p-4 bg-rose-500/5 border border-rose-500/20 rounded-xl">
             <div className="flex-1 min-w-[200px] space-y-1">
               <Label className="text-[10px] uppercase font-bold text-rose-400">Reset Password</Label>
-              <Input type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-10" placeholder="New password" />
+              <Input type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-10 text-slate-100 placeholder:text-slate-500" placeholder="New password" />
             </div>
             <Button type="button" variant="outline" onClick={handleResetPassword} disabled={!resetPassword || resetting} className="border-rose-500/30 text-rose-400 h-10 hover:bg-rose-500/10">
               <RotateCcw className="w-4 h-4 mr-2" /> {resetting ? 'Resetting...' : 'Reset Password'}

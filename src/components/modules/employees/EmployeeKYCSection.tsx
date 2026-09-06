@@ -50,53 +50,53 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
         </div>
         <div>
           <h2 className="text-xl font-headline font-bold text-white">KYC & Identity Verification</h2>
-          <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Secure Associate Documentation</p>
+          <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Secure Associate Documentation</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label className="text-[10px] uppercase font-bold text-slate-400">Aadhar Card Number</Label>
+          <Label className="text-[10px] uppercase font-bold text-slate-300">Aadhar Card Number</Label>
           <Input
             type="text"
             maxLength={12}
             name="aadharNumber"
             value={formData.aadharNumber || ""}
             onChange={handleChange}
-            className="bg-slate-950 border-slate-800 h-11 font-code"
+            className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100 placeholder:text-slate-500"
             placeholder="1234 5678 9012"
           />
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[10px] uppercase font-bold text-slate-400">PAN Card Number</Label>
+          <Label className="text-[10px] uppercase font-bold text-slate-300">PAN Card Number</Label>
           <Input
             type="text"
             name="panNumber"
             value={formData.panNumber || ""}
             onChange={handleChange}
-            className="bg-slate-950 border-slate-800 h-11 font-code uppercase"
+            className="bg-slate-950 border-slate-800 h-11 font-code uppercase text-slate-100 placeholder:text-slate-500"
             placeholder="ABCDE1234F"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-[10px] uppercase font-bold text-slate-400">Address Proof Class</Label>
+        <Label className="text-[10px] uppercase font-bold text-slate-300">Address Proof Class</Label>
         <Select
           value={formData.addressProofType || ""}
           onValueChange={(v) => setFormData({ ...formData, addressProofType: v })}
         >
-          <SelectTrigger className="bg-slate-950 border-slate-800 h-11">
+          <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100">
             <SelectValue placeholder="Select Document Type" />
           </SelectTrigger>
           <SelectContent className="bg-slate-900 border-slate-800">
-            <SelectItem value="Aadhar Card">Aadhar Card</SelectItem>
-            <SelectItem value="Driving License">Driving License</SelectItem>
-            <SelectItem value="Voter ID">Voter ID</SelectItem>
-            <SelectItem value="Passport">Passport</SelectItem>
-            <SelectItem value="Electricity Bill">Electricity Bill</SelectItem>
-            <SelectItem value="Bank Passbook">Bank Passbook</SelectItem>
+            <SelectItem value="Aadhar Card" className="text-slate-100 focus:bg-slate-800 focus:text-white">Aadhar Card</SelectItem>
+            <SelectItem value="Driving License" className="text-slate-100 focus:bg-slate-800 focus:text-white">Driving License</SelectItem>
+            <SelectItem value="Voter ID" className="text-slate-100 focus:bg-slate-800 focus:text-white">Voter ID</SelectItem>
+            <SelectItem value="Passport" className="text-slate-100 focus:bg-slate-800 focus:text-white">Passport</SelectItem>
+            <SelectItem value="Electricity Bill" className="text-slate-100 focus:bg-slate-800 focus:text-white">Electricity Bill</SelectItem>
+            <SelectItem value="Bank Passbook" className="text-slate-100 focus:bg-slate-800 focus:text-white">Bank Passbook</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -114,7 +114,7 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
             ) : (
               <>
                 <item.icon className={`w-6 h-6 ${item.color}`} />
-                <p className="text-[10px] font-bold text-slate-400 px-2 uppercase">{item.label}</p>
+                <p className="text-[10px] font-bold text-slate-300 px-2 uppercase">{item.label}</p>
               </>
             )}
             <input
@@ -149,17 +149,17 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Other Identification</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Other ID Type</Label>
-            <Input name="otherIdType" value={formData.otherIdType || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Voter ID" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Other ID Type</Label>
+            <Input name="otherIdType" value={formData.otherIdType || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="e.g. Voter ID" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Other ID Number</Label>
-            <Input name="otherIdNumber" value={formData.otherIdNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Other ID Number</Label>
+            <Input name="otherIdNumber" value={formData.otherIdNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100 placeholder:text-slate-500" />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase font-bold text-slate-400">Address Proof Number</Label>
-          <Input name="addressProofNumber" value={formData.addressProofNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code max-w-xs" />
+          <Label className="text-[10px] uppercase font-bold text-slate-300">Address Proof Number</Label>
+          <Input name="addressProofNumber" value={formData.addressProofNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code max-w-xs text-slate-100 placeholder:text-slate-500" />
         </div>
       </div>
 
@@ -167,26 +167,26 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Bank Details</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Bank Name</Label>
-            <Input name="bankName" value={formData.bankName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Bank Name</Label>
+            <Input name="bankName" value={formData.bankName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Account Holder Name</Label>
-            <Input name="accountHolderName" value={formData.accountHolderName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Account Holder Name</Label>
+            <Input name="accountHolderName" value={formData.accountHolderName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Account Number</Label>
-            <Input name="accountNumber" value={formData.accountNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Account Number</Label>
+            <Input name="accountNumber" value={formData.accountNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100 placeholder:text-slate-500" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">IFSC</Label>
-            <Input name="ifsc" value={formData.ifsc || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code uppercase" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">IFSC</Label>
+            <Input name="ifsc" value={formData.ifsc || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code uppercase text-slate-100 placeholder:text-slate-500" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-slate-400">Branch</Label>
-            <Input name="branch" value={formData.branch || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+            <Label className="text-[10px] uppercase font-bold text-slate-300">Branch</Label>
+            <Input name="branch" value={formData.branch || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" />
           </div>
         </div>
       </div>

@@ -61,6 +61,15 @@ export async function POST(request: Request) {
       forcePasswordChange: !!row.force_password_change,
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
+    // Mirror api-auth.ts's requireUser(): a DB-connectivity failure here
+    // (wrong host/credentials, network blip) previously surfaced as an
+    // unlogged, generic 500 — indistinguishable from a real application bug
+    // and invisible in server logs. Surfacing the driver error code (never
+    // the password itself) and a distinct 503 makes this diagnosable without
+    // exposing anything sensitive.
+    const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
+    console.error('[employee-login] request failed:', detail);
+    const status = error?.code ? 503 : 500;
+    return NextResponse.json({ success: false, error: status === 503 ? `Login check failed: ${detail}` : detail }, { status });
   }
 }

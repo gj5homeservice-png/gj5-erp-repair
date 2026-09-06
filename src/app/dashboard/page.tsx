@@ -147,6 +147,23 @@ export default function ErpMainHub() {
   const store = useErpStore();
   const router = useRouter();
 
+  // Server-verified permissions for the current session (see /api/auth/me
+  // via useErpStore) — an owner/admin session has session.permissions ===
+  // null, meaning "everything visible," matching the existing behavior
+  // exactly. An employee session only sees modules their stored permissions
+  // grant "view" on; this is a UI convenience on top of the real
+  // enforcement, which happens server-side (bootstrap redaction + each API
+  // route's own permission check) — this filtering alone is not the
+  // security boundary.
+  const canView = (moduleName: string) => !store.session?.permissions || !!store.session.permissions[moduleName]?.view;
+  // Filtered per pre-existing group (not the flat array first) so hiding one
+  // item can't shift where the "Repair Jobs" standalone entry gets spliced
+  // in — the desktop sidebar renders these three groups separately.
+  const navItemsFirstGroup = navItems.slice(0, 2).filter((item) => canView(item.name));
+  const navItemsSecondGroup = navItems.slice(2).filter((item) => canView(item.name));
+  const visibleStandaloneItems = STANDALONE_REPAIR_ITEMS.filter((item) => canView(item.name));
+  const visibleAllNavItems = ALL_NAV_ITEMS.filter((item) => canView(item.name));
+
   useEffect(() => {
     setIsMounted(true);
     console.log("ERP Console: Viewport Mounted. Starting Cloud Handshake...");
@@ -178,6 +195,25 @@ export default function ErpMainHub() {
   };
 
   const renderModule = () => {
+    // UI-level convenience gate matching the same rule the server already
+    // enforces (bootstrap redaction + each API route's own permission
+    // check) — this exists so a directly-selected tab (there are no
+    // separate per-module URLs in this SPA's architecture) can't render
+    // content the current session isn't allowed to view, but it is not
+    // itself the security boundary; removing it would not expose any data
+    // the server wouldn't already withhold.
+    if (!canView(activeTab)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full py-24 text-center gap-4">
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+            <Lock className="w-8 h-8 text-rose-500" />
+          </div>
+          <h2 className="text-xl font-headline font-bold text-white">Access Denied</h2>
+          <p className="text-sm text-slate-500 max-w-sm">You do not have permission to view {activeTab}. Contact your administrator if you believe this is a mistake.</p>
+          <Button onClick={() => setActiveTab('Dashboard')} className="mt-2 bg-[#123C8C] hover:bg-[#0D2E63]">Return to Dashboard</Button>
+        </div>
+      );
+    }
     switch (activeTab) {
       case 'Dashboard': return <DashboardModule store={store} />;
       case 'Repairing': return <RepairingModule store={store} />;
@@ -244,7 +280,7 @@ export default function ErpMainHub() {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
-            {navItems.slice(0, 2).map((item) => (
+            {navItemsFirstGroup.map((item) => (
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
@@ -261,7 +297,7 @@ export default function ErpMainHub() {
               </button>
             ))}
 
-            {STANDALONE_REPAIR_ITEMS.map((item) => (
+            {visibleStandaloneItems.map((item) => (
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
@@ -278,7 +314,7 @@ export default function ErpMainHub() {
               </button>
             ))}
 
-            {navItems.slice(2).map((item) => (
+            {navItemsSecondGroup.map((item) => (
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
@@ -325,7 +361,7 @@ export default function ErpMainHub() {
             </div>
 
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
-              {ALL_NAV_ITEMS.map((item) => (
+              {visibleAllNavItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={() => { setActiveTab(item.name); setMobileNavOpen(false); }}

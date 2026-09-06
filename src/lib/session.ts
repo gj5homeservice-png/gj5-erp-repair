@@ -3,7 +3,19 @@ import { getPool } from './db';
 
 const TTL_DAYS = process.env.SESSION_TOKEN_TTL_DAYS ? parseInt(process.env.SESSION_TOKEN_TTL_DAYS, 10) : 30;
 
-export async function createSession(userEmail: string, deviceInfo?: string): Promise<{ token: string; expiresAt: string }> {
+export interface SessionIdentity {
+  email: string;      // tenant scope (the employer account) — same value used
+                       // to scope every row in every ERP table, whether the
+                       // owner or one of their employees is logged in.
+  employeeId: string | null; // null = owner/admin session (unchanged, always
+                              // full access). Set = an employee session.
+}
+
+// `employeeId` is optional and only set for an employee self-login (see
+// src/app/api/auth/employee-login/route.ts) — the existing owner login path
+// (src/app/api/auth/session/route.ts) never passes it, so that flow is
+// completely unchanged.
+export async function createSession(userEmail: string, deviceInfo?: string, employeeId?: string | null): Promise<{ token: string; expiresAt: string }> {
   const token = crypto.randomBytes(32).toString('hex');
   const now = new Date();
   const expiresAt = new Date(now.getTime() + TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -21,17 +33,17 @@ export async function createSession(userEmail: string, deviceInfo?: string): Pro
   // date/time column in this schema (see sql/schema.sql's comments), just
   // missed for this table originally.
   await pool.execute(
-    'INSERT INTO sessions (token, user_email, created_at, expires_at, device_info) VALUES (?, ?, ?, ?, ?)',
-    [token, userEmail, now.toISOString(), expiresAt.toISOString(), deviceInfo ?? null]
+    'INSERT INTO sessions (token, user_email, employee_id, created_at, expires_at, device_info) VALUES (?, ?, ?, ?, ?, ?)',
+    [token, userEmail, employeeId ?? null, now.toISOString(), expiresAt.toISOString(), deviceInfo ?? null]
   );
   return { token, expiresAt: expiresAt.toISOString() };
 }
 
-export async function validateSession(token: string): Promise<string | null> {
+export async function validateSession(token: string): Promise<SessionIdentity | null> {
   if (!token) return null;
   const pool = getPool();
   const [rows] = await pool.execute<any[]>(
-    'SELECT user_email, expires_at FROM sessions WHERE token = ? LIMIT 1',
+    'SELECT user_email, employee_id, expires_at FROM sessions WHERE token = ? LIMIT 1',
     [token]
   );
   const row = (rows as any[])[0];
@@ -40,11 +52,19 @@ export async function validateSession(token: string): Promise<string | null> {
     await pool.execute('DELETE FROM sessions WHERE token = ?', [token]);
     return null;
   }
-  return row.user_email as string;
+  return { email: row.user_email as string, employeeId: (row.employee_id as string) || null };
 }
 
 export async function deleteSession(token: string): Promise<void> {
   if (!token) return;
   const pool = getPool();
   await pool.execute('DELETE FROM sessions WHERE token = ?', [token]);
+}
+
+// Used by "Revoke All Sessions" (Login & Security controls) — signs an
+// employee out of every device at once.
+export async function deleteAllSessionsForEmployee(employeeId: string): Promise<void> {
+  if (!employeeId) return;
+  const pool = getPool();
+  await pool.execute('DELETE FROM sessions WHERE employee_id = ?', [employeeId]);
 }

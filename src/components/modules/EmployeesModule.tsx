@@ -53,38 +53,81 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Employee, UserRole } from '@/lib/types';
+import { Employee, EmployeeStatus, EmploymentType, UserRole } from '@/lib/types';
+import { allFullAccess, getDefaultPermissions } from '@/lib/permissions';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { EmployeeKYCSection } from './employees/EmployeeKYCSection';
+import { ModuleAccessSection } from './employees/ModuleAccessSection';
+import { EmployeeLoginAccessSection } from './employees/EmployeeLoginAccessSection';
+import { Lock, Unlock, Filter } from 'lucide-react';
 
 const INITIAL_EMP: Partial<Employee> = {
-  name: '', mobile: '', email: '', designation: 'Technician', department: 'Service', 
-  status: 'Active', salary: 0, role: 'Employee', joiningDate: format(new Date(), 'yyyy-MM-dd')
+  name: '', mobile: '', email: '', designation: 'Technician', department: 'Service',
+  status: 'Active', salary: 0, role: 'Employee', employmentType: 'Full Time', salaryType: 'Monthly',
+  joiningDate: format(new Date(), 'yyyy-MM-dd'),
+  modulePermissions: getDefaultPermissions('Employee'),
 };
 
 const DEPARTMENTS = ['Service', 'Sales', 'Logistics', 'Accounts', 'Management', 'IT Support'];
-const ROLES: UserRole[] = ['Admin', 'Manager', 'Employee'];
+const ROLES: UserRole[] = ['Super Admin', 'Admin', 'Manager', 'Accountant', 'Service Manager', 'Technician', 'Sales Executive', 'Delivery Executive', 'Employee'];
+const EMPLOYMENT_TYPES: EmploymentType[] = ['Full Time', 'Part Time', 'Contract', 'Temporary'];
+const EMPLOYEE_STATUSES: EmployeeStatus[] = ['Active', 'Inactive', 'Blocked', 'Resigned'];
+const SALARY_TYPES = ['Monthly', 'Daily', 'Hourly'];
+
+const STATUS_COLORS: Record<EmployeeStatus, string> = {
+  Active: 'bg-emerald-500/10 text-emerald-400',
+  Inactive: 'bg-slate-500/10 text-slate-400',
+  Blocked: 'bg-rose-500/10 text-rose-400',
+  Resigned: 'bg-amber-500/10 text-amber-400',
+};
 
 export function EmployeesModule({ store }: { store: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>(INITIAL_EMP);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleteEmpId, setDeleteEmpId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [viewingQr, setViewingQr] = useState<Employee | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const filteredEmployees = useMemo(() => {
-    return (store.employees || []).filter((emp: Employee) => 
-      emp.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.mobile.includes(searchQuery)
-    );
-  }, [store.employees, searchQuery]);
+    return (store.employees || []).filter((emp: Employee) => {
+      const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.mobile.includes(searchQuery) ||
+        (emp.designation || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDept = departmentFilter === 'all' || emp.department === departmentFilter;
+      const matchesRole = roleFilter === 'all' || emp.role === roleFilter;
+      const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
+      return matchesSearch && matchesDept && matchesRole && matchesStatus;
+    });
+  }, [store.employees, searchQuery, departmentFilter, roleFilter, statusFilter]);
+
+  const openEditModal = async (emp: Employee) => {
+    setEditingEmployee(emp);
+    setIsModalOpen(true);
+    setActiveTab('profile');
+    // The list-view Employee object intentionally omits permissions/login
+    // access/documents (those never flow through the generic list query) —
+    // fetch the full detail record so the modal's other tabs have real data.
+    setLoadingDetail(true);
+    try {
+      const detail = await store.getEmployeeDetail(emp.id);
+      setEditingEmployee((prev) => (prev.id === emp.id ? { ...prev, ...detail } : prev));
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Could not load full profile', description: err?.message });
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,29 +138,52 @@ export function EmployeesModule({ store }: { store: any }) {
     }
   };
 
-  const handleSaveEmployee = () => {
+  const handleSaveEmployee = async () => {
     if (!editingEmployee.name || !editingEmployee.mobile) {
       toast({ variant: "destructive", title: "Incomplete Data", description: "Name and Communication Node are required." });
+      return;
+    }
+    if (!/^\d{10}$/.test(editingEmployee.mobile)) {
+      toast({ variant: "destructive", title: "Invalid Mobile Number", description: "Mobile number must be exactly 10 digits." });
       return;
     }
 
     const isNew = !editingEmployee.id;
     const employeeId = editingEmployee.employeeId || `GJ5-EMP-${String(store.employees.length + 1001)}`;
-    
+    const role = editingEmployee.role || 'Employee';
+
     const finalEmp = {
       ...editingEmployee,
       id: editingEmployee.id || `EMP-${Date.now()}`,
       employeeId,
       qrCode: `GJ5-IDENTITY-${employeeId}`,
-      createdAt: editingEmployee.createdAt || new Date().toISOString()
+      createdAt: editingEmployee.createdAt || new Date().toISOString(),
+      role,
+      // Admin must never be saved with reduced access, regardless of what the
+      // permission grid happens to show — enforced here as a hard safety net,
+      // not just in the UI.
+      modulePermissions: role === 'Admin' ? allFullAccess() : (editingEmployee.modulePermissions || getDefaultPermissions(role)),
     } as Employee;
 
-    if (isNew) store.addEmployee(finalEmp);
-    else store.updateEmployee(finalEmp);
+    try {
+      if (isNew) await store.addEmployee(finalEmp);
+      else await store.updateEmployee(finalEmp);
+      setIsModalOpen(false);
+      setEditingEmployee(INITIAL_EMP);
+      toast({ title: "Ledger Updated", description: `Associate ${finalEmp.name} registered in Master HR Node.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Save Failed", description: err?.message || `Could not save ${finalEmp.name} to the server. Please try again.` });
+    }
+  };
 
-    setIsModalOpen(false);
-    setEditingEmployee(INITIAL_EMP);
-    toast({ title: "Ledger Updated", description: `Associate ${finalEmp.name} registered in Master HR Node.` });
+  const handleToggleBlock = async (emp: Employee) => {
+    const nextStatus: EmployeeStatus = emp.status === 'Blocked' ? 'Active' : 'Blocked';
+    try {
+      await store.updateEmployee({ ...emp, status: nextStatus });
+      toast({ title: nextStatus === 'Blocked' ? 'Associate Blocked' : 'Associate Unblocked', description: `${emp.name} is now ${nextStatus}.` });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Failed', description: err?.message });
+    }
   };
 
   const exportToExcel = () => {
@@ -149,25 +215,51 @@ export function EmployeesModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
-        <div className="relative w-full sm:max-w-md">
+      <div className="flex flex-col gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <Input 
-            placeholder="Search by Identity, Name or Mobile..." 
-            value={searchQuery} 
-            onChange={e => setSearchQuery(e.target.value)} 
-            className="pl-10 bg-slate-950 border-slate-800 h-11" 
+          <Input
+            placeholder="Search by Identity, Name, Mobile or Designation..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-10 bg-slate-950 border-slate-800 h-11"
           />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="bg-slate-950 border-slate-800 h-9 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Department" /></SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="all">All Departments</SelectItem>
+              {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="bg-slate-950 border-slate-800 h-9 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Role" /></SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="all">All Roles</SelectItem>
+              {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="bg-slate-950 border-slate-800 h-9 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="all">All Statuses</SelectItem>
+              {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
-        <Table>
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-x-auto custom-scrollbar shadow-2xl">
+        <Table className="min-w-[960px]">
           <TableHeader className="bg-slate-900/60">
             <TableRow className="border-slate-800">
               <TableHead className="text-[10px] font-black uppercase px-6">Associate Context</TableHead>
               <TableHead className="text-[10px] font-black uppercase">Classification</TableHead>
               <TableHead className="text-[10px] font-black uppercase">Operational State</TableHead>
+              <TableHead className="text-[10px] font-black uppercase">Login</TableHead>
+              <TableHead className="text-[10px] font-black uppercase">KYC</TableHead>
               <TableHead className="text-[10px] font-black uppercase">Base Compensation</TableHead>
               <TableHead className="text-right text-[10px] font-black uppercase px-6">Identity Control</TableHead>
             </TableRow>
@@ -202,30 +294,54 @@ export function EmployeesModule({ store }: { store: any }) {
                          <Briefcase className="w-3.5 h-3.5" />
                          <span className="text-[10px] uppercase font-black">{emp.designation}</span>
                       </div>
+                      <Badge variant="outline" className="text-[8px] uppercase font-bold border-slate-700 text-slate-400 w-fit">{emp.role}</Badge>
                    </div>
                 </TableCell>
                 <TableCell>
-                  <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0", emp.status === 'Active' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                  <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0", STATUS_COLORS[emp.status] || STATUS_COLORS.Active)}>
                     {emp.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
+                  {emp.loginAccess?.username ? (
+                    <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0", emp.loginAccess.loginEnabled ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                      {emp.loginAccess.loginEnabled ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  ) : (
+                    <span className="text-[9px] text-slate-600 uppercase font-black">No Access</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {(() => {
+                    const docs = emp.documents || [];
+                    if (docs.length === 0) return <span className="text-[9px] text-slate-600 uppercase font-black">None</span>;
+                    const allVerified = docs.every(d => d.verificationStatus === 'Verified');
+                    const anyRejected = docs.some(d => d.verificationStatus === 'Rejected');
+                    const label = allVerified ? 'Verified' : anyRejected ? 'Rejected' : 'Pending';
+                    const color = allVerified ? 'bg-emerald-500/10 text-emerald-400' : anyRejected ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400';
+                    return <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0", color)}>{label}</Badge>;
+                  })()}
+                </TableCell>
+                <TableCell>
                    <div className="flex flex-col">
                       <span className="font-code font-bold text-xs text-emerald-400">₹{emp.salary.toLocaleString()}</span>
-                      <span className="text-[8px] text-slate-600 uppercase font-black">Monthly Node</span>
+                      <span className="text-[8px] text-slate-600 uppercase font-black">{emp.salaryType || 'Monthly'} Node</span>
                    </div>
                 </TableCell>
                 <TableCell className="text-right px-6">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingQr(emp)} className="h-8 w-8 text-slate-400 hover:text-white"><QrCode className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { setEditingEmployee(emp); setIsModalOpen(true); setActiveTab('profile'); }} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10"><Edit className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeleteEmpId(emp.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setViewingQr(emp)} className="h-8 w-8 text-slate-400 hover:text-white" title="QR Identity"><QrCode className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => openEditModal(emp)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="Edit / Permissions / KYC"><Edit className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleToggleBlock(emp)} className={cn("h-8 w-8 hover:bg-amber-500/10", emp.status === 'Blocked' ? "text-emerald-400" : "text-amber-400")} title={emp.status === 'Blocked' ? 'Unblock' : 'Block'}>
+                      {emp.status === 'Blocked' ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteEmpId(emp.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10" title="Delete"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
             {filteredEmployees.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-700 text-xs italic">No associate nodes found in active HR registry.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="h-48 text-center text-slate-700 text-xs italic">No associate nodes found in active HR registry.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -247,8 +363,10 @@ export function EmployeesModule({ store }: { store: any }) {
                    <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
                  </div>
               </div>
-              <TabsList className="bg-slate-800/50 border border-slate-700">
+              <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto">
                 <TabsTrigger value="profile" className="text-xs uppercase font-bold">Profile</TabsTrigger>
+                <TabsTrigger value="login" className="text-xs uppercase font-bold">Login Access</TabsTrigger>
+                <TabsTrigger value="access" className="text-xs uppercase font-bold">Module Access</TabsTrigger>
                 <TabsTrigger value="kyc" className="text-xs uppercase font-bold">KYC Vault</TabsTrigger>
               </TabsList>
             </DialogHeader>
@@ -278,7 +396,18 @@ export function EmployeesModule({ store }: { store: any }) {
                          <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2">Security Clearance</h4>
                          <div className="space-y-1">
                             <Label className="text-[9px] uppercase text-slate-500 font-bold">System Role</Label>
-                            <Select value={editingEmployee.role} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, role: v})}>
+                            <Select value={editingEmployee.role} onValueChange={(v: any) => {
+                              // Admin always gets full access, and can never be
+                              // reduced from here. For a brand-new associate,
+                              // picking a role seeds sensible defaults. Editing
+                              // an existing associate's role does NOT overwrite
+                              // their already-saved, possibly-customized
+                              // permissions (per the "don't reset on edit" rule).
+                              const nextPermissions = v === 'Admin'
+                                ? allFullAccess()
+                                : (editingEmployee.id ? editingEmployee.modulePermissions : getDefaultPermissions(v));
+                              setEditingEmployee({ ...editingEmployee, role: v, modulePermissions: nextPermissions });
+                            }}>
                                <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs"><SelectValue /></SelectTrigger>
                                <SelectContent className="bg-slate-900 border-slate-800">
                                   {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -336,8 +465,51 @@ export function EmployeesModule({ store }: { store: any }) {
                               <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
                             </div>
                             <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Salary Type</Label>
+                              <Select value={editingEmployee.salaryType || 'Monthly'} onValueChange={v => setEditingEmployee({...editingEmployee, salaryType: v})}>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="bg-slate-900 border-slate-800">
+                                    {SALARY_TYPES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                 </SelectContent>
+                              </Select>
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Joining Date</Label>
                               <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Employment Type</Label>
+                              <Select value={editingEmployee.employmentType || 'Full Time'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, employmentType: v})}>
+                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="bg-slate-900 border-slate-800">
+                                    {EMPLOYMENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                 </SelectContent>
+                              </Select>
+                            </div>
+                         </div>
+                         <div className="space-y-1 max-w-xs">
+                            <Label className="text-[10px] uppercase font-bold text-slate-400">Employee Status</Label>
+                            <Select value={editingEmployee.status || 'Active'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, status: v})}>
+                               <SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                               <SelectContent className="bg-slate-900 border-slate-800">
+                                  {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                               </SelectContent>
+                            </Select>
+                         </div>
+                      </div>
+
+                      <div className="space-y-6">
+                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Smartphone className="w-3.5 h-3.5" /> Emergency Contact</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Contact Name</Label>
+                              <Input value={editingEmployee.emergencyContactName || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-400">Contact Mobile</Label>
+                              <Input value={editingEmployee.emergencyContactMobile || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
                             </div>
                          </div>
                       </div>
@@ -345,13 +517,28 @@ export function EmployeesModule({ store }: { store: any }) {
                 </div>
               </TabsContent>
 
+              <TabsContent value="login" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+                <EmployeeLoginAccessSection employee={editingEmployee} store={store} />
+              </TabsContent>
+
+              <TabsContent value="access" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
+                <ModuleAccessSection
+                  formData={editingEmployee}
+                  setFormData={setEditingEmployee}
+                />
+              </TabsContent>
+
               <TabsContent value="kyc" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-                <EmployeeKYCSection 
-                  formData={editingEmployee} 
-                  setFormData={setEditingEmployee} 
+                <EmployeeKYCSection
+                  formData={editingEmployee}
+                  setFormData={setEditingEmployee}
+                  store={store}
                 />
               </TabsContent>
             </div>
+            {loadingDetail && (
+              <div className="px-8 pb-2 -mt-2 text-[9px] text-slate-500 uppercase font-black tracking-widest">Loading full associate record...</div>
+            )}
 
             <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3 shrink-0">
               <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px]">Terminate Entry</Button>

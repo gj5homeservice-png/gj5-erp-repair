@@ -5,6 +5,7 @@ import { listStockItems } from './stock';
 import { listRepairCalls } from './repairCalls';
 import { listInvoices } from './invoices';
 import { listRepairJobs } from './repairJobs';
+import { listEmployees } from './employees';
 import { listSalesOrders, listSalesInvoices, listSalesDeliveries } from './sales';
 import { getWalletBalance, listWalletTransactions } from './wallet';
 import { getSingleRow } from './singleRow';
@@ -30,7 +31,7 @@ export async function getFullSnapshotData(email: string) {
     listEntity(ENTITIES.inquiries, email),
     listStockItems(email),
     listInvoices(email),
-    listEntity(ENTITIES.employees, email),
+    listEmployees(email),
     listEntity(ENTITIES.attendance, email),
     listEntity(ENTITIES.salaries, email),
     listEntity(ENTITIES.leaves, email),

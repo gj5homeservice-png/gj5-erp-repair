@@ -59,11 +59,35 @@ export default function LoginPage() {
         toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
       }
     } else {
-      toast({ 
-        variant: "destructive", 
-        title: "Auth Failed", 
-        description: "Invalid credentials. Use admin@gj5.com / 123456" 
-      });
+      // Not the owner account — try it as an employee login (their own
+      // username/password, set up by an Admin in the Employees module).
+      // This never touches or weakens the owner-login check above; it's
+      // purely an additional path tried after that one fails.
+      try {
+        const res = await fetch('/api/auth/employee-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: email, password }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          localStorage.setItem('gj5_auth_token', json.token);
+          localStorage.setItem('gj5_active_user', email);
+          toast({
+            title: "Identity Verified",
+            description: json.forcePasswordChange ? "Please change your password after logging in." : "Accessing GJ5 ERP Console...",
+          });
+          router.push('/dashboard');
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Auth Failed",
+            description: json.error || "Invalid credentials."
+          });
+        }
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+      }
     }
     setLoading(false);
   };

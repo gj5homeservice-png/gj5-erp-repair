@@ -25,7 +25,11 @@ import {
   SalesDeliveryStatus,
   Customer,
   RepairJob,
-  RepairJobPayment
+  RepairJobPayment,
+  UserRole,
+  ModulePermissions,
+  EmployeeDocument,
+  EmployeeAuditLogEntry,
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
 
@@ -182,6 +186,20 @@ export function useErpStore() {
   const snap = data || EMPTY_SNAPSHOT;
   const dataError: string | null = bootstrapError ? (bootstrapError.message || 'Failed to load data from the server.') : null;
 
+  // The client's own "who am I / what can I access" — read fresh from MySQL
+  // via /api/auth/me on every load/focus, never treated as a permanent
+  // client-side cache. An owner/admin session always resolves to full
+  // access; an employee session reflects their real, current, server-stored
+  // permissions, so an Admin's change takes effect the next time this
+  // refetches (page load, tab focus, or next login) without any special
+  // "push" mechanism needed.
+  const { data: sessionData } = useSWR(
+    activeUser ? ['erp-session', activeUser] as const : null,
+    () => apiFetch('/api/auth/me').then((json) => json.data),
+    { revalidateOnFocus: true, revalidateOnReconnect: true }
+  );
+  const session = sessionData || { isEmployee: false, employeeId: null, role: 'Admin' as UserRole, permissions: null };
+
   // Company profile stays exactly as it was: Firestore real-time sync with a
   // localStorage fallback cache. Out of scope for the MySQL migration — this
   // is SaaS/subscription metadata, not ERP business data.
@@ -271,17 +289,20 @@ export function useErpStore() {
   };
 
   // ---- HRMS ----
-  const addEmployee = (emp: Employee) => {
+  // Both return a promise that rejects on failure (were fire-and-forget) so
+  // the Associate Lifecycle Entry modal can show a real "Save Failed" instead
+  // of a success toast that fires regardless of what the server did.
+  const addEmployee = (emp: Employee): Promise<void> => {
     optimisticUpdate(activeUser, s => ({ ...s, employees: [emp, ...s.employees] }));
-    apiFetch('/api/erp/employees', { method: 'POST', body: JSON.stringify(emp) })
-      .catch(err => console.error('addEmployee failed:', err))
-      .finally(() => refresh(activeUser));
+    return apiFetch('/api/erp/employees', { method: 'POST', body: JSON.stringify(emp) })
+      .then(() => { refresh(activeUser); })
+      .catch(err => { refresh(activeUser); throw err; });
   };
-  const updateEmployee = (emp: Employee) => {
+  const updateEmployee = (emp: Employee): Promise<void> => {
     optimisticUpdate(activeUser, s => ({ ...s, employees: s.employees.map(e => e.id === emp.id ? emp : e) }));
-    apiFetch(`/api/erp/employees/${emp.id}`, { method: 'PUT', body: JSON.stringify(emp) })
-      .catch(err => console.error('updateEmployee failed:', err))
-      .finally(() => refresh(activeUser));
+    return apiFetch(`/api/erp/employees/${emp.id}`, { method: 'PUT', body: JSON.stringify(emp) })
+      .then(() => { refresh(activeUser); })
+      .catch(err => { refresh(activeUser); throw err; });
   };
   const deleteEmployee = (id: string) => {
     optimisticUpdate(activeUser, s => ({ ...s, employees: s.employees.filter(e => e.id !== id) }));
@@ -289,6 +310,41 @@ export function useErpStore() {
       .catch(err => console.error('deleteEmployee failed:', err))
       .finally(() => refresh(activeUser));
   };
+
+  // Full detail (permissions grid, login access status, documents) for the
+  // Associate modal — fetched on demand, not part of the bootstrap list.
+  const getEmployeeDetail = (id: string): Promise<Employee> =>
+    apiFetch(`/api/erp/employees/${id}`).then((json) => json.data);
+
+  const saveEmployeePermissions = (id: string, permissions: ModulePermissions): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/permissions`, { method: 'PUT', body: JSON.stringify(permissions) }).then(() => {});
+
+  const setEmployeeLoginAccess = (id: string, data: { username?: string; loginEmail?: string; password?: string; loginEnabled?: boolean; forcePasswordChange?: boolean }): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/login-access`, { method: 'PUT', body: JSON.stringify(data) }).then(() => refresh(activeUser));
+
+  const resetEmployeePassword = (id: string, newPassword: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword }) }).then(() => {});
+
+  const revokeEmployeeSessions = (id: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/revoke-sessions`, { method: 'POST' }).then(() => {});
+
+  const uploadEmployeeDocument = (id: string, documentType: string, fileData: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/documents`, { method: 'POST', body: JSON.stringify({ documentType, fileData }) }).then(() => {});
+
+  const listEmployeeDocuments = (id: string): Promise<EmployeeDocument[]> =>
+    apiFetch(`/api/erp/employees/${id}/documents`).then((json) => json.data);
+
+  const verifyEmployeeDocument = (id: string, docId: string, notes?: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'PUT', body: JSON.stringify({ status: 'Verified', notes }) }).then(() => {});
+
+  const rejectEmployeeDocument = (id: string, docId: string, notes?: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'PUT', body: JSON.stringify({ status: 'Rejected', notes }) }).then(() => {});
+
+  const deleteEmployeeDocument = (id: string, docId: string): Promise<void> =>
+    apiFetch(`/api/erp/employees/${id}/documents/${docId}`, { method: 'DELETE' }).then(() => {});
+
+  const listEmployeeAuditLog = (id: string): Promise<EmployeeAuditLogEntry[]> =>
+    apiFetch(`/api/erp/employees/${id}/audit`).then((json) => json.data);
 
   const addAttendance = (record: AttendanceRecord) => {
     optimisticUpdate(activeUser, s => ({ ...s, attendance: [record, ...s.attendance] }));
@@ -610,11 +666,19 @@ export function useErpStore() {
 
   return {
     dataError,
+    // Server-verified identity/permissions for the current session (see
+    // /api/auth/me) — the client's ONLY source of truth for "what can I
+    // access," never a cached/localStorage value. session.permissions is
+    // null for an owner/admin session (implicit full access everywhere).
+    session,
     invoices: snap.invoices, addInvoice, deleteInvoice,
     stock: snap.stock, updateStockItem, deleteStockItem,
     calls: snap.calls, addCall, updateCall, deleteCall,
     inquiries: snap.inquiries, addInquiry, updateInquiry, deleteInquiry,
     employees: snap.employees, addEmployee, updateEmployee, deleteEmployee,
+    getEmployeeDetail, saveEmployeePermissions, setEmployeeLoginAccess, resetEmployeePassword, revokeEmployeeSessions,
+    uploadEmployeeDocument, listEmployeeDocuments, verifyEmployeeDocument, rejectEmployeeDocument, deleteEmployeeDocument,
+    listEmployeeAuditLog,
     attendance: snap.attendance, addAttendance, updateAttendance, deleteAttendance,
     salaries: snap.salaries, addSalary, updateSalary,
     attendanceLinks: snap.attendanceLinks, generateAttendanceLink, useAttendanceLink,

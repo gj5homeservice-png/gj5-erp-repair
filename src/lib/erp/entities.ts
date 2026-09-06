@@ -21,36 +21,13 @@ export const ENTITIES: Record<string, EntityConfig> = {
       { js: 'createdAt', sql: 'created_at' },
     ],
   },
-  employees: {
-    table: 'employees',
-    columns: [
-      { js: 'employeeId', sql: 'employee_id' },
-      { js: 'photo', sql: 'photo' },
-      { js: 'qrCode', sql: 'qr_code' },
-      { js: 'name', sql: 'name' },
-      { js: 'mobile', sql: 'mobile' },
-      { js: 'email', sql: 'email' },
-      { js: 'designation', sql: 'designation' },
-      { js: 'department', sql: 'department' },
-      { js: 'salary', sql: 'salary', type: 'number' },
-      { js: 'joiningDate', sql: 'joining_date' },
-      { js: 'status', sql: 'status' },
-      { js: 'role', sql: 'role' },
-      { js: 'createdAt', sql: 'created_at' },
-      { js: 'aadharNumber', sql: 'aadhar_number' },
-      { js: 'panNumber', sql: 'pan_number' },
-      { js: 'addressProofType', sql: 'address_proof_type' },
-      { js: 'currentAddress', sql: 'current_address' },
-      { js: 'permanentAddress', sql: 'permanent_address' },
-      { js: 'city', sql: 'city' },
-      { js: 'state', sql: 'state' },
-      { js: 'pincode', sql: 'pincode' },
-      { js: 'aadharFront', sql: 'aadhar_front' },
-      { js: 'aadharBack', sql: 'aadhar_back' },
-      { js: 'panCard', sql: 'pan_card' },
-      { js: 'addressProof', sql: 'address_proof' },
-    ],
-  },
+  // 'employees' used to be here as a generic entity, but it now has real
+  // children (credentials, permissions, documents, audit log) and its own
+  // bespoke routes (src/app/api/erp/employees/**, src/lib/erp/employees.ts),
+  // matching the same pattern already used for stock/repair-calls/repair-jobs/
+  // invoices/sales. A literal route always wins over this dynamic [entity]
+  // catch-all for the same path, so removing the entry here is what actually
+  // routes /api/erp/employees to the bespoke handler instead of this generic one.
   attendance: {
     table: 'attendance_records',
     columns: [

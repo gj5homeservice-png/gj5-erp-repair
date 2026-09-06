@@ -277,8 +277,87 @@ export interface StockMovement {
 }
 
 // HRMS TYPES
-export type UserRole = 'Admin' | 'Manager' | 'Employee';
+export type UserRole =
+  | 'Super Admin'
+  | 'Admin'
+  | 'Manager'
+  | 'Accountant'
+  | 'Service Manager'
+  | 'Technician'
+  | 'Sales Executive'
+  | 'Delivery Executive'
+  | 'Employee';
+
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Checked In' | 'Checked Out';
+export type EmploymentType = 'Full Time' | 'Part Time' | 'Contract' | 'Temporary';
+export type EmployeeStatus = 'Active' | 'Inactive' | 'Blocked' | 'Resigned';
+
+// Per-module, per-action ERP access grid — see src/lib/permissions.ts for the
+// module list, role defaults, and helpers. Kept here (not there) since
+// Employee-adjacent types reference it and permissions.ts imports from here.
+// Six generic actions cover every module uniformly; module-specific
+// sub-actions (e.g. "Assign Technician", "Apply GST") are a documented,
+// deliberately-deferred extension — see the migration notes.
+export interface ModuleActionPermissions {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+  print: boolean;
+  export: boolean;
+}
+export type ModulePermissions = Record<string, ModuleActionPermissions>;
+
+// Permissions, login credentials, and documents are NOT embedded in the
+// Employee object at rest (they live in their own tables — see
+// sql/schema.sql's employee_permissions/employee_credentials/
+// employee_documents) so that a hashed password or a KYC file can never leak
+// through the general employee list/bootstrap response. The client still
+// carries them as optional fields on this type when explicitly fetched via
+// their own dedicated endpoints (GET .../permissions, .../login-access,
+// .../documents) for editing in the Associate modal.
+export interface EmployeeLoginAccess {
+  username?: string;
+  loginEmail?: string;
+  loginEnabled: boolean;
+  forcePasswordChange: boolean;
+  lastLoginAt?: string | null;
+  lastLoginDevice?: string | null;
+  lastLoginIp?: string | null;
+  createdAt?: string;
+}
+
+export type KycVerificationStatus = 'Pending' | 'Verified' | 'Rejected';
+export type KycDocumentType = 'Aadhaar' | 'PAN' | 'Address Proof' | 'Bank Proof' | 'Passport' | 'Driving Licence' | 'Other';
+
+export interface EmployeeDocument {
+  id: string;
+  documentType: KycDocumentType;
+  fileData: string; // base64 data URL — same storage pattern as existing KYC images
+  uploadedAt: string;
+  uploadedBy: string;
+  verificationStatus: KycVerificationStatus;
+  verifiedBy?: string | null;
+  verifiedAt?: string | null;
+  notes?: string;
+}
+
+export type AuditEventType =
+  | 'employee_created' | 'employee_edited' | 'password_reset' | 'login' | 'logout'
+  | 'account_blocked' | 'account_unblocked' | 'permission_changed'
+  | 'kyc_uploaded' | 'kyc_verified' | 'kyc_rejected' | 'kyc_deleted';
+
+export interface EmployeeAuditLogEntry {
+  id: string;
+  eventType: AuditEventType;
+  employeeId: string;
+  performedBy: string;
+  timestamp: string;
+  recordId?: string | null;
+  ipAddress?: string | null;
+  deviceInfo?: string | null;
+  details?: string | null; // short, non-sensitive summary only — never passwords/KYC values
+}
 
 export interface Employee {
   id: string;
@@ -291,14 +370,27 @@ export interface Employee {
   designation: string;
   department: string;
   salary: number;
+  salaryType?: string;
+  employmentType?: EmploymentType;
   joiningDate: string;
-  status: 'Active' | 'Inactive';
+  status: EmployeeStatus;
   role: UserRole;
   createdAt: string;
-  // KYC Fields
+  emergencyContactName?: string;
+  emergencyContactMobile?: string;
+  // Fetched/saved via GET|PUT /api/erp/employees/:id/permissions — never part
+  // of the generic employee list payload.
+  modulePermissions?: ModulePermissions;
+  // Fetched/saved via GET .../login-access and POST .../reset-password — the
+  // password itself never appears anywhere in this object or any response.
+  loginAccess?: EmployeeLoginAccess;
+  // KYC Fields (existing — unchanged, still a single slot per type)
   aadharNumber?: string;
   panNumber?: string;
+  otherIdType?: string;
+  otherIdNumber?: string;
   addressProofType?: string;
+  addressProofNumber?: string;
   currentAddress?: string;
   permanentAddress?: string;
   city?: string;
@@ -308,6 +400,15 @@ export interface Employee {
   aadharBack?: string;
   panCard?: string;
   addressProof?: string;
+  // Bank details (new)
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifsc?: string;
+  branch?: string;
+  // Fetched via GET .../documents — the new, richer document vault alongside
+  // the existing single-slot KYC image fields above (which stay untouched).
+  documents?: EmployeeDocument[];
 }
 
 export interface AttendanceRecord {

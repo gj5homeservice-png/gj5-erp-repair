@@ -11,13 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmployeeDocumentsSection } from "./EmployeeDocumentsSection";
 
 interface EmployeeKYCSectionProps {
   formData: any;
   setFormData: (data: any) => void;
+  // Optional — only present when this modal has access to the ERP store,
+  // used solely by the Documents Vault sub-section below (upload/verify/
+  // reject/delete are real API calls, unlike the plain formData fields
+  // above which just stage local state until the whole modal saves).
+  store?: any;
 }
 
-export function EmployeeKYCSection({ formData, setFormData }: EmployeeKYCSectionProps) {
+export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYCSectionProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -176,6 +182,56 @@ export function EmployeeKYCSection({ formData, setFormData }: EmployeeKYCSection
           </div>
         </div>
       </div>
+
+      <div className="space-y-6">
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Other Identification</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Other ID Type</Label>
+            <Input name="otherIdType" value={formData.otherIdType || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Voter ID" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Other ID Number</Label>
+            <Input name="otherIdNumber" value={formData.otherIdNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase font-bold text-slate-400">Address Proof Number</Label>
+          <Input name="addressProofNumber" value={formData.addressProofNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code max-w-xs" />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bank Details</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Bank Name</Label>
+            <Input name="bankName" value={formData.bankName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Account Holder Name</Label>
+            <Input name="accountHolderName" value={formData.accountHolderName || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Account Number</Label>
+            <Input name="accountNumber" value={formData.accountNumber || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">IFSC</Label>
+            <Input name="ifsc" value={formData.ifsc || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11 font-code uppercase" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-slate-400">Branch</Label>
+            <Input name="branch" value={formData.branch || ""} onChange={handleChange} className="bg-slate-950 border-slate-800 h-11" />
+          </div>
+        </div>
+      </div>
+
+      {store && formData.id && (
+        <EmployeeDocumentsSection employee={formData} store={store} />
+      )}
     </div>
   );
 }

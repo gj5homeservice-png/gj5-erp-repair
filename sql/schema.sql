@@ -26,7 +26,15 @@ SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token         VARCHAR(128) PRIMARY KEY,
+  -- Tenant scope (the employer account's email) — every existing
+  -- `WHERE user_email = ?` query keeps working unchanged whether the owner
+  -- or one of their employees is logged in.
   user_email    VARCHAR(191) NOT NULL,
+  -- NULL = the existing owner/admin login (unchanged, always full access).
+  -- Set = an employee is logged in as themselves; server-side permission
+  -- checks key off this employee's own stored permissions, never off
+  -- anything the client claims.
+  employee_id   VARCHAR(64) NULL,
   -- Stored as explicit UTC ISO strings by session.ts (e.g.
   -- "2026-10-06T05:46:56.789Z"), not native DATETIME — a bound Date object
   -- would be serialized using the driver's local-timezone default on write,
@@ -238,13 +246,21 @@ CREATE TABLE IF NOT EXISTS employees (
   designation           VARCHAR(100) NULL,
   department            VARCHAR(100) NULL,
   salary                DECIMAL(12,2) NOT NULL DEFAULT 0,
+  salary_type           VARCHAR(30) NULL,
+  employment_type       VARCHAR(30) NULL,
   joining_date          VARCHAR(30) NULL,
   status                VARCHAR(20) NULL,
-  role                  VARCHAR(20) NULL,
+  role                  VARCHAR(30) NULL,
   created_at            VARCHAR(40) NULL,
+  emergency_contact_name    VARCHAR(191) NULL,
+  emergency_contact_mobile  VARCHAR(20) NULL,
+  -- KYC identity/address (existing fields unchanged; a few new ones appended)
   aadhar_number         VARCHAR(20) NULL,
   pan_number            VARCHAR(20) NULL,
+  other_id_type         VARCHAR(50) NULL,
+  other_id_number       VARCHAR(50) NULL,
   address_proof_type    VARCHAR(50) NULL,
+  address_proof_number  VARCHAR(50) NULL,
   current_address       VARCHAR(255) NULL,
   permanent_address     VARCHAR(255) NULL,
   city                  VARCHAR(100) NULL,
@@ -254,8 +270,98 @@ CREATE TABLE IF NOT EXISTS employees (
   aadhar_back           LONGTEXT NULL,
   pan_card              LONGTEXT NULL,
   address_proof         LONGTEXT NULL,
+  -- Bank details (new)
+  bank_name             VARCHAR(191) NULL,
+  account_holder_name   VARCHAR(191) NULL,
+  account_number        VARCHAR(50) NULL,
+  ifsc                  VARCHAR(20) NULL,
+  branch                VARCHAR(191) NULL,
   INDEX idx_employees_user (user_email),
-  INDEX idx_employees_employee_id (employee_id)
+  INDEX idx_employees_employee_id (employee_id),
+  INDEX idx_employees_email (email),
+  INDEX idx_employees_mobile (mobile),
+  INDEX idx_employees_role (role),
+  INDEX idx_employees_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Login credentials — deliberately a separate table from `employees` so a
+-- password hash can never be returned by the general employee list/bootstrap
+-- response (which selects from `employees` directly). Only this table's own
+-- dedicated, permission-gated API routes ever touch password_hash, and no
+-- route ever returns it in a response body.
+CREATE TABLE IF NOT EXISTS employee_credentials (
+  employee_id           VARCHAR(64) PRIMARY KEY,
+  user_email            VARCHAR(191) NOT NULL,
+  username              VARCHAR(100) NOT NULL,
+  login_email           VARCHAR(191) NULL,
+  password_hash         VARCHAR(255) NOT NULL,
+  login_enabled         BOOLEAN NOT NULL DEFAULT TRUE,
+  force_password_change BOOLEAN NOT NULL DEFAULT FALSE,
+  last_login_at         VARCHAR(40) NULL,
+  last_login_device     VARCHAR(255) NULL,
+  last_login_ip         VARCHAR(64) NULL,
+  created_at            VARCHAR(40) NOT NULL,
+  updated_at            VARCHAR(40) NULL,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+  -- Globally unique (not per-tenant): at login time the app only has a
+  -- username/password, not yet a tenant context, so the lookup has to be
+  -- global. This deployment is one business per install in practice; if that
+  -- ever changes, login would need a tenant-selector step first.
+  UNIQUE INDEX idx_employee_credentials_username (username),
+  INDEX idx_employee_credentials_user (user_email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Per-employee module x action permission grid — one JSON blob per employee
+-- (14 modules x 6 actions), separate from `employees` for the same reason as
+-- credentials: it has its own dedicated, permission-gated routes rather than
+-- flowing through the general employee list.
+CREATE TABLE IF NOT EXISTS employee_permissions (
+  employee_id   VARCHAR(64) PRIMARY KEY,
+  user_email    VARCHAR(191) NOT NULL,
+  permissions   JSON NOT NULL,
+  updated_at    VARCHAR(40) NULL,
+  updated_by    VARCHAR(191) NULL,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+  INDEX idx_employee_permissions_user (user_email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- KYC document vault — a richer, list-based, verification-workflow-capable
+-- complement to the existing single-slot KYC image fields on `employees`
+-- above (those stay exactly as they are; this is additive, not a
+-- replacement). One row per uploaded document.
+CREATE TABLE IF NOT EXISTS employee_documents (
+  id                    VARCHAR(64) PRIMARY KEY,
+  employee_id           VARCHAR(64) NOT NULL,
+  user_email            VARCHAR(191) NOT NULL,
+  document_type         VARCHAR(50) NOT NULL,
+  file_data             LONGTEXT NOT NULL,
+  uploaded_at           VARCHAR(40) NOT NULL,
+  uploaded_by           VARCHAR(191) NULL,
+  verification_status   VARCHAR(20) NOT NULL DEFAULT 'Pending',
+  verified_by           VARCHAR(191) NULL,
+  verified_at           VARCHAR(40) NULL,
+  notes                 VARCHAR(255) NULL,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+  INDEX idx_employee_documents_employee (employee_id),
+  INDEX idx_employee_documents_user (user_email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Security/audit trail. Never stores passwords or raw KYC values — `details`
+-- is a short, human-readable summary only (e.g. "role changed to Manager").
+CREATE TABLE IF NOT EXISTS employee_audit_logs (
+  id            VARCHAR(64) PRIMARY KEY,
+  user_email    VARCHAR(191) NOT NULL,
+  employee_id   VARCHAR(64) NOT NULL,
+  event_type    VARCHAR(40) NOT NULL,
+  performed_by  VARCHAR(191) NOT NULL,
+  timestamp     VARCHAR(40) NOT NULL,
+  record_id     VARCHAR(64) NULL,
+  ip_address    VARCHAR(64) NULL,
+  device_info   VARCHAR(255) NULL,
+  details       VARCHAR(255) NULL,
+  INDEX idx_employee_audit_user (user_email),
+  INDEX idx_employee_audit_employee (employee_id),
+  INDEX idx_employee_audit_event (event_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS attendance_records (

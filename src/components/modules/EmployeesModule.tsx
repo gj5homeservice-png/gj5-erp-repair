@@ -13,7 +13,6 @@ import {
   FileDown,
   Camera,
   QrCode,
-  Tag,
   Building2,
   MoreVertical,
   CheckCircle2,
@@ -26,6 +25,8 @@ import {
   RotateCcw,
   Eye,
   MapPin,
+  Contact,
+  IdCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +102,46 @@ const STATUS_COLORS: Record<EmployeeStatus, string> = {
   Resigned: 'bg-orange-500/10 text-orange-400',
   Terminated: 'bg-rose-500/10 text-rose-400',
 };
+
+// Every distinct card inside the Profile tab (Basic Information, Employment
+// Information, Emergency Contact) uses this exact header shape — the same
+// icon-badge + title + subtitle pattern already established by the Login &
+// Security / Permissions / KYC Vault / Activity tabs — so the whole modal
+// reads as one consistent, professional form rather than a flat list of
+// inputs with ad-hoc <h4> labels.
+function ProfileSectionCard({
+  icon: Icon,
+  color,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: typeof Building2;
+  color: 'blue' | 'violet' | 'rose';
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  const colorClasses = {
+    blue: 'bg-blue-500/10 text-blue-400',
+    violet: 'bg-violet-500/10 text-violet-400',
+    rose: 'bg-rose-500/10 text-rose-400',
+  }[color];
+  return (
+    <div className="p-6 bg-slate-900/30 border border-slate-800 rounded-2xl space-y-6">
+      <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+        <div className={cn('p-2 rounded-lg', colorClasses)}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="text-base font-headline font-bold text-white">{title}</h3>
+          <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function EmployeesModule({ store }: { store: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -474,21 +515,21 @@ export function EmployeesModule({ store }: { store: any }) {
 
       {/* REGISTRATION MODAL */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[90vh] flex flex-col">
+        <DialogContent className="max-w-4xl w-[calc(100%-1.5rem)] sm:w-full bg-[#0F172A] border-slate-800 text-slate-100 p-0 overflow-hidden shadow-2xl h-[92vh] sm:h-[90vh] flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-row justify-between items-center space-y-0">
+            <DialogHeader className="p-4 sm:p-6 border-b border-slate-800 bg-slate-900/50 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 space-y-0">
               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                 <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 shrink-0">
                     <UserPlus className="w-5 h-5" />
                  </div>
-                 <div>
-                   <DialogTitle className="text-xl font-headline font-bold text-white">
+                 <div className="min-w-0">
+                   <DialogTitle className="text-lg sm:text-xl font-headline font-bold text-white truncate">
                      {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
                    </DialogTitle>
                    <DialogDescription className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
                  </div>
               </div>
-              <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto">
+              <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto justify-start w-full lg:w-auto">
                 <TabsTrigger value="profile" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Profile</TabsTrigger>
                 <TabsTrigger value="login" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Login &amp; Security</TabsTrigger>
                 <TabsTrigger value="access" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Permissions</TabsTrigger>
@@ -497,81 +538,50 @@ export function EmployeesModule({ store }: { store: any }) {
               </TabsList>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-              <TabsContent value="profile" className="mt-0 space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                   <div className="md:col-span-1 space-y-6">
-                      <div className="space-y-4 flex flex-col items-center text-center">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar">
+              <TabsContent value="profile" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                <ProfileSectionCard icon={Contact} color="blue" title="Basic Information" subtitle="Identity, contact & address">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-1 space-y-4 flex flex-col items-center text-center">
                          <div className="w-32 h-32 rounded-3xl bg-slate-950 border-2 border-dashed border-slate-800 flex items-center justify-center relative overflow-hidden group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                             {editingEmployee.photo ? (
                                <img src={editingEmployee.photo} className="w-full h-full object-cover" alt="Preview" />
                             ) : (
-                               <Camera className="w-8 h-8 text-slate-700 group-hover:text-blue-500 transition-colors" />
+                               <Camera className="w-8 h-8 text-slate-500 group-hover:text-blue-400 transition-colors" />
                             )}
                             <div className="absolute inset-0 bg-blue-600/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                <span className="text-[10px] font-black uppercase text-white">Change Photo</span>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                          </div>
-                         <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">High-Res ID Visual</p>
+                         <div className="w-full space-y-1">
+                            <Label className="text-[9px] uppercase font-bold text-slate-300 flex items-center justify-center gap-1"><IdCard className="w-3 h-3" /> Employee ID</Label>
+                            <Input readOnly value={editingEmployee.employeeId || 'EMP1001 (Auto-Generated)'} className="bg-slate-900 border-slate-800 h-10 font-code text-blue-400 font-bold text-center text-xs" />
                          </div>
                       </div>
 
-                      <div className="p-5 bg-blue-600/5 rounded-2xl border border-blue-600/20 space-y-4">
-                         <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter flex items-center gap-2">Security Clearance</h4>
-                         <div className="space-y-1">
-                            <Label className="text-[9px] uppercase text-slate-300 font-bold">System Role</Label>
-                            <Select
-                              value={ROLES.includes(editingEmployee.role || '') ? editingEmployee.role : CUSTOM_ROLE}
-                              onValueChange={handleRoleChange}
-                            >
-                               <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs text-slate-100"><SelectValue /></SelectTrigger>
-                               <SelectContent className="bg-slate-900 border-slate-800">
-                                  {ROLES.map(r => <SelectItem key={r} value={r} className="text-slate-100 focus:bg-slate-800 focus:text-white">{r}</SelectItem>)}
-                                  <SelectItem value={CUSTOM_ROLE} className="text-slate-100 focus:bg-slate-800 focus:text-white">Custom Role...</SelectItem>
-                               </SelectContent>
-                            </Select>
-                            {!ROLES.includes(editingEmployee.role || '') && (
-                              <Input
-                                value={customRoleDraft}
-                                onChange={(e) => handleCustomRoleChange(e.target.value)}
-                                placeholder="Enter custom role name"
-                                className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
-                              />
-                            )}
-                         </div>
-                      </div>
-                   </div>
-
-                   <div className="md:col-span-2 space-y-8">
-                      <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Core Identity</h4>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2 space-y-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">Full Name</Label>
                               <Input value={editingEmployee.name} onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="Official Identity" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Employee ID</Label>
-                              <Input readOnly value={editingEmployee.employeeId || 'EMP1001 (Auto-Generated)'} className="bg-slate-900 border-slate-800 h-11 font-code text-blue-400 font-bold" />
-                            </div>
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">Mobile (10-Digit)</Label>
                               <Input value={editingEmployee.mobile} onChange={e => setEditingEmployee({...editingEmployee, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" maxLength={10} />
                             </div>
+                         </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">Email Address</Label>
                               <Input type="email" value={editingEmployee.email} onChange={e => setEditingEmployee({...editingEmployee, email: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
                             </div>
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">Date of Birth</Label>
                               <Input type="date" value={editingEmployee.dateOfBirth || ''} onChange={e => setEditingEmployee({...editingEmployee, dateOfBirth: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
                             </div>
+                         </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">Gender</Label>
                               <Select value={editingEmployee.gender || ''} onValueChange={v => setEditingEmployee({...editingEmployee, gender: v})}>
@@ -581,16 +591,16 @@ export function EmployeesModule({ store }: { store: any }) {
                                  </SelectContent>
                               </Select>
                             </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase font-bold text-slate-300 flex items-center gap-1"><MapPin className="w-3 h-3" /> Pincode</Label>
+                              <Input value={editingEmployee.pincode || ''} onChange={e => setEditingEmployee({...editingEmployee, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" maxLength={6} />
+                            </div>
                          </div>
-                      </div>
-
-                      <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> Address</h4>
                          <div className="space-y-1">
                             <Label className="text-[10px] uppercase font-bold text-slate-300">Address</Label>
                             <Input value={editingEmployee.currentAddress || ''} onChange={e => setEditingEmployee({...editingEmployee, currentAddress: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100 placeholder:text-slate-500" placeholder="House/Street, Area" />
                          </div>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-300">City</Label>
                               <Input value={editingEmployee.city || ''} onChange={e => setEditingEmployee({...editingEmployee, city: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
@@ -599,102 +609,125 @@ export function EmployeesModule({ store }: { store: any }) {
                               <Label className="text-[10px] uppercase font-bold text-slate-300">State</Label>
                               <Input value={editingEmployee.state || ''} onChange={e => setEditingEmployee({...editingEmployee, state: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
                             </div>
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Pincode</Label>
-                              <Input value={editingEmployee.pincode || ''} onChange={e => setEditingEmployee({...editingEmployee, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" maxLength={6} />
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> Placement Node</h4>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Department</Label>
-                              <Select value={editingEmployee.department} onValueChange={v => setEditingEmployee({...editingEmployee, department: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="bg-slate-900 border-slate-800">
-                                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
-                                 </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Designation</Label>
-                              <Select
-                                value={DESIGNATIONS.includes(editingEmployee.designation || '') ? editingEmployee.designation : 'Other'}
-                                onValueChange={v => setEditingEmployee({...editingEmployee, designation: v === 'Other' ? '' : v})}
-                              >
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="bg-slate-900 border-slate-800">
-                                    {DESIGNATIONS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
-                                 </SelectContent>
-                              </Select>
-                              {!DESIGNATIONS.includes(editingEmployee.designation || '') && (
-                                <Input
-                                  value={editingEmployee.designation || ''}
-                                  onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})}
-                                  placeholder="Enter custom designation"
-                                  className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
-                                />
-                              )}
-                            </div>
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Monthly Salary (₹)</Label>
-                              <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Salary Type</Label>
-                              <Select value={editingEmployee.salaryType || 'Monthly'} onValueChange={v => setEditingEmployee({...editingEmployee, salaryType: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="bg-slate-900 border-slate-800">
-                                    {SALARY_TYPES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
-                                 </SelectContent>
-                              </Select>
-                            </div>
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Joining Date</Label>
-                              <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Employment Type</Label>
-                              <Select value={editingEmployee.employmentType || 'Full Time'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, employmentType: v})}>
-                                 <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="bg-slate-900 border-slate-800">
-                                    {EMPLOYMENT_TYPES.map(t => <SelectItem key={t} value={t} className="text-slate-100 focus:bg-slate-800 focus:text-white">{t}</SelectItem>)}
-                                 </SelectContent>
-                              </Select>
-                            </div>
-                         </div>
-                         <div className="space-y-1 max-w-xs">
-                            <Label className="text-[10px] uppercase font-bold text-slate-300">Employee Status</Label>
-                            <Select value={editingEmployee.status || 'Active'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, status: v})}>
-                               <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
-                               <SelectContent className="bg-slate-900 border-slate-800">
-                                  {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
-                               </SelectContent>
-                            </Select>
-                         </div>
-                      </div>
-
-                      <div className="space-y-6">
-                         <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><Smartphone className="w-3.5 h-3.5" /> Emergency Contact</h4>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Name</Label>
-                              <Input value={editingEmployee.emergencyContactName || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactName: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Mobile</Label>
-                              <Input value={editingEmployee.emergencyContactMobile || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" />
-                            </div>
                          </div>
                       </div>
                    </div>
-                </div>
+                </ProfileSectionCard>
+
+                <ProfileSectionCard icon={Briefcase} color="violet" title="Employment Information" subtitle="Role, placement & compensation">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Department</Label>
+                        <Select value={editingEmployee.department} onValueChange={v => setEditingEmployee({...editingEmployee, department: v})}>
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {DEPARTMENTS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Designation</Label>
+                        <Select
+                          value={DESIGNATIONS.includes(editingEmployee.designation || '') ? editingEmployee.designation : 'Other'}
+                          onValueChange={v => setEditingEmployee({...editingEmployee, designation: v === 'Other' ? '' : v})}
+                        >
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {DESIGNATIONS.map(d => <SelectItem key={d} value={d} className="text-slate-100 focus:bg-slate-800 focus:text-white">{d}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                        {!DESIGNATIONS.includes(editingEmployee.designation || '') && (
+                          <Input
+                            value={editingEmployee.designation || ''}
+                            onChange={e => setEditingEmployee({...editingEmployee, designation: e.target.value})}
+                            placeholder="Enter custom designation"
+                            className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
+                          />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Employee Role</Label>
+                        <Select
+                          value={ROLES.includes(editingEmployee.role || '') ? editingEmployee.role : CUSTOM_ROLE}
+                          onValueChange={handleRoleChange}
+                        >
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {ROLES.map(r => <SelectItem key={r} value={r} className="text-slate-100 focus:bg-slate-800 focus:text-white">{r}</SelectItem>)}
+                              <SelectItem value={CUSTOM_ROLE} className="text-slate-100 focus:bg-slate-800 focus:text-white">Custom Role...</SelectItem>
+                           </SelectContent>
+                        </Select>
+                        {!ROLES.includes(editingEmployee.role || '') && (
+                          <Input
+                            value={customRoleDraft}
+                            onChange={(e) => handleCustomRoleChange(e.target.value)}
+                            placeholder="Enter custom role name"
+                            className="bg-slate-950 border-slate-800 h-9 text-xs mt-2 text-slate-100 placeholder:text-slate-500"
+                          />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Employment Type</Label>
+                        <Select value={editingEmployee.employmentType || 'Full Time'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, employmentType: v})}>
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {EMPLOYMENT_TYPES.map(t => <SelectItem key={t} value={t} className="text-slate-100 focus:bg-slate-800 focus:text-white">{t}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Salary Type</Label>
+                        <Select value={editingEmployee.salaryType || 'Monthly'} onValueChange={v => setEditingEmployee({...editingEmployee, salaryType: v})}>
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {SALARY_TYPES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Salary (₹)</Label>
+                        <Input type="number" value={editingEmployee.salary} onChange={e => setEditingEmployee({...editingEmployee, salary: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code font-bold text-emerald-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Joining Date</Label>
+                        <Input type="date" value={editingEmployee.joiningDate} onChange={e => setEditingEmployee({...editingEmployee, joiningDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-slate-100" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Employee Status</Label>
+                        <Select value={editingEmployee.status || 'Active'} onValueChange={(v: any) => setEditingEmployee({...editingEmployee, status: v})}>
+                           <SelectTrigger className="bg-slate-950 border-slate-800 h-11 text-slate-100"><SelectValue /></SelectTrigger>
+                           <SelectContent className="bg-slate-900 border-slate-800">
+                              {EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s} className="text-slate-100 focus:bg-slate-800 focus:text-white">{s}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Login Status</Label>
+                        <div className="h-11 flex items-center px-3 bg-slate-950 border border-slate-800 rounded-md">
+                           {editingEmployee.loginAccess?.username ? (
+                             <Badge className={cn('text-[10px] font-black uppercase px-2 h-5 border-0', editingEmployee.loginAccess.loginEnabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}>
+                               {editingEmployee.loginAccess.loginEnabled ? 'Enabled' : 'Disabled'}
+                             </Badge>
+                           ) : (
+                             <span className="text-xs text-slate-400 italic">No login account — see Login &amp; Security tab</span>
+                           )}
+                        </div>
+                      </div>
+                   </div>
+                </ProfileSectionCard>
+
+                <ProfileSectionCard icon={Smartphone} color="rose" title="Emergency Contact" subtitle="Who to reach in a workplace emergency">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Name</Label>
+                        <Input value={editingEmployee.emergencyContactName || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactName: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-slate-100" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-slate-300">Contact Mobile</Label>
+                        <Input value={editingEmployee.emergencyContactMobile || ''} onChange={e => setEditingEmployee({...editingEmployee, emergencyContactMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-slate-100" />
+                      </div>
+                   </div>
+                </ProfileSectionCard>
               </TabsContent>
 
               <TabsContent value="login" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
@@ -734,9 +767,9 @@ export function EmployeesModule({ store }: { store: any }) {
               <div className="px-8 pb-2 -mt-2 text-[9px] text-slate-400 uppercase font-black tracking-widest">Loading full associate record...</div>
             )}
 
-            <DialogFooter className="p-8 border-t border-slate-800 bg-slate-900/50 flex gap-3 shrink-0">
-              <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white">Cancel</Button>
-              <Button onClick={handleSaveEmployee} className="bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] text-white shadow-lg shadow-blue-500/20">Save Associate</Button>
+            <DialogFooter className="p-4 sm:p-6 md:p-8 border-t border-slate-800 bg-slate-900/50 flex flex-row gap-3 shrink-0">
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-none px-8 font-bold uppercase text-[10px] text-slate-300 hover:text-white">Cancel</Button>
+              <Button onClick={handleSaveEmployee} className="flex-1 sm:flex-none bg-[#0066FF] hover:bg-blue-600 px-12 h-12 rounded-xl font-bold uppercase text-[10px] text-white shadow-lg shadow-blue-500/20">Save Associate</Button>
             </DialogFooter>
           </Tabs>
         </DialogContent>

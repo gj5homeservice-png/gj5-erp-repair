@@ -10,7 +10,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RepairCall } from '@/lib/types';
+import { RepairCall, RepairJob } from '@/lib/types';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { Printer, Settings, ImageIcon } from 'lucide-react';
@@ -18,7 +18,10 @@ import { Printer, Settings, ImageIcon } from 'lucide-react';
 interface StickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  call: RepairCall | null;
+  // Fed by both the Repairing list (RepairJob) and any remaining RepairCall
+  // callers — every field this component reads (customerId, customerName,
+  // mobile, address, pincode, id, brand, model) exists identically on both.
+  call: RepairCall | RepairJob | null;
   shopLogo?: string | null;
 }
 

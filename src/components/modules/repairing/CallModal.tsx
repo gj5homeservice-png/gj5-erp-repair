@@ -249,7 +249,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
       ...prev,
       category: category,
       id: nextId,
-      customerId: prev.customerId || `${store.settings?.customerIdPrefix || 'GJ5'}${1001 + store.calls.length}`,
+      customerId: prev.customerId || `${store.settings?.customerIdPrefix || 'GJ5'}${1001 + (store.repairJobs?.length || 0)}`,
       techTags: [],
       status: 'Pending',
       warrantyDuration: store.settings?.defaultWarrantyDuration || 'No Warranty',
@@ -401,8 +401,8 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
         updatedAt: now
       };
       store.addRepairJob(newJob)
-        .then(() => toast({ title: 'Repair Job Created', description: `${newJob.id} saved successfully.` }))
-        .catch((err: any) => toast({ variant: 'destructive', title: 'Save Failed', description: err?.message || `Could not save ${newJob.id} to the server. Please try again.` }));
+        .then((saved: RepairJob) => toast({ title: 'Repair Job Created', description: `${saved.id} saved successfully.` }))
+        .catch((err: any) => toast({ variant: 'destructive', title: 'Save Failed', description: err?.message || `Could not save the repair job to the server. Please try again.` }));
       onClose();
       return;
     }

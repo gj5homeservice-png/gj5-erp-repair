@@ -129,19 +129,50 @@ async function replaceChildren(conn: PoolConnection, jobId: string, job: any) {
   }
 }
 
-export async function createRepairJob(email: string, job: any) {
-  if (!job?.id) throw new Error('id is required');
+// The client never supplies an authoritative id here — any `job.id` sent by
+// the caller is ignored. Client-side "RJ1001 + array length" style counters
+// (see generateRepairJobId in repair-utils.ts) go stale the moment the
+// browser's local snapshot lags the database even slightly — a second tab, a
+// second device, or simply creating two jobs before the first optimistic
+// update has settled all reproduce the exact same next id and crash the
+// insert on the primary key. The id is instead computed here from the
+// table's own current max, inside the same transaction as the insert, with a
+// bounded retry on a duplicate-key race (two genuinely concurrent creates
+// both reading the same max before either commits) — so two devices creating
+// a job at the same moment still each get a unique id instead of one of them
+// failing outright.
+async function nextRepairJobId(conn: PoolConnection, email: string): Promise<string> {
+  const [rows] = await conn.execute<any[]>(
+    `SELECT id FROM repair_jobs WHERE user_email = ? AND id REGEXP '^RJ[0-9]+$' ORDER BY CAST(SUBSTRING(id, 3) AS UNSIGNED) DESC LIMIT 1 FOR UPDATE`,
+    [email]
+  );
+  const last = (rows as any[])[0]?.id as string | undefined;
+  const lastNum = last ? parseInt(last.slice(2), 10) : 1000;
+  const nextNum = (Number.isFinite(lastNum) ? lastNum : 1000) + 1;
+  return `RJ${nextNum}`;
+}
+
+export async function createRepairJob(email: string, job: any): Promise<string> {
   const pool = getPool();
   const conn: PoolConnection = await pool.getConnection();
   try {
-    await conn.beginTransaction();
-    const cols = ['id', 'user_email', ...JOB_COLUMNS.map(c => c.sql)];
-    await conn.execute(`INSERT INTO repair_jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, [job.id, email, ...jobValues(job)]);
-    await replaceChildren(conn, job.id, job);
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    throw err;
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await conn.beginTransaction();
+      const id = await nextRepairJobId(conn, email);
+      try {
+        const cols = ['id', 'user_email', ...JOB_COLUMNS.map(c => c.sql)];
+        await conn.execute(`INSERT INTO repair_jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, [id, email, ...jobValues(job)]);
+        await replaceChildren(conn, id, job);
+        await conn.commit();
+        return id;
+      } catch (err: any) {
+        await conn.rollback();
+        if (err?.code === 'ER_DUP_ENTRY' && attempt < maxAttempts) continue;
+        throw err;
+      }
+    }
+    throw new Error('Could not generate a unique repair job id — please try again.');
   } finally {
     conn.release();
   }

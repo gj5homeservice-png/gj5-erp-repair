@@ -83,7 +83,7 @@ const DashboardModule = ({ store }: { store: any }) => (
 
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
       {[
-        { label: 'Active Jobs', value: store.calls.length, icon: Wrench, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { label: 'Active Jobs', value: store.repairJobs.filter((j: any) => j.status !== 'Delivered' && j.status !== 'Cancelled').length, icon: Wrench, color: 'text-blue-400', bg: 'bg-blue-400/10' },
         { label: 'Sales Audit', value: store.invoices.length, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
         { label: 'Asset Units', value: store.stock.reduce((a: any, b: any) => a + (b.quantity || 0), 0), icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
         { label: 'Staff Roster', value: store.employees.length, icon: Users, color: 'text-rose-400', bg: 'bg-rose-400/10' },
@@ -113,21 +113,21 @@ const DashboardModule = ({ store }: { store: any }) => (
            </h3>
         </div>
         <div className="divide-y divide-slate-800">
-           {store.calls.slice(0, 5).map((call: any) => (
-             <div key={call.id} className="p-6 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
+           {[...store.repairJobs].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map((job: any) => (
+             <div key={job.id} className="p-6 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-blue-400">
                     <Wrench className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-200">{call.customerName} - {call.category}</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">ID: {call.id} • {call.status}</p>
+                    <p className="text-sm font-bold text-slate-200">{job.customerName} - {job.productType}</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">ID: {job.id} • {job.status}</p>
                   </div>
                 </div>
-                <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase">Active</Badge>
+                <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase">{job.status}</Badge>
              </div>
            ))}
-           {store.calls.length === 0 && <div className="p-10 text-center text-slate-600 text-xs italic">Awaiting entries...</div>}
+           {store.repairJobs.length === 0 && <div className="p-10 text-center text-slate-600 text-xs italic">Awaiting entries...</div>}
         </div>
       </div>
 

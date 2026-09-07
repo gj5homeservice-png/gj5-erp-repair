@@ -560,10 +560,23 @@ export function useErpStore() {
   // Returns a promise that rejects on failure (was fire-and-forget, silently
   // swallowing errors) so the caller can show an accurate success/failure
   // toast instead of always claiming "saved successfully."
-  const addRepairJob = (job: RepairJob): Promise<void> => {
+  // The id on `job` is only a client-side preview (see generateRepairJobId in
+  // repair-utils.ts) — the server computes the real, database-safe id and
+  // returns it here. The optimistic entry is reconciled to that real id so
+  // the UI never shows a record under an id that doesn't actually exist in
+  // MySQL, and the caller gets the true id back for its success message.
+  const addRepairJob = (job: RepairJob): Promise<RepairJob> => {
     optimisticUpdate(activeUser, s => ({ ...s, repairJobs: [job, ...s.repairJobs] }));
     return apiFetch('/api/erp/repair-jobs', { method: 'POST', body: JSON.stringify(job) })
-      .then(() => { refresh(activeUser); })
+      .then((res) => {
+        const finalId: string | undefined = res?.data?.id;
+        const finalJob = finalId && finalId !== job.id ? { ...job, id: finalId } : job;
+        if (finalId && finalId !== job.id) {
+          optimisticUpdate(activeUser, s => ({ ...s, repairJobs: s.repairJobs.map(j => j.id === job.id ? finalJob : j) }));
+        }
+        refresh(activeUser);
+        return finalJob;
+      })
       .catch(err => {
         refresh(activeUser); // roll the optimistic entry back to real server state
         throw err;

@@ -152,10 +152,45 @@ async function nextRepairJobId(conn: PoolConnection, email: string): Promise<str
   return `RJ${nextNum}`;
 }
 
-export async function createRepairJob(email: string, job: any): Promise<string> {
+// Looks up an existing customer by mobile number (the natural, already-
+// indexed dedup key — customers.mobile has no unique constraint, so this is
+// a lookup-then-insert rather than a DB-enforced upsert, which is fine at
+// this app's scale) and reuses its id; only inserts a new customers row when
+// no match exists. Runs in its own short transaction on the same connection
+// the job insert will use, so a customer row never gets created without the
+// job that triggered it (or vice versa) actually completing.
+async function resolveCustomerId(conn: PoolConnection, email: string, job: any): Promise<string | undefined> {
+  if (!job.mobile) return job.customerId || undefined;
+  await conn.beginTransaction();
+  try {
+    const [rows] = await conn.execute<any[]>(
+      'SELECT id FROM customers WHERE user_email = ? AND mobile = ? LIMIT 1',
+      [email, job.mobile]
+    );
+    const existing = (rows as any[])[0];
+    if (existing) {
+      await conn.commit();
+      return existing.id;
+    }
+    const newId = `CUST${Date.now()}`;
+    await conn.execute(
+      'INSERT INTO customers (id, user_email, name, mobile, address, pincode, email, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [newId, email, job.customerName || null, job.mobile, job.address || null, job.pincode || null, job.email || null, 'repair', new Date().toISOString()]
+    );
+    await conn.commit();
+    return newId;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  }
+}
+
+export async function createRepairJob(email: string, job: any): Promise<{ id: string; customerId?: string }> {
   const pool = getPool();
   const conn: PoolConnection = await pool.getConnection();
   try {
+    job.customerId = await resolveCustomerId(conn, email, job);
+
     const maxAttempts = 5;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       await conn.beginTransaction();
@@ -165,7 +200,7 @@ export async function createRepairJob(email: string, job: any): Promise<string> 
         await conn.execute(`INSERT INTO repair_jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, [id, email, ...jobValues(job)]);
         await replaceChildren(conn, id, job);
         await conn.commit();
-        return id;
+        return { id, customerId: job.customerId };
       } catch (err: any) {
         await conn.rollback();
         if (err?.code === 'ER_DUP_ENTRY' && attempt < maxAttempts) continue;

@@ -562,16 +562,20 @@ export function useErpStore() {
   // toast instead of always claiming "saved successfully."
   // The id on `job` is only a client-side preview (see generateRepairJobId in
   // repair-utils.ts) — the server computes the real, database-safe id and
-  // returns it here. The optimistic entry is reconciled to that real id so
-  // the UI never shows a record under an id that doesn't actually exist in
-  // MySQL, and the caller gets the true id back for its success message.
+  // returns it here, along with the customerId it resolved (an existing
+  // customers row matched by mobile, or a newly created one). The optimistic
+  // entry is reconciled to both so the UI never shows a record under an id
+  // or customer link that doesn't actually exist in MySQL, and the caller
+  // gets the true id back for its success message.
   const addRepairJob = (job: RepairJob): Promise<RepairJob> => {
     optimisticUpdate(activeUser, s => ({ ...s, repairJobs: [job, ...s.repairJobs] }));
     return apiFetch('/api/erp/repair-jobs', { method: 'POST', body: JSON.stringify(job) })
       .then((res) => {
         const finalId: string | undefined = res?.data?.id;
-        const finalJob = finalId && finalId !== job.id ? { ...job, id: finalId } : job;
-        if (finalId && finalId !== job.id) {
+        const finalCustomerId: string | undefined = res?.data?.customerId;
+        const changed = (finalId && finalId !== job.id) || (finalCustomerId && finalCustomerId !== job.customerId);
+        const finalJob = changed ? { ...job, id: finalId || job.id, customerId: finalCustomerId || job.customerId } : job;
+        if (changed) {
           optimisticUpdate(activeUser, s => ({ ...s, repairJobs: s.repairJobs.map(j => j.id === job.id ? finalJob : j) }));
         }
         refresh(activeUser);
@@ -623,6 +627,46 @@ export function useErpStore() {
     apiFetch(`/api/erp/inquiries/${id}`, { method: 'DELETE' })
       .catch(err => console.error('deleteInquiry failed:', err))
       .finally(() => refresh(activeUser));
+  };
+  // Converts a CRM lead into a real repair job: creates it through the same
+  // addRepairJob path everything else uses (server-generated id, resolved
+  // customer link), then marks the inquiry Converted with the real job id —
+  // never a client-guessed one. Rejects (rather than silently no-oping) if
+  // already converted, so the caller can show why nothing happened.
+  const convertInquiryToJob = (inq: Inquiry): Promise<RepairJob> => {
+    if (inq.status === 'Converted' && inq.convertedJobId) {
+      return Promise.reject(new Error(`Already converted to ${inq.convertedJobId}`));
+    }
+    const now = new Date().toISOString();
+    const newJob: RepairJob = {
+      id: '',
+      customerName: inq.customerName,
+      mobile: inq.mobile,
+      address: inq.address || undefined,
+      pincode: inq.pincode || undefined,
+      productType: inq.productType,
+      brand: inq.brand,
+      model: inq.modelNumber || '',
+      problemDescription: inq.problemDescription || '',
+      receivedDate: now.slice(0, 10),
+      estimatedCost: inq.expectedBudget || 0,
+      advancePayment: 0,
+      status: 'Received',
+      parts: [],
+      labourCharges: 0,
+      otherCharges: 0,
+      discount: 0,
+      payments: [],
+      notesLog: [],
+      statusHistory: [{ id: `SH-conv-${inq.id}`, status: 'Received', changedAt: now, note: `Converted from lead ${inq.id}` }],
+      notifications: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    return addRepairJob(newJob).then((saved) => {
+      updateInquiry({ ...inq, status: 'Converted', convertedJobId: saved.id, conversionDate: now });
+      return saved;
+    });
   };
 
   // ---- Wallet / Expenses ----
@@ -693,7 +737,7 @@ export function useErpStore() {
     invoices: snap.invoices, addInvoice, deleteInvoice,
     stock: snap.stock, updateStockItem, deleteStockItem,
     calls: snap.calls, addCall, updateCall, deleteCall,
-    inquiries: snap.inquiries, addInquiry, updateInquiry, deleteInquiry,
+    inquiries: snap.inquiries, addInquiry, updateInquiry, deleteInquiry, convertInquiryToJob,
     employees: snap.employees, addEmployee, updateEmployee, deleteEmployee, changeEmployeeStatus,
     getEmployeeDetail, saveEmployeePermissions, setEmployeeLoginAccess, resetEmployeePassword, revokeEmployeeSessions,
     uploadEmployeeDocument, listEmployeeDocuments, verifyEmployeeDocument, rejectEmployeeDocument, deleteEmployeeDocument,

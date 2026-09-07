@@ -110,10 +110,10 @@ export function InquiryModule({ store }: { store: any }) {
       toast({ variant: "destructive", title: "Already Converted", description: `This lead is already Job ID: ${inq.convertedJobId}` });
       return;
     }
-    
-    const nextJobId = `TV${1001 + (store.calls?.length || 0)}`;
-    store.convertInquiryToJob(inq.id, nextJobId);
-    toast({ title: "Conversion Successful", description: `Lead converted to Repair Job: ${nextJobId}` });
+
+    store.convertInquiryToJob(inq)
+      .then((job: any) => toast({ title: "Conversion Successful", description: `Lead converted to Repair Job: ${job.id}` }))
+      .catch((err: any) => toast({ variant: "destructive", title: "Conversion Failed", description: err?.message || "Could not convert this lead. Please try again." }));
   };
 
   return (

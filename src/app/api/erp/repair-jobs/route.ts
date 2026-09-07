@@ -18,8 +18,8 @@ export async function POST(request: Request) {
   if (isAuthError(auth)) return auth;
   try {
     const body = await request.json();
-    const id = await createRepairJob(auth.email, body);
-    return NextResponse.json({ success: true, data: { id } });
+    const result = await createRepairJob(auth.email, body);
+    return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
   }

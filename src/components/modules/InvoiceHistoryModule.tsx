@@ -146,7 +146,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
         inv.items.forEach(item => {
           doc.text(String(item.name || "Part"), 20, y + 7);
           doc.text(String(item.quantity || 1), 150, y + 7, { align: 'center' });
-          doc.text('INR ' + (item.total || 0).toFixed(2), 190, y + 7, { align: 'right' });
+          doc.text('INR ' + (item.amount || 0).toFixed(2), 190, y + 7, { align: 'right' });
           y += 10;
         });
       }
@@ -169,7 +169,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
       y += 10;
       doc.setFontSize(14);
       doc.text('Total Amount:', 140, y);
-      doc.text('INR ' + (inv.total || 0).toFixed(2), 190, y, { align: 'right' });
+      doc.text('INR ' + (inv.grandTotal || 0).toFixed(2), 190, y, { align: 'right' });
 
       doc.save(`${inv.invoiceNumber || 'Invoice'}.pdf`);
       toast({ title: "PDF Generated", description: "Your invoice has been downloaded." });
@@ -249,7 +249,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-code font-bold text-emerald-400">₹{(inv.total || 0).toLocaleString()}</span>
+                      <span className="font-code font-bold text-emerald-400">₹{(inv.grandTotal || 0).toLocaleString()}</span>
                       <Badge className={cn("w-fit text-[8px] uppercase mt-1", 
                         inv.paymentStatus === 'Paid' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
                         "bg-rose-500/10 text-rose-400 border-rose-500/20"
@@ -316,7 +316,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                       viewingInvoice.items.map((item, i) => (
                         <div key={i} className="flex justify-between text-xs py-1 border-b border-slate-900 last:border-0">
                           <span className="text-slate-300">{item.name || "Part"} x {item.quantity || 1}</span>
-                          <span className="font-code font-bold">₹{(item.total || 0).toLocaleString()}</span>
+                          <span className="font-code font-bold">₹{(item.amount || 0).toLocaleString()}</span>
                         </div>
                       ))
                     )}
@@ -340,7 +340,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
                    )}
                    <div className="flex justify-between pt-2 border-t border-slate-700">
                       <span className="font-headline font-bold uppercase">Total Payable</span>
-                      <span className="font-code font-bold text-xl text-emerald-400">₹{(viewingInvoice.total || 0).toLocaleString()}</span>
+                      <span className="font-code font-bold text-xl text-emerald-400">₹{(viewingInvoice.grandTotal || 0).toLocaleString()}</span>
                    </div>
                 </div>
               </div>

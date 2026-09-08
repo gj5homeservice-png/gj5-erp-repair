@@ -45,7 +45,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 PLUS', headerTextX, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 20);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -164,7 +164,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-black text-[#123C8C]">{profile.companyName?.toUpperCase() || 'GJ5 PLUS'}</h1>
+                  <h1 className="text-2xl font-black text-[#123C8C]">{profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</h1>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest">Repair Service Receipt</p>
                 </div>
               </div>

@@ -20,7 +20,7 @@ export default function RootEntry() {
           <Lock className="w-5 h-5 text-blue-500 opacity-40" />
         </div>
       </div>
-      <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Loading GJ5 ERP Console...</p>
+      <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Loading GJ5 Home Service Console...</p>
     </div>
   );
 }

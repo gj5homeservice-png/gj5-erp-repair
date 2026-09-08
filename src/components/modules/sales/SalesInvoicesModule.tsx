@@ -43,7 +43,7 @@ export function SalesInvoicesModule({ store }: { store: any }) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 20);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text('SALES TAX INVOICE', headerTextX, 27);

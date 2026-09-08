@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ChunkErrorRecovery } from '@/components/ChunkErrorRecovery';
 
 export const metadata: Metadata = {
-  title: 'GJ5 ERP | GOOD JOB 5 ERP',
+  title: 'GJ5 HOME SERVICE | GOOD JOB 5 ERP',
   description: 'GOOD JOB 5 ERP - Smart Business Management Software',
 };
 

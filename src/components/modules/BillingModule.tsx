@@ -175,7 +175,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 20);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -270,7 +270,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.line(150, 280, 195, 280);
 
     doc.save(`${nextInvoiceNumber}.pdf`);
-    toast({ title: "PDF Generated", description: "Official GJ5 ERP manifest ready for dispatch." });
+    toast({ title: "PDF Generated", description: "Official GJ5 Home Service manifest ready for dispatch." });
   };
 
   return (
@@ -285,7 +285,7 @@ export function BillingModule({ store }: { store: any }) {
                         <Receipt className="w-6 h-6" />
                      </div>
                      <div>
-                        <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP BILLING'}</h2>
+                        <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE BILLING'}</h2>
                         <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GOOD JOB 5 ERP ENGINE v4.0</p>
                      </div>
                   </div>
@@ -500,7 +500,7 @@ export function BillingModule({ store }: { store: any }) {
            <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden lg:sticky lg:top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</span>
+                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</span>
                     <span className="text-[6px] font-bold text-[#123C8C] uppercase tracking-widest mt-1">Live Manifest Preview</span>
                  </div>
                  <Badge className="bg-[#E53935] text-[8px] uppercase border-0">A4 Calibration</Badge>
@@ -514,7 +514,7 @@ export function BillingModule({ store }: { store: any }) {
                          </div>
                        )}
                        <div className="flex flex-col">
-                          <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</h2>
+                          <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</h2>
                           <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address || ''}, {store.companyProfile?.city || ''} • MO: {store.companyProfile?.whatsapp || ''}</span>
                        </div>
                     </div>

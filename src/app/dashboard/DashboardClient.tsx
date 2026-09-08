@@ -74,7 +74,7 @@ const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-end">
       <div>
-        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">GJ5 ERP Console</h2>
+        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">{store.companyProfile?.companyName || 'GJ5 Home Service'} Console</h2>
         <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Workspace Status: Operational</p>
       </div>
       <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
@@ -280,7 +280,7 @@ export default function ErpMainHub() {
   }
 
   const companyLogo = store.companyProfile?.logoUrl;
-  const companyName = store.companyProfile?.companyName || "GJ5 ERP Workspace";
+  const companyName = store.companyProfile?.companyName || "GJ5 Home Service";
   const ownerName = store.companyProfile?.ownerName || "Authorized Admin";
 
   return (

@@ -64,7 +64,7 @@ export default function LoginPage() {
         if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
         localStorage.setItem('gj5_auth_token', json.token);
         localStorage.setItem('gj5_active_user', email);
-        toast({ title: "Identity Verified", description: "Accessing GJ5 ERP Console..." });
+        toast({ title: "Identity Verified", description: "Accessing GJ5 Home Service Console..." });
         router.push('/dashboard');
       } catch (err: any) {
         toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
@@ -86,7 +86,7 @@ export default function LoginPage() {
           localStorage.setItem('gj5_active_user', email);
           toast({
             title: "Identity Verified",
-            description: json.forcePasswordChange ? "Please change your password after logging in." : "Accessing GJ5 ERP Console...",
+            description: json.forcePasswordChange ? "Please change your password after logging in." : "Accessing GJ5 Home Service Console...",
           });
           router.push('/dashboard');
         } else {
@@ -163,7 +163,7 @@ export default function LoginPage() {
             <CompanyLogo src={brandLogo} className="w-full h-full" alt="Company Logo" />
           </div>
 
-          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 ERP</h1>
+          <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 HOME SERVICE</h1>
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">GOOD JOB 5 ERP</p>
 
           <Tabs defaultValue="admin" className="w-full">

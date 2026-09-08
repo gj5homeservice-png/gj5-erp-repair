@@ -68,7 +68,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: S
           >
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2">
               <div className="flex flex-col">
-                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase text-[#123C8C]">{companyName || 'GJ5 ERP'}</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase text-[#123C8C]">{companyName || 'GJ5 HOME SERVICE'}</h1>
               </div>
               <div className="text-right">
                 <h2 className="text-xl font-black text-[#E53935] leading-none">88669 83900</h2>

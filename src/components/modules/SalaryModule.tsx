@@ -120,7 +120,7 @@ export function SalaryModule({ store }: { store: any }) {
     doc.setTextColor(255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 12);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text('GOOD JOB 5 ERP - INDUSTRIAL PAYROLL', headerTextX, 18);

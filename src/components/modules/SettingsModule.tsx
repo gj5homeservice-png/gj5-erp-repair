@@ -31,8 +31,10 @@ import {
   X,
   Loader2,
   ArrowRight,
-  Info
+  Info,
+  LayoutGrid
 } from 'lucide-react';
+import { SidebarCustomizationPanel } from './settings/SidebarCustomizationPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,6 +79,7 @@ const SECTIONS = [
   { key: 'systemPreferences', label: 'System Preferences', icon: SlidersHorizontal },
   { key: 'dataManagement', label: 'Data Management', icon: DatabaseBackup },
   { key: 'employeePermissions', label: 'Employee & Permissions', icon: Users },
+  { key: 'sidebarCustomization', label: 'Sidebar Customization', icon: LayoutGrid },
 ] as const;
 
 type SectionKey = typeof SECTIONS[number]['key'];
@@ -543,6 +546,8 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
             </Button>
           </div>
         );
+      case 'sidebarCustomization':
+        return <SidebarCustomizationPanel store={store} />;
       case 'dataManagement':
         return (
           <div>

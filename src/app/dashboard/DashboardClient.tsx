@@ -36,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { createAutoBackupIfDue } from '@/lib/data-management';
+import { resolveSidebarOrder } from '@/lib/nav-items';
 
 // Module Imports — dynamically code-split, not bundled into /dashboard's own
 // chunk. Previously these 13 modules (every ERP feature: Employees, Repair
@@ -173,13 +174,15 @@ export default function ErpMainHub() {
   // route's own permission check) — this filtering alone is not the
   // security boundary.
   const canView = (moduleName: string) => !store.session?.permissions || !!store.session.permissions[moduleName]?.view;
-  // Filtered per pre-existing group (not the flat array first) so hiding one
-  // item can't shift where the "Repair Jobs" standalone entry gets spliced
-  // in — the desktop sidebar renders these three groups separately.
-  const navItemsFirstGroup = navItems.slice(0, 2).filter((item) => canView(item.name));
-  const navItemsSecondGroup = navItems.slice(2).filter((item) => canView(item.name));
-  const visibleStandaloneItems = STANDALONE_REPAIR_ITEMS.filter((item) => canView(item.name));
-  const visibleAllNavItems = ALL_NAV_ITEMS.filter((item) => canView(item.name));
+  // Order comes from the user's saved Sidebar Customization (Settings >
+  // Sidebar Customization), falling back to the app default — same list
+  // used for both the desktop sidebar and the mobile drawer, so the two can
+  // never show a different order. A module is hidden only if the signed-in
+  // session both has RBAC view access to it AND the user hasn't hidden it
+  // via the eye toggle (visibility.tabs, false only when explicitly hidden).
+  const visibleOrderedNavItems = resolveSidebarOrder(store.navOrder).filter(
+    (item) => canView(item.name) && store.visibility?.tabs?.[item.name] !== false
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -297,41 +300,7 @@ export default function ErpMainHub() {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
-            {navItemsFirstGroup.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => setActiveTab(item.name)}
-                className={cn(
-                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
-                  activeTab === item.name
-                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                )}
-              >
-                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
-                <span className="text-xs font-bold tracking-tight">{item.name}</span>
-                {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
-              </button>
-            ))}
-
-            {visibleStandaloneItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => setActiveTab(item.name)}
-                className={cn(
-                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
-                  activeTab === item.name
-                    ? "bg-[#123C8C] text-white shadow-lg shadow-blue-900/20"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                )}
-              >
-                <item.icon className={cn("w-4 h-4", activeTab === item.name ? "text-white" : "group-hover:text-[#123C8C]")} />
-                <span className="text-xs font-bold tracking-tight">{item.name}</span>
-                {activeTab === item.name && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
-              </button>
-            ))}
-
-            {navItemsSecondGroup.map((item) => (
+            {visibleOrderedNavItems.map((item) => (
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
@@ -378,7 +347,7 @@ export default function ErpMainHub() {
             </div>
 
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
-              {visibleAllNavItems.map((item) => (
+              {visibleOrderedNavItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={() => { setActiveTab(item.name); setMobileNavOpen(false); }}
@@ -469,26 +438,5 @@ export default function ErpMainHub() {
   );
 }
 
-const navItems = [
-  { name: 'Dashboard', icon: LayoutDashboard },
-  { name: 'Repairing', icon: Wrench },
-  { name: 'CRM Leads', icon: BarChart3 },
-  { name: 'Billing', icon: Receipt },
-  { name: 'Invoice History', icon: History },
-  { name: 'Stock', icon: Package },
-  { name: 'Employees', icon: Users },
-  { name: 'Attendance', icon: CalendarCheck },
-  { name: 'Salary', icon: DollarSign },
-  { name: 'Analytics', icon: BarChart3 },
-  { name: 'E-Wallet', icon: Wallet },
-  { name: 'Logistics', icon: Truck },
-  { name: 'Settings', icon: Settings },
-];
-
-const STANDALONE_REPAIR_ITEMS = [
-  { name: 'Repair Jobs', icon: ClipboardList },
-];
-
-// Same items as the desktop sidebar (navItems.slice(0,2) + STANDALONE_REPAIR_ITEMS + navItems.slice(2)),
-// in the same order, for the mobile/tablet nav drawer.
-const ALL_NAV_ITEMS = [...navItems.slice(0, 2), ...STANDALONE_REPAIR_ITEMS, ...navItems.slice(2)];
+// The module list itself (names + icons) and its default order now live in
+// src/lib/nav-items.ts, shared with the Sidebar Customization panel.

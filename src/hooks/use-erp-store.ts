@@ -32,21 +32,12 @@ import {
   EmployeeAuditLogEntry,
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
+import { ALL_SIDEBAR_MODULES, DEFAULT_SIDEBAR_ORDER } from '@/lib/nav-items';
 
-const DEFAULT_NAV_ORDER = [
-  'Dashboard',
-  'Repairing',
-  'CRM Leads',
-  'Billing',
-  'Invoice History',
-  'Stock',
-  'Employees',
-  'Attendance',
-  'Salary',
-  'Analytics',
-  'E-Wallet',
-  'Logistics'
-];
+// Single source of truth for both is src/lib/nav-items.ts, shared with the
+// Sidebar Customization panel (Settings) so the sidebar and its editor can
+// never disagree on which modules exist or their default order.
+const DEFAULT_NAV_ORDER = DEFAULT_SIDEBAR_ORDER;
 
 const DEFAULT_SETTINGS: SystemSettings = {
   gstEnabled: true,
@@ -77,11 +68,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 const DEFAULT_VISIBILITY: VisibilitySettings = {
-  tabs: {
-    'Dashboard': true, 'Repairing': true, 'CRM Leads': true, 'Billing': true,
-    'Invoice History': true, 'Stock': true, 'Employees': true, 'Attendance': true,
-    'Salary': true, 'Analytics': true, 'E-Wallet': true, 'Logistics': true
-  },
+  tabs: Object.fromEntries(ALL_SIDEBAR_MODULES.map((m) => [m.name, true])),
   kpis: {
     totalActive: true, pending: true, completed: true, repeat: true,
     rejected: true, exchange: true, warranty: true

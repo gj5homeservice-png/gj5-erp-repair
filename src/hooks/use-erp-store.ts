@@ -225,6 +225,18 @@ export function useErpStore() {
     return () => { if (unsubscribe) unsubscribe(); };
   }, [activeUser]);
 
+  // Keeps the device-local logo cache (and, through it, the browser tab
+  // favicon — see branding.ts) in sync with whatever companyProfile actually
+  // resolves to, from any source: the Firestore snapshot above, its
+  // localStorage fallback, or an explicit save. Watching companyProfile
+  // itself rather than only the save path means another device changing the
+  // logo, or simply this one loading it for the first time, updates the tab
+  // icon too — not just the browser that clicked Save.
+  useEffect(() => {
+    if (!activeUser) return;
+    setBrandLogoCache(companyProfile?.logoUrl || '');
+  }, [activeUser, companyProfile?.logoUrl]);
+
   const settings: SystemSettings = { ...DEFAULT_SETTINGS, ...(snap.settings || {}) };
   const visibility: VisibilitySettings = (snap.visibility as VisibilitySettings) || DEFAULT_VISIBILITY;
   const navOrder: string[] = snap.navOrder || DEFAULT_NAV_ORDER;

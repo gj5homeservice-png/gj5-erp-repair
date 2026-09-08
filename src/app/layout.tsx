@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ChunkErrorRecovery } from '@/components/ChunkErrorRecovery';
+import { DynamicFavicon } from '@/components/DynamicFavicon';
 
 export const metadata: Metadata = {
   title: 'GJ5 HOME SERVICE | GOOD JOB 5 ERP',
@@ -23,6 +24,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-[#0B0F19] text-slate-100 overflow-x-hidden">
         <ChunkErrorRecovery />
+        <DynamicFavicon />
         <FirebaseClientProvider>
           {children}
           <Toaster />

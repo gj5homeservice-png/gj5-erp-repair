@@ -18,6 +18,7 @@ import { RepairReceiptModal } from './RepairReceiptModal';
 import { RepairDeleteModal } from './RepairDeleteModal';
 import { RepairJob, RepairJobStatus } from '@/lib/types';
 import { displayAmount } from '@/lib/repair-utils';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 
 const STATUS_COLORS: Record<string, string> = {
   Received: 'bg-blue-600/10 text-blue-400 border-blue-600/20',
@@ -113,7 +114,45 @@ export function RepairJobsModule({ store }: { store: any }) {
         <Input value={brandFilter} onChange={e => setBrandFilter(e.target.value)} placeholder="Filter by Brand..." className="w-full sm:w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
       </div>
 
-      <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
+      <MobileCardList>
+        {filtered.map(j => (
+          <MobileCard key={j.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col min-w-0">
+                <span className="font-code font-bold text-blue-400 text-sm">{j.id}</span>
+                <span className="font-bold text-sm text-slate-200 truncate">{j.customerName}</span>
+              </div>
+              <Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase shrink-0`}>{j.status}</Badge>
+            </div>
+            <div className="space-y-1.5">
+              <MobileCardRow label="Mobile" value={j.mobile} />
+              <MobileCardRow label="Product" value={`${j.brand || ''} ${j.model || ''}`.trim() || undefined} />
+              <MobileCardRow label="Problem" value={j.problemDescription} />
+              <MobileCardRow label="Technician" value={j.technicianName || '—'} />
+              <MobileCardRow label="Received" value={j.receivedDate} />
+              <MobileCardRow label="Expected" value={j.expectedDeliveryDate || '—'} />
+              <MobileCardRow label="Amount" value={`₹${displayAmount(j).toLocaleString()}`} />
+            </div>
+            <MobileCardActions>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-purple-400" title="Update Status" onClick={() => setStatusJob(j)}><RefreshCw className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-cyan-400" title="Add Note" onClick={() => setNoteJob(j)}><StickyNote className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-orange-400" title="Add Parts" onClick={() => setPartJob(j)}><PackagePlus className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-emerald-400" title="Payment" onClick={() => setPaymentJob(j)}><Wallet className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-lime-400" title="Print Receipt" onClick={() => setReceiptJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+            </MobileCardActions>
+          </MobileCard>
+        ))}
+        {filtered.length === 0 && (
+          <div className="h-24 flex items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20 px-4">
+            {jobs.length === 0 ? 'No repair jobs yet. Create one from "New Repair".' : 'No repair jobs match your search/filters.'}
+          </div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>

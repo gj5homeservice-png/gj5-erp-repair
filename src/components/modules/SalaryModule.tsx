@@ -30,12 +30,13 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameMonth } from 'date-fns';
@@ -222,7 +223,49 @@ export function SalaryModule({ store }: { store: any }) {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+      <MobileCardList>
+        {filteredSalaries.map((s: SalaryRecord) => (
+          <MobileCard key={s.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-emerald-400 border border-slate-700 shrink-0">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-slate-100 truncate">{s.employeeName}</p>
+                  <p className="text-[9px] text-slate-500 uppercase font-black tracking-tighter">{s.employeeId} • {s.month}</p>
+                </div>
+              </div>
+              <p className="text-lg font-code font-bold text-blue-400 shrink-0">₹{s.netPayable.toLocaleString()}</p>
+            </div>
+            <div className="space-y-1.5">
+              <MobileCardRow label="Worked Days" value={s.attendanceDays} />
+              <MobileCardRow label="Base Salary" value={`₹${s.baseSalary.toLocaleString()}`} />
+            </div>
+            <MobileCardActions>
+              <Button variant="ghost" size="icon" onClick={() => handlePrintSlip(s)} className="h-8 w-8 text-slate-400 hover:text-white"><Printer className="w-4 h-4" /></Button>
+              <Select value={s.paymentStatus} onValueChange={(v: any) => store.updateSalary({ ...s, paymentStatus: v })}>
+                <SelectTrigger className={cn(
+                  "h-8 text-[9px] font-black uppercase border-0 w-32",
+                  s.paymentStatus === 'Paid' ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
+                )}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectItem value="Pending">Pending Audit</SelectItem>
+                  <SelectItem value="Paid">Confirmed Paid</SelectItem>
+                </SelectContent>
+              </Select>
+            </MobileCardActions>
+          </MobileCard>
+        ))}
+        {filteredSalaries.length === 0 && (
+          <div className="h-32 flex items-center justify-center text-center text-slate-700 font-medium italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No records found. Run the calculation matrix for active associates.</div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-900/60">
             <TableRow className="border-slate-800">
@@ -283,8 +326,9 @@ export function SalaryModule({ store }: { store: any }) {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
-      
+
       <div className="flex items-center gap-2 p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
          <p className="text-[10px] text-slate-500 italic">GJ5 ERP Payroll Logic: 30-day base cycle is used for all calculations. Manual adjustments can be made via the Wallet Module if required.</p>

@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Inquiry, InquiryStatus, InquiryPriority, InquirySource } from '@/lib/types';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import { InquiryModal } from './inquiry/InquiryModal';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { format, isToday, isPast, parseISO, differenceInDays, isValid } from 'date-fns';
@@ -159,7 +160,78 @@ export function InquiryModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+      <MobileCardList>
+        {filteredInquiries.map((inq: Inquiry) => {
+          const followUpDateStr = inq.followUpDate || '';
+          const followUpDateObj = followUpDateStr ? parseISO(followUpDateStr) : null;
+          const isFollowUpDue = followUpDateObj && isValid(followUpDateObj) && isPast(followUpDateObj) && inq.status !== 'Converted';
+          return (
+            <MobileCard key={inq.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-sm truncate">{inq.customerName}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-blue-400 font-code">{inq.mobile}</span>
+                    <Badge variant="outline" className="text-[8px] uppercase border-slate-800">{inq.source}</Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge className={cn("text-[9px] uppercase font-black px-1.5 h-4",
+                    inq.priority === 'High' ? "bg-rose-500/10 text-rose-500" :
+                    inq.priority === 'Medium' ? "bg-amber-500/10 text-amber-500" :
+                    "bg-slate-500/10 text-slate-400"
+                  )}>
+                    {inq.priority}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="outline-none">
+                        <Badge className={cn("text-[9px] uppercase cursor-pointer",
+                          inq.status === 'Converted' ? "bg-emerald-500/10 text-emerald-400" :
+                          inq.status === 'Rejected' ? "bg-rose-500/10 text-rose-400" :
+                          "bg-blue-500/10 text-blue-400"
+                        )}>
+                          {inq.status}
+                        </Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      {['New', 'Pending', 'Follow-up', 'Rejected'].map(s => (
+                        <DropdownMenuItem key={s} onClick={() => handleStatusChange(inq, s as any)} className="text-[10px] uppercase font-bold">{s}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <MobileCardRow label="Product" value={inq.brand} />
+                <MobileCardRow label="Type" value={inq.productType} />
+                <MobileCardRow label="Follow-up" value={
+                  <span className={cn("font-bold", isFollowUpDue ? "text-rose-500" : "text-slate-300")}>
+                    {followUpDateObj && isValid(followUpDateObj) ? format(followUpDateObj, 'dd MMM yyyy') : 'No Date'}
+                  </span>
+                } />
+                <MobileCardRow label="Staff" value={inq.assignedTechnician || 'Unassigned'} />
+              </div>
+              <MobileCardActions>
+                {inq.status !== 'Converted' && (
+                  <Button size="icon" variant="ghost" onClick={() => handleConvertToJob(inq)} title="Convert to Job" className="h-8 w-8 text-emerald-400 hover:bg-emerald-500/10">
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button size="icon" variant="ghost" onClick={() => { setEditingInquiry(inq); setModalOpen(true); }} className="h-8 w-8 text-blue-400"><Edit className="w-3.5 h-3.5" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => handleDuplicate(inq)} title="Duplicate Lead" className="h-8 w-8 text-amber-400"><Copy className="w-3.5 h-3.5" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => setDeleteId(inq.id)} className="h-8 w-8 text-rose-500"><Trash2 className="w-3.5 h-3.5" /></Button>
+              </MobileCardActions>
+            </MobileCard>
+          );
+        })}
+        {filteredInquiries.length === 0 && (
+          <div className="h-32 flex items-center justify-center text-center text-slate-500 italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No inquiries matched your criteria.</div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-900/60">

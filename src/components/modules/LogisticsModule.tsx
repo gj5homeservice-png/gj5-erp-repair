@@ -36,6 +36,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { MobileCard, MobileCardList, MobileCardRow } from '@/components/ui/mobile-card';
 import { cn } from '@/lib/utils';
 import { format, isToday, parseISO } from 'date-fns';
 
@@ -180,7 +181,7 @@ export function LogisticsModule({ store }: { store: any }) {
         <CardContent className="p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
                   <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} placeholder="e.g. Rahul Patel" className="bg-slate-950 border-slate-800 h-11" />
@@ -269,7 +270,42 @@ export function LogisticsModule({ store }: { store: any }) {
         <h3 className="text-xl font-headline font-bold flex items-center gap-2">
           <Package className="w-6 h-6 text-[#FFD700]" /> Live Transit Log Directory
         </h3>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+        <MobileCardList>
+          {store.transportationLogs.map((log: any) => (
+            <MobileCard key={log.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate">{log.runnerName}</p>
+                  <p className="text-[10px] text-slate-500 font-code">{log.runnerMobile}</p>
+                </div>
+                <Badge variant="outline" className="font-code text-[10px] shrink-0">{log.jobId}</Badge>
+              </div>
+              <div className="space-y-1.5">
+                <MobileCardRow label="Customer" value={log.customerName} />
+                <MobileCardRow label="Mobile" value={log.customerMobile} />
+                <MobileCardRow label="Address" value={log.address} />
+                <MobileCardRow label="Dispatched" value={format(new Date(log.dispatchTime), 'hh:mm a')} />
+              </div>
+              <div className="pt-2 mt-1 border-t border-slate-800/80">
+                <Select value={log.status} onValueChange={(v: any) => store.updateTransportLogStatus(log.id, v)}>
+                  <SelectTrigger className="h-8 text-[10px] bg-slate-950 border-slate-800 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
+                    <SelectItem value="OK Pickup">OK Pickup</SelectItem>
+                    <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
+                    <SelectItem value="OK Delivery">OK Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </MobileCard>
+          ))}
+          {store.transportationLogs.length === 0 && (
+            <div className="h-32 flex items-center justify-center text-center text-slate-500 text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No active transportation transits.</div>
+          )}
+        </MobileCardList>
+
+        <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-900/60">
               <TableRow className="border-slate-800 hover:bg-transparent">
@@ -307,6 +343,7 @@ export function LogisticsModule({ store }: { store: any }) {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
     </div>

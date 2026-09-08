@@ -33,10 +33,11 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter
@@ -237,7 +238,52 @@ export function AttendanceModule({ store }: { store: any }) {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-           <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+           <MobileCardList>
+             {filteredAttendance.map((rec: AttendanceRecord) => (
+               <MobileCard key={rec.id}>
+                 <div className="flex items-start justify-between gap-3">
+                   <div className="min-w-0">
+                     <p className="font-bold text-sm text-slate-100 truncate">{rec.employeeName}</p>
+                     <p className="text-[9px] text-slate-500 font-code font-bold uppercase">{rec.employeeId}</p>
+                   </div>
+                   <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0 shrink-0",
+                     rec.status === 'Checked Out' ? "bg-emerald-500/10 text-emerald-400" :
+                     rec.status === 'Late' ? "bg-amber-500/10 text-amber-500" :
+                     rec.status === 'Checked In' ? "bg-blue-500/10 text-blue-400 animate-pulse" :
+                     "bg-rose-500/10 text-rose-400"
+                   )}>
+                     {rec.status}
+                   </Badge>
+                 </div>
+                 <div className="flex items-center justify-between gap-3">
+                   <div className="flex items-center gap-3">
+                     {rec.selfieCheckIn && (
+                       <button onClick={() => setViewingRecord(rec)} className="w-9 h-9 rounded-lg bg-slate-800 overflow-hidden border border-slate-700">
+                         <img src={rec.selfieCheckIn} className="w-full h-full object-cover" alt="Proof" />
+                       </button>
+                     )}
+                     <div className="flex items-center gap-1 text-blue-400">
+                       <Clock className="w-3.5 h-3.5" />
+                       <span className="font-code font-bold text-xs">{rec.workHours}</span>
+                     </div>
+                   </div>
+                 </div>
+                 <div className="space-y-1.5">
+                   <MobileCardRow label="Check In" value={rec.checkIn ? format(parseISO(rec.checkIn), 'hh:mm a') : '--'} />
+                   {rec.checkOut && <MobileCardRow label="Check Out" value={format(parseISO(rec.checkOut), 'hh:mm a')} />}
+                 </div>
+                 <MobileCardActions>
+                   <Button variant="ghost" size="icon" onClick={() => setViewingRecord(rec)} className="h-8 w-8 text-blue-400"><Eye className="w-3.5 h-3.5" /></Button>
+                 </MobileCardActions>
+               </MobileCard>
+             ))}
+             {filteredAttendance.length === 0 && (
+               <div className="h-32 flex items-center justify-center text-center text-slate-500 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20">No attendance records found.</div>
+             )}
+           </MobileCardList>
+
+           <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-900/60">
                   <TableRow className="border-slate-800">
@@ -292,6 +338,7 @@ export function AttendanceModule({ store }: { store: any }) {
                   ))}
                 </TableBody>
               </Table>
+              </div>
            </div>
         </div>
       </div>
@@ -312,7 +359,7 @@ export function AttendanceModule({ store }: { store: any }) {
 
             {viewingRecord && (
                <div className="p-8 space-y-8">
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-black text-slate-500">Check-In Biometric</Label>

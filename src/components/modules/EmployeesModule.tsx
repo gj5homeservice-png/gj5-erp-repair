@@ -40,6 +40,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import {
   Dialog,
   DialogContent,
@@ -365,7 +366,96 @@ export function EmployeesModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-x-auto custom-scrollbar shadow-2xl">
+      <MobileCardList>
+        {filteredEmployees.map((emp: Employee) => (
+          <MobileCard key={emp.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-blue-500 overflow-hidden border border-slate-700 shrink-0" onClick={() => setViewingQr(emp)}>
+                  {emp.photo ? <img src={emp.photo} className="w-full h-full object-cover" alt={emp.name} /> : emp.name[0]}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-slate-100 truncate">{emp.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className="text-[8px] uppercase font-bold border-blue-500/20 text-blue-400 bg-blue-500/5 px-1">{emp.employeeId}</Badge>
+                    <span className="text-[10px] text-slate-400 font-code">{emp.mobile}</span>
+                  </div>
+                </div>
+              </div>
+              <Badge className={cn("text-[9px] font-black uppercase px-2 h-5 border-0 shrink-0", STATUS_COLORS[emp.status] || STATUS_COLORS.Active)}>
+                {emp.status}
+              </Badge>
+            </div>
+            <div className="space-y-1.5">
+              <MobileCardRow label="Department" value={emp.department} />
+              <MobileCardRow label="Designation" value={emp.designation} />
+              <MobileCardRow label="Role" value={emp.role} />
+              <MobileCardRow label="Login" value={emp.loginAccess?.username ? (emp.loginAccess.loginEnabled ? 'Enabled' : 'Disabled') : 'No Access'} />
+              <MobileCardRow label="Salary" value={<span className="text-emerald-400 font-bold">₹{emp.salary.toLocaleString()}</span>} />
+              <MobileCardRow label="Last Login" value={emp.loginAccess?.lastLoginAt ? new Date(emp.loginAccess.lastLoginAt).toLocaleDateString() : '—'} />
+            </div>
+            <MobileCardActions>
+              <Button variant="ghost" size="icon" onClick={() => openEditModal(emp)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="View / Edit"><Eye className="w-3.5 h-3.5" /></Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:bg-slate-800 hover:text-white" title="More Actions">
+                    <MoreVertical className="w-3.5 h-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-56">
+                  <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => openEditModal(emp)}>
+                    <Edit className="w-3.5 h-3.5" /> Edit Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('login'); }}>
+                    <KeyRound className="w-3.5 h-3.5" /> Login Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('login'); }}>
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset Password
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('access'); }}>
+                    <ShieldCheck className="w-3.5 h-3.5" /> Permissions
+                  </DropdownMenuItem>
+                  {canAccessKyc && (
+                    <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('kyc'); }}>
+                      <ShieldCheck className="w-3.5 h-3.5" /> KYC Vault
+                    </DropdownMenuItem>
+                  )}
+                  {canAccessAuditLogs && (
+                    <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => { openEditModal(emp); setActiveTab('activity'); }}>
+                      <History className="w-3.5 h-3.5" /> Activity Log
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setViewingQr(emp)}>
+                    <QrCode className="w-3.5 h-3.5" /> QR Identity Card
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-slate-800" />
+                  {emp.status === 'Active' ? (
+                    <DropdownMenuItem className="text-xs gap-2 text-amber-400 focus:bg-amber-500/10 focus:text-amber-400" onClick={() => handleChangeStatus(emp, 'Inactive')}>
+                      <Lock className="w-3.5 h-3.5" /> Disable
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem className="text-xs gap-2 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-400" onClick={() => handleChangeStatus(emp, 'Active')}>
+                      <Unlock className="w-3.5 h-3.5" /> Enable
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem className="text-xs gap-2 text-orange-400 focus:bg-orange-500/10 focus:text-orange-400" onClick={() => setTerminateEmpId(emp.id)}>
+                    <Ban className="w-3.5 h-3.5" /> Terminate
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-slate-800" />
+                  <DropdownMenuItem className="text-xs gap-2 text-rose-400 focus:bg-rose-500/10 focus:text-rose-400" onClick={() => setDeleteEmpId(emp.id)}>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Record
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </MobileCardActions>
+          </MobileCard>
+        ))}
+        {filteredEmployees.length === 0 && (
+          <div className="h-32 flex items-center justify-center text-center text-slate-500 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20">No associate nodes found in active HR registry.</div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-x-auto custom-scrollbar shadow-2xl">
         <Table className="min-w-[960px]">
           <TableHeader className="bg-slate-900/60">
             <TableRow className="border-slate-800">

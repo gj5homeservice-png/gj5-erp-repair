@@ -68,6 +68,7 @@ import { format, isToday, isSameMonth, parseISO } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { TopUpModal } from './wallet/TopUpModal';
 import { WalletTransaction } from '@/lib/types';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 
 const EXPENSE_CATEGORIES = [
   { name: 'TV Purchase', icon: Box, color: '#3B82F6' },
@@ -180,7 +181,7 @@ export function WalletModule({ store }: { store: any }) {
            </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:gap-4 xl:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:col-span-2">
            {[
              { label: "Today Income", value: stats.todayInc, color: "text-emerald-400", icon: ArrowUpRight },
              { label: "Today Spent", value: stats.todayExp, color: "text-rose-400", icon: ArrowDownRight },
@@ -259,7 +260,47 @@ export function WalletModule({ store }: { store: any }) {
                  </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+              <MobileCardList>
+                {filteredTransactions.map((tx: any) => {
+                  const isCredit = tx.type === 'TOPUP' || tx.type === 'MANUAL_CREDIT';
+                  return (
+                    <MobileCard key={tx.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={cn(
+                            "p-1.5 rounded-lg shrink-0",
+                            isCredit ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                          )}>
+                            {isCredit ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-100 truncate">{tx.description}</p>
+                            <Badge variant="outline" className={cn("text-[8px] uppercase px-1 border-0 bg-slate-800/50", isCredit ? "text-emerald-500" : "text-rose-500")}>
+                              {tx.type.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <span className={cn("font-code font-bold text-sm shrink-0", isCredit ? "text-emerald-400" : "text-rose-500")}>
+                          {isCredit ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <MobileCardRow label="Date" value={format(parseISO(tx.date), 'dd MMM yyyy')} />
+                        <MobileCardRow label="Time" value={tx.time} />
+                      </div>
+                      <MobileCardActions>
+                        <Button variant="ghost" size="icon" onClick={() => setTxToEdit(tx)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10"><Edit className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setTxToDelete(tx.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </MobileCardActions>
+                    </MobileCard>
+                  );
+                })}
+                {filteredTransactions.length === 0 && (
+                  <div className="h-32 flex items-center justify-center text-center text-slate-500 italic text-xs rounded-2xl border border-slate-800 bg-slate-900/20">No transaction records found matching your filters.</div>
+                )}
+              </MobileCardList>
+
+              <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
                  <div className="overflow-x-auto">
                    <Table>
                       <TableHeader className="bg-slate-900/60">

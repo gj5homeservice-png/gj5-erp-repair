@@ -35,13 +35,14 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import {
   Table,
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { useToast } from '@/hooks/use-toast';
@@ -380,7 +381,31 @@ export function BillingModule({ store }: { store: any }) {
                    </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-x-auto">
+                <MobileCardList>
+                  {items.map(item => (
+                    <MobileCard key={item.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-200 truncate">{item.name}</p>
+                          <p className="text-[9px] text-slate-500 uppercase">{item.brand}</p>
+                        </div>
+                        <span className="font-code text-xs font-bold text-emerald-400 shrink-0">₹{item.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <MobileCardRow label="Qty" value={item.quantity} />
+                        <MobileCardRow label="Rate" value={`₹${item.rate.toLocaleString()}`} />
+                      </div>
+                      <MobileCardActions>
+                        <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-8 w-8 text-[#E53935] hover:bg-red-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </MobileCardActions>
+                    </MobileCard>
+                  ))}
+                  {items.length === 0 && (
+                    <div className="h-24 flex items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/30">No items listed in current manifest.</div>
+                  )}
+                </MobileCardList>
+
+                <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/30 overflow-x-auto">
                    <Table>
                       <TableHeader className="bg-slate-900/60">
                          <TableRow className="border-slate-800">

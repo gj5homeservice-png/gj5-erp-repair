@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import { RepairJob, RepairJobStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
 import { StickerModal } from './repairing/StickerModal';
@@ -224,7 +225,85 @@ export function RepairingModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+      {viewMode === 'Repairing' && (
+        <MobileCardList>
+          {filteredCalls.map((call: RepairJob) => {
+            const wDays = calculateWarrantyLeft(call.warrantyExpiry);
+            const isRepeat = repeatIds.has(call.id);
+            return (
+              <MobileCard key={call.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="font-code font-bold text-blue-400 text-sm">{call.id}</span>
+                    <span className="font-semibold text-sm truncate">{call.customerName}</span>
+                    {isRepeat && <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[8px] w-fit uppercase font-black px-1.5 py-0">Repeat Visit</Badge>}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="outline-none shrink-0">
+                        <Badge className={cn("text-[10px] font-bold uppercase border whitespace-nowrap", STATUS_COLORS[call.status] || "bg-cyan-500/10 text-cyan-400 border-cyan-500/20")}>
+                          {call.status}
+                        </Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      {ALL_JOB_STATUSES.map((s) => (
+                        <DropdownMenuItem
+                          key={`status-mobile-${call.id}-${s}`}
+                          onClick={() => handleStatusChange(call, s)}
+                          className="text-xs uppercase font-bold hover:bg-slate-800 cursor-pointer"
+                        >
+                          {s}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="space-y-1.5">
+                  <MobileCardRow label="Mobile" value={call.mobile} />
+                  <MobileCardRow label="Category" value={call.productType} />
+                  <MobileCardRow label="Device" value={`${call.brand || ''} ${call.model || ''}`.trim() || undefined} />
+                  <MobileCardRow label="Warranty" value={call.warrantyDuration || 'No Warranty'} />
+                  {call.status === DONE_STATUS && wDays !== null && (
+                    <MobileCardRow label="Warranty Left" value={<span className="text-emerald-400">{wDays}D</span>} />
+                  )}
+                </div>
+                <MobileCardActions>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-blue-400" title="Location" onClick={() => handleMapClick(call.address || '')}><MapPin className="w-3.5 h-3.5" /></Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2" title="Full edit — open in Repair Jobs" onClick={() => toast({ title: 'Open in Repair Jobs', description: 'Full editing — technician, parts, payments, status history — is in the Repair Jobs module.' })}><Edit className="w-3.5 h-3.5" /></Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-emerald-400" title="Print" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-rose-500 hover:bg-rose-500/10" title="Delete" onClick={() => setDeleteJobId(call.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                </MobileCardActions>
+              </MobileCard>
+            );
+          })}
+          {filteredCalls.length === 0 && (
+            <div className="h-32 flex items-center justify-center text-center text-slate-500 italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No job records found matching criteria.</div>
+          )}
+        </MobileCardList>
+      )}
+
+      {viewMode === 'Inquiries' && (
+        <MobileCardList>
+          {store.inquiries.map((inq: any) => (
+            <MobileCard key={inq.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-sm truncate">{inq.customerName}</span>
+                  <span className="text-xs text-blue-400">{inq.mobile}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 whitespace-nowrap shrink-0">{inq.createdAt ? format(parseISO(inq.createdAt), 'dd/MM HH:mm') : 'N/A'}</span>
+              </div>
+              <p className="text-xs italic text-slate-300">"{inq.notes}"</p>
+            </MobileCard>
+          ))}
+          {store.inquiries.length === 0 && (
+            <div className="h-32 flex items-center justify-center text-center text-slate-500 italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No inquiries registered.</div>
+          )}
+        </MobileCardList>
+      )}
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
         <div className="overflow-x-auto w-full">
           {viewMode === 'Repairing' ? (
             <Table>

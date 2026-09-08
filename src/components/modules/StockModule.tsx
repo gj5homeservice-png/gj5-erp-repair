@@ -50,10 +50,11 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
@@ -314,7 +315,50 @@ export function StockModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+      <MobileCardList>
+        {filteredStock.map((item: StockItem) => (
+          <MobileCard key={item.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
+                  {item.images?.[0] ? <img src={item.images[0]} className="w-full h-full object-cover" alt={item.name} /> : <ImageIcon className="w-5 h-5 text-slate-800" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-slate-100 truncate">{item.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-blue-500 font-code font-bold uppercase">{item.brand}</span>
+                    <Badge variant="outline" className="text-[8px] uppercase border-slate-800 h-4 px-1">{item.category}</Badge>
+                  </div>
+                </div>
+              </div>
+              <span className={cn("font-code font-bold text-lg shrink-0",
+                item.quantity === 0 ? "text-rose-600" :
+                item.quantity <= item.minStockLevel ? "text-amber-500" :
+                "text-emerald-400")}>
+                {item.quantity}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              <MobileCardRow label="ID" value={item.id} />
+              <MobileCardRow label="Barcode" value={item.barcode} />
+              <MobileCardRow label="Buy Price" value={`₹${item.purchasePrice?.toLocaleString() || 0}`} />
+              <MobileCardRow label="Sell Price" value={<span className="text-blue-400 font-bold">₹{item.sellingPrice?.toLocaleString() || 0}</span>} />
+              <MobileCardRow label="Updated" value={item.lastUpdated ? format(parseISO(item.lastUpdated), 'dd MMM yyyy') : 'N/A'} />
+            </div>
+            <MobileCardActions>
+              <Button variant="ghost" size="icon" onClick={() => { setViewingItem(item); setIsDetailOpen(true); }} className="h-8 w-8 text-emerald-400 hover:bg-emerald-500/10"><Eye className="w-3.5 h-3.5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setFormData(item); setModalOpen(true); }} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10"><Edit className="w-3.5 h-3.5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => setDeleteItemId(item.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"><Trash2 className="w-3.5 h-3.5" /></Button>
+            </MobileCardActions>
+          </MobileCard>
+        ))}
+        {filteredStock.length === 0 && (
+          <div className="h-32 flex items-center justify-center text-center text-slate-500 font-medium italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No assets found in master registry.</div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-900/60">
             <TableRow className="border-slate-800">
@@ -387,6 +431,7 @@ export function StockModule({ store }: { store: any }) {
             {filteredStock.length === 0 && <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-500 font-medium italic">No assets found in master registry.</TableCell></TableRow>}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Detail & Enterprise History Modal */}
@@ -531,7 +576,39 @@ export function StockModule({ store }: { store: any }) {
                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><History className="w-4 h-4" /> Item Ledger History</h4>
                          <Badge className="bg-slate-900 border-slate-800 text-[9px] uppercase text-slate-400">Audit Trail Active</Badge>
                       </div>
-                      <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl">
+                      <MobileCardList>
+                        {viewingItem.history?.map((mov: StockMovement) => (
+                          <MobileCard key={mov.id}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-[10px] text-slate-300 font-bold">{mov.date ? format(parseISO(mov.date), 'dd MMM yyyy') : 'N/A'}</p>
+                                <p className="text-[9px] text-slate-600 uppercase font-black">{mov.date ? format(parseISO(mov.date), 'hh:mm a') : 'N/A'}</p>
+                              </div>
+                              <Badge className={cn("text-[8px] uppercase px-1.5 h-4 border-0",
+                                ['PURCHASE', 'INWARD', 'RETURN'].includes(mov.type) ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                              )}>
+                                {mov.type.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <div className="space-y-1.5">
+                              <MobileCardRow label="Flow Delta" value={
+                                <span className={cn("font-code font-bold", ['PURCHASE', 'INWARD', 'RETURN'].includes(mov.type) ? "text-emerald-400" : "text-rose-400")}>
+                                  {['PURCHASE', 'INWARD', 'RETURN'].includes(mov.type) ? '+' : '-'}{mov.quantity}
+                                </span>
+                              } />
+                              <MobileCardRow label="Reference" value={mov.referenceId} />
+                              <MobileCardRow label="Remarks" value={mov.customerName || mov.notes} />
+                              <MobileCardRow label="By" value={mov.performedBy || "System"} />
+                            </div>
+                          </MobileCard>
+                        ))}
+                        {(!viewingItem.history || viewingItem.history.length === 0) && (
+                          <div className="h-32 flex items-center justify-center text-center text-slate-700 text-xs italic rounded-2xl border border-slate-800 bg-slate-950">No transaction movement recorded for this asset.</div>
+                        )}
+                      </MobileCardList>
+
+                      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl">
+                         <div className="overflow-x-auto">
                          <Table>
                             <TableHeader className="bg-slate-900/60">
                                <TableRow className="border-slate-800">
@@ -579,6 +656,7 @@ export function StockModule({ store }: { store: any }) {
                                )}
                             </TableBody>
                          </Table>
+                         </div>
                       </div>
                    </TabsContent>
 

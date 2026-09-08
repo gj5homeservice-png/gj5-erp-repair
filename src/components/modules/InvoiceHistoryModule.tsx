@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Table, 
@@ -221,7 +222,44 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+      <MobileCardList>
+        {filteredInvoices.map((inv: Invoice) => (
+          <MobileCard key={inv.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-code font-bold text-[#0066FF] text-xs">{inv.invoiceNumber || "N/A"}</p>
+                <p className="font-bold text-sm truncate">{inv.customerName || "N/A"}</p>
+              </div>
+              <div className="flex flex-col items-end shrink-0">
+                <span className="font-code font-bold text-emerald-400">₹{(inv.grandTotal || 0).toLocaleString()}</span>
+                <Badge className={cn("w-fit text-[8px] uppercase mt-1",
+                  inv.paymentStatus === 'Paid' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                  "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                )}>
+                  {inv.paymentStatus || "Pending"}
+                </Badge>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <MobileCardRow label="Job ID" value={inv.jobId || "NO-JOB"} />
+              <MobileCardRow label="Date" value={inv.timestamp ? format(parseISO(inv.timestamp), 'dd MMM yyyy') : "N/A"} />
+              <MobileCardRow label="Customer ID" value={inv.customerId || "NO-ID"} />
+              <MobileCardRow label="Mobile" value={inv.mobile} />
+            </div>
+            <MobileCardActions>
+              <Button variant="ghost" size="icon" onClick={() => setViewingInvoice(inv)} className="h-8 w-8 text-blue-400"><Eye className="w-3.5 h-3.5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => onEditInvoice(inv)} className="h-8 w-8 text-amber-400"><Edit className="w-3.5 h-3.5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(inv)} className="h-8 w-8 text-emerald-400"><Download className="w-3.5 h-3.5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => setDeleteInvoiceId(inv.id)} className="h-8 w-8 text-rose-500"><Trash2 className="w-3.5 h-3.5" /></Button>
+            </MobileCardActions>
+          </MobileCard>
+        ))}
+        {filteredInvoices.length === 0 && (
+          <div className="h-32 flex items-center justify-center text-center text-slate-500 italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No invoices found.</div>
+        )}
+      </MobileCardList>
+
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-900/60">

@@ -93,7 +93,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
           </DialogHeader>
 
           <div className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <div className="space-y-2">
                   <Label className="flex items-center gap-2"><Truck className="w-4 h-4 text-blue-400" /> Vehicle Number</Label>
                   <Input 
@@ -114,7 +114,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <div className="space-y-2">
                   <Label>Vehicle Type</Label>
                   <Select value={formData.vehicleType} onValueChange={v => setFormData({...formData, vehicleType: v})}>
@@ -138,7 +138,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <div className="space-y-2">
                   <Label className="flex items-center gap-2"><Calendar className="w-4 h-4 text-purple-400" /> Departure Date</Label>
                   <Input 
@@ -159,7 +159,7 @@ export function TransportModal({ isOpen, onClose, editingEntry, onSave, store }:
                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <div className="space-y-2">
                   <Label>Fuel Cost (₹)</Label>
                   <Input 

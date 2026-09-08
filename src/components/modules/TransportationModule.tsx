@@ -46,10 +46,11 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
@@ -301,7 +302,59 @@ export function TransportationModule({ store }: { store: any }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
+        <MobileCardList>
+          {filteredLogs.map((log: TransportationLog) => (
+            <MobileCard key={log.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-blue-400 shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs truncate">{log.runnerName}</p>
+                    <p className="text-[9px] text-slate-500 uppercase font-black">{format(parseISO(log.dispatchTime), 'dd MMM | hh:mm a')}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-code text-[10px] shrink-0 border-slate-800 text-blue-400">{log.jobId}</Badge>
+              </div>
+              <div className="space-y-1.5">
+                <MobileCardRow label="Customer" value={log.customerName} />
+                <MobileCardRow label="Address" value={log.address || 'N/A'} />
+              </div>
+              <div className="pt-1">
+                <Select
+                  value={log.status}
+                  onValueChange={v => store.updateTransportLogStatus(log.id, v as LogisticsStatus)}
+                >
+                  <SelectTrigger className={cn(
+                    "h-8 text-[9px] font-bold uppercase border-0 w-full",
+                    log.status.includes('OK') ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-500"
+                  )}>
+                     <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    <SelectItem value="Pending Pickup">Pending Pickup</SelectItem>
+                    <SelectItem value="OK Pickup">OK Pickup</SelectItem>
+                    <SelectItem value="Pending Delivery">Pending Delivery</SelectItem>
+                    <SelectItem value="OK Delivery">OK Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <MobileCardActions>
+                <Button variant="ghost" size="icon" onClick={() => setViewingLog(log)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="View Details"><Eye className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => setEditingLog(log)} className="h-8 w-8 text-amber-400 hover:bg-amber-500/10" title="Edit Log"><Edit className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => handleWhatsApp(log, 'PICKUP')} className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10" title="WhatsApp Pickup"><MessageSquare className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => generatePDF(log, 'Pickup')} className="h-8 w-8 text-slate-400 hover:bg-slate-400/10" title="Download Slip"><Download className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => setDeleteLogId(log.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10" title="Terminate Log"><Trash2 className="w-3.5 h-3.5" /></Button>
+              </MobileCardActions>
+            </MobileCard>
+          ))}
+          {filteredLogs.length === 0 && (
+            <div className="h-32 flex items-center justify-center text-center text-slate-700 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20">No logistics records found.</div>
+          )}
+        </MobileCardList>
+
+        <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-900/60">
@@ -389,13 +442,13 @@ export function TransportationModule({ store }: { store: any }) {
           </DialogHeader>
           {viewingLog && (
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                  <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-slate-500 font-black">Runner Authority</Label>
                     <p className="text-sm font-bold">{viewingLog.runnerName}</p>
                     <p className="text-[10px] text-blue-400 font-code">{viewingLog.runnerMobile}</p>
                  </div>
-                 <div className="space-y-1 text-right">
+                 <div className="space-y-1 sm:text-right">
                     <Label className="text-[9px] uppercase text-slate-500 font-black">Dispatch Identity</Label>
                     <p className="text-sm font-bold text-emerald-400">{viewingLog.status}</p>
                     <p className="text-[9px] text-slate-600">{format(parseISO(viewingLog.dispatchTime), 'PPP p')}</p>

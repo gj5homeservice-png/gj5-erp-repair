@@ -8,6 +8,11 @@ import { DynamicFavicon } from '@/components/DynamicFavicon';
 export const metadata: Metadata = {
   title: 'GJ5 HOME SERVICE | GOOD JOB 5 ERP',
   description: 'GOOD JOB 5 ERP - Smart Business Management Software',
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+  },
 };
 
 export default function RootLayout({

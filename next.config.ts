@@ -85,6 +85,11 @@ const nextConfig: NextConfig = {
         source: '/((?!_next/static|_next/image|favicon.ico).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+          // Site-wide search-engine opt-out: keeps GJ5 HOME SERVICE out of
+          // Google/Bing indexes (matching the `robots` metadata in
+          // layout.tsx and /robots.txt) while every route still resolves
+          // normally for anyone who has the direct URL.
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
         ],
       },
     ];

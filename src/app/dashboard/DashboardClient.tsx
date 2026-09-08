@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { createAutoBackupIfDue } from '@/lib/data-management';
 import { resolveSidebarOrder } from '@/lib/nav-items';
+import { CompanyLogo } from '@/components/CompanyLogo';
 
 // Module Imports — dynamically code-split, not bundled into /dashboard's own
 // chunk. Previously these 13 modules (every ERP feature: Employees, Repair
@@ -290,7 +291,7 @@ export default function ErpMainHub() {
           <div className="p-8 border-b border-slate-800 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white shadow-lg">
-                <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" />
+                <CompanyLogo src={companyLogo} className="w-full h-full" alt="Logo" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
@@ -337,7 +338,7 @@ export default function ErpMainHub() {
             <div className="p-8 border-b border-slate-800 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-800 bg-white shadow-lg">
-                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Logo" />
+                  <CompanyLogo src={companyLogo} className="w-full h-full" alt="Logo" />
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
@@ -410,7 +411,7 @@ export default function ErpMainHub() {
                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Verified Identity</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner shrink-0">
-                  <img src={companyLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} className="w-full h-full object-contain" alt="Profile" />
+                  <CompanyLogo src={companyLogo} className="w-full h-full" alt="Profile" />
                 </div>
               </div>
             </div>

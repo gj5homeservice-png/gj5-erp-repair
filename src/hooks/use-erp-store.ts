@@ -33,6 +33,7 @@ import {
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
 import { ALL_SIDEBAR_MODULES, DEFAULT_SIDEBAR_ORDER } from '@/lib/nav-items';
+import { setBrandLogoCache } from '@/lib/branding';
 
 // Single source of truth for both is src/lib/nav-items.ts, shared with the
 // Sidebar Customization panel (Settings) so the sidebar and its editor can
@@ -257,6 +258,12 @@ export function useErpStore() {
     });
     if (activeUser && typeof window !== 'undefined' && merged) {
       localStorage.setItem(`gj5_company_${activeUser}`, JSON.stringify(merged));
+      // A device-local mirror of just the logo, read by the pre-login screen
+      // (which has no signed-in session yet, so no companyProfile to read
+      // from). Not a source of truth — companyProfile.logoUrl always is —
+      // just lets the last-used browser keep showing the real uploaded logo
+      // before login instead of a generic placeholder.
+      setBrandLogoCache((merged as Company).logoUrl || '');
     }
     if (db && merged && (merged as Company).id) {
       try {

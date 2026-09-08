@@ -342,7 +342,7 @@ export function RepairingModule({ store }: { store: any }) {
         </div>
       </div>
 
-      <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.shopLogo} />
+      <StickerModal isOpen={!!stickerCall} onClose={() => setStickerCall(null)} call={stickerCall} shopLogo={store.companyProfile?.logoUrl} companyName={store.companyProfile?.companyName} />
       <DeleteJobModal
         isOpen={!!deleteJobId}
         onClose={() => setDeleteJobId(null)}

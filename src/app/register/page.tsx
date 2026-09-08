@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { CompanyLogo } from '@/components/CompanyLogo';
+import { getBrandLogoCache } from '@/lib/branding';
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
@@ -27,9 +29,14 @@ export default function RegisterPage() {
     email: '',
     password: ''
   });
-  
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    setBrandLogo(getBrandLogoCache());
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +65,7 @@ export default function RegisterPage() {
         <CardContent className="p-6 sm:p-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-xl p-1">
-               <img src="https://picsum.photos/seed/gj5-logo-official/400/400" className="w-full h-full object-contain" alt="Logo" data-ai-hint="official logo" />
+               <CompanyLogo src={brandLogo} className="w-full h-full" />
             </div>
             <div className="flex flex-col">
               <span className="text-base font-headline font-black text-slate-900 uppercase italic">GJ5 ERP</span>

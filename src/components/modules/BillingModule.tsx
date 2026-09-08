@@ -49,6 +49,8 @@ import { format, addDays } from 'date-fns';
 import { Invoice, InvoiceItem } from '@/lib/types';
 import { jsPDF } from 'jspdf';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/CompanyLogo';
+import { addLogoToPdf } from '@/lib/branding';
 
 export function BillingModule({ store }: { store: any }) {
   const { toast } = useToast();
@@ -164,18 +166,21 @@ export function BillingModule({ store }: { store: any }) {
     const accentColor = [229, 57, 53]; // GJ5 ERP Red #E53935
     const profile = store.companyProfile || {};
 
-    doc.setFillColor(15, 23, 42); 
+    doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, 210, 40, 'F');
-    
+
+    const hasLogo = addLogoToPdf(doc, profile.logoUrl, 15, 8, 24, 24);
+    const headerTextX = hasLogo ? 44 : 15;
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', 15, 20);
-    
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 20);
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('POWERED BY GOOD JOB 5 ERP', 15, 27);
-    doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, 15, 33);
+    doc.text('POWERED BY GOOD JOB 5 ERP', headerTextX, 27);
+    doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, headerTextX, 33);
 
     doc.setFontSize(24);
     doc.setTextColor(255, 255, 255);
@@ -502,9 +507,16 @@ export function BillingModule({ store }: { store: any }) {
               </CardHeader>
               <div className="aspect-[1/1.414] p-4 sm:p-8 flex flex-col gap-6">
                  <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
-                    <div className="flex flex-col">
-                       <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</h2>
-                       <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address || ''}, {store.companyProfile?.city || ''} • MO: {store.companyProfile?.whatsapp || ''}</span>
+                    <div className="flex items-center gap-2">
+                       {store.companyProfile?.logoUrl && (
+                         <div className="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-200">
+                           <CompanyLogo src={store.companyProfile.logoUrl} className="w-full h-full" />
+                         </div>
+                       )}
+                       <div className="flex flex-col">
+                          <h2 className="text-xl font-black italic tracking-tighter leading-none text-[#123C8C]">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 ERP'}</h2>
+                          <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">{store.companyProfile?.address || ''}, {store.companyProfile?.city || ''} • MO: {store.companyProfile?.whatsapp || ''}</span>
+                       </div>
                     </div>
                     <div className="text-right">
                        <h3 className="text-xs font-black uppercase text-[#E53935]">Tax Invoice</h3>

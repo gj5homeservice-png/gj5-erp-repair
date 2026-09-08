@@ -43,6 +43,7 @@ import { SalaryRecord, Employee, AttendanceRecord } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
+import { addLogoToPdf } from '@/lib/branding';
 
 export function SalaryModule({ store }: { store: any }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,15 +112,18 @@ export function SalaryModule({ store }: { store: any }) {
     const accent = [18, 60, 140]; // GJ5 ERP Blue #123C8C
 
     // Header
+    const profile = store.companyProfile || {};
     doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, 148, 25, 'F');
+    const hasLogo = addLogoToPdf(doc, profile.logoUrl, 8, 4, 16, 16);
+    const headerTextX = hasLogo ? 27 : 10;
     doc.setTextColor(255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('GJ5 ERP', 10, 12);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('GOOD JOB 5 ERP - INDUSTRIAL PAYROLL', 10, 18);
+    doc.text('GOOD JOB 5 ERP - INDUSTRIAL PAYROLL', headerTextX, 18);
     doc.text(`DATE: ${format(new Date(), 'dd/MM/yyyy')}`, 138, 15, { align: 'right' });
 
     // Employee Info

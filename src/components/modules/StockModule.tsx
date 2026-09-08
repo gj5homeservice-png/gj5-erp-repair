@@ -75,6 +75,8 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { Separator } from '@/components/ui/separator';
+import { CompanyLogo } from '@/components/CompanyLogo';
+import { addLogoToPdf } from '@/lib/branding';
 
 const MOVEMENT_TYPES: { value: StockMovementType; label: string; color: string }[] = [
   { value: 'PURCHASE', label: 'Purchase Entry', color: 'text-emerald-400' },
@@ -584,9 +586,16 @@ export function StockModule({ store }: { store: any }) {
                       <div className="w-full overflow-x-auto">
                       <div id="print-label-area" className="bg-white p-6 rounded-xl text-black shadow-2xl flex flex-col items-center gap-6 w-[500px] mx-auto">
                          <div className="flex justify-between items-start w-full border-b-2 border-slate-900 pb-3 mb-2">
-                            <div className="flex flex-col">
-                               <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">GJ5 HOME SERVICE</h2>
-                               <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest mt-1">Enterprise Asset Tag</span>
+                            <div className="flex items-center gap-3">
+                               {store.companyProfile?.logoUrl && (
+                                 <div className="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-200">
+                                   <CompanyLogo src={store.companyProfile.logoUrl} className="w-full h-full" />
+                                 </div>
+                               )}
+                               <div className="flex flex-col">
+                                  <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</h2>
+                                  <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest mt-1">Enterprise Asset Tag</span>
+                               </div>
                             </div>
                             <div className="text-right flex flex-col items-end">
                                <h3 className="text-xl font-black text-red-600 leading-none tracking-tighter">88669 83900</h3>

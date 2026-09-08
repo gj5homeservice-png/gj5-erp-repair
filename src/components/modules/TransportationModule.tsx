@@ -61,6 +61,7 @@ import { TransportationLog, LogisticsStatus } from '@/lib/types';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
+import { addLogoToPdf } from '@/lib/branding';
 
 export function TransportationModule({ store }: { store: any }) {
   const [formData, setFormData] = useState({ runnerName: '', runnerMobile: '', jobId: '' });
@@ -119,12 +120,15 @@ export function TransportationModule({ store }: { store: any }) {
     const accentColor = [0, 102, 255]; // GJ5 Blue
     
     // Header
+    const profile = store.companyProfile || {};
     doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
     doc.rect(0, 0, 148, 20, 'F');
+    const hasLogo = addLogoToPdf(doc, profile.logoUrl, 8, 3, 14, 14);
+    const headerTextX = hasLogo ? 25 : 10;
     doc.setTextColor(255);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('GJ5 HOME SERVICE', 10, 13);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 13);
     doc.setFontSize(10);
     doc.text(type.toUpperCase(), 138, 13, { align: 'right' });
 

@@ -11,6 +11,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
+import { addLogoToPdf } from '@/lib/branding';
 
 export function SalesInvoicesModule({ store }: { store: any }) {
   const { toast } = useToast();
@@ -37,14 +38,16 @@ export function SalesInvoicesModule({ store }: { store: any }) {
 
     doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, 210, 40, 'F');
+    const hasLogo = addLogoToPdf(doc, profile.logoUrl, 15, 8, 24, 24);
+    const headerTextX = hasLogo ? 44 : 15;
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', 15, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 ERP', headerTextX, 20);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('SALES TAX INVOICE', 15, 27);
-    doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, 15, 33);
+    doc.text('SALES TAX INVOICE', headerTextX, 27);
+    doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, headerTextX, 33);
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);

@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { RepairJob } from '@/lib/types';
 import { partsTotal, grandTotal, totalPaid, balanceDue } from '@/lib/repair-utils';
+import { addLogoToPdf } from '@/lib/branding';
+import { CompanyLogo } from '@/components/CompanyLogo';
 
 interface RepairReceiptModalProps {
   isOpen: boolean;
@@ -37,14 +39,17 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
     doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, 210, 40, 'F');
 
+    const hasLogo = addLogoToPdf(doc, profile.logoUrl, 15, 8, 24, 24);
+    const headerTextX = hasLogo ? 44 : 15;
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(profile.companyName?.toUpperCase() || 'GJ5 PLUS', 15, 20);
+    doc.text(profile.companyName?.toUpperCase() || 'GJ5 PLUS', headerTextX, 20);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('REPAIR SERVICE RECEIPT', 15, 27);
+    doc.text('REPAIR SERVICE RECEIPT', headerTextX, 27);
 
     doc.setFontSize(24);
     doc.setTextColor(255, 255, 255);
@@ -152,9 +157,16 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
         <div id="repair-receipt-print" className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden">
           <div className="aspect-[1/1.414] p-4 sm:p-8 flex flex-col gap-5 text-xs">
             <div className="flex justify-between items-start border-b-4 border-[#123C8C] pb-4">
-              <div>
-                <h1 className="text-2xl font-black text-[#123C8C]">{profile.companyName?.toUpperCase() || 'GJ5 PLUS'}</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest">Repair Service Receipt</p>
+              <div className="flex items-center gap-3">
+                {profile.logoUrl && (
+                  <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-200">
+                    <CompanyLogo src={profile.logoUrl} className="w-full h-full" />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-2xl font-black text-[#123C8C]">{profile.companyName?.toUpperCase() || 'GJ5 PLUS'}</h1>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest">Repair Service Receipt</p>
+                </div>
               </div>
               <div className="text-right">
                 <p className="font-black text-lg">{job.id}</p>

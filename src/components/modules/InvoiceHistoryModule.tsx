@@ -50,6 +50,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { jsPDF } from 'jspdf';
+import { addLogoToPdf } from '@/lib/branding';
 
 interface InvoiceHistoryModuleProps {
   store: any;
@@ -100,11 +101,15 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
     if (!inv) return;
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
+      const profile = store.companyProfile || {};
+      const hasLogo = addLogoToPdf(doc, profile.logoUrl, 15, 8, 16, 16);
+      const headerTextX = hasLogo ? 35 : 15;
+
       doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 102, 255);
-      doc.text('GJ5 HOME SERVICE', 15, 25);
-      
+      doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 25);
+
       doc.setFontSize(10);
       doc.setTextColor(80);
       doc.text('Invoice Number: ' + String(inv.invoiceNumber || "N/A"), 15, 32);

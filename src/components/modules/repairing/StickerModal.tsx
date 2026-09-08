@@ -14,6 +14,7 @@ import { RepairCall, RepairJob } from '@/lib/types';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { Printer, Settings, ImageIcon } from 'lucide-react';
+import { CompanyLogo } from '@/components/CompanyLogo';
 
 interface StickerModalProps {
   isOpen: boolean;
@@ -23,9 +24,10 @@ interface StickerModalProps {
   // mobile, address, pincode, id, brand, model) exists identically on both.
   call: RepairCall | RepairJob | null;
   shopLogo?: string | null;
+  companyName?: string;
 }
 
-export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalProps) {
+export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: StickerModalProps) {
   if (!call) return null;
 
   const handlePrint = () => {
@@ -66,7 +68,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
           >
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-2 mb-2">
               <div className="flex flex-col">
-                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase text-[#123C8C]">GJ5 ERP</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter leading-none uppercase text-[#123C8C]">{companyName || 'GJ5 ERP'}</h1>
               </div>
               <div className="text-right">
                 <h2 className="text-xl font-black text-[#E53935] leading-none">88669 83900</h2>
@@ -76,7 +78,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo }: StickerModalPr
             <div className="flex flex-1 gap-6 items-center">
               <div className="flex flex-col items-center gap-1.5 flex-1">
                 <div className="w-full h-12 flex items-center justify-center border border-dashed border-slate-300 rounded overflow-hidden mb-1">
-                  <img src={shopLogo || "https://picsum.photos/seed/gj5-logo-official/400/400"} alt="Logo" className="max-w-full max-h-full object-contain" data-ai-hint="official logo" />
+                  <CompanyLogo src={shopLogo} alt="Logo" className="max-w-full max-h-full" />
                 </div>
 
                 <div className="p-1.5 bg-white border border-slate-900 rounded-lg">

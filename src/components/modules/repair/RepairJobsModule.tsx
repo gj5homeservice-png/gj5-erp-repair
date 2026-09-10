@@ -1,12 +1,13 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
-import { Search, Eye, Pencil, RefreshCw, StickyNote, PackagePlus, Wallet, Printer, Trash2 } from 'lucide-react';
+import { Search, Eye, Pencil, RefreshCw, StickyNote, PackagePlus, Wallet, Printer, Trash2, MoreVertical, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { RepairFormModule } from './RepairFormModule';
 import { RepairDetailsModal } from './RepairDetailsModal';
@@ -16,6 +17,7 @@ import { RepairPartModal } from './RepairPartModal';
 import { RepairPaymentModal } from './RepairPaymentModal';
 import { RepairReceiptModal } from './RepairReceiptModal';
 import { RepairDeleteModal } from './RepairDeleteModal';
+import { StickerModal } from '../repairing/StickerModal';
 import { RepairJob, RepairJobStatus } from '@/lib/types';
 import { displayAmount } from '@/lib/repair-utils';
 import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
@@ -52,6 +54,7 @@ export function RepairJobsModule({ store }: { store: any }) {
   const [partJob, setPartJob] = useState<RepairJob | null>(null);
   const [paymentJob, setPaymentJob] = useState<RepairJob | null>(null);
   const [receiptJob, setReceiptJob] = useState<RepairJob | null>(null);
+  const [labelJob, setLabelJob] = useState<RepairJob | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const jobs: RepairJob[] = store.repairJobs || [];
@@ -81,6 +84,40 @@ export function RepairJobsModule({ store }: { store: any }) {
   if (editingJob) {
     return <RepairFormModule store={store} editingJob={editingJob} onDone={() => setEditingJob(null)} />;
   }
+
+  // The 4 primary actions (View / Edit / Print Label / Delete) are always
+  // directly visible and never truncated, per spec — the other 4 existing
+  // actions (Status / Note / Parts / Payment) and the original itemized
+  // Print Receipt are preserved exactly as they were, just consolidated into
+  // this "More" menu so the primary row/column never needs horizontal
+  // scrolling to reach Delete.
+  const MoreMenu = ({ job, align }: { job: RepairJob; align: 'start' | 'end' }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7 text-slate-400 hover:text-white" title="More Actions">
+          <MoreVertical className="w-3.5 h-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="bg-slate-900 border-slate-800 text-slate-100 w-52">
+        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setStatusJob(job)}>
+          <RefreshCw className="w-3.5 h-3.5" /> Update Status
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setNoteJob(job)}>
+          <StickyNote className="w-3.5 h-3.5" /> Add Note
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setPartJob(job)}>
+          <PackagePlus className="w-3.5 h-3.5" /> Add Parts
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setPaymentJob(job)}>
+          <Wallet className="w-3.5 h-3.5" /> Payment
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-slate-800" />
+        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setReceiptJob(job)}>
+          <Receipt className="w-3.5 h-3.5" /> Print Receipt
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -120,28 +157,29 @@ export function RepairJobsModule({ store }: { store: any }) {
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col min-w-0">
                 <span className="font-code font-bold text-blue-400 text-sm">{j.id}</span>
-                <span className="font-bold text-sm text-slate-200 truncate">{j.customerName}</span>
+                <span className="font-bold text-sm text-slate-200 break-words">{j.customerName}</span>
               </div>
               <Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase shrink-0`}>{j.status}</Badge>
             </div>
             <div className="space-y-1.5">
               <MobileCardRow label="Mobile" value={j.mobile} />
-              <MobileCardRow label="Product" value={`${j.brand || ''} ${j.model || ''}`.trim() || undefined} />
-              <MobileCardRow label="Problem" value={j.problemDescription} />
+              <MobileCardRow label="Category" value={j.productType} />
+              <MobileCardRow label="Brand Code" value={j.brand} noTruncate />
+              <MobileCardRow label="Full Code" value={j.model} noTruncate />
+              <MobileCardRow label="Serial No." value={j.serialNumber} noTruncate />
+              <MobileCardRow label="Problem" value={j.problemDescription} noTruncate />
               <MobileCardRow label="Technician" value={j.technicianName || '—'} />
+              <MobileCardRow label="Warranty" value={j.warrantyDuration} />
               <MobileCardRow label="Received" value={j.receivedDate} />
               <MobileCardRow label="Expected" value={j.expectedDeliveryDate || '—'} />
               <MobileCardRow label="Amount" value={`₹${displayAmount(j).toLocaleString()}`} />
             </div>
             <MobileCardActions>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-purple-400" title="Update Status" onClick={() => setStatusJob(j)}><RefreshCw className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-cyan-400" title="Add Note" onClick={() => setNoteJob(j)}><StickyNote className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-orange-400" title="Add Parts" onClick={() => setPartJob(j)}><PackagePlus className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-emerald-400" title="Payment" onClick={() => setPaymentJob(j)}><Wallet className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-lime-400" title="Print Receipt" onClick={() => setReceiptJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-4 h-4" /></Button>
+              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-4 h-4" /></Button>
+              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-4 h-4" /></Button>
+              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-4 h-4" /></Button>
+              <MoreMenu job={j} align="end" />
             </MobileCardActions>
           </MobileCard>
         ))}
@@ -167,7 +205,7 @@ export function RepairJobsModule({ store }: { store: any }) {
                 <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Expected</TableHead>
                 <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Amount</TableHead>
                 <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Status</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold text-right">Actions</TableHead>
+                <TableHead className="text-slate-500 uppercase text-[10px] font-bold text-right min-w-[168px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,23 +214,25 @@ export function RepairJobsModule({ store }: { store: any }) {
                   <TableCell className="font-code font-bold text-blue-400 text-xs">{j.id}</TableCell>
                   <TableCell className="text-xs font-bold text-slate-200">{j.customerName}</TableCell>
                   <TableCell className="text-xs text-slate-400 font-code">{j.mobile}</TableCell>
-                  <TableCell className="text-xs text-slate-300">{j.brand} {j.model}</TableCell>
-                  <TableCell className="text-xs text-slate-300 max-w-[160px] truncate" title={j.problemDescription}>{j.problemDescription}</TableCell>
+                  <TableCell className="text-xs text-slate-300 max-w-[180px]">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold break-words">{j.brand}</span>
+                      <span className="text-slate-400 break-words">{j.model}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-300 max-w-[160px]" title={j.problemDescription}>{j.problemDescription}</TableCell>
                   <TableCell className="text-xs text-slate-300">{j.technicianName || '—'}</TableCell>
                   <TableCell className="text-xs text-slate-300">{j.receivedDate}</TableCell>
                   <TableCell className="text-xs text-slate-300">{j.expectedDeliveryDate || '—'}</TableCell>
                   <TableCell className="text-xs font-code text-slate-200">₹{displayAmount(j).toLocaleString()}</TableCell>
                   <TableCell><Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase`}>{j.status}</Badge></TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-0.5 flex-wrap">
+                    <div className="flex justify-end items-center gap-0.5 flex-nowrap">
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-purple-400" title="Update Status" onClick={() => setStatusJob(j)}><RefreshCw className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-cyan-400" title="Add Note" onClick={() => setNoteJob(j)}><StickyNote className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-orange-400" title="Add Parts" onClick={() => setPartJob(j)}><PackagePlus className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-emerald-400" title="Payment" onClick={() => setPaymentJob(j)}><Wallet className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-lime-400" title="Print Receipt" onClick={() => setReceiptJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <MoreMenu job={j} align="end" />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -213,6 +253,13 @@ export function RepairJobsModule({ store }: { store: any }) {
       <RepairPartModal isOpen={!!partJob} onClose={() => setPartJob(null)} job={partJob} store={store} />
       <RepairPaymentModal isOpen={!!paymentJob} onClose={() => setPaymentJob(null)} job={paymentJob} store={store} />
       <RepairReceiptModal isOpen={!!receiptJob} onClose={() => setReceiptJob(null)} job={receiptJob} store={store} />
+      <StickerModal
+        isOpen={!!labelJob}
+        onClose={() => setLabelJob(null)}
+        call={labelJob}
+        shopLogo={store.companyProfile?.logoUrl}
+        companyName={store.companyProfile?.companyName}
+      />
       <RepairDeleteModal
         isOpen={!!deletingId}
         onClose={() => setDeletingId(null)}

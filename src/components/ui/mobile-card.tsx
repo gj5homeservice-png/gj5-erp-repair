@@ -35,20 +35,30 @@ export function MobileCardHeader({ className, children }: { className?: string; 
 
 // A single label/value line inside a card body. `value` can be any node
 // (text, a Badge, a colored span) — this just handles the label + layout.
+// `noTruncate` opts a specific row out of the default single-line ellipsis
+// (e.g. a long brand/model code) — it wraps onto multiple lines instead of
+// ever being cut off, while every other existing call site (which doesn't
+// pass it) keeps the exact same truncating behavior as before.
 export function MobileCardRow({
   label,
   value,
   className,
+  noTruncate,
 }: {
   label: string
   value: React.ReactNode
   className?: string
+  noTruncate?: boolean
 }) {
   if (value === undefined || value === null || value === '') return null
   return (
-    <div className={cn("flex items-center justify-between gap-3 text-xs", className)}>
-      <span className="text-slate-500 uppercase font-bold tracking-wide shrink-0">{label}</span>
-      <span className="text-slate-200 font-medium text-right truncate">{value}</span>
+    <div className={cn("flex items-start justify-between gap-3 text-xs", className)}>
+      <span className="text-slate-500 uppercase font-bold tracking-wide shrink-0 pt-px">{label}</span>
+      {/* min-w-0 is load-bearing: without it, a flex item's default auto
+          min-width is its unbroken content width, so neither truncate's
+          ellipsis nor break-words' wrapping ever actually engages — the
+          text just overflows the card instead. */}
+      <span className={cn("min-w-0 flex-1 text-slate-200 font-medium text-right", noTruncate ? "break-words" : "truncate")}>{value}</span>
     </div>
   )
 }

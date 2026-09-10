@@ -16,7 +16,12 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      // Bottom-anchored on every screen size — was `top-0` on mobile, which
+      // put every toast (e.g. "Open in Repair Jobs") as a fixed, full-width
+      // banner directly over the app's own header/content for the toast's
+      // whole visible duration. Nothing about the toast's own behavior
+      // changes, only where it renders.
+      "fixed bottom-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:right-0 sm:flex-col md:max-w-[420px]",
       className
     )}
     {...props}

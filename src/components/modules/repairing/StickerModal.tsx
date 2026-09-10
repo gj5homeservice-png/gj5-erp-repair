@@ -57,11 +57,11 @@ export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: S
         </DialogHeader>
 
         <div className="p-4 sm:p-10 flex flex-col items-center gap-8">
-          <div className="w-full overflow-x-auto">
+          <div className="w-full">
           <div
             id="thermal-sticker"
-            className="w-[600px] h-[300px] mx-auto bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0"
-            style={{ 
+            className="w-full max-w-[600px] h-auto mx-auto bg-white text-black p-4 rounded-xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 print:shadow-none print:border-none print:m-0 print:w-[600px] print:max-w-none"
+            style={{
               aspectRatio: '2/1',
               fontFamily: 'Inter, system-ui, sans-serif'
             }}

@@ -344,7 +344,8 @@ export type AuditEventType =
   | 'employee_created' | 'employee_edited' | 'password_reset' | 'login' | 'logout'
   | 'account_blocked' | 'account_unblocked' | 'permission_changed'
   | 'kyc_uploaded' | 'kyc_verified' | 'kyc_rejected' | 'kyc_deleted'
-  | 'employee_suspended' | 'employee_activated' | 'employee_terminated' | 'employee_disabled';
+  | 'employee_suspended' | 'employee_activated' | 'employee_terminated' | 'employee_disabled'
+  | 'password_changed' | 'email_changed' | 'passkey_registered' | 'passkey_removed' | 'sessions_revoked';
 
 export interface EmployeeAuditLogEntry {
   id: string;

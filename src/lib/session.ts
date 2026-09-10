@@ -68,3 +68,50 @@ export async function deleteAllSessionsForEmployee(employeeId: string): Promise<
   const pool = getPool();
   await pool.execute('DELETE FROM sessions WHERE employee_id = ?', [employeeId]);
 }
+
+export interface SessionSummary {
+  token: string;
+  deviceInfo: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+// The three self-service "Devices & Sessions" operations in Login &
+// Security — all scoped to exactly one identity (owner: employeeId IS NULL;
+// an employee: their own employeeId), never able to touch another
+// identity's sessions.
+export async function listSessionsForIdentity(userEmail: string, employeeId: string | null): Promise<SessionSummary[]> {
+  const pool = getPool();
+  const [rows] = await pool.execute<any[]>(
+    'SELECT token, device_info, created_at, expires_at FROM sessions WHERE user_email = ? AND (employee_id = ? OR (employee_id IS NULL AND ? IS NULL)) ORDER BY created_at DESC',
+    [userEmail, employeeId, employeeId]
+  );
+  return (rows as any[]).map((r) => ({ token: r.token, deviceInfo: r.device_info, createdAt: r.created_at, expiresAt: r.expires_at }));
+}
+
+export async function deleteOtherSessionsForIdentity(userEmail: string, employeeId: string | null, keepToken: string): Promise<number> {
+  const pool = getPool();
+  const [result]: any = await pool.execute(
+    'DELETE FROM sessions WHERE user_email = ? AND (employee_id = ? OR (employee_id IS NULL AND ? IS NULL)) AND token != ?',
+    [userEmail, employeeId, employeeId, keepToken]
+  );
+  return result.affectedRows || 0;
+}
+
+export async function deleteAllSessionsForIdentity(userEmail: string, employeeId: string | null): Promise<number> {
+  const pool = getPool();
+  const [result]: any = await pool.execute(
+    'DELETE FROM sessions WHERE user_email = ? AND (employee_id = ? OR (employee_id IS NULL AND ? IS NULL))',
+    [userEmail, employeeId, employeeId]
+  );
+  return result.affectedRows || 0;
+}
+
+export async function deleteOneSessionForIdentity(userEmail: string, employeeId: string | null, token: string): Promise<boolean> {
+  const pool = getPool();
+  const [result]: any = await pool.execute(
+    'DELETE FROM sessions WHERE token = ? AND user_email = ? AND (employee_id = ? OR (employee_id IS NULL AND ? IS NULL))',
+    [token, userEmail, employeeId, employeeId]
+  );
+  return (result.affectedRows || 0) > 0;
+}

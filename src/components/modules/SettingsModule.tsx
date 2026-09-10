@@ -32,9 +32,11 @@ import {
   Loader2,
   ArrowRight,
   Info,
-  LayoutGrid
+  LayoutGrid,
+  KeyRound
 } from 'lucide-react';
 import { SidebarCustomizationPanel } from './settings/SidebarCustomizationPanel';
+import { LoginSecuritySection } from './settings/LoginSecuritySection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,6 +67,7 @@ const WARRANTY_OPTIONS = ['No Warranty', 'Customer Warranty', '30 Days', '90 Day
 
 const SECTIONS = [
   { key: 'business', label: 'Business Profile', icon: Building2 },
+  { key: 'loginSecurity', label: 'Login & Security', icon: KeyRound },
   { key: 'contact', label: 'Contact & Address', icon: MapPin },
   { key: 'invoiceBilling', label: 'Invoice & Billing', icon: Receipt },
   { key: 'taxGst', label: 'Tax / GST', icon: Percent },
@@ -369,6 +372,8 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
             <div className="pt-6"><SaveBar label="Business Profile" onClickOverride={handleSaveProfile} /></div>
           </div>
         );
+      case 'loginSecurity':
+        return <LoginSecuritySection store={store} />;
       case 'contact':
         return (
           <div>

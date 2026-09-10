@@ -366,6 +366,68 @@ export async function revokeAllSessionsForEmployee(employeeId: string) {
   await deleteAllSessionsForEmployee(employeeId);
 }
 
+// ---- Self-service (Settings > Login & Security) — the employee acting on
+// their own account, distinct from the admin-triggered functions above. ----
+
+export async function getEmployeeCredentialHash(employeeId: string): Promise<string | null> {
+  const pool = getPool();
+  const [rows] = await pool.execute<any[]>('SELECT password_hash FROM employee_credentials WHERE employee_id = ?', [employeeId]);
+  return (rows as any[])[0]?.password_hash ?? null;
+}
+
+export async function getEmployeeLoginEmail(userEmail: string, employeeId: string): Promise<string | null> {
+  const pool = getPool();
+  const [rows] = await pool.execute<any[]>(
+    'SELECT c.login_email, c.username, e.email FROM employee_credentials c INNER JOIN employees e ON c.employee_id = e.id WHERE c.employee_id = ? AND c.user_email = ?',
+    [employeeId, userEmail]
+  );
+  const row = (rows as any[])[0];
+  if (!row) return null;
+  return row.login_email || row.email || row.username;
+}
+
+export async function selfChangeEmployeePassword(userEmail: string, employeeId: string, newPassword: string) {
+  const pool = getPool();
+  const conn: PoolConnection = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const hash = await hashPassword(newPassword);
+    await conn.execute(
+      `UPDATE employee_credentials SET password_hash = ?, force_password_change = FALSE, updated_at = ? WHERE employee_id = ? AND user_email = ?`,
+      [hash, new Date().toISOString(), employeeId, userEmail]
+    );
+    await writeAudit(conn, userEmail, employeeId, 'password_changed', employeeId, 'Password changed by user');
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function updateEmployeeLoginEmail(userEmail: string, employeeId: string, newEmail: string) {
+  const pool = getPool();
+  const conn: PoolConnection = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute('UPDATE employee_credentials SET login_email = ?, updated_at = ? WHERE employee_id = ? AND user_email = ?', [
+      newEmail,
+      new Date().toISOString(),
+      employeeId,
+      userEmail,
+    ]);
+    await conn.execute('UPDATE employees SET email = ? WHERE id = ? AND user_email = ?', [newEmail, employeeId, userEmail]);
+    await writeAudit(conn, userEmail, employeeId, 'email_changed', employeeId, `Login email changed to ${newEmail}`);
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 // ---- Documents (KYC vault) ----
 
 export async function listEmployeeDocuments(userEmail: string, employeeId: string) {
@@ -466,4 +528,13 @@ export async function listEmployeeAuditLog(userEmail: string, employeeId: string
 export async function logLoginAudit(userEmail: string, employeeId: string, performedBy: string, eventType: 'login' | 'logout', ipAddress?: string | null, deviceInfo?: string | null) {
   const pool = getPool();
   await writeAudit(pool, userEmail, employeeId, eventType, performedBy, undefined, undefined, ipAddress, deviceInfo);
+}
+
+// Generic entry point for the Login & Security self-service events
+// (password/email changes, passkey add/remove, session revocation) — same
+// audit table, same shape, just callable from outside this file without
+// exposing the private writeAudit()/Executor plumbing.
+export async function logSelfServiceAudit(userEmail: string, employeeId: string, eventType: AuditEventType, details?: string) {
+  const pool = getPool();
+  await writeAudit(pool, userEmail, employeeId, eventType, employeeId, details);
 }

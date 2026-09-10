@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser, isAuthError } from '@/lib/api-auth';
 import { allFullAccess } from '@/lib/permissions';
+import { getCurrentLoginEmail } from '@/lib/self-account';
 
 // The client's own source of truth for "who is logged in and what can they
 // access" — used to filter the sidebar and gate module rendering. Owner/
@@ -14,7 +15,8 @@ export async function GET(request: Request) {
   if (isAuthError(auth)) return auth;
 
   if (!auth.employeeId) {
-    return NextResponse.json({ success: true, data: { isEmployee: false, employeeId: null, role: 'Admin', permissions: allFullAccess() } });
+    const loginEmail = await getCurrentLoginEmail({ userEmail: auth.email, employeeId: null }).catch(() => auth.email);
+    return NextResponse.json({ success: true, data: { isEmployee: false, employeeId: null, role: 'Admin', permissions: allFullAccess(), email: loginEmail } });
   }
 
   try {
@@ -23,9 +25,10 @@ export async function GET(request: Request) {
     if (!context || context.status !== 'Active') {
       return NextResponse.json({ success: false, error: 'Your account is not active. Contact your administrator.' }, { status: 403 });
     }
+    const loginEmail = await getCurrentLoginEmail({ userEmail: auth.email, employeeId: auth.employeeId }).catch(() => auth.email);
     return NextResponse.json({
       success: true,
-      data: { isEmployee: true, employeeId: auth.employeeId, role: context.role, permissions: context.permissions },
+      data: { isEmployee: true, employeeId: auth.employeeId, role: context.role, permissions: context.permissions, email: loginEmail },
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });

@@ -6,29 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  LogIn, 
-  Smartphone, 
-  Mail, 
-  Lock, 
-  Loader2, 
-  KeyRound,
-  ArrowLeft
+import {
+  Mail,
+  Lock,
+  Loader2,
+  ArrowLeft,
+  Fingerprint,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { getBrandLogoCache } from '@/lib/branding';
+import { browserSupportsWebAuthn, platformAuthenticatorIsAvailable, startAuthentication } from '@simplewebauthn/browser';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState<boolean | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
-  const [showOtp, setShowOtp] = useState(false);
   // No session exists yet on this screen, so there's no companyProfile to
   // read the logo from — this mirrors the last logo saved from this device
   // (see setBrandLogoCache in useErpStore's updateCompanyProfile), falling
@@ -40,106 +37,105 @@ export default function LoginPage() {
 
   useEffect(() => {
     setBrandLogo(getBrandLogoCache());
+    (async () => {
+      if (!browserSupportsWebAuthn()) {
+        setPasskeySupported(false);
+        return;
+      }
+      const platformAvailable = await platformAuthenticatorIsAvailable().catch(() => false);
+      setPasskeySupported(platformAvailable);
+    })();
   }, []);
+
+  const persistSessionAndEnter = (token: string, activeUser: string, welcomeMessage: string) => {
+    localStorage.setItem('gj5_auth_token', token);
+    localStorage.setItem('gj5_active_user', activeUser);
+    toast({ title: "Identity Verified", description: welcomeMessage });
+    router.push('/dashboard');
+  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
-    
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Check against demo credentials or local registry
-    const users = JSON.parse(localStorage.getItem('gj5_demo_users') || '[]');
-    const localUser = users.find((u: any) => u.email === email && u.password === password);
+    try {
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        persistSessionAndEnter(json.token, email, "Accessing GJ5 Home Service Console...");
+        return;
+      }
 
-    if ((email === 'admin@gj5.com' && password === '123456') || localUser) {
-      try {
-        const res = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-        const json = await res.json();
-        if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
-        localStorage.setItem('gj5_auth_token', json.token);
-        localStorage.setItem('gj5_active_user', email);
-        toast({ title: "Identity Verified", description: "Accessing GJ5 Home Service Console..." });
-        router.push('/dashboard');
-      } catch (err: any) {
-        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+      // Not the owner account (or wrong owner password) — try it as an
+      // employee login (their own username/password, set up by an Admin in
+      // the Employees module). This never weakens the owner-login check
+      // above; it's purely a second possibility tried after that one fails.
+      const res2 = await fetch('/api/auth/employee-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password }),
+      });
+      const json2 = await res2.json();
+      if (res2.ok && json2.success) {
+        persistSessionAndEnter(
+          json2.token,
+          email,
+          json2.forcePasswordChange ? "Please change your password after logging in." : "Accessing GJ5 Home Service Console..."
+        );
+        return;
       }
-    } else {
-      // Not the owner account — try it as an employee login (their own
-      // username/password, set up by an Admin in the Employees module).
-      // This never touches or weakens the owner-login check above; it's
-      // purely an additional path tried after that one fails.
-      try {
-        const res = await fetch('/api/auth/employee-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: email, password }),
-        });
-        const json = await res.json();
-        if (res.ok && json.success) {
-          localStorage.setItem('gj5_auth_token', json.token);
-          localStorage.setItem('gj5_active_user', email);
-          toast({
-            title: "Identity Verified",
-            description: json.forcePasswordChange ? "Please change your password after logging in." : "Accessing GJ5 Home Service Console...",
-          });
-          router.push('/dashboard');
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Auth Failed",
-            description: json.error || "Invalid credentials."
-          });
-        }
-      } catch (err: any) {
-        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
-      }
+
+      toast({ variant: "destructive", title: "Auth Failed", description: json2.error || json.error || "Invalid email or password." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSendOtp = async () => {
-    if (!phone || phone.length !== 10) {
-      toast({ variant: "destructive", title: "Invalid Number", description: "Please enter a valid 10-digit mobile number." });
+  const handlePasskeyLogin = async () => {
+    if (passkeySupported === false) {
+      toast({ variant: "destructive", title: "Not Available", description: "Biometric / Passkey login is not available on this device/browser. Please use Email + Password." });
       return;
     }
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setShowOtp(true);
-    toast({ title: "OTP Dispatched", description: `Verification code 123456 sent to ${phone}` });
-    setLoading(false);
-  };
 
-  const handleVerifyOtp = async () => {
-    if (!otp) return;
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (otp === '123456') {
-      try {
-        const res = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: phone }),
-        });
-        const json = await res.json();
-        if (!res.ok || !json.success) throw new Error(json.error || 'Could not start a session');
-        localStorage.setItem('gj5_auth_token', json.token);
-        localStorage.setItem('gj5_active_user', phone);
-        toast({ title: "Welcome Back", description: "Mobile identity confirmed." });
-        router.push('/dashboard');
-      } catch (err: any) {
-        toast({ variant: "destructive", title: "Server Unreachable", description: err?.message || "Could not connect to the ERP database." });
+    setPasskeyLoading(true);
+    try {
+      const optionsRes = await fetch('/api/auth/webauthn/login-options', { method: 'POST' });
+      const optionsJson = await optionsRes.json();
+      if (!optionsRes.ok || !optionsJson.success) {
+        throw new Error(optionsJson.error || 'Could not start passkey sign-in.');
       }
-    } else {
-      toast({ variant: "destructive", title: "Invalid OTP", description: "The code entered is incorrect. Use 123456" });
+
+      const assertion = await startAuthentication({ optionsJSON: optionsJson.options });
+
+      const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeId: optionsJson.challengeId, response: assertion }),
+      });
+      const verifyJson = await verifyRes.json();
+      if (!verifyRes.ok || !verifyJson.success) {
+        throw new Error(verifyJson.error || 'Passkey sign-in failed.');
+      }
+
+      persistSessionAndEnter(verifyJson.token, verifyJson.email, "Signed in with your passkey.");
+    } catch (err: any) {
+      // A cancelled/dismissed OS prompt throws too — treat it as a quiet
+      // no-op rather than an alarming error toast.
+      if (err?.name === 'NotAllowedError') {
+        setPasskeyLoading(false);
+        return;
+      }
+      toast({ variant: "destructive", title: "Passkey Sign-In Failed", description: err?.message || "Please use Email + Password instead." });
+    } finally {
+      setPasskeyLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -166,108 +162,71 @@ export default function LoginPage() {
           <h1 className="text-2xl font-headline font-bold tracking-tight text-white mb-1 uppercase italic">GJ5 HOME SERVICE</h1>
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-8">GOOD JOB 5 ERP</p>
 
-          <Tabs defaultValue="admin" className="w-full">
-            <TabsList className="grid grid-cols-2 bg-slate-950/50 border border-slate-800 h-11 p-1 rounded-xl mb-8">
-              <TabsTrigger value="admin" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#123C8C] data-[state=active]:text-white">Email Access</TabsTrigger>
-              <TabsTrigger value="associate" className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-[#123C8C] data-[state=active]:text-white">Mobile Access</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleEmailLogin} className="w-full space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Account Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900"
+                  placeholder="admin@gj5.com"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Access Key</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            <Button
+              type="submit"
+              disabled={loading || passkeyLoading}
+              className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] rounded-xl font-bold uppercase text-xs mt-4 shadow-lg shadow-blue-500/20"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Dashboard"}
+            </Button>
+          </form>
 
-            <TabsContent value="admin" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-              <form onSubmit={handleEmailLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Account Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                    <Input 
-                      type="email" 
-                      value={email} 
-                      onChange={e => setEmail(e.target.value)}
-                      className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900" 
-                      placeholder="admin@gj5.com"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Access Key</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                    <Input 
-                      type="password" 
-                      value={password} 
-                      onChange={e => setPassword(e.target.value)}
-                      className="pl-10 h-12 rounded-xl border-slate-800 bg-white text-slate-900" 
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] rounded-xl font-bold uppercase text-xs mt-4 shadow-lg shadow-blue-500/20"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Dashboard"}
-                </Button>
-              </form>
-            </TabsContent>
+          <div className="w-full flex items-center gap-3 my-6">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">or</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
 
-            <TabsContent value="associate" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-              {!showOtp ? (
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Registered Mobile</Label>
-                    <div className="relative">
-                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                      <Input 
-                        type="tel" 
-                        value={phone} 
-                        onChange={e => setMobile(e.target.value)}
-                        className="pl-10 h-12 font-code rounded-xl border-slate-800 bg-white text-slate-900" 
-                        placeholder="98765 43210"
-                        maxLength={10}
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    id="send-otp-btn"
-                    onClick={handleSendOtp}
-                    disabled={loading || !phone}
-                    className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] rounded-xl font-bold uppercase text-xs mt-2"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Dispatch Verification OTP"}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Verification Code (OTP)</Label>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-                      <Input 
-                        type="text" 
-                        value={otp} 
-                        onChange={e => setOtp(e.target.value)}
-                        className="pl-10 h-12 text-center text-xl tracking-[0.5em] font-code rounded-xl border-slate-800 bg-white text-slate-900" 
-                        placeholder="000000"
-                        maxLength={6}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" onClick={() => setShowOtp(false)} className="flex-1 text-slate-500 text-[10px] font-bold uppercase">Back</Button>
-                    <Button 
-                      onClick={handleVerifyOtp}
-                      disabled={loading || otp.length < 6}
-                      className="flex-[2] h-12 bg-[#10B981] hover:bg-emerald-700 rounded-xl font-bold uppercase text-xs text-white"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Authenticate Identity"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePasskeyLogin}
+            disabled={loading || passkeyLoading || passkeySupported === false}
+            className="w-full h-12 rounded-xl font-bold uppercase text-xs border-slate-700 bg-slate-950/50 text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-40"
+          >
+            {passkeyLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <span className="flex items-center gap-2">
+                <Fingerprint className="w-4 h-4" />
+                Use Fingerprint / Face ID / Passkey
+              </span>
+            )}
+          </Button>
+          {passkeySupported === false && (
+            <p className="mt-3 text-[9px] text-slate-600 text-center leading-relaxed">
+              Biometric / Passkey login is not available on this device/browser. Please use Email + Password.
+            </p>
+          )}
 
-          <p className="mt-12 text-[9px] text-slate-600 font-bold uppercase leading-relaxed text-center">
+          <p className="mt-10 text-[9px] text-slate-600 font-bold uppercase leading-relaxed text-center">
             Authorized Personnel Only.<br />Access logged via GJ5 Secure Protocol.
           </p>
         </CardContent>

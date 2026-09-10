@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { History, LogIn, LogOut, KeyRound, ShieldCheck, UserPlus, UserCog, FileStack, Ban, CheckCircle2, XCircle } from 'lucide-react';
+import { History, LogIn, LogOut, KeyRound, ShieldCheck, UserPlus, UserCog, FileStack, Ban, CheckCircle2, XCircle, Mail, Fingerprint, Monitor } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,11 @@ const EVENT_META: Record<AuditEventType, { label: string; icon: typeof History; 
   employee_activated: { label: 'Employee Activated', icon: CheckCircle2, color: 'text-emerald-400' },
   employee_terminated: { label: 'Employee Terminated', icon: XCircle, color: 'text-rose-400' },
   employee_disabled: { label: 'Employee Disabled', icon: Ban, color: 'text-rose-400' },
+  password_changed: { label: 'Password Changed', icon: KeyRound, color: 'text-emerald-400' },
+  email_changed: { label: 'Email Changed', icon: Mail, color: 'text-blue-400' },
+  passkey_registered: { label: 'Passkey Registered', icon: Fingerprint, color: 'text-emerald-400' },
+  passkey_removed: { label: 'Passkey Removed', icon: Fingerprint, color: 'text-rose-400' },
+  sessions_revoked: { label: 'Sessions Signed Out', icon: Monitor, color: 'text-amber-400' },
 };
 
 // Read-only by design — there is deliberately no delete action anywhere in

@@ -1,23 +1,38 @@
 import { NextResponse } from 'next/server';
 import { createSession, deleteSession, validateSession } from '@/lib/session';
+import { findOwnerByLoginIdentifier, verifyOwnerPassword } from '@/lib/owner-credentials';
 
-// Called by login/page.tsx immediately AFTER its existing demo-credential
-// check (email/password or mobile/OTP) already passed. This route does not
-// re-check credentials — it only mints a server-verified session token for
-// the identity the client has already established, so every subsequent
-// /api/erp/* call can resolve "who is this" without trusting a client-sent
-// email.
+// Owner/admin login. Previously this route trusted a bare `{ email }` from
+// the client with no password check of its own — the real check only ever
+// happened in browser JavaScript in login/page.tsx, which meant anyone who
+// could reach this endpoint directly could mint a valid owner session for
+// any email with no password at all. It now verifies a real bcrypt hash
+// server-side against `owner_credentials`, the same way employee logins
+// already worked via /api/auth/employee-login. The session is always minted
+// against the account's immutable tenant-scope email, never whatever alias
+// (login_email) was typed in, so every existing `WHERE user_email = ?` query
+// across the ERP keeps working unchanged.
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ success: false, error: 'email is required' }, { status: 400 });
+    const { email, password } = await request.json();
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      return NextResponse.json({ success: false, error: 'Email and password are required.' }, { status: 400 });
     }
+
+    const invalid = () => NextResponse.json({ success: false, error: 'Invalid email or password.' }, { status: 401 });
+
+    const owner = await findOwnerByLoginIdentifier(email);
+    if (!owner) return invalid();
+    const ok = await verifyOwnerPassword(owner.userEmail, password);
+    if (!ok) return invalid();
+
     const deviceInfo = request.headers.get('user-agent') || undefined;
-    const { token, expiresAt } = await createSession(email, deviceInfo);
+    const { token, expiresAt } = await createSession(owner.userEmail, deviceInfo);
     return NextResponse.json({ success: true, token, expiresAt });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
+    const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
+    const status = error?.code ? 503 : 500;
+    return NextResponse.json({ success: false, error: status === 503 ? `Login check failed: ${detail}` : detail }, { status });
   }
 }
 

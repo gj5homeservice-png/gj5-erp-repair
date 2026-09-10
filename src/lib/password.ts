@@ -14,6 +14,24 @@ export async function verifyPassword(plainText: string, hash: string): Promise<b
 }
 
 export function isPasswordStrongEnough(plainText: string): boolean {
-  // Minimal, sane floor — not the UI's job to explain policy beyond this.
-  return typeof plainText === 'string' && plainText.length >= 6;
+  return getPasswordStrengthError(plainText) === null;
+}
+
+// Returns a human-readable reason the password fails the policy, or null if
+// it passes — lets the UI show exactly what's missing instead of a generic
+// rejection. Policy: 8+ characters, at least one letter and one number.
+// Applied everywhere a password is set or changed (self-service change,
+// admin reset-for-employee, and the new owner account), so the bar is
+// consistent across the whole app.
+export function getPasswordStrengthError(plainText: string): string | null {
+  if (typeof plainText !== 'string' || plainText.length < 8) {
+    return 'Password must be at least 8 characters long.';
+  }
+  if (!/[a-zA-Z]/.test(plainText)) {
+    return 'Password must include at least one letter.';
+  }
+  if (!/[0-9]/.test(plainText)) {
+    return 'Password must include at least one number.';
+  }
+  return null;
 }

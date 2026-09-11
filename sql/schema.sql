@@ -731,3 +731,30 @@ CREATE TABLE IF NOT EXISTS nav_order (
   user_email  VARCHAR(191) PRIMARY KEY,
   order_json  JSON NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Public customer accounts (repair-booking website) — see
+-- sql/migrations/008_customer_accounts.sql for the full rationale.
+CREATE TABLE IF NOT EXISTS customer_accounts (
+  id             VARCHAR(64) PRIMARY KEY,
+  user_email     VARCHAR(191) NOT NULL,
+  name           VARCHAR(191) NOT NULL,
+  mobile         VARCHAR(20) NOT NULL,
+  email          VARCHAR(191) NULL,
+  password_hash  VARCHAR(255) NOT NULL,
+  address        VARCHAR(255) NULL,
+  pincode        VARCHAR(10) NULL,
+  created_at     VARCHAR(40) NOT NULL,
+  updated_at     VARCHAR(40) NULL,
+  UNIQUE INDEX idx_customer_accounts_tenant_mobile (user_email, mobile),
+  INDEX idx_customer_accounts_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS customer_sessions (
+  token         VARCHAR(128) PRIMARY KEY,
+  customer_id   VARCHAR(64) NOT NULL,
+  user_email    VARCHAR(191) NOT NULL,
+  created_at    VARCHAR(40) NOT NULL,
+  expires_at    VARCHAR(40) NOT NULL,
+  device_info   VARCHAR(255) NULL,
+  INDEX idx_customer_sessions_customer (customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

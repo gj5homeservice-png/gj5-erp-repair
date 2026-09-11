@@ -64,17 +64,19 @@ function noteRow(r: any) { return { id: r.id, date: r.date, text: r.text }; }
 function statusRow(r: any) { return { id: r.id, status: r.status, changedAt: r.changed_at, note: r.note }; }
 function notifRow(r: any) { return { id: r.id, trigger: r.trigger_type, message: r.message, sentAt: r.sent_at }; }
 
-export async function listRepairJobs(email: string) {
-  const pool = getPool();
-  const [jobs] = await pool.execute<any[]>('SELECT * FROM repair_jobs WHERE user_email = ?', [email]);
-  const jobIds = (jobs as any[]).map(j => j.id);
-  if (jobIds.length === 0) return [];
+// Shared by every read path (full-list for the ERP, and the customer-scoped
+// reads below) so the child-table join logic exists exactly once.
+async function hydrateJobs(email: string, jobs: any[]) {
+  if (jobs.length === 0) return [];
+  const jobIds = jobs.map(j => j.id);
+  const placeholders = jobIds.map(() => '?').join(',');
 
-  const [parts] = await pool.execute<any[]>(`SELECT p.* FROM repair_job_parts p INNER JOIN repair_jobs j ON p.repair_job_id = j.id WHERE j.user_email = ?`, [email]);
-  const [payments] = await pool.execute<any[]>(`SELECT p.* FROM repair_job_payments p INNER JOIN repair_jobs j ON p.repair_job_id = j.id WHERE j.user_email = ?`, [email]);
-  const [notes] = await pool.execute<any[]>(`SELECT n.* FROM repair_job_notes n INNER JOIN repair_jobs j ON n.repair_job_id = j.id WHERE j.user_email = ?`, [email]);
-  const [statusHistory] = await pool.execute<any[]>(`SELECT s.* FROM repair_job_status_history s INNER JOIN repair_jobs j ON s.repair_job_id = j.id WHERE j.user_email = ?`, [email]);
-  const [notifications] = await pool.execute<any[]>(`SELECT n.* FROM repair_job_notifications n INNER JOIN repair_jobs j ON n.repair_job_id = j.id WHERE j.user_email = ?`, [email]);
+  const pool = getPool();
+  const [parts] = await pool.execute<any[]>(`SELECT * FROM repair_job_parts WHERE repair_job_id IN (${placeholders})`, jobIds);
+  const [payments] = await pool.execute<any[]>(`SELECT * FROM repair_job_payments WHERE repair_job_id IN (${placeholders})`, jobIds);
+  const [notes] = await pool.execute<any[]>(`SELECT * FROM repair_job_notes WHERE repair_job_id IN (${placeholders})`, jobIds);
+  const [statusHistory] = await pool.execute<any[]>(`SELECT * FROM repair_job_status_history WHERE repair_job_id IN (${placeholders})`, jobIds);
+  const [notifications] = await pool.execute<any[]>(`SELECT * FROM repair_job_notifications WHERE repair_job_id IN (${placeholders})`, jobIds);
 
   const group = (rows: any[], mapper: (r: any) => any) => {
     const byJob = new Map<string, any[]>();
@@ -91,13 +93,41 @@ export async function listRepairJobs(email: string) {
   const statusByJob = group(statusHistory as any[], statusRow);
   const notifByJob = group(notifications as any[], notifRow);
 
-  return (jobs as any[]).map(row => jobRowToObject(row, {
+  return jobs.map(row => jobRowToObject(row, {
     parts: partsByJob.get(row.id) || [],
     payments: paymentsByJob.get(row.id) || [],
     notes: notesByJob.get(row.id) || [],
     statusHistory: statusByJob.get(row.id) || [],
     notifications: notifByJob.get(row.id) || [],
   }));
+}
+
+export async function listRepairJobs(email: string) {
+  const pool = getPool();
+  const [jobs] = await pool.execute<any[]>('SELECT * FROM repair_jobs WHERE user_email = ?', [email]);
+  return hydrateJobs(email, jobs as any[]);
+}
+
+// Customer-portal read: scoped by BOTH tenant email and the customer's own
+// mobile number — a customer only ever sees jobs matching their own mobile,
+// resolved server-side from their session/account, never from anything the
+// client could supply.
+export async function listRepairJobsForCustomerMobile(email: string, mobile: string) {
+  const pool = getPool();
+  const [jobs] = await pool.execute<any[]>('SELECT * FROM repair_jobs WHERE user_email = ? AND mobile = ?', [email, mobile]);
+  return hydrateJobs(email, jobs as any[]);
+}
+
+// Single-job customer read — returns null (never the row) if the job
+// exists but belongs to a different mobile number, so a customer can never
+// probe for another customer's repair by guessing/incrementing an id.
+export async function getRepairJobForCustomerMobile(email: string, id: string, mobile: string) {
+  const pool = getPool();
+  const [jobs] = await pool.execute<any[]>('SELECT * FROM repair_jobs WHERE id = ? AND user_email = ? AND mobile = ?', [id, email, mobile]);
+  const rows = jobs as any[];
+  if (rows.length === 0) return null;
+  const hydrated = await hydrateJobs(email, rows);
+  return hydrated[0] || null;
 }
 
 async function replaceChildren(conn: PoolConnection, jobId: string, job: any) {

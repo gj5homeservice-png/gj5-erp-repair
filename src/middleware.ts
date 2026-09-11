@@ -14,6 +14,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 // their backing /api/erp/attendance-links/* routes) are sent to employees
 // via SMS/WhatsApp and must keep working without anyone ever visiting the
 // secret URL, so they're excluded from the gate entirely.
+//
+// The public customer repair-booking website (homepage, booking form,
+// customer signup/login/my-repairs, and their backing /api/customer/*
+// routes) is likewise excluded — real customers must be able to reach it
+// without knowing the secret URL. This is a deliberate, narrow addition,
+// not a weakening of the gate: everything else (every /dashboard route,
+// every /api/erp/* route, /settings, /super-admin) stays exactly as gated
+// as before, and customer identity lives in a completely separate
+// customer_sessions table (see src/lib/customer-auth.ts) that the ERP's own
+// requireUser() has no knowledge of, so a customer session can never pass
+// as an owner/employee session even if a customer somehow obtained the
+// gate cookie.
 
 const SECRET_PATH = '/x7k9p2';
 const GATE_COOKIE = 'gj5_erp_gate';
@@ -26,6 +38,12 @@ function isAlwaysPublic(pathname: string): boolean {
   if (pathname.startsWith('/attendance/')) return true; // /attendance/[token]
   if (pathname.startsWith('/api/erp/attendance-links/')) return true;
   if (pathname === '/robots.txt' || pathname === '/favicon.ico') return true;
+
+  // Public customer website — see the comment block above.
+  if (pathname === '/' || pathname === '/book-repair' || pathname === '/book-repair/') return true;
+  if (pathname.startsWith('/customer/')) return true;
+  if (pathname.startsWith('/api/customer/')) return true;
+
   return false;
 }
 

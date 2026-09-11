@@ -21,10 +21,23 @@ export async function POST(request: Request) {
 
     const invalid = () => NextResponse.json({ success: false, error: 'Invalid email or password.' }, { status: 401 });
 
+    // The client response is deliberately the same generic message either
+    // way (never reveal whether an email exists), but that also means an
+    // admin who's genuinely typing their real password has no way to know
+    // WHICH check failed. These two lines never log the password or its
+    // hash — only which of the two independent checks rejected the
+    // attempt — so a real failure is diagnosable from the server/Hostinger
+    // logs instead of being a total black box.
     const owner = await findOwnerByLoginIdentifier(email);
-    if (!owner) return invalid();
+    if (!owner) {
+      console.warn(`[auth/session] No owner_credentials row matched identifier "${email}" (checked against both user_email and login_email).`);
+      return invalid();
+    }
     const ok = await verifyOwnerPassword(owner.userEmail, password);
-    if (!ok) return invalid();
+    if (!ok) {
+      console.warn(`[auth/session] Password did not match the stored hash for owner "${owner.userEmail}" (matched via identifier "${email}").`);
+      return invalid();
+    }
 
     const deviceInfo = request.headers.get('user-agent') || undefined;
     const { token, expiresAt } = await createSession(owner.userEmail, deviceInfo);

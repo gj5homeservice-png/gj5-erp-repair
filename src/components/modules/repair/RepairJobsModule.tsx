@@ -94,7 +94,7 @@ export function RepairJobsModule({ store }: { store: any }) {
   const MoreMenu = ({ job, align }: { job: RepairJob; align: 'start' | 'end' }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7 text-slate-400 hover:text-white" title="More Actions">
+        <Button size="icon" variant="ghost" className="h-8 w-8 md:h-6 md:w-6 text-slate-400 hover:text-white" title="More Actions">
           <MoreVertical className="w-3.5 h-3.5" />
         </Button>
       </DropdownMenuTrigger>
@@ -190,48 +190,59 @@ export function RepairJobsModule({ store }: { store: any }) {
         )}
       </MobileCardList>
 
+      {/* Column widths/padding are deliberately tight (px-2.5 instead of the
+          shared TableCell/TableHead default px-4, and a max-w+truncate+title
+          on the two unbounded free-text columns, Customer and Technician) so
+          all 9 data columns plus Repair ID and Actions fit in one row on a
+          normal 1366px+ desktop without the table needing its own horizontal
+          scroll — the overflow-x-auto wrapper stays only as a safety net for
+          unusually narrow desktop windows or unusually long data, per the
+          original "adjust table/column width and responsive overflow
+          behavior, do not remove the icons" allowance. No column's data is
+          lost: Customer/Technician show a native title tooltip with the full
+          value, and both are always fully visible in View/Edit anyway. */}
       <div className="hidden md:block bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-slate-800">
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Repair ID</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Customer</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Mobile</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Product</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Problem</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Technician</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Received</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Expected</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Amount</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold">Status</TableHead>
-                <TableHead className="text-slate-500 uppercase text-[10px] font-bold text-right min-w-[168px]">Actions</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Repair ID</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Customer</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Mobile</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Product</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Problem</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Technician</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Received</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Expected</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Amount</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Status</TableHead>
+                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold text-right min-w-[152px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map(j => (
                 <TableRow key={j.id} className="border-slate-800 hover:bg-slate-800/20">
-                  <TableCell className="font-code font-bold text-blue-400 text-xs">{j.id}</TableCell>
-                  <TableCell className="text-xs font-bold text-slate-200">{j.customerName}</TableCell>
-                  <TableCell className="text-xs text-slate-400 font-code">{j.mobile}</TableCell>
-                  <TableCell className="text-xs text-slate-300 max-w-[180px]">
+                  <TableCell className="px-2 py-2.5 font-code font-bold text-blue-400 text-xs">{j.id}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-200 max-w-[100px] truncate" title={j.customerName}>{j.customerName}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-400 font-code whitespace-nowrap">{j.mobile}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[130px]">
                     <div className="flex flex-col min-w-0">
                       <span className="font-bold break-words">{j.brand}</span>
                       <span className="text-slate-400 break-words">{j.model}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-300 max-w-[160px]" title={j.problemDescription}>{j.problemDescription}</TableCell>
-                  <TableCell className="text-xs text-slate-300">{j.technicianName || '—'}</TableCell>
-                  <TableCell className="text-xs text-slate-300">{j.receivedDate}</TableCell>
-                  <TableCell className="text-xs text-slate-300">{j.expectedDeliveryDate || '—'}</TableCell>
-                  <TableCell className="text-xs font-code text-slate-200">₹{displayAmount(j).toLocaleString()}</TableCell>
-                  <TableCell><Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase`}>{j.status}</Badge></TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[110px]" title={j.problemDescription}>{j.problemDescription}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[80px] truncate" title={j.technicianName || undefined}>{j.technicianName || '—'}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.receivedDate}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.expectedDeliveryDate || '—'}</TableCell>
+                  <TableCell className="px-2 py-2.5 text-xs font-code text-slate-200 whitespace-nowrap">₹{displayAmount(j).toLocaleString()}</TableCell>
+                  <TableCell className="px-2 py-2.5"><Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase`}>{j.status}</Badge></TableCell>
+                  <TableCell className="px-2 py-2.5 text-right">
                     <div className="flex justify-end items-center gap-0.5 flex-nowrap">
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                       <MoreMenu job={j} align="end" />
                     </div>
                   </TableCell>

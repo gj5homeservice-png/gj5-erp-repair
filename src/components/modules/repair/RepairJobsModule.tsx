@@ -1,13 +1,12 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
-import { Search, Eye, Pencil, RefreshCw, StickyNote, PackagePlus, Wallet, Printer, Trash2, MoreVertical, Receipt } from 'lucide-react';
+import { Search, Eye, Pencil, RefreshCw, StickyNote, PackagePlus, Wallet, Printer, Trash2, Receipt, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { RepairFormModule } from './RepairFormModule';
 import { RepairDetailsModal } from './RepairDetailsModal';
@@ -20,7 +19,8 @@ import { RepairDeleteModal } from './RepairDeleteModal';
 import { StickerModal } from '../repairing/StickerModal';
 import { RepairJob, RepairJobStatus } from '@/lib/types';
 import { displayAmount } from '@/lib/repair-utils';
-import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
+import { MobileCard, MobileCardList, MobileCardRow } from '@/components/ui/mobile-card';
+import { cn } from '@/lib/utils';
 
 const STATUS_COLORS: Record<string, string> = {
   Received: 'bg-blue-600/10 text-blue-400 border-blue-600/20',
@@ -38,6 +38,36 @@ const ALL_STATUSES: RepairJobStatus[] = [
   'Received', 'Inspection', 'Estimate Sent', 'Approved', 'In Progress',
   'Waiting for Parts', 'Ready', 'Delivered', 'Cancelled'
 ];
+
+interface ActionDef {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  hoverClass: string;
+}
+
+// Shared icon+label pill button used by both the desktop action row and the
+// mobile card's action area, so the 9 actions look and behave identically
+// everywhere — no separate "collapsed" variant exists anymore.
+function ActionButton({ action, className }: { action: ActionDef; className?: string }) {
+  const Icon = action.icon;
+  return (
+    <Button
+      variant="outline"
+      onClick={action.onClick}
+      title={action.label}
+      className={cn(
+        'h-10 min-h-[40px] gap-1.5 px-3 rounded-xl border-slate-700 bg-slate-950/60 text-slate-300 text-xs font-bold hover:bg-slate-800 hover:text-white transition-colors',
+        action.hoverClass,
+        className
+      )}
+    >
+      <Icon className="w-4 h-4 shrink-0" />
+      <span>{action.label}</span>
+    </Button>
+  );
+}
 
 export function RepairJobsModule({ store }: { store: any }) {
   const { toast } = useToast();
@@ -85,39 +115,21 @@ export function RepairJobsModule({ store }: { store: any }) {
     return <RepairFormModule store={store} editingJob={editingJob} onDone={() => setEditingJob(null)} />;
   }
 
-  // The 4 primary actions (View / Edit / Print Label / Delete) are always
-  // directly visible and never truncated, per spec — the other 4 existing
-  // actions (Status / Note / Parts / Payment) and the original itemized
-  // Print Receipt are preserved exactly as they were, just consolidated into
-  // this "More" menu so the primary row/column never needs horizontal
-  // scrolling to reach Delete.
-  const MoreMenu = ({ job, align }: { job: RepairJob; align: 'start' | 'end' }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8 md:h-6 md:w-6 text-slate-400 hover:text-white" title="More Actions">
-          <MoreVertical className="w-3.5 h-3.5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="bg-slate-900 border-slate-800 text-slate-100 w-52">
-        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setStatusJob(job)}>
-          <RefreshCw className="w-3.5 h-3.5" /> Update Status
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setNoteJob(job)}>
-          <StickyNote className="w-3.5 h-3.5" /> Add Note
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setPartJob(job)}>
-          <PackagePlus className="w-3.5 h-3.5" /> Add Parts
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setPaymentJob(job)}>
-          <Wallet className="w-3.5 h-3.5" /> Payment
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-slate-800" />
-        <DropdownMenuItem className="text-xs gap-2 focus:bg-slate-800 focus:text-white" onClick={() => setReceiptJob(job)}>
-          <Receipt className="w-3.5 h-3.5" /> Print Receipt
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  // All 9 actions are always directly visible now — no "More" menu, no
+  // dropdown, no second click. Every handler here is exactly the same
+  // function that used to be wired to the 4 primary icons or the More
+  // menu's items; nothing about what each action does has changed.
+  const actionsFor = (j: RepairJob): ActionDef[] => [
+    { key: 'view', label: 'View', icon: Eye, onClick: () => setViewingJob(j), hoverClass: 'hover:text-blue-400 hover:border-blue-500/50' },
+    { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => setEditingJob(j), hoverClass: 'hover:text-amber-400 hover:border-amber-500/50' },
+    { key: 'print', label: 'Print', icon: Printer, onClick: () => setLabelJob(j), hoverClass: 'hover:text-lime-400 hover:border-lime-500/50' },
+    { key: 'delete', label: 'Delete', icon: Trash2, onClick: () => setDeletingId(j.id), hoverClass: 'hover:text-rose-500 hover:border-rose-500/50' },
+    { key: 'status', label: 'Update Status', icon: RefreshCw, onClick: () => setStatusJob(j), hoverClass: 'hover:text-purple-400 hover:border-purple-500/50' },
+    { key: 'note', label: 'Add Note', icon: StickyNote, onClick: () => setNoteJob(j), hoverClass: 'hover:text-cyan-400 hover:border-cyan-500/50' },
+    { key: 'parts', label: 'Add Parts', icon: PackagePlus, onClick: () => setPartJob(j), hoverClass: 'hover:text-orange-400 hover:border-orange-500/50' },
+    { key: 'payment', label: 'Payment', icon: Wallet, onClick: () => setPaymentJob(j), hoverClass: 'hover:text-emerald-400 hover:border-emerald-500/50' },
+    { key: 'receipt', label: 'Print Receipt', icon: Receipt, onClick: () => setReceiptJob(j), hoverClass: 'hover:text-slate-100 hover:border-slate-500' },
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -151,6 +163,9 @@ export function RepairJobsModule({ store }: { store: any }) {
         <Input value={brandFilter} onChange={e => setBrandFilter(e.target.value)} placeholder="Filter by Brand..." className="w-full sm:w-40 h-10 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
       </div>
 
+      {/* MOBILE — unchanged card layout/data; the action area now lists all
+          9 actions directly (wraps into as many rows as needed) instead of
+          4 icons + a More menu. */}
       <MobileCardList>
         {filtered.map(j => (
           <MobileCard key={j.id}>
@@ -174,13 +189,11 @@ export function RepairJobsModule({ store }: { store: any }) {
               <MobileCardRow label="Expected" value={j.expectedDeliveryDate || '—'} />
               <MobileCardRow label="Amount" value={`₹${displayAmount(j).toLocaleString()}`} />
             </div>
-            <MobileCardActions>
-              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-4 h-4" /></Button>
-              <MoreMenu job={j} align="end" />
-            </MobileCardActions>
+            <div className="flex flex-wrap gap-2 pt-3 mt-1 border-t border-slate-800/80">
+              {actionsFor(j).map(action => (
+                <ActionButton key={action.key} action={action} className="flex-1 min-w-[calc(50%-4px)] justify-center" />
+              ))}
+            </div>
           </MobileCard>
         ))}
         {filtered.length === 0 && (
@@ -190,17 +203,11 @@ export function RepairJobsModule({ store }: { store: any }) {
         )}
       </MobileCardList>
 
-      {/* Column widths/padding are deliberately tight (px-2.5 instead of the
-          shared TableCell/TableHead default px-4, and a max-w+truncate+title
-          on the two unbounded free-text columns, Customer and Technician) so
-          all 9 data columns plus Repair ID and Actions fit in one row on a
-          normal 1366px+ desktop without the table needing its own horizontal
-          scroll — the overflow-x-auto wrapper stays only as a safety net for
-          unusually narrow desktop windows or unusually long data, per the
-          original "adjust table/column width and responsive overflow
-          behavior, do not remove the icons" allowance. No column's data is
-          lost: Customer/Technician show a native title tooltip with the full
-          value, and both are always fully visible in View/Edit anyway. */}
+      {/* DESKTOP — the 9 data columns keep their own compact table row
+          exactly as before (see the width/padding notes below); the
+          "Actions" column is gone and replaced by a full-width row directly
+          underneath each job's data, listing all 9 actions with icon +
+          label so nothing is ever hidden behind a second click. */}
       <div className="hidden md:block bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="overflow-x-auto w-full">
           <Table>
@@ -216,40 +223,39 @@ export function RepairJobsModule({ store }: { store: any }) {
                 <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Expected</TableHead>
                 <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Amount</TableHead>
                 <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold">Status</TableHead>
-                <TableHead className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold text-right min-w-[152px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map(j => (
-                <TableRow key={j.id} className="border-slate-800 hover:bg-slate-800/20">
-                  <TableCell className="px-2 py-2.5 font-code font-bold text-blue-400 text-xs">{j.id}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-200 max-w-[100px] truncate" title={j.customerName}>{j.customerName}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-400 font-code whitespace-nowrap">{j.mobile}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[130px]">
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-bold break-words">{j.brand}</span>
-                      <span className="text-slate-400 break-words">{j.model}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[110px]" title={j.problemDescription}>{j.problemDescription}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[80px] truncate" title={j.technicianName || undefined}>{j.technicianName || '—'}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.receivedDate}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.expectedDeliveryDate || '—'}</TableCell>
-                  <TableCell className="px-2 py-2.5 text-xs font-code text-slate-200 whitespace-nowrap">₹{displayAmount(j).toLocaleString()}</TableCell>
-                  <TableCell className="px-2 py-2.5"><Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase`}>{j.status}</Badge></TableCell>
-                  <TableCell className="px-2 py-2.5 text-right">
-                    <div className="flex justify-end items-center gap-0.5 flex-nowrap">
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-blue-400" title="View" onClick={() => setViewingJob(j)}><Eye className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-amber-400" title="Edit" onClick={() => setEditingJob(j)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-lime-400" title="Print Label" onClick={() => setLabelJob(j)}><Printer className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-rose-500" title="Delete" onClick={() => setDeletingId(j.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                      <MoreMenu job={j} align="end" />
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <React.Fragment key={j.id}>
+                  <TableRow className="border-slate-800/0 hover:bg-slate-800/20">
+                    <TableCell className="px-2 py-2.5 font-code font-bold text-blue-400 text-xs">{j.id}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-200 max-w-[120px] truncate" title={j.customerName}>{j.customerName}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-400 font-code whitespace-nowrap">{j.mobile}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[150px]">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold break-words">{j.brand}</span>
+                        <span className="text-slate-400 break-words">{j.model}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[130px]" title={j.problemDescription}>{j.problemDescription}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[90px] truncate" title={j.technicianName || undefined}>{j.technicianName || '—'}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.receivedDate}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs text-slate-300 whitespace-nowrap">{j.expectedDeliveryDate || '—'}</TableCell>
+                    <TableCell className="px-2 py-2.5 text-xs font-code text-slate-200 whitespace-nowrap">₹{displayAmount(j).toLocaleString()}</TableCell>
+                    <TableCell className="px-2 py-2.5"><Badge className={`${STATUS_COLORS[j.status] || ''} text-[9px] uppercase`}>{j.status}</Badge></TableCell>
+                  </TableRow>
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableCell colSpan={10} className="px-2 pt-0 pb-3">
+                      <div className="flex flex-wrap gap-2">
+                        {actionsFor(j).map(action => <ActionButton key={action.key} action={action} />)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                </React.Fragment>
               ))}
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={11} className="h-24 text-center text-slate-600 text-xs italic">
+                <TableRow><TableCell colSpan={10} className="h-24 text-center text-slate-600 text-xs italic">
                   {jobs.length === 0 ? 'No repair jobs yet. Create one from "New Repair".' : 'No repair jobs match your search/filters.'}
                 </TableCell></TableRow>
               )}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPool } from '@/lib/db';
 import { verifyPassword } from '@/lib/password';
 import { createSession } from '@/lib/session';
+import { grantErpGate } from '@/lib/erp-gate';
 
 // Called by login/page.tsx as a fallback AFTER the existing owner-login check
 // (hardcoded demo admin / gj5_demo_users) fails — so this never changes or
@@ -53,13 +54,15 @@ export async function POST(request: Request) {
     const { logLoginAudit } = await import('@/lib/erp/employees');
     await logLoginAudit(row.user_email, row.employee_id, row.employee_id, 'login', ip, deviceInfo ?? null);
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       token,
       expiresAt,
       employeeId: row.employee_id,
       forcePasswordChange: !!row.force_password_change,
     });
+    grantErpGate(res);
+    return res;
   } catch (error: any) {
     // Mirror api-auth.ts's requireUser(): a DB-connectivity failure here
     // (wrong host/credentials, network blip) previously surfaced as an

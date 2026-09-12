@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { GATE_COOKIE, GATE_VALUE, grantErpGate } from '@/lib/erp-gate';
 
 // Secret-URL access gate for GJ5 HOME SERVICE.
 //
@@ -28,10 +29,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // gate cookie.
 
 const SECRET_PATH = '/x7k9p2';
-const GATE_COOKIE = 'gj5_erp_gate';
-const GATE_VALUE = 'granted-7f3a1c';
 const ROBOTS_HEADER = { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' } as const;
-const ONE_YEAR = 60 * 60 * 24 * 365;
 
 function isAlwaysPublic(pathname: string): boolean {
   if (pathname === '/attendance' || pathname === '/attendance/') return true;
@@ -43,6 +41,24 @@ function isAlwaysPublic(pathname: string): boolean {
   if (pathname === '/' || pathname === '/book-repair' || pathname === '/book-repair/') return true;
   if (pathname.startsWith('/customer/')) return true;
   if (pathname.startsWith('/api/customer/')) return true;
+  // /login is now just a thin client-side redirect to /customer/login (the
+  // one real login form for the whole site — see that page) and carries no
+  // sensitive content of its own, so it's public too: a visitor without the
+  // gate cookie should land on the login form, not a 404.
+  if (pathname === '/login' || pathname === '/login/') return true;
+  // These four are the actual credential-verification endpoints the single
+  // public login page calls (owner email+password, employee username+
+  // password, and the two passkey/WebAuthn steps). They must be reachable
+  // without the gate cookie — a real admin arriving via the public login
+  // page has never visited /x7k9p2 and so never has that cookie yet. This
+  // does NOT expose any ERP data: each of these only ever verifies a
+  // password/passkey server-side and, on success, itself grants the gate
+  // cookie (see src/lib/erp-gate.ts) — every actual data route
+  // (/api/erp/*, /dashboard) still requires that cookie exactly as before.
+  if (pathname === '/api/auth/session' || pathname === '/api/auth/session/') return true;
+  if (pathname === '/api/auth/employee-login' || pathname === '/api/auth/employee-login/') return true;
+  if (pathname === '/api/auth/webauthn/login-options' || pathname === '/api/auth/webauthn/login-options/') return true;
+  if (pathname === '/api/auth/webauthn/login-verify' || pathname === '/api/auth/webauthn/login-verify/') return true;
 
   return false;
 }
@@ -50,16 +66,6 @@ function isAlwaysPublic(pathname: string): boolean {
 function withRobotsHeader(res: NextResponse): NextResponse {
   res.headers.set(ROBOTS_HEADER.key, ROBOTS_HEADER.value);
   return res;
-}
-
-function setGateCookie(res: NextResponse): void {
-  res.cookies.set(GATE_COOKIE, GATE_VALUE, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: ONE_YEAR,
-  });
 }
 
 function notFound(request: NextRequest): NextResponse {
@@ -83,7 +89,7 @@ export function middleware(request: NextRequest) {
   // The secret entry point itself: grant the gate cookie and enter the app.
   if (pathname === SECRET_PATH || pathname === `${SECRET_PATH}/`) {
     const res = NextResponse.redirect(new URL('/dashboard', request.url));
-    setGateCookie(res);
+    grantErpGate(res);
     return withRobotsHeader(res);
   }
 
@@ -94,7 +100,7 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.slice(SECRET_PATH.length) || '/dashboard';
     const res = NextResponse.rewrite(url);
-    setGateCookie(res);
+    grantErpGate(res);
     return withRobotsHeader(res);
   }
 

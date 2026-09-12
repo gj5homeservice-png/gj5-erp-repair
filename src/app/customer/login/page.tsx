@@ -1,19 +1,44 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, User, Lock } from 'lucide-react';
+import { Loader2, User, Lock, Fingerprint } from 'lucide-react';
 import { PublicHeader } from '@/components/customer/PublicHeader';
 import { PublicFooter } from '@/components/customer/PublicFooter';
 import { setCustomerSession } from '@/lib/customer-client';
+import { browserSupportsWebAuthn, platformAuthenticatorIsAvailable, startAuthentication } from '@simplewebauthn/browser';
 
+const GENERIC_ERROR = 'Invalid mobile/email or password.';
+
+// The single login form for the entire site. It never asks "are you a
+// customer or an admin" — it just tries each real credential store, in
+// order, and only the one that actually matches decides where you land.
+// A wrong identifier/password combination looks identical everywhere
+// (same generic error, same 401), so nothing here reveals whether an
+// email/mobile belongs to a customer, an owner, or an employee account.
 export default function CustomerLoginPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      if (!browserSupportsWebAuthn()) { setPasskeySupported(false); return; }
+      const available = await platformAuthenticatorIsAvailable().catch(() => false);
+      setPasskeySupported(available);
+    })();
+  }, []);
+
+  const enterAsStaff = (token: string) => {
+    localStorage.setItem('gj5_auth_token', token);
+    localStorage.setItem('gj5_active_user', identifier);
+    router.push('/dashboard');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,19 +46,85 @@ export default function CustomerLoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/customer/login', {
+      // 1. Customer account — the common case for this public site.
+      const customerRes = await fetch('/api/customer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Invalid mobile/email or password.');
-      setCustomerSession(json.token, json.customer.id, json.customer.name);
-      router.push('/customer/repairs');
+      const customerJson = await customerRes.json();
+      if (customerRes.ok && customerJson.success) {
+        setCustomerSession(customerJson.token, customerJson.customer.id, customerJson.customer.name);
+        router.push('/customer/repairs');
+        return;
+      }
+
+      // 2. Not a customer (or wrong password there) — try the owner/admin
+      // account. This never weakens that check: it's the exact same
+      // server-side bcrypt verification /api/auth/session has always done.
+      const ownerRes = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: identifier, password }),
+      });
+      const ownerJson = await ownerRes.json();
+      if (ownerRes.ok && ownerJson.success) {
+        enterAsStaff(ownerJson.token);
+        return;
+      }
+
+      // 3. Not the owner either — try it as an employee's own username/password.
+      const employeeRes = await fetch('/api/auth/employee-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: identifier, password }),
+      });
+      const employeeJson = await employeeRes.json();
+      if (employeeRes.ok && employeeJson.success) {
+        enterAsStaff(employeeJson.token);
+        return;
+      }
+
+      // None of the three matched — one generic message regardless of which
+      // account type (or none) the identifier belongs to.
+      throw new Error(GENERIC_ERROR);
     } catch (err: any) {
-      setError(err?.message || 'Something went wrong.');
+      setError(err?.message || GENERIC_ERROR);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (passkeySupported === false) {
+      setError('Biometric / Passkey login is not available on this device/browser. Please use your mobile/email and password.');
+      return;
+    }
+    setError(null);
+    setPasskeyLoading(true);
+    try {
+      const optionsRes = await fetch('/api/auth/webauthn/login-options', { method: 'POST' });
+      const optionsJson = await optionsRes.json();
+      if (!optionsRes.ok || !optionsJson.success) throw new Error(optionsJson.error || 'Could not start passkey sign-in.');
+
+      const assertion = await startAuthentication({ optionsJSON: optionsJson.options });
+
+      const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeId: optionsJson.challengeId, response: assertion }),
+      });
+      const verifyJson = await verifyRes.json();
+      if (!verifyRes.ok || !verifyJson.success) throw new Error(verifyJson.error || 'Passkey sign-in failed.');
+
+      localStorage.setItem('gj5_auth_token', verifyJson.token);
+      localStorage.setItem('gj5_active_user', verifyJson.email);
+      router.push('/dashboard');
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') { setPasskeyLoading(false); return; }
+      setError(err?.message || 'Passkey sign-in failed. Please use mobile/email and password instead.');
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -78,12 +169,30 @@ export default function CustomerLoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || passkeyLoading}
               className="w-full h-12 bg-[#123C8C] hover:bg-[#0D2E63] text-white font-bold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log In'}
             </button>
           </form>
+
+          {passkeySupported !== false && (
+            <>
+              <div className="flex items-center gap-3 my-5">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">or</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              <button
+                type="button"
+                onClick={handlePasskeyLogin}
+                disabled={loading || passkeyLoading}
+                className="w-full h-12 rounded-xl font-bold text-sm border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Fingerprint className="w-4 h-4" /> Use Fingerprint / Face ID / Passkey</>)}
+              </button>
+            </>
+          )}
 
           <p className="text-center text-sm text-slate-500 mt-6">
             New here? <Link href="/customer/signup" className="text-[#123C8C] font-bold">Create an Account</Link>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { finishAuthentication } from '@/lib/webauthn';
 import { createSession } from '@/lib/session';
 import { getPool } from '@/lib/db';
+import { grantErpGate } from '@/lib/erp-gate';
 
 // Public — completes the usernameless passkey login. Identity is resolved
 // entirely server-side from which credential the browser used; nothing
@@ -40,7 +41,9 @@ export async function POST(request: Request) {
       await logLoginAudit(userEmail, employeeId, employeeId, 'login', ip, deviceInfo ?? null).catch(() => {});
     }
 
-    return NextResponse.json({ success: true, token, expiresAt, email: userEmail, employeeId });
+    const res = NextResponse.json({ success: true, token, expiresAt, email: userEmail, employeeId });
+    grantErpGate(res);
+    return res;
   } catch (error: any) {
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
     return NextResponse.json({ success: false, error: detail }, { status: error?.code ? 503 : 500 });

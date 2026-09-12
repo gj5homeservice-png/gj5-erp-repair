@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSession, deleteSession, validateSession } from '@/lib/session';
 import { findOwnerByLoginIdentifier, verifyOwnerPassword } from '@/lib/owner-credentials';
+import { grantErpGate } from '@/lib/erp-gate';
 
 // Owner/admin login. Previously this route trusted a bare `{ email }` from
 // the client with no password check of its own — the real check only ever
@@ -41,7 +42,13 @@ export async function POST(request: Request) {
 
     const deviceInfo = request.headers.get('user-agent') || undefined;
     const { token, expiresAt } = await createSession(owner.userEmail, deviceInfo);
-    return NextResponse.json({ success: true, token, expiresAt });
+    const res = NextResponse.json({ success: true, token, expiresAt });
+    // A verified owner login is just as strong a proof of belonging as
+    // knowing the secret URL — grant the same ERP gate cookie so this works
+    // end-to-end when reached from the public unified login page, which has
+    // no other way to obtain it (see src/lib/erp-gate.ts).
+    grantErpGate(res);
+    return res;
   } catch (error: any) {
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
     const status = error?.code ? 503 : 500;

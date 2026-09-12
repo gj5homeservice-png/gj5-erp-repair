@@ -26,7 +26,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         );
 
         if (!token && !isPublicRoute) {
-          router.push('/login');
+          // /login itself is now just a redirect to /customer/login (the
+          // single unified login form) — sending straight there avoids the
+          // extra hop.
+          router.push('/customer/login');
           return;
         }
 

@@ -762,3 +762,55 @@ export interface RepairJob {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Online Bookings ----
+// A booking submitted from the public website's "Book a Repair" form. Lives
+// in its own table (online_bookings), never directly in repair_jobs — an
+// admin must explicitly review and "Convert to Repair Job" before it becomes
+// a real RepairJob (see repairJobId below, set only once that happens).
+
+export type OnlineBookingStatus =
+  | 'New' | 'Pending Review' | 'Confirmed' | 'Assigned' | 'Visit Scheduled'
+  | 'In Progress' | 'Completed' | 'Rejected' | 'Cancelled' | 'Converted';
+
+export type OnlineBookingPriority = 'Normal' | 'High' | 'Urgent';
+
+export interface OnlineBookingStatusHistoryEntry {
+  id: string;
+  status: OnlineBookingStatus;
+  changedAt: string;
+  note?: string;
+}
+
+export interface OnlineBooking {
+  id: string; // 'OB-' prefix, e.g. OB-00001
+  userEmail?: string; // present on the admin read path, stripped from customer-facing responses
+  customerId?: string;
+  customerName: string;
+  customerMobile: string;
+  customerEmail?: string;
+  address?: string;
+  pincode?: string;
+  deviceType: string;
+  brand: string;
+  model?: string;
+  problemDescription: string;
+  preferredDate?: string;
+  preferredTime?: string;
+  notes?: string;
+  priority: OnlineBookingPriority;
+  estimatedAmount?: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentReference?: string;
+  status: OnlineBookingStatus;
+  technicianId?: string;
+  technicianName?: string;
+  repairJobId?: string;
+  source: string;
+  rejectionReason?: string;
+  cancellationReason?: string;
+  statusHistory: OnlineBookingStatusHistoryEntry[];
+  createdAt: string;
+  updatedAt: string;
+}

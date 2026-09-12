@@ -5,6 +5,7 @@ import { listStockItems } from './stock';
 import { listRepairCalls } from './repairCalls';
 import { listInvoices } from './invoices';
 import { listRepairJobs } from './repairJobs';
+import { listOnlineBookings } from './onlineBookings';
 import { listEmployees } from './employees';
 import { listSalesOrders, listSalesInvoices, listSalesDeliveries } from './sales';
 import { getWalletBalance, listWalletTransactions } from './wallet';
@@ -23,7 +24,7 @@ export async function getFullSnapshotData(email: string) {
 
   const [
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
-    transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs,
+    transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
     customersRows, expenseRows, walletBalance, transactions,
     settingsRow, visibilityRow, navOrderRow, backupMetaRow, attendanceLinkRows,
   ] = await Promise.all([
@@ -40,6 +41,7 @@ export async function getFullSnapshotData(email: string) {
     listSalesInvoices(email),
     listSalesDeliveries(email),
     listRepairJobs(email),
+    listOnlineBookings(email),
     pool.execute<any[]>('SELECT * FROM customers WHERE user_email = ?', [email]).then(([rows]) => rows as any[]),
     pool.execute<any[]>('SELECT * FROM expenses WHERE user_email = ?', [email]).then(([rows]) => rows as any[]),
     getWalletBalance(email),
@@ -73,7 +75,7 @@ export async function getFullSnapshotData(email: string) {
 
   return {
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
-    transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs,
+    transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
     salesCustomers, expenses: expenseRows.map(expenseRow), walletBalance, transactions,
     attendanceLinks: attendanceLinkRows.map(r => ({
       id: r.id, token: r.token, employeeId: r.employee_id, employeeName: r.employee_name,

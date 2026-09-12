@@ -12,6 +12,7 @@ import {
   Wallet,
   Truck,
   Settings,
+  Globe,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -28,6 +29,7 @@ export const ALL_SIDEBAR_MODULES: SidebarModuleDef[] = [
   { name: 'Dashboard', icon: LayoutDashboard },
   { name: 'Repairing', icon: Wrench },
   { name: 'Repair Jobs', icon: ClipboardList },
+  { name: 'Online Bookings', icon: Globe },
   { name: 'CRM Leads', icon: BarChart3 },
   { name: 'Billing', icon: Receipt },
   { name: 'Invoice History', icon: History },
@@ -46,6 +48,7 @@ export const DEFAULT_SIDEBAR_ORDER: string[] = [
   'Logistics',
   'Repairing',
   'Repair Jobs',
+  'Online Bookings',
   'CRM Leads',
   'E-Wallet',
   'Stock',

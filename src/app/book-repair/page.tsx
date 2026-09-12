@@ -20,6 +20,12 @@ export default function BookRepairPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+  // One key per form-load, sent with the submission and reused on any retry
+  // of THIS same attempt (e.g. a network error triggering a re-click) — the
+  // server treats a repeat of the same key as the same booking rather than
+  // creating a second one. A page refresh generates a fresh key, which is
+  // correct: that's a deliberate new submission, not a retry.
+  const [idempotencyKey] = useState(() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`));
 
   // Prefill from the logged-in customer's own profile, if any — booking
   // itself never requires being logged in (guest booking is fine).
@@ -38,17 +44,22 @@ export default function BookRepairPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // already-in-flight guard, on top of the server-side idempotency key
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/customer/repair-jobs', {
+      const token = getCustomerToken();
+      const res = await fetch('/api/customer/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ ...form, idempotencyKey }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Could not submit your repair request.');
+        throw new Error(json.error || 'Could not submit your repair booking.');
       }
       setResult(json.data);
     } catch (err: any) {
@@ -67,17 +78,19 @@ export default function BookRepairPage() {
             <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
               <CheckCircle2 className="w-9 h-9 text-emerald-600" />
             </div>
-            <h1 className="font-headline font-black text-2xl sm:text-3xl text-slate-900">Repair Request Submitted Successfully</h1>
-            <p className="text-slate-500 text-sm">Our team will contact you shortly to confirm your appointment.</p>
+            <h1 className="font-headline font-black text-2xl sm:text-3xl text-slate-900">Your repair booking has been received.</h1>
+            <p className="text-slate-500 text-sm">Our team will review it and contact you shortly to confirm your appointment.</p>
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
-            <Row label="Repair ID" value={result.id} highlight />
+            <Row label="Booking ID" value={result.id} highlight />
             <Row label="Customer Name" value={result.customerName} />
             <Row label="Mobile" value={result.mobile} />
-            <Row label="Device" value={`${result.productType}${result.brand ? ` — ${result.brand}` : ''}`} />
+            <Row label="Service" value={`${result.deviceType}${result.brand ? ` — ${result.brand}` : ''}`} />
             <Row label="Problem" value={result.problemDescription} />
-            <Row label="Booking Date" value={result.receivedDate} />
+            {(result.preferredDate || result.preferredTime) && (
+              <Row label="Preferred Date/Time" value={[result.preferredDate, result.preferredTime].filter(Boolean).join(' at ')} />
+            )}
             <Row label="Status" value={result.status} badge />
           </div>
 

@@ -26,6 +26,8 @@ import {
   Customer,
   RepairJob,
   RepairJobPayment,
+  OnlineBooking,
+  OnlineBookingStatus,
   UserRole,
   ModulePermissions,
   EmployeeDocument,
@@ -90,6 +92,7 @@ interface Snapshot {
   salesInvoices: SalesInvoice[];
   salesDeliveries: SalesDelivery[];
   repairJobs: RepairJob[];
+  onlineBookings: OnlineBooking[];
   salesCustomers: Customer[];
   expenses: Expense[];
   walletBalance: number;
@@ -104,7 +107,7 @@ interface Snapshot {
 const EMPTY_SNAPSHOT: Snapshot = {
   calls: [], inquiries: [], stock: [], invoices: [], employees: [], attendance: [],
   salaries: [], leaves: [], transportationLogs: [], salesOrders: [], salesInvoices: [],
-  salesDeliveries: [], repairJobs: [], salesCustomers: [], expenses: [], walletBalance: 50000,
+  salesDeliveries: [], repairJobs: [], onlineBookings: [], salesCustomers: [], expenses: [], walletBalance: 50000,
   transactions: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
 };
 
@@ -615,6 +618,57 @@ export function useErpStore() {
       .finally(() => refresh(activeUser));
   };
 
+  // ---- Online Bookings ----
+  // Website "Book a Repair" submissions — a separate table from repairJobs
+  // until an admin explicitly converts one (see convertBookingToRepairJob).
+  const updateOnlineBooking = (booking: OnlineBooking) => {
+    optimisticUpdate(activeUser, s => ({ ...s, onlineBookings: s.onlineBookings.map(b => b.id === booking.id ? booking : b) }));
+    apiFetch(`/api/erp/online-bookings/${booking.id}`, { method: 'PUT', body: JSON.stringify(booking) })
+      .catch(err => console.error('updateOnlineBooking failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const changeBookingStatus = (
+    id: string,
+    status: OnlineBookingStatus,
+    note?: string,
+    reasonField?: 'rejectionReason' | 'cancellationReason',
+    reason?: string
+  ) => {
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      onlineBookings: s.onlineBookings.map(b => b.id === id ? { ...b, status, ...(reasonField ? { [reasonField]: reason } : {}) } : b),
+    }));
+    apiFetch(`/api/erp/online-bookings/${id}/status`, { method: 'POST', body: JSON.stringify({ status, note, reasonField, reason }) })
+      .catch(err => console.error('changeBookingStatus failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  const assignBookingTechnician = (id: string, technicianId: string, technicianName: string, note?: string) => {
+    optimisticUpdate(activeUser, s => ({
+      ...s,
+      onlineBookings: s.onlineBookings.map(b => b.id === id ? { ...b, technicianId, technicianName, status: (['New', 'Pending Review', 'Confirmed'] as OnlineBookingStatus[]).includes(b.status) ? 'Assigned' : b.status } : b),
+    }));
+    apiFetch(`/api/erp/online-bookings/${id}/assign`, { method: 'POST', body: JSON.stringify({ technicianId, technicianName, note }) })
+      .catch(err => console.error('assignBookingTechnician failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+  // Returns a promise (rejects on failure) so the caller can show an
+  // accurate success/failure toast and navigate to the new Repair Job on
+  // success — unlike the other booking actions above, this one matters
+  // enough that the caller needs to know it actually happened.
+  const convertBookingToRepairJob = (id: string): Promise<{ repairJobId: string; alreadyConverted: boolean }> => {
+    return apiFetch(`/api/erp/online-bookings/${id}/convert`, { method: 'POST' })
+      .then((res) => {
+        refresh(activeUser);
+        return res.data as { repairJobId: string; alreadyConverted: boolean };
+      });
+  };
+  const deleteOnlineBooking = (id: string) => {
+    optimisticUpdate(activeUser, s => ({ ...s, onlineBookings: s.onlineBookings.filter(b => b.id !== id) }));
+    apiFetch(`/api/erp/online-bookings/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('deleteOnlineBooking failed:', err))
+      .finally(() => refresh(activeUser));
+  };
+
   // ---- CRM ----
   const addInquiry = (inq: Inquiry) => {
     optimisticUpdate(activeUser, s => ({ ...s, inquiries: [inq, ...s.inquiries] }));
@@ -733,8 +787,14 @@ export function useErpStore() {
     return result.counts as Record<string, number>;
   };
 
+  // Manual "Refresh" button support (e.g. Online Bookings) — re-runs the
+  // exact same SWR revalidation every mutation already triggers internally,
+  // just on demand instead of only after a write.
+  const refreshData = () => refresh(activeUser);
+
   return {
     dataError,
+    refreshData,
     // Server-verified identity/permissions for the current session (see
     // /api/auth/me) — the client's ONLY source of truth for "what can I
     // access," never a cached/localStorage value. session.permissions is
@@ -767,6 +827,7 @@ export function useErpStore() {
     salesDeliveries: snap.salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,
     salesCustomers: snap.salesCustomers, addSalesCustomer, updateSalesCustomer, deleteSalesCustomer,
     repairJobs: snap.repairJobs, addRepairJob, updateRepairJob, deleteRepairJob, addRepairJobPayment,
+    onlineBookings: snap.onlineBookings, updateOnlineBooking, changeBookingStatus, assignBookingTechnician, convertBookingToRepairJob, deleteOnlineBooking,
     importAllData
   };
 }

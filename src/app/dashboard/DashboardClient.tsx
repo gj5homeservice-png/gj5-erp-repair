@@ -69,6 +69,7 @@ const WalletModule = dynamic(() => import('@/components/modules/WalletModule').t
 const SettingsModule = dynamic(() => import('@/components/modules/SettingsModule').then(m => m.SettingsModule), { loading: ModuleLoading, ssr: false });
 const TransportationModule = dynamic(() => import('@/components/modules/TransportationModule').then(m => m.TransportationModule), { loading: ModuleLoading, ssr: false });
 const RepairJobsModule = dynamic(() => import('@/components/modules/repair/RepairJobsModule').then(m => m.RepairJobsModule), { loading: ModuleLoading, ssr: false });
+const OnlineBookingsModule = dynamic(() => import('@/components/modules/onlineBookings/OnlineBookingsModule').then(m => m.OnlineBookingsModule), { loading: ModuleLoading, ssr: false });
 
 const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
@@ -246,10 +247,11 @@ export default function ErpMainHub() {
       case 'Attendance': return <AttendanceModule store={store} />;
       case 'Salary': return <SalaryModule store={store} />;
       case 'Analytics': return <AnalyticsModule store={store} />;
-      case 'E-Wallet': return <WalletModule store={store} />;
+      case 'E-Wallet': return <WalletModule store={store} onNavigate={setActiveTab} />;
       case 'Logistics': return <TransportationModule store={store} />;
       case 'Settings': return <SettingsModule store={store} onNavigate={setActiveTab} />;
       case 'Repair Jobs': return <RepairJobsModule store={store} />;
+      case 'Online Bookings': return <OnlineBookingsModule store={store} />;
       default: return <DashboardModule store={store} />;
     }
   };

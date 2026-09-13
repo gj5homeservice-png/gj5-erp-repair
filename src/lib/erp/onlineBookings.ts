@@ -127,9 +127,15 @@ export async function createOnlineBooking(email: string, data: any, idempotencyK
       const id = await nextBookingId(conn, email);
       try {
         const cols = ['id', 'user_email', ...COLUMNS.map(c => c.sql), 'idempotency_key'];
+        // created_at/updated_at are NOT NULL columns, but callers (e.g. the
+        // public booking route) never set data.createdAt/data.updatedAt —
+        // always stamp them here rather than falling through to the
+        // undefined-to-null mapping below, which was inserting NULL into a
+        // NOT NULL column and failing every booking with ER_BAD_NULL_ERROR.
+        const rowData = { ...data, createdAt: now, updatedAt: now };
         const values = [
           id, email,
-          ...COLUMNS.map(c => (data[c.js] === undefined ? null : data[c.js])),
+          ...COLUMNS.map(c => (rowData[c.js] === undefined ? null : rowData[c.js])),
           idempotencyKey || null,
         ];
         await conn.execute(`INSERT INTO online_bookings (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, values);

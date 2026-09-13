@@ -90,6 +90,86 @@
   @apply bg-[#123C8C] hover:bg-[#0D2E63] text-white transition-all shadow-lg active:scale-95;
 }
 
+/* These custom properties are kept for future use (and match what was
+   asked for), but verified directly against the compiled CSS that they do
+   NOT drive any Tailwind utility class today: tailwind.config.ts defines
+   `background`/`foreground`/`card`/`border`/`input`/etc. as literal hard-
+   coded hex values (e.g. background: '#0B0F19'), not hsl(var(--background))
+   — so classes like bg-background never actually read these variables.
+   The real fix for those classes is the explicit utility-class override
+   block further down (bg-background, text-foreground, border-input, ...),
+   sourced by querying the actual compiled rules in the browser rather than
+   assumed from this file. */
+body.gj5-admin-active:not(.dark) {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 220 77% 31%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 1 77% 55%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 1 77% 55%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --input-foreground: 222.2 84% 4.9%;
+  --placeholder: 215.4 16.3% 46.9%;
+  --success: 152 69% 31%;
+  --success-foreground: 210 40% 98%;
+  --warning: 38 92% 40%;
+  --warning-foreground: 210 40% 98%;
+  --danger: 0 72% 45%;
+  --danger-foreground: 210 40% 98%;
+  --ring: 220 77% 31%;
+}
+
+/* body itself renders with hardcoded dark bg/text (from `body { @apply
+   bg-background text-foreground }`, compiled to a literal rgb(11 15 25)
+   background / rgb(248 250 252) text — confirmed by reading the compiled
+   rule directly), and every element on the page inherits that text color
+   by default unless it sets its own. Self-targeting (not a descendant
+   selector) so this applies to <body> itself, not just its children. */
+body.gj5-admin-active:not(.dark) { background-color: #F8FAFC; color: #0F172A; }
+
+/* Tailwind's own base reset sets `* { border-color: rgb(30 41 59) }` —
+   every element on the page defaults to a dark border unless a more
+   specific rule (any of the ones below) wins. This lower-specificity
+   fallback catches anything with a visible border that isn't using one of
+   the explicit border-slate or border-input classes already covered. */
+body.gj5-admin-active:not(.dark) * { border-color: #E2E8F0; }
+
+/* The semantic Tailwind classes themselves (bg-background, text-foreground,
+   bg-card, bg-secondary, bg-muted, bg-accent, border-input, ...) — used by
+   shadcn's own default component variants (an outline/secondary/ghost
+   Button, a bare Card, Select/Dropdown item hover) wherever a call site
+   doesn't pass a custom className. Values below are the actual light-mode
+   pairings for each dark value found in the compiled CSS. bg-primary/
+   bg-destructive and their *-foreground pairs are deliberately left alone,
+   same reasoning as the brand-color backgrounds above — text-white already
+   has correct contrast against that fixed blue/red in both themes. */
+body.gj5-admin-active:not(.dark) .bg-background { background-color: #F8FAFC; }
+body.gj5-admin-active:not(.dark) .bg-card,
+body.gj5-admin-active:not(.dark) .bg-popover { background-color: #FFFFFF; }
+body.gj5-admin-active:not(.dark) .bg-secondary,
+body.gj5-admin-active:not(.dark) .bg-muted,
+body.gj5-admin-active:not(.dark) .bg-accent,
+body.gj5-admin-active:not(.dark) .hover\:bg-accent:hover { background-color: #F1F5F9; }
+body.gj5-admin-active:not(.dark) .text-foreground,
+body.gj5-admin-active:not(.dark) .text-card-foreground,
+body.gj5-admin-active:not(.dark) .text-popover-foreground,
+body.gj5-admin-active:not(.dark) .text-secondary-foreground,
+body.gj5-admin-active:not(.dark) .text-accent-foreground,
+body.gj5-admin-active:not(.dark) .hover\:text-accent-foreground:hover { color: #0F172A; }
+body.gj5-admin-active:not(.dark) .text-muted-foreground { color: #475569; }
+body.gj5-admin-active:not(.dark) .border-input { border-color: #CBD5E1; }
+
 /* ============================================================
    Admin Light Mode
    ============================================================

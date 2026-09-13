@@ -9,25 +9,16 @@ export interface ColumnDef { js: string; sql: string; type?: ColType }
 export interface EntityConfig { table: string; columns: ColumnDef[] }
 
 export const ENTITIES: Record<string, EntityConfig> = {
-  customers: {
-    table: 'customers',
-    columns: [
-      { js: 'name', sql: 'name' },
-      { js: 'mobile', sql: 'mobile' },
-      { js: 'address', sql: 'address' },
-      { js: 'pincode', sql: 'pincode' },
-      { js: 'email', sql: 'email' },
-      { js: 'source', sql: 'source' },
-      { js: 'createdAt', sql: 'created_at' },
-    ],
-  },
-  // 'employees' used to be here as a generic entity, but it now has real
-  // children (credentials, permissions, documents, audit log) and its own
-  // bespoke routes (src/app/api/erp/employees/**, src/lib/erp/employees.ts),
-  // matching the same pattern already used for stock/repair-calls/repair-jobs/
-  // invoices/sales. A literal route always wins over this dynamic [entity]
-  // catch-all for the same path, so removing the entry here is what actually
-  // routes /api/erp/employees to the bespoke handler instead of this generic one.
+  // 'customers' and 'employees' used to be here as generic entities, but each
+  // now has its own bespoke routes with real cross-table logic (customers:
+  // src/app/api/erp/customers/**, src/lib/erp/customers.ts — aggregated
+  // stats, duplicate-mobile checks, safe deactivate-not-delete; employees:
+  // src/app/api/erp/employees/**, src/lib/erp/employees.ts — credentials,
+  // permissions, documents, audit log), matching the same pattern already
+  // used for stock/repair-calls/repair-jobs/invoices/sales. A literal route
+  // always wins over this dynamic [entity] catch-all for the same path, so
+  // removing the entry here just keeps this config from misleadingly
+  // claiming to serve a path it never actually reaches.
   attendance: {
     table: 'attendance_records',
     columns: [

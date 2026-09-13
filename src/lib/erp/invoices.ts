@@ -70,6 +70,27 @@ export async function listInvoices(email: string) {
   return (invoices as any[]).map(row => invoiceRowToObject(row, byInvoice.get(row.id) || []));
 }
 
+// Used by the Customer Department profile view — same row shape as
+// listInvoices, just scoped to one customer's mobile number.
+export async function listInvoicesForMobile(email: string, mobile: string) {
+  const pool = getPool();
+  const [invoices] = await pool.execute<any[]>('SELECT * FROM invoices WHERE user_email = ? AND mobile = ?', [email, mobile]);
+  if ((invoices as any[]).length === 0) return [];
+  const ids = (invoices as any[]).map(i => i.id);
+  const placeholders = ids.map(() => '?').join(',');
+  const [items] = await pool.execute<any[]>(
+    `SELECT * FROM invoice_items WHERE invoice_id IN (${placeholders})`,
+    ids
+  );
+  const byInvoice = new Map<string, any[]>();
+  for (const it of items as any[]) {
+    const list = byInvoice.get(it.invoice_id) || [];
+    list.push(itemRowToObject(it));
+    byInvoice.set(it.invoice_id, list);
+  }
+  return (invoices as any[]).map(row => invoiceRowToObject(row, byInvoice.get(row.id) || []));
+}
+
 // Mirrors use-erp-store.ts's addInvoice: insert the invoice + its line items,
 // decrement matching stock quantities, and record a wallet transaction — all
 // in one DB transaction so it's atomic the same way the in-memory version was.

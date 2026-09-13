@@ -53,15 +53,20 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS customers (
-  id           VARCHAR(64) PRIMARY KEY,
-  user_email   VARCHAR(191) NOT NULL,
-  name         VARCHAR(191) NULL,
-  mobile       VARCHAR(20) NULL,
-  address      VARCHAR(255) NULL,
-  pincode      VARCHAR(10) NULL,
-  email        VARCHAR(191) NULL,
-  source       ENUM('repair','sales','manual') NOT NULL DEFAULT 'manual',
-  created_at   VARCHAR(40) NULL,
+  id                VARCHAR(64) PRIMARY KEY,
+  user_email        VARCHAR(191) NOT NULL,
+  name              VARCHAR(191) NULL,
+  mobile            VARCHAR(20) NULL,
+  alternate_mobile  VARCHAR(20) NULL,
+  address           VARCHAR(255) NULL,
+  city              VARCHAR(100) NULL,
+  state             VARCHAR(100) NULL,
+  pincode           VARCHAR(10) NULL,
+  email             VARCHAR(191) NULL,
+  source            ENUM('repair','sales','manual') NOT NULL DEFAULT 'manual',
+  status            VARCHAR(20) NOT NULL DEFAULT 'Active',
+  created_at        VARCHAR(40) NULL,
+  updated_at        VARCHAR(40) NULL,
   INDEX idx_customers_user (user_email),
   INDEX idx_customers_mobile (mobile)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -807,4 +812,19 @@ CREATE TABLE IF NOT EXISTS online_booking_status_history (
   changed_at   VARCHAR(40) NOT NULL,
   note         TEXT NULL,
   INDEX idx_obsh_booking (booking_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- Customer Department admin module
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS customer_notes (
+  id           VARCHAR(64) PRIMARY KEY,
+  customer_id  VARCHAR(64) NOT NULL,
+  user_email   VARCHAR(191) NOT NULL,
+  note         TEXT NOT NULL,
+  created_by   VARCHAR(191) NULL,
+  created_at   VARCHAR(40) NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  INDEX idx_customer_notes_customer (customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

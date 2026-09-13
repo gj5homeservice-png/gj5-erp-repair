@@ -63,6 +63,14 @@ export async function listSalesOrders(email: string) {
   return (rows as any[]).map(orderRowToObject);
 }
 
+// Used by the Customer Department profile view — same row shape as
+// listSalesOrders, just scoped to one customer's mobile number.
+export async function listSalesOrdersForMobile(email: string, mobile: string) {
+  const pool = getPool();
+  const [rows] = await pool.execute<any[]>('SELECT * FROM sales_orders WHERE user_email = ? AND mobile = ?', [email, mobile]);
+  return (rows as any[]).map(orderRowToObject);
+}
+
 function deliveryRowToObject(row: any) {
   return {
     id: row.id,

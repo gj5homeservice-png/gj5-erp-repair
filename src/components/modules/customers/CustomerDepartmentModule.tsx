@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CustomerFormModal } from './CustomerFormModal';
 import { CustomerProfileModal } from './CustomerProfileModal';
 import { DeleteCustomerDialog } from './DeleteCustomerDialog';
+import { CUSTOMER_CATEGORIES } from '@/lib/customer-categories';
 
 // This module never calls the shared bootstrap store for its data (unlike
 // most other modules) — customer list + stats is fetched on its own only
@@ -58,6 +59,7 @@ export interface CustomerListItem {
   state: string | null;
   pincode: string | null;
   status: string;
+  category: string;
   source: string;
   createdAt: string | null;
   updatedAt: string | null;
@@ -114,6 +116,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterOption>('All Customers');
+  const [categoryFilter, setCategoryFilter] = useState<string>('All Categories');
   const [sortBy, setSortBy] = useState<SortOption>('Recent Activity');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -163,7 +166,8 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
         c.id.toLowerCase().includes(q) ||
         (c.name || '').toLowerCase().includes(q) ||
         (c.mobile || '').includes(q) ||
-        (c.email || '').toLowerCase().includes(q);
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.category || '').toLowerCase().includes(q);
       const matchesFilter =
         filter === 'All Customers' ? true :
         filter === 'Active' ? c.status === 'Active' :
@@ -171,7 +175,8 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
         filter === 'Pending Payment' ? c.pendingAmount > 0 :
         filter === 'Active Repair' ? c.activeRepairs > 0 :
         filter === 'New Customers' ? isNew(c) : true;
-      return matchesSearch && matchesFilter;
+      const matchesCategory = categoryFilter === 'All Categories' || c.category === categoryFilter;
+      return matchesSearch && matchesFilter && matchesCategory;
     });
 
     list = list.slice().sort((a, b) => {
@@ -183,7 +188,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
       }
     });
     return list;
-  }, [customers, search, filter, sortBy]);
+  }, [customers, search, filter, categoryFilter, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -251,6 +256,13 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
               </SelectContent>
             </Select>
           </div>
+          <Select value={categoryFilter} onValueChange={v => { setCategoryFilter(v); setPage(1); }}>
+            <SelectTrigger className="h-10 bg-slate-950 border-slate-800 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="All Categories">All Categories</SelectItem>
+              {CUSTOMER_CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={sortBy} onValueChange={v => setSortBy(v as SortOption)}>
             <SelectTrigger className="h-10 bg-slate-950 border-slate-800 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800">
@@ -277,6 +289,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
                   <Badge className={`text-[9px] uppercase shrink-0 ${c.status === 'Active' ? 'bg-emerald-600/10 text-emerald-400 border-emerald-600/20' : 'bg-slate-600/10 text-slate-400 border-slate-600/20'}`}>{c.status}</Badge>
                 </div>
                 <div className="space-y-1.5">
+                  <MobileCardRow label="Category" value={c.category || 'Customer'} />
                   <MobileCardRow label="Mobile" value={c.mobile || '—'} />
                   <MobileCardRow label="Email" value={c.email || '—'} />
                   <MobileCardRow label="Total Repairs" value={c.totalRepairs} />
@@ -299,7 +312,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-slate-800">
-                    {['Customer ID', 'Name', 'Mobile', 'Email', 'Address', 'Total Repairs', 'Total Purchases', 'Pending Amount', 'Last Activity', 'Status', 'Actions'].map(h => (
+                    {['Customer ID', 'Name', 'Category', 'Mobile', 'Email', 'Address', 'Total Repairs', 'Total Purchases', 'Pending Amount', 'Last Activity', 'Status', 'Actions'].map(h => (
                       <TableHead key={h} className="px-2 py-2.5 text-slate-500 uppercase text-[10px] font-bold whitespace-nowrap">{h}</TableHead>
                     ))}
                   </TableRow>
@@ -309,6 +322,9 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
                     <TableRow key={c.id} className="border-slate-800 hover:bg-slate-800/20 cursor-pointer" onClick={() => setViewingCustomerId(c.id)}>
                       <TableCell className="px-2 py-2.5 font-code font-bold text-blue-400 text-xs whitespace-nowrap">{c.id}</TableCell>
                       <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-200 max-w-[130px] truncate" title={c.name || ''}>{c.name || 'Unnamed'}</TableCell>
+                      <TableCell className="px-2 py-2.5">
+                        <Badge variant="outline" className="text-[9px] uppercase border-slate-700 text-slate-300 whitespace-nowrap">{c.category || 'Customer'}</Badge>
+                      </TableCell>
                       <TableCell className="px-2 py-2.5 text-xs text-slate-400 font-code whitespace-nowrap">{c.mobile || '—'}</TableCell>
                       <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[140px] truncate" title={c.email || ''}>{c.email || '—'}</TableCell>
                       <TableCell className="px-2 py-2.5 text-xs text-slate-300 max-w-[150px] truncate" title={c.address || ''}>{c.address || '—'}</TableCell>
@@ -329,7 +345,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
                     </TableRow>
                   ))}
                   {paged.length === 0 && (
-                    <TableRow><TableCell colSpan={11} className="h-40">
+                    <TableRow><TableCell colSpan={12} className="h-40">
                       <EmptyState hasAny={customers.length > 0} onAdd={() => setShowAddForm(true)} />
                     </TableCell></TableRow>
                   )}

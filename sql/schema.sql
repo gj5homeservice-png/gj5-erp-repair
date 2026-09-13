@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS customers (
   email             VARCHAR(191) NULL,
   source            ENUM('repair','sales','manual') NOT NULL DEFAULT 'manual',
   status            VARCHAR(20) NOT NULL DEFAULT 'Active',
+  category          VARCHAR(50) NOT NULL DEFAULT 'Customer',
   created_at        VARCHAR(40) NULL,
   updated_at        VARCHAR(40) NULL,
   INDEX idx_customers_user (user_email),

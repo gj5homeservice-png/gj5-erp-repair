@@ -31,7 +31,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (!data) return NextResponse.json({ success: false, error: 'Customer not found.' }, { status: 404 });
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists');
+    const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists') || error?.message?.includes('valid category');
     if (!isValidation) console.error('[erp/customers/:id] update failed:', error?.message || error);
     return NextResponse.json(
       { success: false, error: isValidation ? error.message : 'Unable to save changes. Please try again.' },

@@ -4,6 +4,7 @@ import { listRepairJobsForCustomerMobile } from './repairJobs';
 import { listOnlineBookingsForCustomerMobile } from './onlineBookings';
 import { listSalesOrdersForMobile } from './sales';
 import { listInvoicesForMobile } from './invoices';
+import { isValidCustomerCategory, DEFAULT_CUSTOMER_CATEGORY } from '../customer-categories';
 
 // The Customer Department module is a read-heavy VIEW layer over data that
 // already lives in repair_jobs, online_bookings, sales_orders and invoices —
@@ -22,6 +23,7 @@ const CUSTOMER_COLUMNS: { js: string; sql: string }[] = [
   { js: 'state', sql: 'state' },
   { js: 'pincode', sql: 'pincode' },
   { js: 'status', sql: 'status' },
+  { js: 'category', sql: 'category' },
 ];
 
 function customerRowToObject(row: any) {
@@ -162,17 +164,24 @@ export async function createCustomer(email: string, data: any) {
   if (isDuplicateMobileError(existing, data.mobile)) {
     throw new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
   }
+  // Category is a required field in the UI, but never trust that alone —
+  // reject anything that isn't one of the known categories rather than
+  // silently storing whatever string was sent.
+  if (data.category !== undefined && !isValidCustomerCategory(data.category)) {
+    throw new Error('Please select a valid category.');
+  }
+  const category = isValidCustomerCategory(data.category) ? data.category : DEFAULT_CUSTOMER_CATEGORY;
 
   const pool = getPool();
   const now = new Date().toISOString();
   const id = `CUST${Date.now()}`;
   await pool.execute(
-    `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, source, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?)`,
+    `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, source, status, category, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
     [
       id, email, data.name.trim(), data.mobile,
       data.alternateMobile || null, data.address || null, data.city || null, data.state || null,
-      data.pincode || null, data.email || null, data.status || 'Active', now, now,
+      data.pincode || null, data.email || null, data.status || 'Active', category, now, now,
     ]
   );
   return getCustomerById(email, id);
@@ -191,17 +200,20 @@ export async function updateCustomer(email: string, id: string, data: any) {
       throw new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
     }
   }
+  if (data.category !== undefined && !isValidCustomerCategory(data.category)) {
+    throw new Error('Please select a valid category.');
+  }
 
   const pool = getPool();
   const now = new Date().toISOString();
   const merged = { ...current, ...data };
   await pool.execute(
-    `UPDATE customers SET name = ?, mobile = ?, alternate_mobile = ?, address = ?, city = ?, state = ?, pincode = ?, email = ?, status = ?, updated_at = ?
+    `UPDATE customers SET name = ?, mobile = ?, alternate_mobile = ?, address = ?, city = ?, state = ?, pincode = ?, email = ?, status = ?, category = ?, updated_at = ?
      WHERE id = ? AND user_email = ?`,
     [
       merged.name || null, merged.mobile || null, merged.alternateMobile || null, merged.address || null,
       merged.city || null, merged.state || null, merged.pincode || null, merged.email || null,
-      merged.status || 'Active', now, id, email,
+      merged.status || 'Active', isValidCustomerCategory(merged.category) ? merged.category : DEFAULT_CUSTOMER_CATEGORY, now, id, email,
     ]
   );
   return getCustomerById(email, id);

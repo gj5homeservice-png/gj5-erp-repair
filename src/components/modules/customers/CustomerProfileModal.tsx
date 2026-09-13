@@ -182,6 +182,7 @@ export function CustomerProfileModal({ customerId, onClose, store }: { customerI
               <div className="space-y-6">
                 <Section title="Customer Information" icon={StickyNote}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                    <InfoRow label="Category" value={<Badge variant="outline" className="text-[9px] uppercase border-slate-700 text-slate-300">{c.category || 'Customer'}</Badge>} />
                     <InfoRow label="Mobile" value={c.mobile || '—'} />
                     <InfoRow label="Alternate Mobile" value={c.alternateMobile || '—'} />
                     <InfoRow label="Email" value={c.email || '—'} />

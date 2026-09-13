@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     // Validation/duplicate-mobile errors thrown by createCustomer() have
     // safe, specific messages meant to reach the admin as-is; anything else
     // (a real DB/driver failure) is logged server-side and generalized.
-    const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists');
+    const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists') || error?.message?.includes('valid category');
     if (!isValidation) console.error('[erp/customers] create failed:', error?.message || error);
     return NextResponse.json(
       { success: false, error: isValidation ? error.message : 'Unable to save this customer. Please try again.' },

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerListItem } from './CustomerDepartmentModule';
+import { CUSTOMER_CATEGORIES, DEFAULT_CUSTOMER_CATEGORY } from '@/lib/customer-categories';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -19,7 +20,7 @@ function getToken(): string | null {
 const EMPTY = {
   name: '', mobile: '', email: '', alternateMobile: '',
   address: '', city: '', state: '', pincode: '',
-  status: 'Active',
+  status: 'Active', category: '',
 };
 
 export function CustomerFormModal({
@@ -49,6 +50,7 @@ export function CustomerFormModal({
         state: editingCustomer.state || '',
         pincode: editingCustomer.pincode || '',
         status: editingCustomer.status || 'Active',
+        category: (editingCustomer as any).category || DEFAULT_CUSTOMER_CATEGORY,
       } : { ...EMPTY });
     }
   }, [isOpen, editingCustomer]);
@@ -59,6 +61,7 @@ export function CustomerFormModal({
     setError(null);
     if (!form.name.trim()) { setError('Customer name is required.'); return; }
     if (!/^[0-9]{10}$/.test(form.mobile)) { setError('A valid 10-digit mobile number is required.'); return; }
+    if (!form.category) { setError('Please select a category.'); return; }
 
     setSaving(true);
     try {
@@ -109,6 +112,15 @@ export function CustomerFormModal({
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Email</Label>
                 <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs text-slate-400">Category *</Label>
+                <Select value={form.category} onValueChange={v => update('category', v)}>
+                  <SelectTrigger className="mt-1 bg-slate-950 border-slate-800"><SelectValue placeholder="Select Category" /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    {CUSTOMER_CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

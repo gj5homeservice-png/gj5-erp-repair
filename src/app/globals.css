@@ -23,6 +23,14 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
+    --input-foreground: 222.2 84% 4.9%;
+    --placeholder: 215.4 16.3% 46.9%;
+    --success: 152 69% 31%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 40%;
+    --warning-foreground: 210 40% 98%;
+    --danger: 0 72% 45%;
+    --danger-foreground: 210 40% 98%;
     --ring: 220 77% 31%;
     --radius: 0.75rem;
   }
@@ -46,6 +54,14 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
+    --input-foreground: 210 40% 98%;
+    --placeholder: 215 20.2% 65.1%;
+    --success: 152 60% 45%;
+    --success-foreground: 222.2 47.4% 11.2%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222.2 47.4% 11.2%;
+    --danger: 0 62.8% 55%;
+    --danger-foreground: 222.2 47.4% 11.2%;
     --ring: 220 77% 45%;
   }
 }
@@ -73,3 +89,100 @@
 .btn-navy {
   @apply bg-[#123C8C] hover:bg-[#0D2E63] text-white transition-all shadow-lg active:scale-95;
 }
+
+/* ============================================================
+   Admin Light Mode
+   ============================================================
+   Every admin module (Repairing, Repair Jobs, Online Bookings, Stock,
+   Billing, Customer Department, Settings, etc.) was built with literal
+   Tailwind utility classes (bg-slate-900, border-slate-800, text-slate-400,
+   text-blue-400, ...) rather than the semantic --background/--foreground
+   tokens above — retrofitting every one of those call sites to read from
+   the tokens would be a much larger rewrite than this pass, with real risk
+   of missing spots I have no way to see rendered. Instead, this block
+   overrides the actual recurring hardcoded class names for light mode —
+   one central place instead of touching dozens of module files, and
+   provably unable to change dark mode's own appearance, since every rule
+   here is gated behind :not(.dark).
+   Scoping: `body.gj5-admin-active` — added by useAdminTheme() only while
+   the admin dashboard (src/app/dashboard/DashboardClient.tsx) is actually
+   mounted, and removed on unmount — never touches the already-light public
+   site (book-repair, customer/login, etc.), which never gets this class.
+   The scope is on <body> itself (not a wrapper div) specifically so it
+   still reaches Radix's portaled Select/Dialog/Toast content, which
+   renders outside the dashboard's own DOM subtree, appended directly to
+   <body>.
+   Intentionally NOT overridden: text-white, and the flat brand/accent
+   backgrounds (bg-[#0066FF], bg-[#E53935], bg-[#123C8C], etc.) — those are
+   button/badge foreground-on-brand-color pairs that already have correct
+   contrast in both themes, and a class-name-only override can't tell
+   "text-white as a page heading on a dark card" apart from "text-white as
+   a button label on a blue button" to safely change only the first. */
+/* Page/card/panel/input backgrounds — always chrome, never a brand color */
+body.gj5-admin-active:not(.dark) .bg-\[\#0B0F19\],
+body.gj5-admin-active:not(.dark) .bg-\[\#0F172A\],
+body.gj5-admin-active:not(.dark) .bg-\[\#020617\] { background-color: #F8FAFC; }
+
+body.gj5-admin-active:not(.dark) .bg-slate-900,
+body.gj5-admin-active:not(.dark) .bg-slate-900\/20,
+body.gj5-admin-active:not(.dark) .bg-slate-900\/30,
+body.gj5-admin-active:not(.dark) .bg-slate-900\/40,
+body.gj5-admin-active:not(.dark) .bg-slate-900\/50,
+body.gj5-admin-active:not(.dark) .bg-slate-900\/60,
+body.gj5-admin-active:not(.dark) .bg-slate-950,
+body.gj5-admin-active:not(.dark) .bg-slate-950\/50,
+body.gj5-admin-active:not(.dark) .bg-slate-800,
+body.gj5-admin-active:not(.dark) .bg-slate-800\/20,
+body.gj5-admin-active:not(.dark) .bg-slate-800\/50,
+body.gj5-admin-active:not(.dark) .bg-slate-800\/60,
+body.gj5-admin-active:not(.dark) .bg-slate-700 { background-color: #FFFFFF; }
+
+/* Borders — always chrome */
+body.gj5-admin-active:not(.dark) .border-slate-900,
+body.gj5-admin-active:not(.dark) .border-slate-800,
+body.gj5-admin-active:not(.dark) .border-slate-700,
+body.gj5-admin-active:not(.dark) .border-slate-600 { border-color: #E2E8F0; }
+
+/* Heading/primary body text that was light-on-dark (100/200/300) now needs
+   to be dark-on-light — darkest first, preserving the original relative
+   hierarchy (100 was the most prominent, so it maps darkest). */
+body.gj5-admin-active:not(.dark) .text-slate-100 { color: #0F172A; }
+body.gj5-admin-active:not(.dark) .text-slate-200 { color: #1E293B; }
+body.gj5-admin-active:not(.dark) .text-slate-300 { color: #334155; }
+
+/* Muted/secondary text (400/500) — readable mid-gray on white, never pure
+   black (keeps the same visual hierarchy step below primary text) */
+body.gj5-admin-active:not(.dark) .text-slate-400,
+body.gj5-admin-active:not(.dark) .text-slate-500 { color: #475569; }
+
+/* Placeholder text inside inputs/textareas that relied on a dark-mode
+   placeholder tone */
+body.gj5-admin-active:not(.dark) .placeholder\:text-slate-500::placeholder,
+body.gj5-admin-active:not(.dark) .placeholder\:text-slate-600::placeholder { color: #64748B; }
+
+/* Status/accent text — the app uses -400 tones everywhere for badges and
+   icons on dark backgrounds (text-emerald-400, text-blue-400, ...); those
+   same light tones are too low-contrast on white, so darken them by two
+   steps while keeping each color's identity (a green stays green, etc.) */
+body.gj5-admin-active:not(.dark) .text-blue-400 { color: #1D4ED8; }
+body.gj5-admin-active:not(.dark) .text-emerald-400 { color: #047857; }
+body.gj5-admin-active:not(.dark) .text-rose-400,
+body.gj5-admin-active:not(.dark) .text-red-400 { color: #B91C1C; }
+body.gj5-admin-active:not(.dark) .text-amber-400 { color: #B45309; }
+body.gj5-admin-active:not(.dark) .text-purple-400 { color: #6D28D9; }
+body.gj5-admin-active:not(.dark) .text-orange-400 { color: #C2410C; }
+body.gj5-admin-active:not(.dark) .text-cyan-400 { color: #0E7490; }
+body.gj5-admin-active:not(.dark) .text-lime-400 { color: #4D7C0F; }
+body.gj5-admin-active:not(.dark) .text-indigo-400 { color: #4338CA; }
+body.gj5-admin-active:not(.dark) .text-teal-400 { color: #0F766E; }
+body.gj5-admin-active:not(.dark) .text-yellow-400 { color: #A16207; }
+body.gj5-admin-active:not(.dark) .text-rose-300,
+body.gj5-admin-active:not(.dark) .text-red-300 { color: #DC2626; }
+body.gj5-admin-active:not(.dark) .text-emerald-300 { color: #059669; }
+body.gj5-admin-active:not(.dark) .text-amber-300 { color: #D97706; }
+
+/* Sidebar hover/active affordance that assumed a dark surface underneath */
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-800:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/20:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/40:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: #F1F5F9; }

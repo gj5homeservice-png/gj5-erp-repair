@@ -25,7 +25,9 @@ import {
   Loader2,
   Lock,
   ClipboardList,
-  Menu
+  Menu,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +40,7 @@ import { useErpStore } from '@/hooks/use-erp-store';
 import { createAutoBackupIfDue } from '@/lib/data-management';
 import { resolveSidebarOrder } from '@/lib/nav-items';
 import { CompanyLogo } from '@/components/CompanyLogo';
+import { useAdminTheme } from '@/hooks/use-admin-theme';
 
 // Module Imports — dynamically code-split, not bundled into /dashboard's own
 // chunk. Previously these 13 modules (every ERP feature: Employees, Repair
@@ -167,6 +170,7 @@ export default function ErpMainHub() {
   const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
   const router = useRouter();
+  const { theme, toggleTheme } = useAdminTheme();
 
   // Server-verified permissions for the current session (see /api/auth/me
   // via useErpStore) — an owner/admin session has session.permissions ===
@@ -408,6 +412,16 @@ export default function ErpMainHub() {
               <Button size="icon" variant="ghost" className="relative text-slate-400">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-[#E53935] rounded-full border-2 border-[#0B0F19]"></span>
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-slate-400"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                onClick={toggleTheme}
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">

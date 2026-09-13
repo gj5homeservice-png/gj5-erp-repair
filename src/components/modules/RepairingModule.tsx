@@ -40,6 +40,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MobileCard, MobileCardList, MobileCardRow, MobileCardActions } from '@/components/ui/mobile-card';
 import { RepairJob, RepairJobStatus } from '@/lib/types';
 import { CallModal } from './repairing/CallModal';
+import { RepairFormModule } from './repair/RepairFormModule';
 import { StickerModal } from './repairing/StickerModal';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
 import { differenceInDays, parseISO, format } from 'date-fns';
@@ -100,6 +101,7 @@ function repeatJobIds(jobs: RepairJob[]): Set<string> {
 
 export function RepairingModule({ store }: { store: any }) {
   const [showNewRepairForm, setShowNewRepairForm] = useState(false);
+  const [editingJob, setEditingJob] = useState<RepairJob | null>(null);
   const [stickerCall, setStickerCall] = useState<RepairJob | null>(null);
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,6 +185,15 @@ export function RepairingModule({ store }: { store: any }) {
 
   if (showNewRepairForm) {
     return <CallModal renderAsPage isOpen={true} onClose={() => setShowNewRepairForm(false)} editingCall={null} store={store} />;
+  }
+
+  // Reuses the exact same edit/update form the Repair Jobs module uses —
+  // this list reads the same store.repairJobs records (see comment above),
+  // so editing here must go through the same createRepairJob-adjacent
+  // update path rather than CallModal's store.calls-based save, which
+  // targets a completely different table these list rows were never in.
+  if (editingJob) {
+    return <RepairFormModule store={store} editingJob={editingJob} onDone={() => setEditingJob(null)} />;
   }
 
   return (
@@ -270,7 +281,7 @@ export function RepairingModule({ store }: { store: any }) {
                 </div>
                 <MobileCardActions>
                   <Button size="sm" variant="ghost" className="h-8 px-2 text-blue-400" title="Location" onClick={() => handleMapClick(call.address || '')}><MapPin className="w-3.5 h-3.5" /></Button>
-                  <Button size="sm" variant="ghost" className="h-8 px-2" title="Full edit — open in Repair Jobs" onClick={() => toast({ title: 'Open in Repair Jobs', description: 'Full editing — technician, parts, payments, status history — is in the Repair Jobs module.' })}><Edit className="w-3.5 h-3.5" /></Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2" title="Edit" onClick={() => setEditingJob(call)}><Edit className="w-3.5 h-3.5" /></Button>
                   <Button size="sm" variant="ghost" className="h-8 px-2 text-emerald-400" title="Print" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
                   <Button size="sm" variant="ghost" className="h-8 px-2 text-rose-500 hover:bg-rose-500/10" title="Delete" onClick={() => setDeleteJobId(call.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </MobileCardActions>
@@ -374,7 +385,7 @@ export function RepairingModule({ store }: { store: any }) {
                         <TableCell className="text-right px-2">
                            <div className="flex justify-end gap-1 md:gap-2">
                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-blue-400" title="Location" onClick={() => handleMapClick(call.address || '')}><MapPin className="w-3.5 h-3.5" /></Button>
-                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Full edit (parts, payments, technician) — open in Repair Jobs" onClick={() => toast({ title: 'Open in Repair Jobs', description: 'Full editing — technician, parts, payments, status history — is in the Repair Jobs module.' })}><Edit className="w-3.5 h-3.5" /></Button>
+                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Edit" onClick={() => setEditingJob(call)}><Edit className="w-3.5 h-3.5" /></Button>
                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-emerald-400" title="Print" onClick={() => setStickerCall(call)}><PrinterIcon className="w-3.5 h-3.5" /></Button>
                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-500/10" title="Delete" onClick={() => setDeleteJobId(call.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                            </div>

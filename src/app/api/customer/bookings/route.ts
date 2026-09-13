@@ -108,7 +108,11 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
+    // Public, customer-facing endpoint — never echo raw driver/SQL detail
+    // (table names, error codes) to the browser. Logged server-side instead,
+    // exactly like every other real failure reason already is in this file.
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
-    return NextResponse.json({ success: false, error: error?.code ? `Booking failed: ${detail}` : detail }, { status: error?.code ? 503 : 500 });
+    console.error('[customer/bookings] request failed:', detail);
+    return NextResponse.json({ success: false, error: 'We could not submit your booking right now. Please try again in a moment.' }, { status: error?.code ? 503 : 500 });
   }
 }

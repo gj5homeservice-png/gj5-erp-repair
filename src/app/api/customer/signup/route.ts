@@ -44,7 +44,9 @@ export async function POST(request: Request) {
     if (error?.message?.includes('already exists')) {
       return NextResponse.json({ success: false, error: error.message }, { status: 409 });
     }
+    // Public, customer-facing endpoint — never echo raw driver/SQL detail.
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
-    return NextResponse.json({ success: false, error: error?.code ? `Signup failed: ${detail}` : detail }, { status: error?.code ? 503 : 500 });
+    console.error('[customer/signup] request failed:', detail);
+    return NextResponse.json({ success: false, error: 'We could not create your account right now. Please try again in a moment.' }, { status: error?.code ? 503 : 500 });
   }
 }

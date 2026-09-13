@@ -24,7 +24,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, token, expiresAt, customer: account });
   } catch (error: any) {
+    // Public, customer-facing endpoint — never echo raw driver/SQL detail.
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
-    return NextResponse.json({ success: false, error: error?.code ? `Login check failed: ${detail}` : detail }, { status: error?.code ? 503 : 500 });
+    console.error('[customer/login] request failed:', detail);
+    return NextResponse.json({ success: false, error: 'We could not check your login right now. Please try again in a moment.' }, { status: error?.code ? 503 : 500 });
   }
 }

@@ -95,6 +95,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
+    console.error('[customer/repairs/:id] request failed:', error?.message || error);
+    return NextResponse.json({ success: false, error: 'Unable to load this repair. Please try again.' }, { status: 500 });
   }
 }

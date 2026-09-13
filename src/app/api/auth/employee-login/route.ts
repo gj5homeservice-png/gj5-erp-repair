@@ -64,15 +64,12 @@ export async function POST(request: Request) {
     grantErpGate(res);
     return res;
   } catch (error: any) {
-    // Mirror api-auth.ts's requireUser(): a DB-connectivity failure here
-    // (wrong host/credentials, network blip) previously surfaced as an
-    // unlogged, generic 500 — indistinguishable from a real application bug
-    // and invisible in server logs. Surfacing the driver error code (never
-    // the password itself) and a distinct 503 makes this diagnosable without
-    // exposing anything sensitive.
+    // Reachable from the public unified login page (/customer/login) as the
+    // employee-login fallback — never echo raw driver/SQL detail to the
+    // browser. The error code (never the password) is still logged
+    // server-side so a DB-connectivity failure stays diagnosable there.
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
     console.error('[employee-login] request failed:', detail);
-    const status = error?.code ? 503 : 500;
-    return NextResponse.json({ success: false, error: status === 503 ? `Login check failed: ${detail}` : detail }, { status });
+    return NextResponse.json({ success: false, error: 'We could not check your login right now. Please try again in a moment.' }, { status: error?.code ? 503 : 500 });
   }
 }

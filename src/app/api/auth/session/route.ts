@@ -50,9 +50,11 @@ export async function POST(request: Request) {
     grantErpGate(res);
     return res;
   } catch (error: any) {
+    // Reachable from the public unified login page (/customer/login) as the
+    // owner-login fallback — never echo raw driver/SQL detail to the browser.
     const detail = error?.code ? `${error.code}: ${error?.message || ''}`.trim() : (error?.message || 'Internal Server Error');
-    const status = error?.code ? 503 : 500;
-    return NextResponse.json({ success: false, error: status === 503 ? `Login check failed: ${detail}` : detail }, { status });
+    console.error('[auth/session] request failed:', detail);
+    return NextResponse.json({ success: false, error: 'We could not check your login right now. Please try again in a moment.' }, { status: error?.code ? 503 : 500 });
   }
 }
 

@@ -23,10 +23,24 @@ export async function GET(request: Request) {
     if (!account) {
       return NextResponse.json({ success: false, error: 'Account not found.' }, { status: 404 });
     }
-    const [jobs, bookings] = await Promise.all([
+    // Independent sources, independent failure handling — repair_jobs and
+    // online_bookings are two unrelated tables; a problem with one (a
+    // pending migration, a transient query error) must never blank out the
+    // other. Promise.all would reject the whole request the moment either
+    // one throws; Promise.allSettled lets each stand on its own, and only
+    // the failed side's detail is logged (never sent to the customer).
+    const [jobsResult, bookingsResult] = await Promise.allSettled([
       listRepairJobsForCustomerMobile(auth.userEmail, account.mobile),
       listOnlineBookingsForCustomerMobile(auth.userEmail, account.mobile),
     ]);
+    if (jobsResult.status === 'rejected') {
+      console.error('[customer/repairs] listRepairJobsForCustomerMobile failed:', jobsResult.reason?.message || jobsResult.reason);
+    }
+    if (bookingsResult.status === 'rejected') {
+      console.error('[customer/repairs] listOnlineBookingsForCustomerMobile failed:', bookingsResult.reason?.message || bookingsResult.reason);
+    }
+    const jobs = jobsResult.status === 'fulfilled' ? jobsResult.value : [];
+    const bookings = bookingsResult.status === 'fulfilled' ? bookingsResult.value : [];
 
     // Never leak the technician's internal id or the shop's full cost
     // breakdown (purchase cost, labour/other charges) to the customer view —
@@ -72,6 +86,9 @@ export async function GET(request: Request) {
     const merged = [...jobRecords, ...bookingRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json({ success: true, data: merged });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
+    // Customer-facing surface — never echo a raw DB/driver error (table
+    // names, SQL detail) to the browser; log it for diagnosis instead.
+    console.error('[customer/repairs] request failed:', error?.message || error);
+    return NextResponse.json({ success: false, error: 'Unable to load your repairs. Please try again.' }, { status: 500 });
   }
 }

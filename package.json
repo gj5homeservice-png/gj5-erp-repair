@@ -3,7 +3,7 @@
   "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "GOOD JOB 5 ERP - Smart Business Management Software",
+  "description": "GOOD JOB 5 HOME SERVICE - Smart Business Management Software",
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -p 9002",
@@ -94,7 +94,7 @@
   },
   "build": {
     "appId": "com.gj5.erp",
-    "productName": "GJ5 ERP",
+    "productName": "GJ5 Home Service",
     "copyright": "Copyright © 2025 GJ5 Enterprise",
     "directories": {
       "output": "dist"
@@ -113,7 +113,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "GJ5 ERP"
+      "shortcutName": "GJ5 Home Service"
     }
   }
 }

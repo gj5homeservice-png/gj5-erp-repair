@@ -8,7 +8,7 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: width,
     height: height,
-    title: "GJ5 ERP | GOOD JOB 5 ERP",
+    title: "GJ5 Home Service | GOOD JOB 5 HOME SERVICE",
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false, 

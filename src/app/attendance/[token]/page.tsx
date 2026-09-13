@@ -362,7 +362,7 @@ export default function SmartAttendancePortal() {
                   <p className="text-[8px] font-bold uppercase tracking-widest">Encrypted Auth Node IP: {ip}</p>
                </div>
                <p className="text-[7px] text-slate-700 italic text-center leading-relaxed font-bold uppercase">
-                  Audit Protocol 4.2 Active. Metadata capture is mandatory for industrial compliance. Access attempts are logged in the Master ERP Security Ledger.
+                  Audit Protocol 4.2 Active. Metadata capture is mandatory for industrial compliance. Access attempts are logged in the Master Security Ledger.
                </p>
             </div>
           </CardContent>

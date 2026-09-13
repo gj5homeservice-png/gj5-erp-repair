@@ -6,8 +6,8 @@ import { ChunkErrorRecovery } from '@/components/ChunkErrorRecovery';
 import { DynamicFavicon } from '@/components/DynamicFavicon';
 
 export const metadata: Metadata = {
-  title: 'GJ5 HOME SERVICE | GOOD JOB 5 ERP',
-  description: 'GOOD JOB 5 ERP - Smart Business Management Software',
+  title: 'GJ5 Home Service | TV & Electronics Repair',
+  description: 'GOOD JOB 5 HOME SERVICE - Smart Business Management Software',
   robots: {
     index: false,
     follow: false,

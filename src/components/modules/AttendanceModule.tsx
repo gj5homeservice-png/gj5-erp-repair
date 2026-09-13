@@ -100,7 +100,7 @@ export function AttendanceModule({ store }: { store: any }) {
 
     const attendanceUrl = `${baseUrl}/attendance?token=${token}`;
 
-    const msg = `🔐 *GJ5 ERP Secure Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification required for shift entry. Click below for GPS + Selfie proof.\n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* Powered by GJ5 ERP.`;
+    const msg = `🔐 *GJ5 Home Service Secure Attendance Access*\n\nHello ${emp.name},\n\nIdentity verification required for shift entry. Click below for GPS + Selfie proof.\n\n🔗 ${attendanceUrl}\n\n⚠️ *Expires in 2 minutes.* Powered by GJ5 Home Service.`;
 
     const whatsappUrl = `https://wa.me/91${emp.mobile}?text=${encodeURIComponent(msg)}`;
     if (pendingTab) pendingTab.location.href = whatsappUrl;
@@ -136,7 +136,7 @@ export function AttendanceModule({ store }: { store: any }) {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-headline font-bold">Secure Attendance Matrix</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 ERP ID PROTOCOL V4.0</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 HOME SERVICE ID PROTOCOL V4.0</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -183,7 +183,7 @@ export function AttendanceModule({ store }: { store: any }) {
                  <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                     <Camera className="w-4 h-4 text-[#123C8C]" /> Link Dispatch
                  </CardTitle>
-                 <CardDescription className="text-[10px] text-slate-500 uppercase font-bold">GOOD JOB 5 ERP PROTOCOL</CardDescription>
+                 <CardDescription className="text-[10px] text-slate-500 uppercase font-bold">GOOD JOB 5 HOME SERVICE PROTOCOL</CardDescription>
               </CardHeader>
               <CardContent className="p-0 max-h-[500px] overflow-y-auto custom-scrollbar">
                  <div className="divide-y divide-slate-800">
@@ -230,7 +230,7 @@ export function AttendanceModule({ store }: { store: any }) {
               <CardContent className="p-5 space-y-4">
                  <div className="flex items-center gap-3">
                     <ShieldCheck className="w-5 h-5 text-[#123C8C] shrink-0" />
-                    <h4 className="text-xs font-bold uppercase text-[#123C8C]">GJ5 ERP Integrity</h4>
+                    <h4 className="text-xs font-bold uppercase text-[#123C8C]">GJ5 Home Service Integrity</h4>
                  </div>
                  <p className="text-[10px] text-slate-400 italic leading-relaxed">Identity Integrity Protocol Active. Remote biometric proofs (Selfie) and Geospatial node verification are mandatory. Attempts to share links are logged as security breaches.</p>
               </CardContent>
@@ -352,7 +352,7 @@ export function AttendanceModule({ store }: { store: any }) {
                   </div>
                   <div>
                      <DialogTitle className="text-xl font-headline font-bold">Manifest Audit Node</DialogTitle>
-                     <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">GOOD JOB 5 ERP FORENSICS</DialogDescription>
+                     <DialogDescription className="text-[10px] text-slate-500 uppercase font-black tracking-widest">GOOD JOB 5 HOME SERVICE FORENSICS</DialogDescription>
                   </div>
                </div>
             </DialogHeader>

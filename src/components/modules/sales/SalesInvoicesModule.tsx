@@ -73,7 +73,7 @@ export function SalesInvoicesModule({ store }: { store: any }) {
 
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('Powered by GOOD JOB 5 ERP Solutions.', 15, 280);
+    doc.text('Powered by GOOD JOB 5 HOME SERVICE Solutions.', 15, 280);
     return doc;
   };
 

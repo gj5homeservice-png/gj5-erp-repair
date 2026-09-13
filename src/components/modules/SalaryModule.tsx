@@ -124,7 +124,7 @@ export function SalaryModule({ store }: { store: any }) {
     doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('GOOD JOB 5 ERP - INDUSTRIAL PAYROLL', headerTextX, 18);
+    doc.text('GOOD JOB 5 HOME SERVICE - INDUSTRIAL PAYROLL', headerTextX, 18);
     doc.text(`DATE: ${format(new Date(), 'dd/MM/yyyy')}`, 138, 15, { align: 'right' });
 
     // Employee Info
@@ -185,7 +185,7 @@ export function SalaryModule({ store }: { store: any }) {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-headline font-bold">Payroll Hub</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 ERP Industrial Ledger</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GJ5 Home Service Industrial Ledger</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -331,7 +331,7 @@ export function SalaryModule({ store }: { store: any }) {
 
       <div className="flex items-center gap-2 p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-         <p className="text-[10px] text-slate-500 italic">GJ5 ERP Payroll Logic: 30-day base cycle is used for all calculations. Manual adjustments can be made via the Wallet Module if required.</p>
+         <p className="text-[10px] text-slate-500 italic">GJ5 Home Service Payroll Logic: 30-day base cycle is used for all calculations. Manual adjustments can be made via the Wallet Module if required.</p>
       </div>
     </div>
   );

@@ -297,7 +297,7 @@ export default function ErpMainHub() {
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
-                <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'ERP MASTER NODE'}</span>
+                <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'HOME SERVICE MASTER NODE'}</span>
               </div>
             </div>
           </div>
@@ -344,7 +344,7 @@ export default function ErpMainHub() {
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
-                  <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'ERP MASTER NODE'}</span>
+                  <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'HOME SERVICE MASTER NODE'}</span>
                 </div>
               </div>
             </div>

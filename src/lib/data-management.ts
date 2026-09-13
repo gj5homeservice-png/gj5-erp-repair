@@ -78,7 +78,7 @@ export function deriveWarrantyRecords(store: any) {
 
 export function getFullSnapshot(store: any) {
   return {
-    meta: { exportedAt: new Date().toISOString(), app: 'GJ5 PLUS ERP', version: 1 },
+    meta: { exportedAt: new Date().toISOString(), app: 'GJ5 Home Service', version: 1 },
     calls: store.calls || [],
     inquiries: store.inquiries || [],
     stock: store.stock || [],
@@ -144,14 +144,14 @@ export function validateImportFile(raw: string): ImportValidationResult {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { valid: false, error: 'This file is not valid JSON. Export a backup from this ERP and try again.' };
+    return { valid: false, error: 'This file is not valid JSON. Export a backup from this system and try again.' };
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { valid: false, error: 'Unrecognized file structure — expected a GJ5 ERP backup object.' };
+    return { valid: false, error: 'Unrecognized file structure — expected a GJ5 Home Service backup object.' };
   }
   const hasKnownCollection = RECORD_CATEGORIES.some(c => Array.isArray(parsed[c.key]));
   if (!hasKnownCollection && !parsed.companyProfile && !parsed.settings) {
-    return { valid: false, error: 'No recognizable ERP data found in this file.' };
+    return { valid: false, error: 'No recognizable business data found in this file.' };
   }
   return { valid: true, data: parsed };
 }

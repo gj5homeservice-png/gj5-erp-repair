@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const data = await getFullSnapshotData(auth.email);
     return NextResponse.json({
       success: true,
-      data: { meta: { exportedAt: new Date().toISOString(), app: 'GJ5 PLUS ERP', version: 1 }, ...data },
+      data: { meta: { exportedAt: new Date().toISOString(), app: 'GJ5 Home Service', version: 1 }, ...data },
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });

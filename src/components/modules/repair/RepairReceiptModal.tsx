@@ -134,7 +134,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
     doc.setFontSize(8);
     doc.text('TERMS & CONDITIONS:', 15, 265);
     doc.text('1. Please retain this receipt to collect your product.', 15, 270);
-    doc.text('2. Powered by GJ5 PLUS ERP Solutions.', 15, 275);
+    doc.text('2. Powered by GJ5 Home Service Solutions.', 15, 275);
 
     doc.setTextColor(0);
     doc.setFont('helvetica', 'bold');
@@ -230,7 +230,7 @@ export function RepairReceiptModal({ isOpen, onClose, job, store }: RepairReceip
             </div>
 
             <div className="mt-auto pt-6 text-[9px] text-slate-500 text-center border-t border-slate-200">
-              Powered by GJ5 PLUS ERP Solutions
+              Powered by GJ5 Home Service Solutions
             </div>
           </div>
         </div>

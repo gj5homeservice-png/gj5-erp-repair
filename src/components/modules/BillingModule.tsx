@@ -180,7 +180,7 @@ export function BillingModule({ store }: { store: any }) {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('POWERED BY GOOD JOB 5 ERP', headerTextX, 27);
+    doc.text('POWERED BY GOOD JOB 5 HOME SERVICE', headerTextX, 27);
     doc.text(`GSTIN: ${profile.gstNumber || 'N/A'}`, headerTextX, 33);
 
     doc.setFontSize(24);
@@ -263,7 +263,7 @@ export function BillingModule({ store }: { store: any }) {
     doc.text('TERMS & CONDITIONS:', 15, 260);
     doc.text('1. Goods once sold will not be taken back.', 15, 265);
     doc.text(`2. Support Hub: ${profile.whatsapp || '+91 88669 83900'}`, 15, 270);
-    doc.text('3. Powered by GOOD JOB 5 ERP Solutions.', 15, 275);
+    doc.text('3. Powered by GOOD JOB 5 HOME SERVICE Solutions.', 15, 275);
     
     doc.setTextColor(0);
     doc.setFont('helvetica', 'bold');
@@ -287,7 +287,7 @@ export function BillingModule({ store }: { store: any }) {
                      </div>
                      <div>
                         <h2 className="text-xl font-headline font-bold">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE BILLING'}</h2>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GOOD JOB 5 ERP ENGINE v4.0</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">GOOD JOB 5 HOME SERVICE ENGINE v4.0</p>
                      </div>
                   </div>
                   <div className="text-right">
@@ -597,7 +597,7 @@ export function BillingModule({ store }: { store: any }) {
                     </div>
                  </div>
                  <div className="mt-auto pt-4 text-center">
-                    <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">GOOD JOB 5 ERP - Smart Business Solutions</p>
+                    <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">GOOD JOB 5 HOME SERVICE - Smart Business Solutions</p>
                  </div>
               </div>
            </Card>

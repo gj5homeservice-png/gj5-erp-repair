@@ -165,7 +165,7 @@ export default function CheckoutPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "GJ5 ERP",
+        name: "GJ5 Home Service",
         order_id: orderData.id,
         handler: async function (response: any) {
           try {

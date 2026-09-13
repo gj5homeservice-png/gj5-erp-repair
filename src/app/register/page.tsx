@@ -68,7 +68,7 @@ export default function RegisterPage() {
                <CompanyLogo src={brandLogo} className="w-full h-full" />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-headline font-black text-slate-900 uppercase italic">GJ5 ERP</span>
+              <span className="text-base font-headline font-black text-slate-900 uppercase italic">GJ5 Home Service</span>
               <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Master Registration</span>
             </div>
           </div>

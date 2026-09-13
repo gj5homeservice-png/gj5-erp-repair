@@ -83,7 +83,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
             <Wallet className="w-6 h-6 text-[#0066FF]" /> Wallet Top-Up
           </DialogTitle>
           <DialogDescription className="text-slate-400 text-xs uppercase tracking-widest font-bold">
-            Refill GJ5 ERP Credit
+            Refill GJ5 Home Service Credit
           </DialogDescription>
         </DialogHeader>
 

@@ -110,7 +110,7 @@ export default function PlansPage() {
                <CompanyLogo src={brandLogo} className="w-full h-full" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 ERP</span>
+              <span className="text-sm font-headline font-black tracking-tighter leading-none uppercase">GJ5 Home Service</span>
               <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-1">Enterprise Plans</span>
             </div>
           </Link>

@@ -114,7 +114,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: S
               </div>
             </div>
             <div className="absolute bottom-1 right-2">
-               <span className="text-[5px] font-black uppercase text-slate-300">Powered by GOOD JOB 5 ERP</span>
+               <span className="text-[5px] font-black uppercase text-slate-300">Powered by GOOD JOB 5 HOME SERVICE</span>
             </div>
           </div>
           </div>

@@ -27,7 +27,8 @@ import {
   ClipboardList,
   Menu,
   Sun,
-  Moon
+  Moon,
+  ChevronLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useErpStore } from '@/hooks/use-erp-store';
 import { createAutoBackupIfDue } from '@/lib/data-management';
-import { resolveSidebarOrder } from '@/lib/nav-items';
+import { resolveSidebarOrder, ALL_SIDEBAR_MODULES } from '@/lib/nav-items';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { useAdminTheme } from '@/hooks/use-admin-theme';
 
@@ -164,13 +165,66 @@ const DashboardModule = ({ store }: { store: any }) => (
 );
 
 export default function ErpMainHub() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTabState] = useState('Dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
   const router = useRouter();
   const { theme, toggleTheme } = useAdminTheme();
+  // Whether THIS session has itself pushed at least one in-app tab-history
+  // entry — lets the mobile Back button tell "there's real app history to
+  // pop" apart from "the user was deep-linked straight to a non-Dashboard
+  // tab with nothing behind it in history", where calling router.back()
+  // would navigate the user out of the app entirely instead of just to
+  // Dashboard.
+  const hasPushedHistory = React.useRef(false);
+
+  // Module switching uses the browser's native History API directly
+  // (history.pushState + a popstate listener below) rather than Next's
+  // router.push() — a query-string-only change to this same route would
+  // otherwise still trigger an RSC round-trip to the server for every
+  // single tab click, which is pure overhead for a page that has no
+  // server-rendered data dependency on the tab at all. pushState is
+  // synchronous, local, and free, while still making the URL/back-forward
+  // history genuinely correct — bookmarkable, shareable, and durable
+  // across a refresh, exactly like a normal route change.
+  const setActiveTab = React.useCallback((tab: string) => {
+    setActiveTabState(tab);
+    if (typeof window === 'undefined') return;
+    const url = tab === 'Dashboard' ? '/dashboard' : `/dashboard?tab=${encodeURIComponent(tab)}`;
+    if (window.location.pathname + window.location.search !== url) {
+      window.history.pushState({ tab }, '', url);
+      hasPushedHistory.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const known = tabParam && ALL_SIDEBAR_MODULES.some((m) => m.name === tabParam);
+      setActiveTabState(known ? (tabParam as string) : 'Dashboard');
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
+
+  // Only meaningful once we've actually left Dashboard — Dashboard is this
+  // app's root/home tab, so there is nothing safe to go "back" to from it.
+  const handleMobileBack = React.useCallback(() => {
+    if (hasPushedHistory.current) {
+      router.back();
+    } else {
+      // Deep-linked straight to a non-Dashboard tab (e.g. a bookmarked or
+      // shared URL) with no in-app history behind it yet — router.back()
+      // here would leave the app entirely instead of just going to
+      // Dashboard, so fall back to an explicit, always-valid in-app
+      // destination instead.
+      setActiveTab('Dashboard');
+    }
+  }, [router, setActiveTab]);
 
   // Server-verified permissions for the current session (see /api/auth/me
   // via useErpStore) — an owner/admin session has session.permissions ===
@@ -391,6 +445,18 @@ export default function ErpMainHub() {
         <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
           <header className="h-20 border-b border-slate-800 flex items-center justify-between px-4 md:px-8 bg-[#0B0F19]/80 backdrop-blur-md z-10 shrink-0 gap-3">
             <div className="flex items-center gap-3 md:gap-6 min-w-0">
+               {activeTab !== 'Dashboard' && (
+                 <Button
+                   size="icon"
+                   variant="ghost"
+                   className="lg:hidden text-slate-400 shrink-0"
+                   title="Back"
+                   aria-label="Back"
+                   onClick={handleMobileBack}
+                 >
+                   <ChevronLeft className="w-5 h-5" />
+                 </Button>
+               )}
                <Button
                  size="icon"
                  variant="ghost"

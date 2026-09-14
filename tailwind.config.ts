@@ -15,47 +15,59 @@ export default {
         code: ['Source Code Pro', 'monospace'],
       },
       colors: {
-        background: '#0B0F19',
-        foreground: '#F8FAFC',
+        // Each wraps the CSS custom property of the same name
+        // (src/app/globals.css, stored as a bare "H S% L%" triplet) in
+        // hsl(... / <alpha-value>) — the one format that lets Tailwind's
+        // opacity modifiers (bg-primary/90, hover:bg-primary/90,
+        // border-destructive/50, ...) keep working; a plain var(--x)
+        // reference silently drops those instead of erroring, confirmed
+        // by inspecting the compiled CSS before adding this. :root holds
+        // the light values, .dark holds the exact same dark values this
+        // file hardcoded before, so dark mode (permanently on via <html
+        // class="dark"> in layout.tsx) renders byte-identical to before
+        // this change; only an explicit light-mode override elsewhere
+        // (the admin theme toggle) changes what these resolve to.
+        background: 'hsl(var(--background) / <alpha-value>)',
+        foreground: 'hsl(var(--foreground) / <alpha-value>)',
         card: {
-          DEFAULT: '#111827',
-          foreground: '#F8FAFC',
+          DEFAULT: 'hsl(var(--card) / <alpha-value>)',
+          foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
         popover: {
-          DEFAULT: '#111827',
-          foreground: '#F8FAFC',
+          DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
+          foreground: 'hsl(var(--popover-foreground) / <alpha-value>)',
         },
         primary: {
-          DEFAULT: '#0066FF',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+          foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
         },
         secondary: {
-          DEFAULT: '#1F2937',
-          foreground: '#F8FAFC',
+          DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
+          foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)',
         },
         muted: {
-          DEFAULT: '#1F2937',
-          foreground: '#94A3B8',
+          DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
+          foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#1F2937',
-          foreground: '#F8FAFC',
+          DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+          foreground: 'hsl(var(--accent-foreground) / <alpha-value>)',
         },
         destructive: {
-          DEFAULT: '#FF3366',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
+          foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)',
         },
         warning: {
-          DEFAULT: '#FFD700',
-          foreground: '#000000',
+          DEFAULT: 'hsl(var(--warning) / <alpha-value>)',
+          foreground: 'hsl(var(--warning-foreground) / <alpha-value>)',
         },
         success: {
-          DEFAULT: '#10B981',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--success) / <alpha-value>)',
+          foreground: 'hsl(var(--success-foreground) / <alpha-value>)',
         },
-        border: '#1E293B',
-        input: '#1E293B',
-        ring: '#0066FF',
+        border: 'hsl(var(--border) / <alpha-value>)',
+        input: 'hsl(var(--input) / <alpha-value>)',
+        ring: 'hsl(var(--ring) / <alpha-value>)',
         chart: {
           '1': '#0066FF',
           '2': '#FFD700',

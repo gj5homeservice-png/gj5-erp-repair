@@ -3,66 +3,84 @@
 @tailwind utilities;
 
 @layer base {
+  /* GJ5 Home Service Brand Palette. Stored as bare HSL triplets (Tailwind's
+     own convention: "H S% L%", no hsl()/commas) specifically so
+     tailwind.config.ts can wrap each one as `hsl(var(--x) / <alpha-value>)`
+     — the only format that lets Tailwind's opacity modifiers (bg-primary/90,
+     hover:bg-primary/90, border-destructive/50, ...) still work, confirmed
+     necessary by checking the compiled CSS: a plain hex custom property
+     silently drops every opacity-modified class instead of erroring, which
+     would have been a real, quiet regression on real button variants.
+     Every triplet below was generated from, and round-trip-verified back
+     to, the exact hex tailwind.config.ts hardcoded before this change —
+     these variables now genuinely drive that config (previously they were
+     defined here but never actually read by any compiled utility class).
+     .dark's values reproduce those hex values exactly, so dark mode
+     (permanently on via <html class="dark"> in layout.tsx) is unchanged;
+     :root is the new, real light theme. primary/destructive/warning/
+     success/ring intentionally use the SAME value in both blocks — those
+     are brand/status colors meant to look identical regardless of theme
+     (a blue button is the same blue in light or dark), not theme-dependent
+     chrome. */
   :root {
-    /* GJ5 ERP Brand Palette */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 220 77% 31%; /* #123C8C */
-    --primary-foreground: 210 40% 98%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 216 100% 50%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 1 77% 55%; /* #E53935 */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 1 77% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --muted-foreground: 215.3 19.3% 34.5%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 345 100% 60%;
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --input-foreground: 222.2 84% 4.9%;
+    --input: 212.7 26.8% 83.9%;
+    --input-foreground: 222.2 47.4% 11.2%;
     --placeholder: 215.4 16.3% 46.9%;
-    --success: 152 69% 31%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 40%;
-    --warning-foreground: 210 40% 98%;
-    --danger: 0 72% 45%;
-    --danger-foreground: 210 40% 98%;
-    --ring: 220 77% 31%;
+    --success: 160.1 84.1% 39.4%;
+    --success-foreground: 0 0% 100%;
+    --warning: 50.6 100% 50%;
+    --warning-foreground: 0 0% 0%;
+    --danger: 345 100% 60%;
+    --danger-foreground: 0 0% 100%;
+    --ring: 216 100% 50%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.9 38.9% 7.1%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 220.9 39.3% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 220.9 39.3% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 220 77% 45%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 216 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 215 27.9% 16.9%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 1 77% 45%;
+    --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 345 100% 60%;
+    --destructive-foreground: 0 0% 100%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --input-foreground: 210 40% 98%;
     --placeholder: 215 20.2% 65.1%;
-    --success: 152 60% 45%;
-    --success-foreground: 222.2 47.4% 11.2%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222.2 47.4% 11.2%;
-    --danger: 0 62.8% 55%;
-    --danger-foreground: 222.2 47.4% 11.2%;
-    --ring: 220 77% 45%;
+    --success: 160.1 84.1% 39.4%;
+    --success-foreground: 0 0% 100%;
+    --warning: 50.6 100% 50%;
+    --warning-foreground: 0 0% 0%;
+    --danger: 345 100% 60%;
+    --danger-foreground: 0 0% 100%;
+    --ring: 216 100% 50%;
   }
 }
 
@@ -90,52 +108,55 @@
   @apply bg-[#123C8C] hover:bg-[#0D2E63] text-white transition-all shadow-lg active:scale-95;
 }
 
-/* These custom properties are kept for future use (and match what was
-   asked for), but verified directly against the compiled CSS that they do
-   NOT drive any Tailwind utility class today: tailwind.config.ts defines
-   `background`/`foreground`/`card`/`border`/`input`/etc. as literal hard-
-   coded hex values (e.g. background: '#0B0F19'), not hsl(var(--background))
-   — so classes like bg-background never actually read these variables.
-   The real fix for those classes is the explicit utility-class override
-   block further down (bg-background, text-foreground, border-input, ...),
-   sourced by querying the actual compiled rules in the browser rather than
-   assumed from this file. */
+/* <html> carries a permanent `dark` class (src/app/layout.tsx, app-wide,
+   untouched by this feature), so these variables always resolve to the
+   .dark block above by default. This re-declares the exact same triplets
+   as the :root block above, scoped to <body> only while the admin has
+   picked light mode — custom properties inherit down the DOM tree from
+   whichever element last redeclares them, so this correctly overrides
+   what <html>'s .dark would otherwise hand down, for every element in the
+   admin tree (portaled Radix content included, since it also renders
+   inside <body>) — without touching <html> or affecting the public site,
+   which never gets the `gj5-admin-active` class in the first place. Now
+   that tailwind.config.ts's colors genuinely read these (see comment
+   there), this is what makes any shadcn default-variant component — an
+   outline/secondary/ghost Button, a bare Card, Select/Dropdown hover —
+   correctly follow the toggle instead of staying locked dark. */
 body.gj5-admin-active:not(.dark) {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  --background: 210 40% 98%;
+  --foreground: 222.2 47.4% 11.2%;
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 222.2 47.4% 11.2%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 220 77% 31%;
-  --primary-foreground: 210 40% 98%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 216 100% 50%;
+  --primary-foreground: 0 0% 100%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 1 77% 55%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 1 77% 55%;
-  --destructive-foreground: 210 40% 98%;
+  --muted-foreground: 215.3 19.3% 34.5%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 345 100% 60%;
+  --destructive-foreground: 0 0% 100%;
   --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --input-foreground: 222.2 84% 4.9%;
+  --input: 212.7 26.8% 83.9%;
+  --input-foreground: 222.2 47.4% 11.2%;
   --placeholder: 215.4 16.3% 46.9%;
-  --success: 152 69% 31%;
-  --success-foreground: 210 40% 98%;
-  --warning: 38 92% 40%;
-  --warning-foreground: 210 40% 98%;
-  --danger: 0 72% 45%;
-  --danger-foreground: 210 40% 98%;
-  --ring: 220 77% 31%;
+  --success: 160.1 84.1% 39.4%;
+  --success-foreground: 0 0% 100%;
+  --warning: 50.6 100% 50%;
+  --warning-foreground: 0 0% 0%;
+  --danger: 345 100% 60%;
+  --danger-foreground: 0 0% 100%;
+  --ring: 216 100% 50%;
 }
 
 /* body itself renders with hardcoded dark bg/text (from `body { @apply
-   bg-background text-foreground }`, compiled to a literal rgb(11 15 25)
-   background / rgb(248 250 252) text — confirmed by reading the compiled
-   rule directly), and every element on the page inherits that text color
-   by default unless it sets its own. Self-targeting (not a descendant
-   selector) so this applies to <body> itself, not just its children. */
+   bg-background text-foreground }`), and every element on the page
+   inherits that text color by default unless it sets its own. Self-
+   targeting (not a descendant selector) so this applies to <body> itself,
+   not just its children. */
 body.gj5-admin-active:not(.dark) { background-color: #F8FAFC; color: #0F172A; }
 
 /* Tailwind's own base reset sets `* { border-color: rgb(30 41 59) }` —
@@ -145,30 +166,19 @@ body.gj5-admin-active:not(.dark) { background-color: #F8FAFC; color: #0F172A; }
    the explicit border-slate or border-input classes already covered. */
 body.gj5-admin-active:not(.dark) * { border-color: #E2E8F0; }
 
-/* The semantic Tailwind classes themselves (bg-background, text-foreground,
-   bg-card, bg-secondary, bg-muted, bg-accent, border-input, ...) — used by
-   shadcn's own default component variants (an outline/secondary/ghost
-   Button, a bare Card, Select/Dropdown item hover) wherever a call site
-   doesn't pass a custom className. Values below are the actual light-mode
-   pairings for each dark value found in the compiled CSS. bg-primary/
-   bg-destructive and their *-foreground pairs are deliberately left alone,
-   same reasoning as the brand-color backgrounds above — text-white already
-   has correct contrast against that fixed blue/red in both themes. */
-body.gj5-admin-active:not(.dark) .bg-background { background-color: #F8FAFC; }
-body.gj5-admin-active:not(.dark) .bg-card,
-body.gj5-admin-active:not(.dark) .bg-popover { background-color: #FFFFFF; }
-body.gj5-admin-active:not(.dark) .bg-secondary,
-body.gj5-admin-active:not(.dark) .bg-muted,
-body.gj5-admin-active:not(.dark) .bg-accent,
-body.gj5-admin-active:not(.dark) .hover\:bg-accent:hover { background-color: #F1F5F9; }
-body.gj5-admin-active:not(.dark) .text-foreground,
-body.gj5-admin-active:not(.dark) .text-card-foreground,
-body.gj5-admin-active:not(.dark) .text-popover-foreground,
-body.gj5-admin-active:not(.dark) .text-secondary-foreground,
-body.gj5-admin-active:not(.dark) .text-accent-foreground,
-body.gj5-admin-active:not(.dark) .hover\:text-accent-foreground:hover { color: #0F172A; }
-body.gj5-admin-active:not(.dark) .text-muted-foreground { color: #475569; }
-body.gj5-admin-active:not(.dark) .border-input { border-color: #CBD5E1; }
+/* Note: bg-background, text-foreground, bg-card, bg-secondary, bg-muted,
+   bg-accent, text-muted-foreground, border-input, and their *-foreground
+   pairs — used by shadcn's own default component variants (an outline/
+   secondary/ghost Button, a bare Card, Select/Dropdown item hover)
+   wherever a call site doesn't pass a custom className — do NOT need an
+   explicit override here. Now that tailwind.config.ts's colors block
+   genuinely reads var(--x), and the custom-property block above
+   redeclares those same variables for this scope, the normal compiled
+   `.bg-background { background-color: hsl(var(--background) / ...) }`
+   rule (and every sibling like it) already resolves correctly on its own
+   — verified directly (see report). Duplicating a hardcoded color here
+   too would just be a second, redundant hardcoded override of the exact
+   thing the variable system now already handles. */
 
 /* ============================================================
    Admin Light Mode

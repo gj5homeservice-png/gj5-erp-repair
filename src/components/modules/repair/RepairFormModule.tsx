@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { RepairJob, RepairJobPayment, RepairJobPart, RepairJobStatus, RepairStatusHistoryEntry, RepairJobPaymentMethod } from '@/lib/types';
+import { RepairJob, RepairJobPayment, RepairJobPart, RepairJobStatus, RepairStatusHistoryEntry, RepairJobPaymentMethod, PickupDeliveryOption } from '@/lib/types';
 import { generateRepairJobId, grandTotal, totalPaid, balanceDue } from '@/lib/repair-utils';
 
 const REPAIR_STATUSES: RepairJobStatus[] = [
@@ -20,6 +20,11 @@ const REPAIR_STATUSES: RepairJobStatus[] = [
 
 const WARRANTY_OPTIONS = ['No Warranty', 'Customer Warranty', '30 Days', '90 Days', '180 Days', '1 Year', 'Custom Warranty'];
 const PAYMENT_METHODS: RepairJobPaymentMethod[] = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
+const PICKUP_DELIVERY_OPTIONS: { value: PickupDeliveryOption; label: string }[] = [
+  { value: 'OUR_PICKUP_CUSTOMER_PICKUP', label: 'Our Pickup + Customer Pickup' },
+  { value: 'OUR_PICKUP_OUR_DELIVERY', label: 'Our Pickup + Our Delivery' },
+  { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
+];
 
 interface RepairFormState {
   customerName: string; mobile: string; email: string; address: string;
@@ -30,6 +35,7 @@ interface RepairFormState {
   estimatedCost: number; advancePayment: number;
   status: RepairJobStatus;
   warrantyDuration: string;
+  pickupDeliveryOption: PickupDeliveryOption;
 }
 
 const EMPTY: RepairFormState = {
@@ -41,6 +47,7 @@ const EMPTY: RepairFormState = {
   estimatedCost: 0, advancePayment: 0,
   status: 'Received',
   warrantyDuration: 'No Warranty',
+  pickupDeliveryOption: 'OUR_PICKUP_CUSTOMER_PICKUP',
 };
 
 export function RepairFormModule({ store, editingJob, onDone }: { store: any; editingJob?: RepairJob | null; onDone?: () => void }) {
@@ -191,6 +198,7 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
         advancePayment: Number(form.advancePayment) || 0,
         status: form.status,
         warrantyDuration: form.warrantyDuration || undefined,
+        pickupDeliveryOption: form.pickupDeliveryOption,
         parts,
         payments,
         notesLog,
@@ -232,6 +240,7 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
         advancePayment: advance,
         status: form.status,
         warrantyDuration: form.warrantyDuration || undefined,
+        pickupDeliveryOption: form.pickupDeliveryOption,
         parts: [],
         labourCharges: 0,
         otherCharges: 0,
@@ -377,6 +386,15 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-slate-500">Expected Delivery Date</Label>
                 <Input type="date" value={form.expectedDeliveryDate} onChange={e => setForm({ ...form, expectedDeliveryDate: e.target.value })} className="bg-slate-900 border-slate-800 h-11 text-[#F8FAFC]" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-slate-500">Pickup &amp; Delivery</Label>
+                <Select value={form.pickupDeliveryOption} onValueChange={v => setForm({ ...form, pickupDeliveryOption: v as PickupDeliveryOption })}>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800">
+                    {PICKUP_DELIVERY_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

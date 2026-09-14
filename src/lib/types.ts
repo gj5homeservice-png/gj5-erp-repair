@@ -724,6 +724,16 @@ export interface RepairJobNotification {
   sentAt: string | null;
 }
 
+// Controls the Repairing → Logistics integration (see repairJobs.ts):
+// which of the two physical trips (pickup from customer, delivery back to
+// customer) GJ5 itself needs to run, which in turn decides which
+// transportation_logs task(s) get auto-created and what makes the job
+// count as complete.
+export type PickupDeliveryOption =
+  | 'OUR_PICKUP_CUSTOMER_PICKUP' // we fetch it; customer collects in person — pickup task only
+  | 'OUR_PICKUP_OUR_DELIVERY'    // we fetch it and drop it back — pickup + delivery tasks
+  | 'CUSTOMER_DROP_OUR_DELIVERY'; // customer brings it in; we drop it back — delivery task only
+
 export interface RepairJob {
   id: string; // 'RJ' prefix, e.g. RJ1001
   customerName: string;
@@ -735,6 +745,7 @@ export interface RepairJob {
   techTags?: string[];
   photos?: string[];
   storeLocation?: string;
+  pickupDeliveryOption?: PickupDeliveryOption;
   warrantyDuration?: string;
   warrantyExpiry?: string;
   productType: string;

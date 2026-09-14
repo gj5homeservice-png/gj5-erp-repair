@@ -11,6 +11,7 @@ const JOB_COLUMNS: { js: string; sql: string; type?: 'json' | 'number' }[] = [
   { js: 'techTags', sql: 'tech_tags', type: 'json' },
   { js: 'photos', sql: 'photos', type: 'json' },
   { js: 'storeLocation', sql: 'store_location' },
+  { js: 'pickupDeliveryOption', sql: 'pickup_delivery_option' },
   { js: 'warrantyDuration', sql: 'warranty_duration' },
   { js: 'warrantyExpiry', sql: 'warranty_expiry' },
   { js: 'productType', sql: 'product_type' },
@@ -227,6 +228,84 @@ async function resolveCustomerId(conn: PoolConnection, email: string, job: any):
   }
 }
 
+// ---- Repairing -> Logistics integration ----
+//
+// The 3 Pickup & Delivery Options (see PickupDeliveryOption in types.ts)
+// decide which of the two physical trips GJ5 itself runs:
+//   OUR_PICKUP_CUSTOMER_PICKUP  — pickup only (customer collects in person)
+//   OUR_PICKUP_OUR_DELIVERY     — pickup, then delivery
+//   CUSTOMER_DROP_OUR_DELIVERY  — delivery only (customer drops it off)
+// Each task this creates is a normal transportation_logs row — the exact
+// same table/shape the Logistics module's own "New Log" form already
+// writes to — just created automatically instead of by hand, using a
+// deterministic id (`PICKUP-<jobId>` / `DELIVERY-<jobId>`) so re-saving the
+// same job (an edit, a repeated status change) can never create a second
+// task for the same trip: the existence check below is keyed on that id.
+const OPTIONS_REQUIRING_PICKUP = new Set(['OUR_PICKUP_CUSTOMER_PICKUP', 'OUR_PICKUP_OUR_DELIVERY']);
+const OPTIONS_REQUIRING_DELIVERY = new Set(['OUR_PICKUP_OUR_DELIVERY', 'CUSTOMER_DROP_OUR_DELIVERY']);
+
+async function ensureLogisticsTask(
+  conn: PoolConnection, email: string, taskId: string, jobId: string, job: any,
+  initialStatus: 'Pending Pickup' | 'Pending Delivery'
+) {
+  const [existing] = await conn.execute<any[]>(
+    'SELECT id FROM transportation_logs WHERE id = ? AND user_email = ?',
+    [taskId, email]
+  );
+  if ((existing as any[])[0]) return; // already created for this job — never duplicate
+  // runner_name/runner_mobile are '' (not NULL) — matching exactly what the
+  // Logistics module's own manual "New Log" form always sends for an
+  // unassigned task, since its own search/display code assumes a string
+  // (e.g. `log.runnerName.toLowerCase()`) and was never written to expect
+  // null. Staff assign a runner from the existing Logistics UI afterward.
+  await conn.execute(
+    `INSERT INTO transportation_logs (id, user_email, runner_name, runner_mobile, job_id, customer_name, customer_mobile, address, status, dispatch_time)
+     VALUES (?, ?, '', '', ?, ?, ?, ?, ?, ?)`,
+    [taskId, email, jobId, job.customerName || null, job.mobile || null, job.address || null, initialStatus, new Date().toISOString()]
+  );
+}
+
+// Called from the generic entity route when a transportation_logs row is
+// updated — closes the loop back onto the repair job that auto-created it.
+// Only a delivery task reaching "OK Delivery" can auto-complete a job: for
+// OUR_PICKUP_CUSTOMER_PICKUP there is no GJ5 delivery trip at all, so that
+// option's completion is (as it already was before this feature existed)
+// the admin manually setting the job's own status once the customer has
+// collected it in person. Requiring the job to already be "Ready" mirrors
+// the described flow (repair finished -> delivery completed -> DONE) and
+// makes this a no-op on any later, unrelated status update to the same log
+// row (e.g. reassigning a runner after the job is already Delivered).
+export async function applyLogisticsCompletionToRepairJob(email: string, logId: string, newStatus: string) {
+  if (newStatus !== 'OK Delivery' || !logId.startsWith('DELIVERY-')) return;
+  const jobId = logId.slice('DELIVERY-'.length);
+  const pool = getPool();
+  const conn: PoolConnection = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.execute<any[]>(
+      'SELECT status, pickup_delivery_option FROM repair_jobs WHERE id = ? AND user_email = ? FOR UPDATE',
+      [jobId, email]
+    );
+    const row = (rows as any[])[0];
+    if (!row || row.status !== 'Ready' || !OPTIONS_REQUIRING_DELIVERY.has(row.pickup_delivery_option)) {
+      await conn.rollback();
+      return;
+    }
+    const now = new Date().toISOString();
+    await conn.execute('UPDATE repair_jobs SET status = ?, updated_at = ? WHERE id = ? AND user_email = ?', ['Delivered', now, jobId, email]);
+    await conn.execute(
+      'INSERT INTO repair_job_status_history (id, repair_job_id, status, changed_at, note) VALUES (?, ?, ?, ?, ?)',
+      [`SH-${jobId}-auto-${Date.now()}`, jobId, 'Delivered', now, 'Auto-completed: Logistics delivery marked OK Delivery']
+    );
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 export async function createRepairJob(email: string, job: any): Promise<{ id: string; customerId?: string }> {
   const pool = getPool();
   const conn: PoolConnection = await pool.getConnection();
@@ -241,6 +320,9 @@ export async function createRepairJob(email: string, job: any): Promise<{ id: st
         const cols = ['id', 'user_email', ...JOB_COLUMNS.map(c => c.sql)];
         await conn.execute(`INSERT INTO repair_jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, [id, email, ...jobValues(job)]);
         await replaceChildren(conn, id, job);
+        if (OPTIONS_REQUIRING_PICKUP.has(job.pickupDeliveryOption)) {
+          await ensureLogisticsTask(conn, email, `PICKUP-${id}`, id, job, 'Pending Pickup');
+        }
         await conn.commit();
         return { id, customerId: job.customerId };
       } catch (err: any) {
@@ -260,6 +342,16 @@ export async function updateRepairJob(email: string, id: string, job: any) {
   const conn: PoolConnection = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    // Read before write (point lookup on the primary key, so FOR UPDATE
+    // here only locks this one row) — needed to detect an actual
+    // transition INTO "Ready", not just "the job happens to be Ready",
+    // which is what triggers auto-creating the delivery task below.
+    const [beforeRows] = await conn.execute<any[]>(
+      'SELECT status FROM repair_jobs WHERE id = ? AND user_email = ? FOR UPDATE',
+      [id, email]
+    );
+    const previousStatus = (beforeRows as any[])[0]?.status;
+
     const setClause = JOB_COLUMNS.map(c => `${c.sql} = ?`).join(', ');
     const [result]: any = await conn.execute(
       `UPDATE repair_jobs SET ${setClause} WHERE id = ? AND user_email = ?`,
@@ -267,6 +359,9 @@ export async function updateRepairJob(email: string, id: string, job: any) {
     );
     if (result.affectedRows > 0) {
       await replaceChildren(conn, id, job);
+      if (previousStatus !== 'Ready' && job.status === 'Ready' && OPTIONS_REQUIRING_DELIVERY.has(job.pickupDeliveryOption)) {
+        await ensureLogisticsTask(conn, email, `DELIVERY-${id}`, id, job, 'Pending Delivery');
+      }
     }
     await conn.commit();
     return result.affectedRows > 0;

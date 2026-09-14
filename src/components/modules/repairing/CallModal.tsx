@@ -44,7 +44,7 @@ import {
 import { format, addMonths, parseISO, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { RepairCall, RepairStatus, VisitHistoryEntry, RepairJob, RepairJobPayment, RepairStatusHistoryEntry, RepairJobNotification } from '@/lib/types';
+import { RepairCall, RepairStatus, VisitHistoryEntry, RepairJob, RepairJobPayment, RepairStatusHistoryEntry, RepairJobNotification, PickupDeliveryOption } from '@/lib/types';
 import { generateRepairJobId } from '@/lib/repair-utils';
 import { CustomerFormModal } from '@/components/modules/customers/CustomerFormModal';
 
@@ -126,6 +126,12 @@ const WARRANTY_OPTIONS = [
   'Custom Warranty'
 ];
 
+const PICKUP_DELIVERY_OPTIONS: { value: PickupDeliveryOption; label: string }[] = [
+  { value: 'OUR_PICKUP_CUSTOMER_PICKUP', label: 'Our Pickup + Customer Pickup' },
+  { value: 'OUR_PICKUP_OUR_DELIVERY', label: 'Our Pickup + Our Delivery' },
+  { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
+];
+
 export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [estimatedCost, setEstimatedCost] = useState(0);
@@ -161,6 +167,11 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [notFoundMobile, setNotFoundMobile] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  // Not part of RepairCall (formData's type) for the same reason
+  // customerEmail above isn't — carried separately and folded into the
+  // RepairJob built at submit time. Drives the Repairing -> Logistics
+  // integration in repairJobs.ts.
+  const [pickupDeliveryOption, setPickupDeliveryOption] = useState<PickupDeliveryOption>('OUR_PICKUP_CUSTOMER_PICKUP');
 
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
@@ -206,6 +217,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
       setMatchedCustomer(null);
       setNotFoundMobile('');
       setCustomerEmail('');
+      setPickupDeliveryOption('OUR_PICKUP_CUSTOMER_PICKUP');
     }
   }, [editingCall, isOpen]);
 
@@ -454,6 +466,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
         techTags: formData.techTags || undefined,
         photos: photos.filter(p => !!p),
         storeLocation: formData.storeLocation || undefined,
+        pickupDeliveryOption,
         warrantyDuration: formData.warrantyDuration || undefined,
         warrantyExpiry: warrantyExpiry || undefined,
         productType: formData.category || '',
@@ -904,6 +917,16 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                             </SelectContent>
                          </Select>
                       </div>
+                    </div>
+
+                    <div className="space-y-1">
+                       <Label>Pickup &amp; Delivery</Label>
+                       <Select value={pickupDeliveryOption} onValueChange={v => setPickupDeliveryOption(v as PickupDeliveryOption)}>
+                          <SelectTrigger className="bg-slate-900 border-slate-800 h-10 md:h-11"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800">
+                             {PICKUP_DELIVERY_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                          </SelectContent>
+                       </Select>
                     </div>
 
                     {showCustomWarrantyPicker && (

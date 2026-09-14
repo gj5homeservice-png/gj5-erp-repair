@@ -15,6 +15,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ enti
     const body = await request.json();
     const ok = await updateEntity(config, auth.email, id, body);
     if (!ok) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+    // Repairing -> Logistics integration: completing a repair job's own
+    // auto-created delivery task closes that job out — see
+    // applyLogisticsCompletionToRepairJob() for exactly which conditions
+    // must hold before that happens. A no-op for every other entity/status.
+    if (entity === 'transportation-logs' && typeof body?.status === 'string') {
+      const { applyLogisticsCompletionToRepairJob } = await import('@/lib/erp/repairJobs');
+      await applyLogisticsCompletionToRepairJob(auth.email, id, body.status);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });

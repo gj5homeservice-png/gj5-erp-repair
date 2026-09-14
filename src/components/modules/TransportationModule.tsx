@@ -227,7 +227,7 @@ export function TransportationModule({ store }: { store: any }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Runner Identity</Label>
-                <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11" placeholder="Enter runner name..." />
+                <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} className="bg-slate-950 border-slate-800 h-10 md:h-11 text-[#F8FAFC]" placeholder="Enter runner name..." />
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Link Active Service Job</Label>
@@ -482,11 +482,11 @@ export function TransportationModule({ store }: { store: any }) {
             <div className="p-6 space-y-4">
               <div className="space-y-1">
                  <Label className="text-[10px] uppercase font-bold text-slate-500">Runner Name</Label>
-                 <Input value={editingLog.runnerName} onChange={e => setEditingLog({...editingLog, runnerName: e.target.value})} className="bg-slate-950 border-slate-800" />
+                 <Input value={editingLog.runnerName} onChange={e => setEditingLog({...editingLog, runnerName: e.target.value})} className="bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="space-y-1">
                  <Label className="text-[10px] uppercase font-bold text-slate-500">Runner Mobile</Label>
-                 <Input value={editingLog.runnerMobile} onChange={e => setEditingLog({...editingLog, runnerMobile: e.target.value})} className="bg-slate-950 border-slate-800" />
+                 <Input value={editingLog.runnerMobile} onChange={e => setEditingLog({...editingLog, runnerMobile: e.target.value})} className="bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="space-y-1">
                  <Label className="text-[10px] uppercase font-bold text-slate-500">Transit Status</Label>

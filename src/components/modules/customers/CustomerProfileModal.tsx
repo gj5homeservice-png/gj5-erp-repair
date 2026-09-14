@@ -314,7 +314,7 @@ export function CustomerProfileModal({ customerId, onClose, store }: { customerI
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note — preferred contact time, special instructions..." className="bg-slate-950 border-slate-800 text-xs" rows={2} />
+                    <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note — preferred contact time, special instructions..." className="bg-slate-950 border-slate-800 text-xs text-[#F8FAFC]" rows={2} />
                     <Button size="sm" className="bg-[#0066FF] hover:bg-[#0052CC] shrink-0" onClick={handleAddNote} disabled={savingNote || !newNote.trim()}>Add</Button>
                   </div>
                 </Section>

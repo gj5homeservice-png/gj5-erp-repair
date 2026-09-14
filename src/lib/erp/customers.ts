@@ -162,7 +162,13 @@ export async function createCustomer(email: string, data: any) {
   }
   const existing = await findCustomerByMobile(email, data.mobile);
   if (isDuplicateMobileError(existing, data.mobile)) {
-    throw new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
+    // Carry the existing row on the error itself (not just a message) so the
+    // caller can offer "use this customer" instead of a dead-end error —
+    // Customer ID is the primary business identity, so a duplicate mobile
+    // should route Admin back to the existing record, never create a second.
+    const err: any = new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
+    err.existingCustomer = existing;
+    throw err;
   }
   // Category is a required field in the UI, but never trust that alone —
   // reject anything that isn't one of the known categories rather than

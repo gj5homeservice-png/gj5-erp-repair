@@ -190,7 +190,19 @@ async function nextRepairJobId(conn: PoolConnection, email: string): Promise<str
 // the job insert will use, so a customer row never gets created without the
 // job that triggered it (or vice versa) actually completing.
 async function resolveCustomerId(conn: PoolConnection, email: string, job: any): Promise<string | undefined> {
-  if (!job.mobile) return job.customerId || undefined;
+  // An explicitly-selected Customer ID (from the Repairing "Customer Lookup"
+  // UI) always wins over the mobile-based auto-match below — this is what
+  // stops a second, duplicate customers row being created for an existing
+  // customer whose mobile on file differs from this particular job's mobile.
+  // Verified against this tenant so a stale/foreign id is never attached.
+  if (job.customerId) {
+    const [existingRows] = await conn.execute<any[]>(
+      'SELECT id FROM customers WHERE id = ? AND user_email = ? LIMIT 1',
+      [job.customerId, email]
+    );
+    if ((existingRows as any[])[0]) return job.customerId;
+  }
+  if (!job.mobile) return undefined;
   await conn.beginTransaction();
   try {
     const [rows] = await conn.execute<any[]>(

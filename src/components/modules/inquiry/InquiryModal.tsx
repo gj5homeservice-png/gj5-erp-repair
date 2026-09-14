@@ -103,26 +103,26 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Full Name</Label>
-                       <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                       <Input value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Mobile</Label>
-                          <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                          <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Alternate Mob</Label>
-                          <Input value={formData.alternateMobile} onChange={e => setFormData({...formData, alternateMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                          <Input value={formData.alternateMobile} onChange={e => setFormData({...formData, alternateMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                        </div>
                     </div>
                     <div className="space-y-1">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Address / Area</Label>
-                       <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                       <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Pincode</Label>
-                          <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                          <Input value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Inquiry Source</Label>
@@ -156,12 +156,12 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Brand</Label>
-                          <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Sony" />
+                          <Input value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. Sony" />
                        </div>
                     </div>
                     <div className="space-y-1">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Problem Summary</Label>
-                       <Input value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Screen not working" />
+                       <Input value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. Screen not working" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-1">
@@ -175,7 +175,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
                        </div>
                        <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Exp. Budget (₹)</Label>
-                          <Input type="number" value={formData.expectedBudget} onChange={e => setFormData({...formData, expectedBudget: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                          <Input type="number" value={formData.expectedBudget} onChange={e => setFormData({...formData, expectedBudget: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code text-[#F8FAFC]" />
                        </div>
                     </div>
                  </div>
@@ -187,7 +187,7 @@ export function InquiryModal({ isOpen, onClose, editingInquiry, store }: any) {
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1">
                  <Label className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-2"><Calendar className="w-3 h-3 text-blue-500" /> Follow-up Date</Label>
-                 <Input type="date" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                 <Input type="date" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-[#F8FAFC]" />
               </div>
               <div className="space-y-1">
                  <Label className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-2"><Tag className="w-3 h-3 text-emerald-500" /> Assigned Staff</Label>

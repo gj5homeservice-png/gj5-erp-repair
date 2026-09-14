@@ -177,11 +177,11 @@ function AccountTab({ currentEmail }: { currentEmail: string }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-bold text-slate-500">New Email Address</Label>
-                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="bg-slate-950 border-slate-800 h-11" placeholder="new@email.com" />
+                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="new@email.com" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase font-bold text-slate-500">Current Password</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11" placeholder="••••••••" />
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="••••••••" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -250,16 +250,16 @@ function PasswordTab() {
       <div className="flex items-center gap-2 text-sm font-bold text-slate-200"><Lock className="w-4 h-4 text-blue-400" /> Change Password</div>
       <div className="space-y-1.5">
         <Label className="text-[10px] uppercase font-bold text-slate-500">Current Password</Label>
-        <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11" placeholder="••••••••" />
+        <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="••••••••" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-[10px] uppercase font-bold text-slate-500">New Password</Label>
-        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11" placeholder="••••••••" />
+        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="••••••••" />
         {strengthError && <p className="text-[10px] text-amber-500">{strengthError}</p>}
       </div>
       <div className="space-y-1.5">
         <Label className="text-[10px] uppercase font-bold text-slate-500">Confirm New Password</Label>
-        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11" placeholder="••••••••" />
+        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="••••••••" />
         {mismatch && <p className="text-[10px] text-rose-500">Passwords do not match</p>}
       </div>
       <Button

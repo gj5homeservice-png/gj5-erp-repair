@@ -24,22 +24,31 @@ const EMPTY = {
 };
 
 export function CustomerFormModal({
-  isOpen, onClose, onSaved, editingCustomer,
+  isOpen, onClose, onSaved, editingCustomer, initialMobile,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  // Called with the saved (or, on a duplicate-mobile match, the existing)
+  // customer row so callers like the Repairing "Customer Lookup" flow can
+  // auto-select it immediately — existing callers that ignore the argument
+  // are unaffected.
+  onSaved: (customer?: any) => void;
   editingCustomer?: CustomerListItem | null;
+  // Prefills a new customer's mobile — used when this modal is opened from a
+  // "not found" mobile search elsewhere, so Admin doesn't retype it.
+  initialMobile?: string;
 }) {
   const { toast } = useToast();
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
   const isEditing = !!editingCustomer;
 
   useEffect(() => {
     if (isOpen) {
       setError(null);
+      setDuplicateCustomer(null);
       setForm(editingCustomer ? {
         name: editingCustomer.name || '',
         mobile: editingCustomer.mobile || '',
@@ -51,14 +60,15 @@ export function CustomerFormModal({
         pincode: editingCustomer.pincode || '',
         status: editingCustomer.status || 'Active',
         category: (editingCustomer as any).category || DEFAULT_CUSTOMER_CATEGORY,
-      } : { ...EMPTY });
+      } : { ...EMPTY, mobile: initialMobile || '' });
     }
-  }, [isOpen, editingCustomer]);
+  }, [isOpen, editingCustomer, initialMobile]);
 
   const update = (field: keyof typeof EMPTY, value: string) => setForm(f => ({ ...f, [field]: value }));
 
   const handleSave = async () => {
     setError(null);
+    setDuplicateCustomer(null);
     if (!form.name.trim()) { setError('Customer name is required.'); return; }
     if (!/^[0-9]{10}$/.test(form.mobile)) { setError('A valid 10-digit mobile number is required.'); return; }
     if (!form.category) { setError('Please select a category.'); return; }
@@ -76,9 +86,15 @@ export function CustomerFormModal({
         body: JSON.stringify(form),
       });
       const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Could not save this customer.');
+      if (!res.ok || !json.success) {
+        // A duplicate mobile on create means this customer already exists —
+        // Customer ID is the primary business identity, so offer to use the
+        // existing record instead of leaving Admin stuck on a bare error.
+        if (!isEditing && json.existingCustomer) setDuplicateCustomer(json.existingCustomer);
+        throw new Error(json.error || 'Could not save this customer.');
+      }
       toast({ title: isEditing ? 'Customer Updated' : 'Customer Added', description: `${form.name} saved successfully.` });
-      onSaved();
+      onSaved(json.data);
     } catch (err: any) {
       setError(err?.message || 'Could not save this customer. Please try again.');
     } finally {
@@ -99,25 +115,25 @@ export function CustomerFormModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Customer Name *</Label>
-                <Input value={form.name} onChange={e => update('name', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.name} onChange={e => update('name', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
                 <Label className="text-xs text-slate-400">Mobile Number *</Label>
-                <Input value={form.mobile} onChange={e => update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.mobile} onChange={e => update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
                 <Label className="text-xs text-slate-400">Alternate Mobile</Label>
-                <Input value={form.alternateMobile} onChange={e => update('alternateMobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.alternateMobile} onChange={e => update('alternateMobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Email</Label>
-                <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Category *</Label>
                 <Select value={form.category} onValueChange={v => update('category', v)}>
-                  <SelectTrigger className="mt-1 bg-slate-950 border-slate-800"><SelectValue placeholder="Select Category" /></SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectTrigger className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]"><SelectValue placeholder="Select Category" className="text-[#94A3B8]" /></SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-[#F8FAFC]">
                     {CUSTOMER_CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -130,19 +146,19 @@ export function CustomerFormModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Full Address</Label>
-                <Textarea value={form.address} onChange={e => update('address', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" rows={2} />
+                <Textarea value={form.address} onChange={e => update('address', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" rows={2} />
               </div>
               <div>
                 <Label className="text-xs text-slate-400">City</Label>
-                <Input value={form.city} onChange={e => update('city', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.city} onChange={e => update('city', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
                 <Label className="text-xs text-slate-400">State</Label>
-                <Input value={form.state} onChange={e => update('state', e.target.value)} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.state} onChange={e => update('state', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
                 <Label className="text-xs text-slate-400">Pincode</Label>
-                <Input value={form.pincode} onChange={e => update('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} className="mt-1 bg-slate-950 border-slate-800" />
+                <Input value={form.pincode} onChange={e => update('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
             </div>
           </div>
@@ -150,15 +166,30 @@ export function CustomerFormModal({
           <div>
             <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Status</p>
             <Select value={form.status} onValueChange={v => update('status', v)}>
-              <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectTrigger className="bg-slate-950 border-slate-800 text-[#F8FAFC]"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-800 text-[#F8FAFC]">
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {error && <p className="text-xs text-rose-400 bg-rose-900/20 border border-rose-800 rounded-lg p-2.5">{error}</p>}
+          {error && (
+            <div className="text-xs bg-rose-900/20 border border-rose-800 rounded-lg p-2.5 space-y-2">
+              <p className="text-rose-300">{error}</p>
+              {duplicateCustomer && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-rose-700/60 text-rose-200 hover:bg-rose-900/40 h-8"
+                  onClick={() => onSaved(duplicateCustomer)}
+                >
+                  Use Existing Customer ({duplicateCustomer.id})
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

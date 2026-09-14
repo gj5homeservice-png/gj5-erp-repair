@@ -35,7 +35,11 @@ export async function POST(request: Request) {
     const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists') || error?.message?.includes('valid category');
     if (!isValidation) console.error('[erp/customers] create failed:', error?.message || error);
     return NextResponse.json(
-      { success: false, error: isValidation ? error.message : 'Unable to save this customer. Please try again.' },
+      {
+        success: false,
+        error: isValidation ? error.message : 'Unable to save this customer. Please try again.',
+        ...(error?.existingCustomer ? { existingCustomer: error.existingCustomer } : {}),
+      },
       { status: isValidation ? 400 : 500 }
     );
   }

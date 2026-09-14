@@ -292,11 +292,11 @@ export function TasksModule({ store }: { store: any }) {
                  <div className="space-y-4">
                     <div className="space-y-1.5">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Task Objective (Title)</Label>
-                       <Input value={editingTask?.title || ''} onChange={e => setEditingTask({...editingTask, title: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Backlight Panel Replacement" />
+                       <Input value={editingTask?.title || ''} onChange={e => setEditingTask({...editingTask, title: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. Backlight Panel Replacement" />
                     </div>
                     <div className="space-y-1.5">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Mission Description</Label>
-                       <Textarea value={editingTask?.description || ''} onChange={e => setEditingTask({...editingTask, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-sm" placeholder="Detailed technical instructions..." />
+                       <Textarea value={editingTask?.description || ''} onChange={e => setEditingTask({...editingTask, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-sm text-[#F8FAFC]" placeholder="Detailed technical instructions..." />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1.5">
@@ -338,7 +338,7 @@ export function TasksModule({ store }: { store: any }) {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1.5">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Target Deadline</Label>
-                          <Input type="date" value={editingTask?.dueDate} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs" />
+                          <Input type="date" value={editingTask?.dueDate} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-xs text-[#F8FAFC]" />
                        </div>
                        <div className="space-y-1.5">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Initial Status</Label>

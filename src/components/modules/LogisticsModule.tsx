@@ -184,11 +184,11 @@ export function LogisticsModule({ store }: { store: any }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Name</Label>
-                  <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} placeholder="e.g. Rahul Patel" className="bg-slate-950 border-slate-800 h-11" />
+                  <Input value={formData.runnerName} onChange={e => setFormData({...formData, runnerName: e.target.value})} placeholder="e.g. Rahul Patel" className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Runner Mobile (10-Digit)</Label>
-                  <Input value={formData.runnerMobile} onChange={e => setFormData({...formData, runnerMobile: e.target.value})} placeholder="9988776655" className="bg-slate-950 border-slate-800 h-11" />
+                  <Input value={formData.runnerMobile} onChange={e => setFormData({...formData, runnerMobile: e.target.value})} placeholder="9988776655" className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                 </div>
               </div>
 

@@ -128,6 +128,7 @@ export function RepairingModule({ store }: { store: any }) {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         j.id.toLowerCase().includes(q) ||
+        j.customerId?.toLowerCase().includes(q) ||
         j.customerName.toLowerCase().includes(q) ||
         j.productType.toLowerCase().includes(q) ||
         j.mobile?.includes(searchQuery);

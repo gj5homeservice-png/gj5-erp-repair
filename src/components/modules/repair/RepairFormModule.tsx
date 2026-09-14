@@ -401,10 +401,10 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
                   ))}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-800">
-                  <Input value={newPart.partName} onChange={e => setNewPart({ ...newPart, partName: e.target.value })} placeholder="Part name" className="bg-slate-950 border-slate-800 h-10 text-xs col-span-2 sm:col-span-1" />
-                  <Input type="number" value={newPart.qty} onChange={e => setNewPart({ ...newPart, qty: Number(e.target.value) || 1 })} placeholder="Qty" className="bg-slate-950 border-slate-800 h-10 text-xs" />
-                  <Input type="number" value={newPart.purchaseCost} onChange={e => setNewPart({ ...newPart, purchaseCost: Number(e.target.value) || 0 })} placeholder="Cost" className="bg-slate-950 border-slate-800 h-10 text-xs" />
-                  <Input type="number" value={newPart.sellingPrice} onChange={e => setNewPart({ ...newPart, sellingPrice: Number(e.target.value) || 0 })} placeholder="Sell Price" className="bg-slate-950 border-slate-800 h-10 text-xs" />
+                  <Input value={newPart.partName} onChange={e => setNewPart({ ...newPart, partName: e.target.value })} placeholder="Part name" className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC] col-span-2 sm:col-span-1" />
+                  <Input type="number" value={newPart.qty} onChange={e => setNewPart({ ...newPart, qty: Number(e.target.value) || 1 })} placeholder="Qty" className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]" />
+                  <Input type="number" value={newPart.purchaseCost} onChange={e => setNewPart({ ...newPart, purchaseCost: Number(e.target.value) || 0 })} placeholder="Cost" className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]" />
+                  <Input type="number" value={newPart.sellingPrice} onChange={e => setNewPart({ ...newPart, sellingPrice: Number(e.target.value) || 0 })} placeholder="Sell Price" className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]" />
                   <Button onClick={addPart} size="sm" className="bg-orange-600 hover:bg-orange-700 h-10 text-[10px] uppercase font-bold"><Plus className="w-3.5 h-3.5 mr-1" /> Add</Button>
                 </div>
               </div>
@@ -427,14 +427,14 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
                   ))}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800">
-                  <Input type="number" value={newPayment.amount} onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })} placeholder="Amount" className="bg-slate-950 border-slate-800 h-10 text-xs" />
+                  <Input type="number" value={newPayment.amount} onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })} placeholder="Amount" className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]" />
                   <Select value={newPayment.method} onValueChange={v => setNewPayment({ ...newPayment, method: v as RepairJobPaymentMethod })}>
                     <SelectTrigger className="bg-slate-950 border-slate-800 h-10 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800">
                       {PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Input type="date" value={newPayment.date} onChange={e => setNewPayment({ ...newPayment, date: e.target.value })} className="bg-slate-950 border-slate-800 h-10 text-xs" />
+                  <Input type="date" value={newPayment.date} onChange={e => setNewPayment({ ...newPayment, date: e.target.value })} className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]" />
                   <Button onClick={addPayment} size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-10 text-[10px] uppercase font-bold"><Plus className="w-3.5 h-3.5 mr-1" /> Add</Button>
                 </div>
               </div>
@@ -451,7 +451,7 @@ export function RepairFormModule({ store, editingJob, onDone }: { store: any; ed
                   ))}
                 </div>
                 <div className="flex gap-2 pt-2 border-t border-slate-800">
-                  <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note..." className="bg-slate-950 border-slate-800 min-h-[44px] text-xs flex-1" />
+                  <Textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note..." className="bg-slate-950 border-slate-800 min-h-[44px] text-xs text-[#F8FAFC] flex-1" />
                   <Button onClick={addNote} size="sm" className="bg-cyan-600 hover:bg-cyan-700 h-11 text-[10px] uppercase font-bold shrink-0"><Plus className="w-3.5 h-3.5" /></Button>
                 </div>
               </div>

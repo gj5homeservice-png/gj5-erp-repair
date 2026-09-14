@@ -758,16 +758,16 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase font-bold text-slate-400">Official Asset Name</Label>
-                          <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Backlight Strips 32\" />
+                          <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. Backlight Strips 32\" />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Brand Hierarchy</Label>
-                              <Input value={formData.brand || ''} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. Sony" />
+                              <Input value={formData.brand || ''} onChange={e => setFormData({...formData, brand: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. Sony" />
                            </div>
                            <div className="space-y-1">
                               <Label className="text-[10px] uppercase font-bold text-slate-400">Category Node</Label>
-                              <Input value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-slate-950 border-slate-800 h-11" />
+                              <Input value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                            </div>
                         </div>
                      </div>
@@ -782,7 +782,7 @@ export function StockModule({ store }: { store: any }) {
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Purchase Cost (₹)</Label>
-                           <Input type="number" value={formData.purchasePrice || 0} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                           <Input type="number" value={formData.purchasePrice || 0} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 font-code text-[#F8FAFC]" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Market Rate (₹)</Label>
@@ -790,7 +790,7 @@ export function StockModule({ store }: { store: any }) {
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Min Alert Level</Label>
-                           <Input type="number" value={formData.minStockLevel || 0} onChange={e => setFormData({...formData, minStockLevel: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11" />
+                           <Input type="number" value={formData.minStockLevel || 0} onChange={e => setFormData({...formData, minStockLevel: Number(e.target.value)})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" />
                         </div>
                      </div>
                   </div>
@@ -800,22 +800,22 @@ export function StockModule({ store }: { store: any }) {
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Supplier Authority</Label>
-                           <Input value={formData.supplierName || ''} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="Authorized Vendor" />
+                           <Input value={formData.supplierName || ''} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="Authorized Vendor" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Supplier Mobile</Label>
-                           <Input value={formData.supplierMobile || ''} onChange={e => setFormData({...formData, supplierMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code" />
+                           <Input value={formData.supplierMobile || ''} onChange={e => setFormData({...formData, supplierMobile: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-[#F8FAFC]" />
                         </div>
                         <div className="space-y-1">
                            <Label className="text-[10px] uppercase font-bold text-slate-400">Warranty Context</Label>
-                           <Input value={formData.warrantyPeriod || ''} onChange={e => setFormData({...formData, warrantyPeriod: e.target.value})} className="bg-slate-950 border-slate-800 h-11" placeholder="e.g. 6 Months" />
+                           <Input value={formData.warrantyPeriod || ''} onChange={e => setFormData({...formData, warrantyPeriod: e.target.value})} className="bg-slate-950 border-slate-800 h-11 text-[#F8FAFC]" placeholder="e.g. 6 Months" />
                         </div>
                      </div>
                   </div>
 
                   <div className="space-y-1">
                      <Label className="text-[10px] uppercase font-bold text-slate-400">Internal SKU Context</Label>
-                     <Textarea value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-xs resize-none" placeholder="Detailed technical specifications..." />
+                     <Textarea value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-slate-950 border-slate-800 min-h-[100px] text-xs text-[#F8FAFC] resize-none" placeholder="Detailed technical specifications..." />
                   </div>
                </div>
 
@@ -846,7 +846,7 @@ export function StockModule({ store }: { store: any }) {
                     <div className="space-y-1">
                        <Label className="text-[10px] uppercase font-bold text-slate-400">Barcode Hierarchy</Label>
                        <div className="flex gap-2">
-                          <Input value={formData.barcode || ''} onChange={e => setFormData({...formData, barcode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-xs" placeholder="Laser/Scan ID" />
+                          <Input value={formData.barcode || ''} onChange={e => setFormData({...formData, barcode: e.target.value})} className="bg-slate-950 border-slate-800 h-11 font-code text-xs text-[#F8FAFC]" placeholder="Laser/Scan ID" />
                           <Button variant="outline" className="h-11 w-12 border-slate-800" onClick={() => setFormData({...formData, barcode: `BC-${Date.now().toString().slice(-8)}`})}><BarcodeIcon className="w-4 h-4" /></Button>
                        </div>
                     </div>

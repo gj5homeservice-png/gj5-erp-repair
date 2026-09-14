@@ -211,7 +211,7 @@ export function OnlineBookingsModule({ store }: { store: any }) {
               {deviceTypes.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input value={filters.brand} onChange={e => { setFilters(f => ({ ...f, brand: e.target.value })); setPage(1); }} placeholder="Filter by Brand..." className="h-10 bg-slate-950 border-slate-800 text-xs" />
+          <Input value={filters.brand} onChange={e => { setFilters(f => ({ ...f, brand: e.target.value })); setPage(1); }} placeholder="Filter by Brand..." className="h-10 bg-slate-950 border-slate-800 text-xs text-[#F8FAFC]" />
           <Select value={filters.technician} onValueChange={v => { setFilters(f => ({ ...f, technician: v })); setPage(1); }}>
             <SelectTrigger className="h-10 bg-slate-950 border-slate-800 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800">
@@ -249,11 +249,11 @@ export function OnlineBookingsModule({ store }: { store: any }) {
           </Select>
           {filters.datePreset === 'Custom Range' && (
             <>
-              <Input type="date" value={filters.dateFrom} onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))} className="h-10 bg-slate-950 border-slate-800 text-xs" />
-              <Input type="date" value={filters.dateTo} onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} className="h-10 bg-slate-950 border-slate-800 text-xs" />
+              <Input type="date" value={filters.dateFrom} onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))} className="h-10 bg-slate-950 border-slate-800 text-xs text-[#F8FAFC]" />
+              <Input type="date" value={filters.dateTo} onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} className="h-10 bg-slate-950 border-slate-800 text-xs text-[#F8FAFC]" />
             </>
           )}
-          <Input type="date" value={filters.preferredDate} onChange={e => { setFilters(f => ({ ...f, preferredDate: e.target.value })); setPage(1); }} placeholder="Preferred Date" className="h-10 bg-slate-950 border-slate-800 text-xs" />
+          <Input type="date" value={filters.preferredDate} onChange={e => { setFilters(f => ({ ...f, preferredDate: e.target.value })); setPage(1); }} placeholder="Preferred Date" className="h-10 bg-slate-950 border-slate-800 text-xs text-[#F8FAFC]" />
           <Select value={sortBy} onValueChange={v => setSortBy(v as SortOption)}>
             <SelectTrigger className="h-10 bg-slate-950 border-slate-800 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800">

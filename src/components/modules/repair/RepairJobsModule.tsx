@@ -93,7 +93,7 @@ export function RepairJobsModule({ store }: { store: any }) {
   const filtered = useMemo(() => {
     return jobs.filter(j => {
       const q = search.toLowerCase();
-      const matchesSearch = !q || j.id.toLowerCase().includes(q) || j.customerName?.toLowerCase().includes(q) ||
+      const matchesSearch = !q || j.id.toLowerCase().includes(q) || j.customerId?.toLowerCase().includes(q) || j.customerName?.toLowerCase().includes(q) ||
         j.mobile?.includes(q) || j.serialNumber?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'All' || j.status === statusFilter;
       const matchesTechnician = technicianFilter === 'All' || j.technicianId === technicianFilter;

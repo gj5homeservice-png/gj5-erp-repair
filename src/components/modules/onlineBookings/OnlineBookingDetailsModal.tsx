@@ -285,7 +285,7 @@ export function OnlineBookingDetailsModal({
       <Dialog open={showReject} onOpenChange={(v) => !v && closeSubDialogs()}>
         <DialogContent className="bg-[#0F172A] border-slate-800 text-slate-100">
           <DialogHeader><DialogTitle>Reject Booking — {booking.id}</DialogTitle></DialogHeader>
-          <Textarea value={reasonText} onChange={e => setReasonText(e.target.value)} placeholder="Reason for rejection (shown internally)" className="bg-slate-950 border-slate-800 min-h-[90px]" />
+          <Textarea value={reasonText} onChange={e => setReasonText(e.target.value)} placeholder="Reason for rejection (shown internally)" className="bg-slate-950 border-slate-800 min-h-[90px] text-[#F8FAFC]" />
           <DialogFooter>
             <Button variant="ghost" onClick={closeSubDialogs}>Cancel</Button>
             <Button className="bg-rose-600 hover:bg-rose-700" onClick={handleReject}>Reject Booking</Button>
@@ -297,7 +297,7 @@ export function OnlineBookingDetailsModal({
       <Dialog open={showCancel} onOpenChange={(v) => !v && closeSubDialogs()}>
         <DialogContent className="bg-[#0F172A] border-slate-800 text-slate-100">
           <DialogHeader><DialogTitle>Cancel Booking — {booking.id}</DialogTitle></DialogHeader>
-          <Textarea value={reasonText} onChange={e => setReasonText(e.target.value)} placeholder="Reason for cancellation" className="bg-slate-950 border-slate-800 min-h-[90px]" />
+          <Textarea value={reasonText} onChange={e => setReasonText(e.target.value)} placeholder="Reason for cancellation" className="bg-slate-950 border-slate-800 min-h-[90px] text-[#F8FAFC]" />
           <DialogFooter>
             <Button variant="ghost" onClick={closeSubDialogs}>Back</Button>
             <Button className="bg-slate-700 hover:bg-slate-600" onClick={handleCancel}>Cancel Booking</Button>
@@ -344,7 +344,7 @@ export function OnlineBookingDetailsModal({
               {ALL_STATUSES.filter(s => s !== 'Converted').map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Textarea value={statusNote} onChange={e => setStatusNote(e.target.value)} placeholder="Note (optional)" className="bg-slate-950 border-slate-800" />
+          <Textarea value={statusNote} onChange={e => setStatusNote(e.target.value)} placeholder="Note (optional)" className="bg-slate-950 border-slate-800 text-[#F8FAFC]" />
           <DialogFooter>
             <Button variant="ghost" onClick={closeSubDialogs}>Cancel</Button>
             <Button className="bg-[#0066FF] hover:bg-blue-600" onClick={handleChangeStatus}>Update Status</Button>

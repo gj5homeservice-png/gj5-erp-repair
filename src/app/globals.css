@@ -240,6 +240,16 @@ body.gj5-admin-active:not(.dark) .text-slate-100 { color: #0F172A; }
 body.gj5-admin-active:not(.dark) .text-slate-200 { color: #1E293B; }
 body.gj5-admin-active:not(.dark) .text-slate-300 { color: #334155; }
 
+/* text-[#F8FAFC] is this app's own convention for "input text on a dark
+   field" (used across nearly every module's Input/Textarea call sites) —
+   #F8FAFC is the exact same hex this file uses as the LIGHT-mode background
+   color above, so without this override every one of those inputs renders
+   near-white text on a near-white/white field in light mode: invisible.
+   Root cause confirmed by inspecting a live rendered input's computed
+   color/background in light mode (see report) — this one rule fixes every
+   affected input at once rather than editing each call site. */
+body.gj5-admin-active:not(.dark) .text-\[\#F8FAFC\] { color: #0F172A; }
+
 /* Muted/secondary text (400/500) — readable mid-gray on white, never pure
    black (keeps the same visual hierarchy step below primary text) */
 body.gj5-admin-active:not(.dark) .text-slate-400,

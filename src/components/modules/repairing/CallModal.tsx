@@ -37,13 +37,21 @@ import {
   ChevronDown,
   Camera,
   Trash2,
-  Wallet
+  Wallet,
+  Loader2,
+  UserCheck
 } from 'lucide-react';
 import { format, addMonths, parseISO, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { RepairCall, RepairStatus, VisitHistoryEntry, RepairJob, RepairJobPayment, RepairStatusHistoryEntry, RepairJobNotification } from '@/lib/types';
 import { generateRepairJobId } from '@/lib/repair-utils';
+import { CustomerFormModal } from '@/components/modules/customers/CustomerFormModal';
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('gj5_auth_token');
+}
 
 const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Canon', 'Epson', 'Hikvision', 'CP Plus', 'Dahua', 'Other'];
 
@@ -143,6 +151,17 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
     return false;
   });
 
+  // Customer Master lookup for the New Repair form — search by Customer ID
+  // OR Mobile Number, auto-fill on match, "not found" -> Add New Customer.
+  const [lookupCustomerId, setLookupCustomerId] = useState('');
+  const [lookupMobile, setLookupMobile] = useState('');
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [customerLookupStatus, setCustomerLookupStatus] = useState<'idle' | 'found' | 'not_found'>('idle');
+  const [matchedCustomer, setMatchedCustomer] = useState<any | null>(null);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [notFoundMobile, setNotFoundMobile] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
     category: 'TV Repair', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
@@ -181,8 +200,63 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
       setProblemSearch('');
       setIsOldEntry(false);
       setPhotos(['', '']);
+      setLookupCustomerId('');
+      setLookupMobile('');
+      setCustomerLookupStatus('idle');
+      setMatchedCustomer(null);
+      setNotFoundMobile('');
+      setCustomerEmail('');
     }
   }, [editingCall, isOpen]);
+
+  // Populates the repair form from a Customer Master record — used by both
+  // Customer ID and Mobile Number lookup, and by the "Add New Customer" /
+  // "Use Existing Customer" flows below. Customer ID stays the single source
+  // of truth: once set here, resolveCustomerId() on the server prefers it
+  // over any mobile-based auto-match, so this never creates a second record.
+  const applyCustomerMatch = (customer: any) => {
+    setFormData(prev => ({
+      ...prev,
+      customerId: customer.id,
+      customerName: customer.name || '',
+      mobile: customer.mobile || '',
+      address: customer.address || '',
+      pincode: customer.pincode || '',
+    }));
+    setCustomerEmail(customer.email || '');
+    setMatchedCustomer(customer);
+    setCustomerLookupStatus('found');
+    setNotFoundMobile('');
+  };
+
+  const handleCustomerSearch = async (mode: 'id' | 'mobile') => {
+    const raw = mode === 'id' ? lookupCustomerId.trim() : lookupMobile.trim();
+    if (!raw) return;
+    setLookupBusy(true);
+    setMatchedCustomer(null);
+    try {
+      const token = getAuthToken();
+      const res = await fetch('/api/erp/customers', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Could not search customers.');
+      const list: any[] = json.data || [];
+      const match = mode === 'id'
+        ? list.find(c => c.id.toLowerCase() === raw.toLowerCase())
+        : list.find(c => c.mobile === raw);
+      if (match) {
+        applyCustomerMatch(match);
+      } else {
+        setCustomerLookupStatus('not_found');
+        setNotFoundMobile(mode === 'mobile' ? raw : '');
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Lookup Failed', description: err?.message || 'Could not search customers. Please try again.' });
+    } finally {
+      setLookupBusy(false);
+    }
+  };
 
   const handlePhotoSlotClick = (index: number) => {
     setActivePhotoIndex(index);
@@ -249,17 +323,18 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
       ...prev,
       category: category,
       id: nextId,
-      customerId: prev.customerId || `${store.settings?.customerIdPrefix || 'GJ5'}${1001 + (store.repairJobs?.length || 0)}`,
+      // Customer Name/ID/Mobile/Address/Pincode are intentionally left
+      // untouched here — they belong to the Customer Lookup section above,
+      // and this function also runs on every Service Category change, so
+      // touching them would silently disconnect an already-selected
+      // Customer Master record (see Section 2: never fabricate a Customer
+      // ID; it must only ever come from an actual customers row).
       techTags: [],
       status: 'Pending',
       warrantyDuration: store.settings?.defaultWarrantyDuration || 'No Warranty',
       storeLocation: 'GODOWN',
       visitHistory: [],
       repeatCount: 0,
-      customerName: '',
-      mobile: '',
-      address: '',
-      pincode: '',
       model: '',
       screenSize: '',
       problemDescription: '',
@@ -372,6 +447,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
         id: jobId,
         customerName: formData.customerName || '',
         mobile: formData.mobile || '',
+        email: customerEmail || undefined,
         address: formData.address || undefined,
         customerId: formData.customerId || undefined,
         pincode: formData.pincode || undefined,
@@ -524,6 +600,65 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                       </div>
                     </div>
 
+                    <div className="p-4 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <Label className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                          <Search className="w-3.5 h-3.5 text-blue-400" /> Customer Lookup
+                        </Label>
+                        {matchedCustomer && (
+                          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] uppercase flex items-center gap-1">
+                            <UserCheck className="w-3 h-3" /> Loaded from Customer Master
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Search by Customer ID"
+                            value={lookupCustomerId}
+                            onChange={e => setLookupCustomerId(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCustomerSearch('id'); } }}
+                            className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]"
+                          />
+                          <Button type="button" size="icon" variant="outline" className="border-slate-700 h-10 w-10 shrink-0" onClick={() => handleCustomerSearch('id')} disabled={lookupBusy}>
+                            {lookupBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Search by Mobile Number"
+                            value={lookupMobile}
+                            onChange={e => setLookupMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCustomerSearch('mobile'); } }}
+                            className="bg-slate-950 border-slate-800 h-10 text-xs text-[#F8FAFC]"
+                          />
+                          <Button type="button" size="icon" variant="outline" className="border-slate-700 h-10 w-10 shrink-0" onClick={() => handleCustomerSearch('mobile')} disabled={lookupBusy}>
+                            {lookupBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {customerLookupStatus === 'not_found' && (
+                        <div className="flex items-center justify-between gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex-wrap">
+                          <p className="text-[11px] text-amber-400 font-bold">Customer not found in Customer Master.</p>
+                          <Button type="button" size="sm" className="bg-[#0066FF] hover:bg-[#0052CC] h-8 text-[11px]" onClick={() => setShowAddCustomerModal(true)}>
+                            <Plus className="w-3.5 h-3.5 mr-1" /> Add New Customer
+                          </Button>
+                        </div>
+                      )}
+
+                      {matchedCustomer && (
+                        <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px]">
+                          <p><span className="text-slate-500">ID:</span> <span className="text-emerald-400 font-code font-bold">{matchedCustomer.id}</span></p>
+                          <p><span className="text-slate-500">Category:</span> <span className="text-slate-200 font-bold">{matchedCustomer.category || '—'}</span></p>
+                          <p><span className="text-slate-500">Alt. Mobile:</span> <span className="text-slate-200 font-bold">{matchedCustomer.alternateMobile || '—'}</span></p>
+                          <p><span className="text-slate-500">City:</span> <span className="text-slate-200 font-bold">{matchedCustomer.city || '—'}</span></p>
+                          <p><span className="text-slate-500">State:</span> <span className="text-slate-200 font-bold">{matchedCustomer.state || '—'}</span></p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label>Customer Name</Label>
@@ -534,7 +669,9 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-slate-500">Cust ID</Label>
+                        <Label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+                          Cust ID {formData.customerId && <UserCheck className="w-3 h-3 text-emerald-500" />}
+                        </Label>
                         <Input readOnly value={formData.customerId || ''} className="bg-slate-900 border-slate-800 font-code h-10 md:h-11 text-[#F8FAFC]" />
                       </div>
                     </div>
@@ -557,13 +694,24 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label>Address</Label>
-                      <Input
-                        value={formData.address || ''}
-                        onChange={e => setFormData({...formData, address: e.target.value})}
-                        className="bg-slate-900 border-slate-800 h-10 md:h-11 text-[#F8FAFC]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label>Address</Label>
+                        <Input
+                          value={formData.address || ''}
+                          onChange={e => setFormData({...formData, address: e.target.value})}
+                          className="bg-slate-900 border-slate-800 h-10 md:h-11 text-[#F8FAFC]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          value={customerEmail}
+                          onChange={e => setCustomerEmail(e.target.value)}
+                          className="bg-slate-900 border-slate-800 h-10 md:h-11 text-[#F8FAFC]"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] uppercase font-bold text-slate-500">Technician Tags</Label>
@@ -904,6 +1052,19 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
              <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
+
+        <CustomerFormModal
+          isOpen={showAddCustomerModal}
+          onClose={() => setShowAddCustomerModal(false)}
+          initialMobile={notFoundMobile}
+          onSaved={(customer: any) => {
+            setShowAddCustomerModal(false);
+            if (customer) {
+              applyCustomerMatch(customer);
+              toast({ title: 'Customer Selected', description: `${customer.name || customer.id} linked to this repair job.` });
+            }
+          }}
+        />
 
         <style jsx global>{`
           .gj5-registry-form input:-webkit-autofill,

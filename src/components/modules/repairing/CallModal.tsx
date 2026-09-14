@@ -450,7 +450,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
     return (
       <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20 gj5-registry-form">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">New Repair</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">New Repair</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Repair Module</p>
         </div>
 

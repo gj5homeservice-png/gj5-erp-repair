@@ -260,7 +260,7 @@ export function SalaryModule({ store }: { store: any }) {
           </MobileCard>
         ))}
         {filteredSalaries.length === 0 && (
-          <div className="h-32 flex items-center justify-center text-center text-slate-700 font-medium italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No records found. Run the calculation matrix for active associates.</div>
+          <div className="h-32 flex items-center justify-center text-center text-slate-600 font-medium italic text-sm rounded-2xl border border-slate-800 bg-slate-900/20">No records found. Run the calculation matrix for active associates.</div>
         )}
       </MobileCardList>
 
@@ -319,7 +319,7 @@ export function SalaryModule({ store }: { store: any }) {
             ))}
             {filteredSalaries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="h-48 text-center text-slate-700 font-medium italic">
+                <TableCell colSpan={4} className="h-48 text-center text-slate-600 font-medium italic">
                   No records found. Run the calculation matrix for active associates.
                 </TableCell>
               </TableRow>

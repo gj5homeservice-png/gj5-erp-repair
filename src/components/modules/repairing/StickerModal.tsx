@@ -86,7 +86,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: S
                 </div>
                 
                 <div className="text-center mt-1">
-                  <span className="text-[10px] font-black uppercase tracking-tighter bg-slate-900 text-white px-2 py-0.5 rounded leading-none">
+                  <span className="text-[10px] font-black uppercase tracking-tighter bg-slate-900 text-slate-100 px-2 py-0.5 rounded leading-none">
                     ID: {call.customerId}
                   </span>
                 </div>
@@ -124,7 +124,7 @@ export function StickerModal({ isOpen, onClose, call, shopLogo, companyName }: S
               <Settings className="w-4 h-4" /> Calibration Logic
             </h4>
             <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4 italic">
-              <li>Printer: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
+              <li>Printer: <span className="text-slate-100 font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
               <li>QR Node: <span className="text-emerald-400">Full Metadata Manifest</span>.</li>
               <li>Barcode Node: <span className="text-blue-400">Raw Alphanumeric Job ID</span>.</li>
             </ul>

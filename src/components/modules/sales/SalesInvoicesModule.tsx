@@ -99,7 +99,7 @@ export function SalesInvoicesModule({ store }: { store: any }) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Sales Invoices</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Sales Invoices</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">System-Generated & Permanent</p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function SalesInvoicesModule({ store }: { store: any }) {
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="text-lg font-headline font-bold text-white">{viewingInvoice.invoiceNumber}</h3>
+              <h3 className="text-lg font-headline font-bold text-slate-100">{viewingInvoice.invoiceNumber}</h3>
               <button onClick={() => setViewingInvoice(null)} className="text-slate-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-2 text-xs">

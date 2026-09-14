@@ -91,7 +91,7 @@ export function SidebarCustomizationPanel({ store }: { store: any }) {
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-lg font-headline font-bold text-white">Sidebar Menu Order</h3>
+        <h3 className="text-lg font-headline font-bold text-slate-100">Sidebar Menu Order</h3>
         <p className="text-xs text-slate-500 mt-1">
           Drag modules to reorder the sidebar, or hide ones you don&apos;t use. Changes apply everywhere you&apos;re signed in once saved.
         </p>
@@ -133,7 +133,7 @@ export function SidebarCustomizationPanel({ store }: { store: any }) {
                 <Badge className="bg-slate-800/60 text-slate-400 border-slate-700 text-[9px] uppercase shrink-0">Hidden</Badge>
               )}
               {isLocked ? (
-                <span title="Settings always stays visible" className="p-2 text-slate-700 shrink-0">
+                <span title="Settings always stays visible" className="p-2 text-slate-600 shrink-0">
                   <Lock className="w-4 h-4" />
                 </span>
               ) : (

@@ -472,7 +472,7 @@ export function StockModule({ store }: { store: any }) {
                                     </div>
                                   ))}
                                   {(!viewingItem.images || viewingItem.images.length === 0) && (
-                                    <div className="col-span-2 aspect-video rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-700 gap-2">
+                                    <div className="col-span-2 aspect-video rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-600 gap-2">
                                        <ImageIcon className="w-8 h-8" />
                                        <span className="text-xs font-bold uppercase">No Visuals Registered</span>
                                     </div>
@@ -531,7 +531,7 @@ export function StockModule({ store }: { store: any }) {
                                           <select 
                                             value={adjType} 
                                             onChange={e => setAdjType(e.target.value as StockMovementType)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl h-10 px-3 text-xs text-white"
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl h-10 px-3 text-xs text-slate-100"
                                           >
                                             {MOVEMENT_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                                           </select>
@@ -551,7 +551,7 @@ export function StockModule({ store }: { store: any }) {
                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex flex-col justify-center items-center text-center gap-2">
                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Current Assets In-Hand</p>
-                                       <h3 className={cn("text-5xl font-headline font-black", (viewingItem.quantity || 0) <= (viewingItem.minStockLevel || 0) ? "text-amber-500" : "text-white")}>{viewingItem.quantity || 0}</h3>
+                                       <h3 className={cn("text-5xl font-headline font-black", (viewingItem.quantity || 0) <= (viewingItem.minStockLevel || 0) ? "text-amber-500" : "text-slate-100")}>{viewingItem.quantity || 0}</h3>
                                        <Badge variant="outline" className="text-[9px] uppercase border-slate-700">{viewingItem.minStockLevel || 0} Min Target</Badge>
                                     </div>
                                     <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex flex-col justify-center items-center text-center gap-2">
@@ -603,7 +603,7 @@ export function StockModule({ store }: { store: any }) {
                           </MobileCard>
                         ))}
                         {(!viewingItem.history || viewingItem.history.length === 0) && (
-                          <div className="h-32 flex items-center justify-center text-center text-slate-700 text-xs italic rounded-2xl border border-slate-800 bg-slate-950">No transaction movement recorded for this asset.</div>
+                          <div className="h-32 flex items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-950">No transaction movement recorded for this asset.</div>
                         )}
                       </MobileCardList>
 
@@ -652,7 +652,7 @@ export function StockModule({ store }: { store: any }) {
                                  </TableRow>
                                ))}
                                {(!viewingItem.history || viewingItem.history.length === 0) && (
-                                 <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-700 text-xs italic">No transaction movement recorded for this asset.</TableCell></TableRow>
+                                 <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-600 text-xs italic">No transaction movement recorded for this asset.</TableCell></TableRow>
                                )}
                             </TableBody>
                          </Table>
@@ -705,7 +705,7 @@ export function StockModule({ store }: { store: any }) {
                          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 space-y-4">
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Printer className="w-4 h-4" /> Calibration Logic</h4>
                             <ul className="text-[10px] text-slate-400 space-y-3 list-disc pl-4 italic leading-relaxed">
-                               <li>Primary Sticker Target: <span className="text-white font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
+                               <li>Primary Sticker Target: <span className="text-slate-100 font-bold">100mm x 50mm (4x2 Inch)</span>.</li>
                                <li>Left Node: <span className="text-blue-400">High-Density QR</span> containing full JSON asset metadata.</li>
                                <li>Right Node: <span className="text-emerald-400">Linear Barcode (Code128)</span> for laser scanner compatibility.</li>
                                <li>Security: <span className="text-rose-400 font-bold">Tamper-Proof Tracking</span> enabled for SKU identification.</li>
@@ -714,7 +714,7 @@ export function StockModule({ store }: { store: any }) {
                          </div>
                          
                          <div className="p-6 border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-slate-700"><Camera className="w-6 h-6" /></div>
+                            <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-slate-600"><Camera className="w-6 h-6" /></div>
                             <div className="space-y-1">
                                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Camera Link Active</h5>
                                <p className="text-[10px] text-slate-600 leading-tight">Use mobile console to scan existing asset tags for instant reconciliation.</p>
@@ -826,7 +826,7 @@ export function StockModule({ store }: { store: any }) {
                         <span className="text-[8px] font-black text-blue-500 uppercase">{formData.images?.length || 0} / 10 Assets</span>
                      </div>
                      <div className="p-8 bg-slate-950 rounded-3xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center gap-3 group hover:border-blue-500/50 cursor-pointer transition-all" onClick={() => fileInputRef.current?.click()}>
-                        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-700 group-hover:bg-blue-600/10 group-hover:text-blue-500 transition-all"><Camera className="w-5 h-5" /></div>
+                        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-600 group-hover:bg-blue-600/10 group-hover:text-blue-500 transition-all"><Camera className="w-5 h-5" /></div>
                         <span className="text-[10px] text-slate-600 uppercase font-black">Upload ID Photos</span>
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
                      </div>

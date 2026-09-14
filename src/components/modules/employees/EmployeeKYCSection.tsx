@@ -49,7 +49,7 @@ export function EmployeeKYCSection({ formData, setFormData, store }: EmployeeKYC
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-xl font-headline font-bold text-white">KYC & Identity Verification</h2>
+          <h2 className="text-xl font-headline font-bold text-slate-100">KYC & Identity Verification</h2>
           <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Secure Associate Documentation</p>
         </div>
       </div>

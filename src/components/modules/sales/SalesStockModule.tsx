@@ -97,7 +97,7 @@ export function SalesStockModule({ store }: { store: any }) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Sales Stock</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Sales Stock</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Products Available For Sale</p>
         </div>
         <Button onClick={openAdd} className="bg-[#0066FF] hover:bg-blue-600 h-10 font-bold uppercase text-[10px] px-6">
@@ -181,7 +181,7 @@ export function SalesStockModule({ store }: { store: any }) {
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="text-lg font-headline font-bold text-white">{editingItem ? 'Edit Product' : 'Add Product'}</h3>
+              <h3 className="text-lg font-headline font-bold text-slate-100">{editingItem ? 'Edit Product' : 'Add Product'}</h3>
               <button onClick={() => setModalOpen(false)} className="text-slate-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
@@ -207,7 +207,7 @@ export function SalesStockModule({ store }: { store: any }) {
       {adjustItem && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-sm shadow-2xl p-6">
-            <h3 className="text-lg font-headline font-bold text-white mb-4">{adjustDirection === 'IN' ? 'Stock In' : 'Stock Out'} — {adjustItem.name}</h3>
+            <h3 className="text-lg font-headline font-bold text-slate-100 mb-4">{adjustDirection === 'IN' ? 'Stock In' : 'Stock Out'} — {adjustItem.name}</h3>
             <Label className="text-[10px] uppercase font-bold text-slate-500">Quantity</Label>
             <Input type="number" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} className="bg-slate-900 border-slate-800 h-11 mt-1 mb-6 text-[#F8FAFC]" />
             <div className="flex gap-3">
@@ -222,7 +222,7 @@ export function SalesStockModule({ store }: { store: any }) {
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="text-lg font-headline font-bold text-white">Stock History — {historyItem.name}</h3>
+              <h3 className="text-lg font-headline font-bold text-slate-100">Stock History — {historyItem.name}</h3>
               <button onClick={() => setHistoryItem(null)} className="text-slate-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-3">

@@ -39,7 +39,7 @@ export function AnalyticsModule({ store }: { store: any }) {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-headline font-bold text-white">Monthly Fiscal Audit</h2>
+            <h2 className="text-xl md:text-2xl font-headline font-bold text-slate-100">Monthly Fiscal Audit</h2>
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Real-time Revenue & GST Monitoring</p>
           </div>
         </div>

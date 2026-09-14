@@ -42,7 +42,7 @@ export function RepairDashboardModule({ store }: { store: any }) {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Repair Dashboard</h2>
+        <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Repair Dashboard</h2>
         <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Repair Module Overview</p>
       </div>
 

@@ -135,7 +135,7 @@ function ProfileSectionCard({
           <Icon className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-base font-headline font-bold text-white">{title}</h3>
+          <h3 className="text-base font-headline font-bold text-slate-100">{title}</h3>
           <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">{subtitle}</p>
         </div>
       </div>
@@ -613,18 +613,18 @@ export function EmployeesModule({ store }: { store: any }) {
                     <UserPlus className="w-5 h-5" />
                  </div>
                  <div className="min-w-0">
-                   <DialogTitle className="text-lg sm:text-xl font-headline font-bold text-white truncate">
+                   <DialogTitle className="text-lg sm:text-xl font-headline font-bold text-slate-100 truncate">
                      {editingEmployee.id ? 'Modify Associate Data' : 'Associate Lifecycle Entry'}
                    </DialogTitle>
                    <DialogDescription className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Master Workforce Database Registry</DialogDescription>
                  </div>
               </div>
               <TabsList className="bg-slate-800/50 border border-slate-700 flex-wrap h-auto justify-start w-full lg:w-auto">
-                <TabsTrigger value="profile" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Profile</TabsTrigger>
-                <TabsTrigger value="login" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Login &amp; Security</TabsTrigger>
-                <TabsTrigger value="access" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Permissions</TabsTrigger>
-                {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">KYC Vault</TabsTrigger>}
-                {canAccessAuditLogs && <TabsTrigger value="activity" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-white">Activity</TabsTrigger>}
+                <TabsTrigger value="profile" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-slate-100">Profile</TabsTrigger>
+                <TabsTrigger value="login" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-slate-100">Login &amp; Security</TabsTrigger>
+                <TabsTrigger value="access" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-slate-100">Permissions</TabsTrigger>
+                {canAccessKyc && <TabsTrigger value="kyc" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-slate-100">KYC Vault</TabsTrigger>}
+                {canAccessAuditLogs && <TabsTrigger value="activity" className="text-xs uppercase font-bold text-slate-300 data-[state=active]:text-slate-100">Activity</TabsTrigger>}
               </TabsList>
             </DialogHeader>
 
@@ -640,7 +640,7 @@ export function EmployeesModule({ store }: { store: any }) {
                                <Camera className="w-8 h-8 text-slate-500 group-hover:text-blue-400 transition-colors" />
                             )}
                             <div className="absolute inset-0 bg-blue-600/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                               <span className="text-[10px] font-black uppercase text-white">Change Photo</span>
+                               <span className="text-[10px] font-black uppercase text-slate-100">Change Photo</span>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                          </div>

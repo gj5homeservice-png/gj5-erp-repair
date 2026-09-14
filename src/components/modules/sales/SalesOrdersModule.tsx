@@ -73,7 +73,7 @@ export function SalesOrdersModule({ store, onGoToInvoices, onGoToLogistics }: { 
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Sales Orders</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Sales Orders</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">All Retail Sales Records</p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function SalesOrdersModule({ store, onGoToInvoices, onGoToLogistics }: { 
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="text-lg font-headline font-bold text-white">Order {viewingOrder.id}</h3>
+              <h3 className="text-lg font-headline font-bold text-slate-100">Order {viewingOrder.id}</h3>
               <button onClick={() => setViewingOrder(null)} className="text-slate-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-2 text-xs">
@@ -178,7 +178,7 @@ export function SalesOrdersModule({ store, onGoToInvoices, onGoToLogistics }: { 
       {deletingId && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-rose-500/30 rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center">
-            <h3 className="text-lg font-headline font-bold text-white mb-2">Delete Order?</h3>
+            <h3 className="text-lg font-headline font-bold text-slate-100 mb-2">Delete Order?</h3>
             <p className="text-xs text-slate-400 mb-6">This will permanently remove order {deletingId} and its linked delivery record.</p>
             <div className="flex gap-3">
               <Button variant="ghost" className="flex-1" onClick={() => setDeletingId(null)}>Cancel</Button>

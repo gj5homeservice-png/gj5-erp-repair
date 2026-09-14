@@ -135,7 +135,7 @@ export function RepairJobsModule({ store }: { store: any }) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Repair Jobs</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Repair Jobs</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">All Repair Records</p>
         </div>
       </div>

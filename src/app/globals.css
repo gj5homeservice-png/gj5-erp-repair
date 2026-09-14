@@ -276,3 +276,18 @@ body.gj5-admin-active:not(.dark) .hover\:bg-slate-800:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/20:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/40:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: #F1F5F9; }
+
+/* hover:text-white / focus:text-white — used throughout (Select items,
+   dropdown menu items, icon buttons, sidebar links) as a "this chip's own
+   background goes dark on hover/focus, so make its text light to match"
+   idiom, confirmed by auditing every one of the ~50 real usages: none of
+   them pair with a static brand color (those use plain, unprefixed
+   text-white instead — see the dedicated text-slate-100 swaps made
+   directly in component files for that case). Since the hover/focus
+   background these pair with is one of the slate/accent tones already
+   overridden to a light color above, the text must invert to dark here
+   too, or the hovered/focused item goes text-colored-on-itself invisible
+   — confirmed as a real bug via the compiled-CSS contrast audit (ratio
+   1.00, i.e. identical colors) before this rule was added. */
+body.gj5-admin-active:not(.dark) .hover\:text-white:hover,
+body.gj5-admin-active:not(.dark) .focus\:text-white:focus { color: #0F172A; }

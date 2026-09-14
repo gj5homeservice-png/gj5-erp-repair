@@ -109,7 +109,7 @@ export function EmployeeDocumentsSection({ employee, store }: { employee: Partia
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400"><FileStack className="w-4 h-4" /></div>
         <div>
-          <h4 className="text-sm font-bold text-white">Document Vault</h4>
+          <h4 className="text-sm font-bold text-slate-100">Document Vault</h4>
           <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Upload, verify, and track KYC documents</p>
         </div>
       </div>

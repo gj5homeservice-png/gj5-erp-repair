@@ -135,7 +135,7 @@ export function BackupCenter({ store }: { store: any }) {
             <Upload className="w-4 h-4 text-emerald-500" /> Database Restore
           </h4>
           <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-800 rounded-xl hover:border-blue-500/50 transition-all cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
-            <RefreshCw className="w-8 h-8 text-slate-700 group-hover:text-blue-400 group-hover:rotate-180 transition-all duration-500 mb-2" />
+            <RefreshCw className="w-8 h-8 text-slate-600 group-hover:text-blue-400 group-hover:rotate-180 transition-all duration-500 mb-2" />
             <p className="text-xs font-bold text-slate-500">Drop backup file here</p>
             <p className="text-[10px] text-slate-600 mt-1">Supports JSON recovery</p>
             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImport} />

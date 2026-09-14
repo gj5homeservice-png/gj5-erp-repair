@@ -166,7 +166,7 @@ function AccountTab({ currentEmail }: { currentEmail: string }) {
     <div className="space-y-6">
       <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-200"><Mail className="w-4 h-4 text-blue-400" /> Current Email</div>
-        <p className="font-code text-lg text-white">{currentEmail || '—'}</p>
+        <p className="font-code text-lg text-slate-100">{currentEmail || '—'}</p>
 
         {!editing ? (
           <Button variant="outline" onClick={() => setEditing(true)} className="border-slate-800 text-xs uppercase font-bold h-10">

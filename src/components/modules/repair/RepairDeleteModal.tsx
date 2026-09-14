@@ -85,7 +85,7 @@ export function RepairDeleteModal({ isOpen, onClose, jobId, onConfirm }: RepairD
                 <ShieldAlert className="w-6 h-6" /> Admin Authorization
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs uppercase font-bold tracking-widest mt-1">
-                Security clearance required for <span className="text-white font-black">{jobId}</span>
+                Security clearance required for <span className="text-slate-100 font-black">{jobId}</span>
               </DialogDescription>
             </DialogHeader>
             <div className="py-6 space-y-4">
@@ -124,7 +124,7 @@ export function RepairDeleteModal({ isOpen, onClose, jobId, onConfirm }: RepairD
                 <AlertTriangle className="w-6 h-6 animate-bounce" /> Final Confirmation
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs font-bold uppercase leading-relaxed">
-                Confirming <span className="text-rose-500 font-black">Permanent Deletion</span> for <span className="text-white font-black">{jobId}</span>. This action cannot be undone.
+                Confirming <span className="text-rose-500 font-black">Permanent Deletion</span> for <span className="text-slate-100 font-black">{jobId}</span>. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="py-10 flex justify-center">

@@ -144,7 +144,7 @@ export function EmployeeLoginAccessSection({
           <KeyRound className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-xl font-headline font-bold text-white">Login &amp; Security</h2>
+          <h2 className="text-xl font-headline font-bold text-slate-100">Login &amp; Security</h2>
           <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Manage this associate's own sign-in access</p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export function EmployeeLoginAccessSection({
 
       <div className="flex items-center justify-between p-4 bg-blue-600/5 border border-blue-600/20 rounded-xl">
         <div>
-          <p className="text-sm font-bold text-white">Enable Employee Login</p>
+          <p className="text-sm font-bold text-slate-100">Enable Employee Login</p>
           <p className="text-[10px] text-slate-400 uppercase tracking-widest">Turn off to block sign-in immediately, without deleting the account</p>
         </div>
         <div className="flex items-center gap-3">

@@ -58,7 +58,7 @@ export function ModuleAccessSection({
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-xl font-headline font-bold text-white">Module Access</h2>
+          <h2 className="text-xl font-headline font-bold text-slate-100">Module Access</h2>
           <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Control which ERP modules this associate can access</p>
         </div>
       </div>
@@ -69,7 +69,7 @@ export function ModuleAccessSection({
             <Lock className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Admins always have full access to every module.</p>
+            <p className="text-sm font-bold text-slate-100">Admins always have full access to every module.</p>
             <p className="text-[10px] text-slate-400 mt-1">This is enforced automatically and cannot be reduced from this screen — change the System Role above if this associate shouldn't be an Admin.</p>
           </div>
         </div>

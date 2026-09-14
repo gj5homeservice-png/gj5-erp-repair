@@ -525,7 +525,7 @@ export function BillingModule({ store }: { store: any }) {
            <Card className="bg-white text-slate-950 rounded-2xl shadow-2xl overflow-hidden lg:sticky lg:top-24 scale-[0.9] origin-top border-4 border-slate-800/20">
               <CardHeader className="bg-[#0F172A] p-4 flex flex-row justify-between items-center space-y-0">
                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-white italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</span>
+                    <span className="text-[10px] font-black text-slate-100 italic leading-none">{store.companyProfile?.companyName?.toUpperCase() || 'GJ5 HOME SERVICE'}</span>
                     <span className="text-[6px] font-bold text-[#123C8C] uppercase tracking-widest mt-1">Live Manifest Preview</span>
                  </div>
                  <Badge className="bg-[#E53935] text-[8px] uppercase border-0">A4 Calibration</Badge>

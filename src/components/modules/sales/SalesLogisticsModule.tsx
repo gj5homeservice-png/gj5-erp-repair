@@ -72,7 +72,7 @@ export function SalesLogisticsModule({ store }: { store: any }) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Sales Logistics</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Sales Logistics</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Product Delivery Dispatch — Separate from Repair Logistics</p>
         </div>
       </div>
@@ -83,7 +83,7 @@ export function SalesLogisticsModule({ store }: { store: any }) {
             <div className={cn("p-2.5 rounded-xl w-fit", c.bg, c.color)}><c.icon className="w-5 h-5" /></div>
             <div>
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{c.label}</p>
-              <h3 className="text-lg font-headline font-black text-white">{c.value}</h3>
+              <h3 className="text-lg font-headline font-black text-slate-100">{c.value}</h3>
             </div>
           </div>
         ))}

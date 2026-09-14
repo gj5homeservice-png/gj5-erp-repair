@@ -73,7 +73,7 @@ function SummaryCard({ label, value, icon: Icon, colorClass }: { label: string; 
       </div>
       <div className="min-w-0">
         <p className="text-[9px] uppercase font-bold text-slate-500 tracking-wide truncate">{label}</p>
-        <p className="text-xl font-headline font-black text-white">{value}</p>
+        <p className="text-xl font-headline font-black text-slate-100">{value}</p>
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ export function OnlineBookingsModule({ store }: { store: any }) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Online Bookings</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Online Bookings</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Manage repair requests received from the website</p>
         </div>
       </div>
@@ -382,7 +382,7 @@ export function OnlineBookingsModule({ store }: { store: any }) {
 function EmptyState({ hasAny }: { hasAny: boolean }) {
   return (
     <div className="h-32 flex flex-col items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20 px-4 gap-1">
-      <Globe className="w-6 h-6 text-slate-700 mb-1" />
+      <Globe className="w-6 h-6 text-slate-600 mb-1" />
       {hasAny ? 'No bookings match your search/filters.' : 'No online bookings yet.'}
     </div>
   );

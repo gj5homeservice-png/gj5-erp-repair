@@ -350,7 +350,7 @@ export function TransportationModule({ store }: { store: any }) {
             </MobileCard>
           ))}
           {filteredLogs.length === 0 && (
-            <div className="h-32 flex items-center justify-center text-center text-slate-700 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20">No logistics records found.</div>
+            <div className="h-32 flex items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20">No logistics records found.</div>
           )}
         </MobileCardList>
 
@@ -423,7 +423,7 @@ export function TransportationModule({ store }: { store: any }) {
                   </TableRow>
                 ))}
                 {filteredLogs.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-700 text-xs italic">No logistics records found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-600 text-xs italic">No logistics records found.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

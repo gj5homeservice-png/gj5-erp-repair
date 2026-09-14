@@ -80,7 +80,7 @@ const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-end">
       <div>
-        <h2 className="text-3xl font-headline font-bold text-white tracking-tight">{store.companyProfile?.companyName || 'GJ5 Home Service'} Console</h2>
+        <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">{store.companyProfile?.companyName || 'GJ5 Home Service'} Console</h2>
         <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Workspace Status: Operational</p>
       </div>
       <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
@@ -107,7 +107,7 @@ const DashboardModule = ({ store }: { store: any }) => (
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-            <h3 className="text-xl font-headline font-black text-white">{stat.value}</h3>
+            <h3 className="text-xl font-headline font-black text-slate-100">{stat.value}</h3>
           </div>
         </div>
       ))}
@@ -116,7 +116,7 @@ const DashboardModule = ({ store }: { store: any }) => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-           <h3 className="text-lg font-headline font-bold text-white flex items-center gap-2">
+           <h3 className="text-lg font-headline font-bold text-slate-100 flex items-center gap-2">
              <Bell className="w-5 h-5 text-blue-500" /> Recent Activity
            </h3>
         </div>
@@ -140,7 +140,7 @@ const DashboardModule = ({ store }: { store: any }) => (
       </div>
 
       <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-6">
-        <h3 className="text-lg font-headline font-bold text-white flex items-center gap-2">
+        <h3 className="text-lg font-headline font-bold text-slate-100 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-rose-500" /> Critical Stock
         </h3>
         <div className="space-y-6">
@@ -289,7 +289,7 @@ export default function ErpMainHub() {
           <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
             <Lock className="w-8 h-8 text-rose-500" />
           </div>
-          <h2 className="text-xl font-headline font-bold text-white">Access Denied</h2>
+          <h2 className="text-xl font-headline font-bold text-slate-100">Access Denied</h2>
           <p className="text-sm text-slate-500 max-w-sm">You do not have permission to view {activeTab}. Contact your administrator if you believe this is a mistake.</p>
           <Button onClick={() => setActiveTab('Dashboard')} className="mt-2 bg-[#123C8C] hover:bg-[#0D2E63]">Return to Dashboard</Button>
         </div>
@@ -335,7 +335,7 @@ export default function ErpMainHub() {
          </div>
          <div className="text-center space-y-2">
             <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] animate-pulse">Synchronizing Cloud Workspace...</p>
-            <p className="text-[8px] text-slate-700 font-bold uppercase tracking-widest">Attempting Security Handshake</p>
+            <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Attempting Security Handshake</p>
          </div>
       </div>
     );
@@ -356,7 +356,7 @@ export default function ErpMainHub() {
                 <CompanyLogo src={companyLogo} className="w-full h-full" alt="Logo" />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
+                <span className="text-sm font-headline font-black text-slate-100 tracking-tighter leading-tight truncate uppercase">{companyName}</span>
                 <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'HOME SERVICE MASTER NODE'}</span>
               </div>
             </div>
@@ -403,7 +403,7 @@ export default function ErpMainHub() {
                   <CompanyLogo src={companyLogo} className="w-full h-full" alt="Logo" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-headline font-black text-white tracking-tighter leading-tight truncate uppercase">{companyName}</span>
+                  <span className="text-sm font-headline font-black text-slate-100 tracking-tighter leading-tight truncate uppercase">{companyName}</span>
                   <span className="text-[8px] font-black text-[#123C8C] uppercase tracking-[0.3em] mt-1">{store.companyProfile?.category || 'HOME SERVICE MASTER NODE'}</span>
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function ErpMainHub() {
               </Button>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
                 <div className="text-right hidden sm:block">
-                   <p className="text-xs font-bold text-white uppercase tracking-tighter">{ownerName}</p>
+                   <p className="text-xs font-bold text-slate-100 uppercase tracking-tighter">{ownerName}</p>
                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">Verified Identity</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white border border-slate-700 flex items-center justify-center overflow-hidden p-1 shadow-inner shrink-0">

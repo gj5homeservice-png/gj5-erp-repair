@@ -252,7 +252,7 @@ export function LogisticsModule({ store }: { store: any }) {
                     {card.title}
                   </div>
                 </div>
-                <h3 className="text-3xl font-headline font-black text-white">{card.count}</h3>
+                <h3 className="text-3xl font-headline font-black text-slate-100">{card.count}</h3>
                 <div className="flex items-center gap-1.5">
                   <TrendingUp className="w-3 h-3 text-emerald-500" />
                   <span className="text-[9px] text-slate-500 font-bold uppercase">Today's activity: {card.today}</span>

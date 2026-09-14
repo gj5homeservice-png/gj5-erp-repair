@@ -38,7 +38,7 @@ export function SalesDashboard({ store }: { store: any }) {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Sales Dashboard</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Sales Dashboard</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Retail Sales Overview</p>
         </div>
         <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
@@ -58,7 +58,7 @@ export function SalesDashboard({ store }: { store: any }) {
             </div>
             <div>
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{c.label}</p>
-              <h3 className="text-lg font-headline font-black text-white">{c.value}</h3>
+              <h3 className="text-lg font-headline font-black text-slate-100">{c.value}</h3>
             </div>
           </div>
         ))}
@@ -67,7 +67,7 @@ export function SalesDashboard({ store }: { store: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
           <div className="p-6 border-b border-slate-800">
-            <h3 className="text-sm font-headline font-bold text-white uppercase tracking-widest">Recent Sales</h3>
+            <h3 className="text-sm font-headline font-bold text-slate-100 uppercase tracking-widest">Recent Sales</h3>
           </div>
           <div className="divide-y divide-slate-800">
             {recent.map((o: any) => (
@@ -85,7 +85,7 @@ export function SalesDashboard({ store }: { store: any }) {
 
         <div className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden">
           <div className="p-6 border-b border-slate-800">
-            <h3 className="text-sm font-headline font-bold text-white uppercase tracking-widest">Pending Orders</h3>
+            <h3 className="text-sm font-headline font-bold text-slate-100 uppercase tracking-widest">Pending Orders</h3>
           </div>
           <div className="divide-y divide-slate-800">
             {pending.map((o: any) => (

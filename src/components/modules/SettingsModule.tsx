@@ -199,7 +199,7 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
 
   const SectionHeader = ({ title, description }: { title: string; description: string }) => (
     <div className="mb-6">
-      <h3 className="text-lg font-headline font-bold text-white">{title}</h3>
+      <h3 className="text-lg font-headline font-bold text-slate-100">{title}</h3>
       <p className="text-xs text-slate-500 mt-1">{description}</p>
     </div>
   );
@@ -636,7 +636,7 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
     <div className="animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Settings</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Settings</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">System &amp; Company Configuration</p>
         </div>
         <Badge className="bg-blue-600/10 text-blue-400 border-blue-600/20 text-[9px] uppercase">Owner Access</Badge>
@@ -672,7 +672,7 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-lg font-headline font-bold text-white">{pendingImport.mode === 'restore' ? 'Restore Preview' : 'Import Preview'}</h3>
+              <h3 className="text-lg font-headline font-bold text-slate-100">{pendingImport.mode === 'restore' ? 'Restore Preview' : 'Import Preview'}</h3>
               <button onClick={() => setPendingImport(null)} className="text-slate-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">

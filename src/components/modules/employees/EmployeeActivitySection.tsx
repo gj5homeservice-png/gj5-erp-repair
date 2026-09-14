@@ -58,7 +58,7 @@ export function EmployeeActivitySection({ employee, store }: { employee: Partial
           <History className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-xl font-headline font-bold text-white">Activity &amp; Audit Log</h2>
+          <h2 className="text-xl font-headline font-bold text-slate-100">Activity &amp; Audit Log</h2>
           <p className="text-[10px] text-slate-300 uppercase font-black tracking-widest">Security and change history for this associate</p>
         </div>
       </div>

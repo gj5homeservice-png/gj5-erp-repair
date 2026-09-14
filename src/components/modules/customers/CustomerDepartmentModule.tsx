@@ -85,7 +85,7 @@ function SummaryCard({ label, value, icon: Icon, colorClass }: { label: string; 
       </div>
       <div className="min-w-0">
         <p className="text-[9px] uppercase font-bold text-slate-500 tracking-wide truncate">{label}</p>
-        <p className="text-xl font-headline font-black text-white">{value}</p>
+        <p className="text-xl font-headline font-black text-slate-100">{value}</p>
       </div>
     </div>
   );
@@ -94,7 +94,7 @@ function SummaryCard({ label, value, icon: Icon, colorClass }: { label: string; 
 function EmptyState({ hasAny, onAdd }: { hasAny: boolean; onAdd: () => void }) {
   return (
     <div className="h-40 flex flex-col items-center justify-center text-center text-slate-600 text-xs italic rounded-2xl border border-slate-800 bg-slate-900/20 px-4 gap-3">
-      <Users className="w-7 h-7 text-slate-700" />
+      <Users className="w-7 h-7 text-slate-600" />
       {hasAny ? (
         <span>No customers match your search/filters.</span>
       ) : (
@@ -211,7 +211,7 @@ export function CustomerDepartmentModule({ store }: { store: any }) {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-wrap justify-between items-end gap-3">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-white tracking-tight">Customer Department</h2>
+          <h2 className="text-3xl font-headline font-bold text-slate-100 tracking-tight">Customer Department</h2>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-[0.2em] font-black">Manage all customers and their complete history</p>
         </div>
         <Button className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => setShowAddForm(true)}>

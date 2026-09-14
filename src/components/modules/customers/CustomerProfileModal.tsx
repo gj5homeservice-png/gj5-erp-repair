@@ -49,7 +49,7 @@ function StatCard({ label, value, icon: Icon, colorClass }: { label: string; val
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}><Icon className="w-4 h-4" /></div>
       <div className="min-w-0">
         <p className="text-[8px] uppercase font-bold text-slate-500 tracking-wide truncate">{label}</p>
-        <p className="text-sm font-headline font-black text-white">{value}</p>
+        <p className="text-sm font-headline font-black text-slate-100">{value}</p>
       </div>
     </div>
   );

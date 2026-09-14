@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,14 +11,19 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerListItem } from './CustomerDepartmentModule';
 import { CUSTOMER_CATEGORIES, DEFAULT_CUSTOMER_CATEGORY } from '@/lib/customer-categories';
+import { SURAT_PINCODES, SURAT_CITY, SURAT_STATE } from '@/lib/surat-pincodes';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('gj5_auth_token');
 }
 
+const GMAIL_SUFFIX = '@gmail.com';
+const EMAIL_FORMAT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const EMPTY = {
   name: '', mobile: '', email: '', alternateMobile: '',
+  facebookId: '', instagramId: '',
   address: '', city: '', state: '', pincode: '',
   status: 'Active', category: '',
 };
@@ -44,17 +49,21 @@ export function CustomerFormModal({
   const [error, setError] = useState<string | null>(null);
   const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
   const [previewNextId, setPreviewNextId] = useState<string | null>(null);
+  const [showPincodeDropdown, setShowPincodeDropdown] = useState(false);
   const isEditing = !!editingCustomer;
 
   useEffect(() => {
     if (isOpen) {
       setError(null);
       setDuplicateCustomer(null);
+      setShowPincodeDropdown(false);
       setForm(editingCustomer ? {
         name: editingCustomer.name || '',
         mobile: editingCustomer.mobile || '',
         email: editingCustomer.email || '',
         alternateMobile: editingCustomer.alternateMobile || '',
+        facebookId: (editingCustomer as any).facebookId || '',
+        instagramId: (editingCustomer as any).instagramId || '',
         address: editingCustomer.address || '',
         city: editingCustomer.city || '',
         state: editingCustomer.state || '',
@@ -81,14 +90,41 @@ export function CustomerFormModal({
 
   const update = (field: keyof typeof EMPTY, value: string) => setForm(f => ({ ...f, [field]: value }));
 
+  // form.email always holds the final, fully-qualified address. The visible
+  // box only ever shows the part before "@gmail.com" — typing a plain
+  // username auto-appends the fixed suffix, but a value that already
+  // contains "@" (e.g. an existing customer's non-Gmail address from before
+  // this field existed) is left exactly as typed/stored, never rewritten.
+  const emailLocalPart = form.email.toLowerCase().endsWith(GMAIL_SUFFIX)
+    ? form.email.slice(0, -GMAIL_SUFFIX.length)
+    : form.email;
+  const updateEmail = (typed: string) => {
+    const trimmed = typed.trim();
+    if (!trimmed) { update('email', ''); return; }
+    update('email', trimmed.includes('@') ? trimmed : `${trimmed}${GMAIL_SUFFIX}`);
+  };
+
+  const pincodeMatches = useMemo(() => {
+    const q = form.pincode.trim().toLowerCase();
+    if (!q) return SURAT_PINCODES;
+    return SURAT_PINCODES.filter(p => p.pincode.startsWith(q) || p.area.toLowerCase().includes(q));
+  }, [form.pincode]);
+
+  const selectPincode = (pincode: string) => {
+    // Only the deliberate act of picking a Surat pincode from the dropdown
+    // auto-fills City/State — typing digits, or editing an existing
+    // customer whose City/State already came from elsewhere, never
+    // overwrites them on its own.
+    setForm(f => ({ ...f, pincode, city: SURAT_CITY, state: SURAT_STATE }));
+    setShowPincodeDropdown(false);
+  };
+
   const handleSave = async () => {
     setError(null);
     setDuplicateCustomer(null);
     if (!form.name.trim()) { setError('Customer name is required.'); return; }
-    // Mobile and Category are optional — Customer Name is the only required
-    // field. Mobile is still format-checked when provided, since a garbage
-    // value would otherwise be stored as-is.
-    if (form.mobile && !/^[0-9]{10}$/.test(form.mobile)) { setError('Mobile number must be exactly 10 digits.'); return; }
+    if (!/^[0-9]{10}$/.test(form.mobile)) { setError('A valid 10-digit mobile number is required.'); return; }
+    if (form.email && !EMAIL_FORMAT_RE.test(form.email)) { setError('Please enter a valid email address.'); return; }
 
     setSaving(true);
     try {
@@ -149,7 +185,7 @@ export function CustomerFormModal({
                 <Input value={form.name} onChange={e => update('name', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
-                <Label className="text-xs text-slate-400">Mobile Number</Label>
+                <Label className="text-xs text-slate-400">Mobile Number *</Label>
                 <Input value={form.mobile} onChange={e => update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
@@ -158,7 +194,27 @@ export function CustomerFormModal({
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Email</Label>
-                <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+                <div className="mt-1 flex items-stretch">
+                  <Input
+                    value={emailLocalPart}
+                    onChange={e => updateEmail(e.target.value)}
+                    placeholder="username"
+                    className={`bg-slate-950 border-slate-800 text-[#F8FAFC] ${emailLocalPart.includes('@') ? '' : 'rounded-r-none border-r-0'}`}
+                  />
+                  {!emailLocalPart.includes('@') && (
+                    <span className="flex items-center px-3 rounded-r-md border border-l-0 border-slate-800 bg-slate-900 text-slate-500 text-xs font-code whitespace-nowrap">
+                      {GMAIL_SUFFIX}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-400">Facebook ID</Label>
+                <Input value={form.facebookId} onChange={e => update('facebookId', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-400">Instagram ID</Label>
+                <Input value={form.instagramId} onChange={e => update('instagramId', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Category</Label>
@@ -187,9 +243,32 @@ export function CustomerFormModal({
                 <Label className="text-xs text-slate-400">State</Label>
                 <Input value={form.state} onChange={e => update('state', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
-              <div>
+              <div className="relative col-span-2 sm:col-span-1">
                 <Label className="text-xs text-slate-400">Pincode</Label>
-                <Input value={form.pincode} onChange={e => update('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+                <Input
+                  value={form.pincode}
+                  onChange={e => { update('pincode', e.target.value.replace(/\D/g, '').slice(0, 6)); setShowPincodeDropdown(true); }}
+                  onFocus={() => setShowPincodeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowPincodeDropdown(false), 150)}
+                  placeholder="Search Surat pincode..."
+                  className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]"
+                />
+                {showPincodeDropdown && pincodeMatches.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
+                    {pincodeMatches.map(p => (
+                      <button
+                        type="button"
+                        key={p.pincode}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => selectPincode(p.pincode)}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between gap-2"
+                      >
+                        <span className="font-code font-bold text-blue-400">{p.pincode}</span>
+                        <span className="text-slate-400 truncate">{p.area}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

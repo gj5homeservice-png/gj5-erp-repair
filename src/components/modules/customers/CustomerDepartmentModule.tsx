@@ -54,6 +54,8 @@ export interface CustomerListItem {
   mobile: string | null;
   alternateMobile: string | null;
   email: string | null;
+  facebookId: string | null;
+  instagramId: string | null;
   address: string | null;
   city: string | null;
   state: string | null;

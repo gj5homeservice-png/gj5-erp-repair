@@ -60,6 +60,7 @@ export interface CustomerListItem {
   city: string | null;
   state: string | null;
   pincode: string | null;
+  area: string | null;
   status: string;
   category: string;
   source: string;

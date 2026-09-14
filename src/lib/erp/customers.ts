@@ -25,6 +25,7 @@ const CUSTOMER_COLUMNS: { js: string; sql: string }[] = [
   { js: 'city', sql: 'city' },
   { js: 'state', sql: 'state' },
   { js: 'pincode', sql: 'pincode' },
+  { js: 'area', sql: 'area' },
   { js: 'status', sql: 'status' },
   { js: 'category', sql: 'category' },
 ];
@@ -256,12 +257,12 @@ export async function createCustomer(email: string, data: any) {
       const now = new Date().toISOString();
       try {
         await conn.execute(
-          `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, facebook_id, instagram_id, source, status, category, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
+          `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, area, email, facebook_id, instagram_id, source, status, category, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
           [
             id, email, data.name.trim(), data.mobile,
             data.alternateMobile || null, data.address || null, data.city || null, data.state || null,
-            data.pincode || null, data.email || null, data.facebookId || null, data.instagramId || null,
+            data.pincode || null, data.area || null, data.email || null, data.facebookId || null, data.instagramId || null,
             data.status || 'Active', category, now, now,
           ]
         );
@@ -307,11 +308,11 @@ export async function updateCustomer(email: string, id: string, data: any) {
   const now = new Date().toISOString();
   const merged = { ...current, ...data };
   await pool.execute(
-    `UPDATE customers SET name = ?, mobile = ?, alternate_mobile = ?, address = ?, city = ?, state = ?, pincode = ?, email = ?, facebook_id = ?, instagram_id = ?, status = ?, category = ?, updated_at = ?
+    `UPDATE customers SET name = ?, mobile = ?, alternate_mobile = ?, address = ?, city = ?, state = ?, pincode = ?, area = ?, email = ?, facebook_id = ?, instagram_id = ?, status = ?, category = ?, updated_at = ?
      WHERE id = ? AND user_email = ?`,
     [
       merged.name || null, merged.mobile || null, merged.alternateMobile || null, merged.address || null,
-      merged.city || null, merged.state || null, merged.pincode || null, merged.email || null,
+      merged.city || null, merged.state || null, merged.pincode || null, merged.area || null, merged.email || null,
       merged.facebookId || null, merged.instagramId || null,
       merged.status || 'Active', isValidCustomerCategory(merged.category) ? merged.category : DEFAULT_CUSTOMER_CATEGORY, now, id, email,
     ]

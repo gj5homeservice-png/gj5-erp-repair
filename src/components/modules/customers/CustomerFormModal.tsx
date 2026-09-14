@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerListItem } from './CustomerDepartmentModule';
 import { CUSTOMER_CATEGORIES, DEFAULT_CUSTOMER_CATEGORY } from '@/lib/customer-categories';
-import { SURAT_PINCODES, SURAT_CITY, SURAT_STATE } from '@/lib/surat-pincodes';
+import { GUJARAT_LOCATIONS, GUJARAT_STATE, GujaratLocation } from '@/lib/surat-pincodes';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -20,11 +20,15 @@ function getToken(): string | null {
 
 const GMAIL_SUFFIX = '@gmail.com';
 const EMAIL_FORMAT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Default (empty-query) suggestions stay short so opening the field never
+// dumps the whole list; a real search below isn't capped the same way —
+// scrolling a small, self-narrowed result set is normal combobox UX.
+const DEFAULT_LOCATION_SUGGESTIONS = 8;
 
 const EMPTY = {
   name: '', mobile: '', email: '', alternateMobile: '',
   facebookId: '', instagramId: '',
-  address: '', city: '', state: '', pincode: '',
+  address: '', city: '', state: '', pincode: '', area: '',
   status: 'Active', category: '',
 };
 
@@ -50,6 +54,7 @@ export function CustomerFormModal({
   const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
   const [previewNextId, setPreviewNextId] = useState<string | null>(null);
   const [showPincodeDropdown, setShowPincodeDropdown] = useState(false);
+  const [pincodeHighlight, setPincodeHighlight] = useState(0);
   const isEditing = !!editingCustomer;
 
   useEffect(() => {
@@ -57,6 +62,7 @@ export function CustomerFormModal({
       setError(null);
       setDuplicateCustomer(null);
       setShowPincodeDropdown(false);
+      setPincodeHighlight(0);
       setForm(editingCustomer ? {
         name: editingCustomer.name || '',
         mobile: editingCustomer.mobile || '',
@@ -68,6 +74,7 @@ export function CustomerFormModal({
         city: editingCustomer.city || '',
         state: editingCustomer.state || '',
         pincode: editingCustomer.pincode || '',
+        area: (editingCustomer as any).area || '',
         status: editingCustomer.status || 'Active',
         category: (editingCustomer as any).category || DEFAULT_CUSTOMER_CATEGORY,
       } : { ...EMPTY, mobile: initialMobile || '' });
@@ -104,19 +111,44 @@ export function CustomerFormModal({
     update('email', trimmed.includes('@') ? trimmed : `${trimmed}${GMAIL_SUFFIX}`);
   };
 
+  // Searches pincode, area/locality and city together — "395006",
+  // "Varachha" and "Surat" all reach the same rows. Two entries are allowed
+  // to share a pincode (e.g. 394221's Bamroli/Vadod and Pandesara), so
+  // results are matched and selected by their own unique id, never by
+  // pincode alone.
   const pincodeMatches = useMemo(() => {
     const q = form.pincode.trim().toLowerCase();
-    if (!q) return SURAT_PINCODES;
-    return SURAT_PINCODES.filter(p => p.pincode.startsWith(q) || p.area.toLowerCase().includes(q));
+    if (!q) return GUJARAT_LOCATIONS.slice(0, DEFAULT_LOCATION_SUGGESTIONS);
+    return GUJARAT_LOCATIONS.filter(loc =>
+      loc.pincode.startsWith(q) || loc.area.toLowerCase().includes(q) || loc.city.toLowerCase().includes(q)
+    );
   }, [form.pincode]);
 
-  const selectPincode = (pincode: string) => {
-    // Only the deliberate act of picking a Surat pincode from the dropdown
-    // auto-fills City/State — typing digits, or editing an existing
+  useEffect(() => { setPincodeHighlight(0); }, [form.pincode]);
+
+  const selectLocation = (loc: GujaratLocation) => {
+    // Only the deliberate act of picking a location from the dropdown
+    // auto-fills Area/City/State — typing digits, or editing an existing
     // customer whose City/State already came from elsewhere, never
     // overwrites them on its own.
-    setForm(f => ({ ...f, pincode, city: SURAT_CITY, state: SURAT_STATE }));
+    setForm(f => ({ ...f, pincode: loc.pincode, area: loc.area, city: loc.city, state: GUJARAT_STATE }));
     setShowPincodeDropdown(false);
+  };
+
+  const handlePincodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showPincodeDropdown || pincodeMatches.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPincodeHighlight(i => (i + 1) % pincodeMatches.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPincodeHighlight(i => (i - 1 + pincodeMatches.length) % pincodeMatches.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      selectLocation(pincodeMatches[pincodeHighlight] || pincodeMatches[0]);
+    } else if (e.key === 'Escape') {
+      setShowPincodeDropdown(false);
+    }
   };
 
   const handleSave = async () => {
@@ -230,11 +262,48 @@ export function CustomerFormModal({
 
           <div>
             <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Address</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
+            <div className="space-y-3">
+              <div>
                 <Label className="text-xs text-slate-400">Full Address</Label>
                 <Textarea value={form.address} onChange={e => update('address', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" rows={2} />
               </div>
+
+              <div className="relative">
+                <Label className="text-xs text-slate-400">Pincode</Label>
+                <Input
+                  value={form.pincode}
+                  onChange={e => { update('pincode', e.target.value); update('area', ''); setShowPincodeDropdown(true); }}
+                  onFocus={() => setShowPincodeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowPincodeDropdown(false), 150)}
+                  onKeyDown={handlePincodeKeyDown}
+                  placeholder="Search pincode, area, or city..."
+                  role="combobox"
+                  aria-expanded={showPincodeDropdown}
+                  aria-autocomplete="list"
+                  className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]"
+                />
+                {form.area && (
+                  <p className="mt-1 text-[10px] text-emerald-400 truncate">Area: {form.area}</p>
+                )}
+                {showPincodeDropdown && pincodeMatches.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl max-h-52 overflow-y-auto">
+                    {pincodeMatches.map((loc, i) => (
+                      <button
+                        type="button"
+                        key={loc.id}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => selectLocation(loc)}
+                        onMouseEnter={() => setPincodeHighlight(i)}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-2 ${i === pincodeHighlight ? 'bg-slate-800' : ''} hover:bg-slate-800`}
+                      >
+                        <span className="font-code font-bold text-blue-400 shrink-0">{loc.pincode}</span>
+                        <span className="text-slate-300 truncate text-right">{loc.area}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <Label className="text-xs text-slate-400">City</Label>
                 <Input value={form.city} onChange={e => update('city', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
@@ -242,33 +311,6 @@ export function CustomerFormModal({
               <div>
                 <Label className="text-xs text-slate-400">State</Label>
                 <Input value={form.state} onChange={e => update('state', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
-              </div>
-              <div className="relative col-span-2 sm:col-span-1">
-                <Label className="text-xs text-slate-400">Pincode</Label>
-                <Input
-                  value={form.pincode}
-                  onChange={e => { update('pincode', e.target.value.replace(/\D/g, '').slice(0, 6)); setShowPincodeDropdown(true); }}
-                  onFocus={() => setShowPincodeDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowPincodeDropdown(false), 150)}
-                  placeholder="Search Surat pincode..."
-                  className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]"
-                />
-                {showPincodeDropdown && pincodeMatches.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
-                    {pincodeMatches.map(p => (
-                      <button
-                        type="button"
-                        key={p.pincode}
-                        onMouseDown={e => e.preventDefault()}
-                        onClick={() => selectPincode(p.pincode)}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between gap-2"
-                      >
-                        <span className="font-code font-bold text-blue-400">{p.pincode}</span>
-                        <span className="text-slate-400 truncate">{p.area}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>

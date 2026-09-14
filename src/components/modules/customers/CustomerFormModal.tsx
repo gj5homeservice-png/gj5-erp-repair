@@ -93,7 +93,11 @@ export function CustomerFormModal({
         if (!isEditing && json.existingCustomer) setDuplicateCustomer(json.existingCustomer);
         throw new Error(json.error || 'Could not save this customer.');
       }
-      toast({ title: isEditing ? 'Customer Updated' : 'Customer Added', description: `${form.name} saved successfully.` });
+      if (isEditing) {
+        toast({ title: 'Customer Updated', description: `${form.name} saved successfully.` });
+      } else {
+        toast({ title: 'Customer Created Successfully', description: `Customer ID: ${json.data?.id || ''}` });
+      }
       onSaved(json.data);
     } catch (err: any) {
       setError(err?.message || 'Could not save this customer. Please try again.');
@@ -108,6 +112,13 @@ export function CustomerFormModal({
         <DialogHeader>
           <DialogTitle className="text-xl font-headline font-bold">{isEditing ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
         </DialogHeader>
+
+        <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+          <Label className="text-xs text-slate-400">Customer ID</Label>
+          <span className="font-code text-xs font-bold text-[#F8FAFC]">
+            {isEditing ? editingCustomer!.id : 'Will be generated'}
+          </span>
+        </div>
 
         <div className="space-y-4">
           <div>

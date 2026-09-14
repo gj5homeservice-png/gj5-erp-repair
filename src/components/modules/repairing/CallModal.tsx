@@ -53,7 +53,7 @@ function getAuthToken(): string | null {
   return localStorage.getItem('gj5_auth_token');
 }
 
-const BRANDS = ['GJ5 HOME SERVICE', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Canon', 'Epson', 'Hikvision', 'CP Plus', 'Dahua', 'Other'];
+const BRANDS = ['GJ5 PLUS', 'Sony', 'Samsung', 'LG', 'MI', 'Xiaomi', 'Realme', 'OnePlus', 'TCL', 'Philips', 'Toshiba', 'Panasonic', 'Sansui', 'Lloyd', 'BPL', 'Videocon', 'Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Canon', 'Epson', 'Hikvision', 'CP Plus', 'Dahua', 'Other'];
 
 const TECH_TAGS = ['BONDING MACHINE', 'HARDWARE', 'SOFTWARE'];
 
@@ -127,10 +127,10 @@ const WARRANTY_OPTIONS = [
 ];
 
 const PICKUP_DELIVERY_OPTIONS: { value: PickupDeliveryOption; label: string }[] = [
-  { value: 'OUR_PICKUP_CUSTOMER_PICKUP', label: 'Our Pickup + Customer Pickup' },
   { value: 'OUR_PICKUP_OUR_DELIVERY', label: 'Our Pickup + Our Delivery' },
-  { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
   { value: 'CUSTOMER_DROP_CUSTOMER_PICKUP', label: 'Customer Drop + Customer Pickup' },
+  { value: 'OUR_PICKUP_CUSTOMER_PICKUP', label: 'Our Pickup + Customer Pickup' },
+  { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
 ];
 
 export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }: any) {
@@ -138,7 +138,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
   const [estimatedCost, setEstimatedCost] = useState(0);
   const [advancePayment, setAdvancePayment] = useState(0);
   const remainingAmount = Math.max(0, (Number(estimatedCost) || 0) - (Number(advancePayment) || 0));
-  const [selectedBrand, setSelectedBrand] = useState('GJ5 HOME SERVICE');
+  const [selectedBrand, setSelectedBrand] = useState('GJ5 PLUS');
   const [activeTpl, setActiveTpl] = useState<number | null>(null);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState('');
   const [problemSearch, setProblemSearch] = useState('');
@@ -176,7 +176,7 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
 
   const [formData, setFormData] = useState<Partial<RepairCall>>({
     id: '', customerId: '', customerName: '', mobile: '', address: '', pincode: '',
-    category: 'TV Repair', brand: 'GJ5 HOME SERVICE', model: '', screenSize: '', techTags: [],
+    category: 'TV Repair', brand: 'GJ5 PLUS', model: '', screenSize: '', techTags: [],
     status: 'Pending', problemDescription: '', storeLocation: 'GODOWN', warrantyDuration: 'No Warranty',
     visitHistory: [], repeatCount: 0, intakeMode: 'Customer Visit', isOldEntry: false,
     entryDate: format(new Date(), 'yyyy-MM-dd'), receivedDate: format(new Date(), 'yyyy-MM-dd'),

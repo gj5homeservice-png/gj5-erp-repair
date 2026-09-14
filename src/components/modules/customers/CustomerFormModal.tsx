@@ -85,8 +85,10 @@ export function CustomerFormModal({
     setError(null);
     setDuplicateCustomer(null);
     if (!form.name.trim()) { setError('Customer name is required.'); return; }
-    if (!/^[0-9]{10}$/.test(form.mobile)) { setError('A valid 10-digit mobile number is required.'); return; }
-    if (!form.category) { setError('Please select a category.'); return; }
+    // Mobile and Category are optional — Customer Name is the only required
+    // field. Mobile is still format-checked when provided, since a garbage
+    // value would otherwise be stored as-is.
+    if (form.mobile && !/^[0-9]{10}$/.test(form.mobile)) { setError('Mobile number must be exactly 10 digits.'); return; }
 
     setSaving(true);
     try {
@@ -147,7 +149,7 @@ export function CustomerFormModal({
                 <Input value={form.name} onChange={e => update('name', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
-                <Label className="text-xs text-slate-400">Mobile Number *</Label>
+                <Label className="text-xs text-slate-400">Mobile Number</Label>
                 <Input value={form.mobile} onChange={e => update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div>
@@ -159,7 +161,7 @@ export function CustomerFormModal({
                 <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="col-span-2">
-                <Label className="text-xs text-slate-400">Category *</Label>
+                <Label className="text-xs text-slate-400">Category</Label>
                 <Select value={form.category} onValueChange={v => update('category', v)}>
                   <SelectTrigger className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]"><SelectValue placeholder="Select Category" className="text-[#94A3B8]" /></SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-[#F8FAFC]">

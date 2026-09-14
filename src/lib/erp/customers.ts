@@ -220,23 +220,34 @@ export async function createCustomer(email: string, data: any) {
   if (!data?.name || typeof data.name !== 'string' || !data.name.trim()) {
     throw new Error('Customer name is required.');
   }
-  if (!data?.mobile || typeof data.mobile !== 'string' || !/^[0-9]{10}$/.test(data.mobile)) {
-    throw new Error('A valid 10-digit mobile number is required.');
+  // Mobile is optional — Customer Name is the only required field. When one
+  // IS provided it must still be a real 10-digit number (so the duplicate
+  // check and Repairing's mobile lookup stay meaningful), but an empty
+  // mobile is valid and skips both the format check and the duplicate check
+  // entirely: two customers with no mobile on file are not "duplicates" of
+  // each other.
+  const hasMobile = typeof data?.mobile === 'string' && data.mobile.trim() !== '';
+  if (hasMobile && !/^[0-9]{10}$/.test(data.mobile)) {
+    throw new Error('Mobile number must be exactly 10 digits.');
   }
-  const existing = await findCustomerByMobile(email, data.mobile);
-  if (isDuplicateMobileError(existing, data.mobile)) {
-    // Carry the existing row on the error itself (not just a message) so the
-    // caller can offer "use this customer" instead of a dead-end error —
-    // Customer ID is the primary business identity, so a duplicate mobile
-    // should route Admin back to the existing record, never create a second.
-    const err: any = new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
-    err.existingCustomer = existing;
-    throw err;
+  if (hasMobile) {
+    const existing = await findCustomerByMobile(email, data.mobile);
+    if (isDuplicateMobileError(existing, data.mobile)) {
+      // Carry the existing row on the error itself (not just a message) so
+      // the caller can offer "use this customer" instead of a dead-end
+      // error — Customer ID is the primary business identity, so a
+      // duplicate mobile should route Admin back to the existing record,
+      // never create a second.
+      const err: any = new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
+      err.existingCustomer = existing;
+      throw err;
+    }
   }
-  // Category is a required field in the UI, but never trust that alone —
-  // reject anything that isn't one of the known categories rather than
-  // silently storing whatever string was sent.
-  if (data.category !== undefined && !isValidCustomerCategory(data.category)) {
+  // Category is optional too — an empty/omitted value silently falls back
+  // to the default category below. Only an actual, non-empty value that
+  // isn't one of the known categories is rejected, so a bad value can never
+  // be stored silently.
+  if (data.category && !isValidCustomerCategory(data.category)) {
     throw new Error('Please select a valid category.');
   }
   const category = isValidCustomerCategory(data.category) ? data.category : DEFAULT_CUSTOMER_CATEGORY;
@@ -254,7 +265,7 @@ export async function createCustomer(email: string, data: any) {
           `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, source, status, category, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
           [
-            id, email, data.name.trim(), data.mobile,
+            id, email, data.name.trim(), hasMobile ? data.mobile : null,
             data.alternateMobile || null, data.address || null, data.city || null, data.state || null,
             data.pincode || null, data.email || null, data.status || 'Active', category, now, now,
           ]
@@ -286,7 +297,7 @@ export async function updateCustomer(email: string, id: string, data: any) {
       throw new Error(`A customer with this mobile number already exists (${existing.name || existing.id}).`);
     }
   }
-  if (data.category !== undefined && !isValidCustomerCategory(data.category)) {
+  if (data.category && !isValidCustomerCategory(data.category)) {
     throw new Error('Please select a valid category.');
   }
 

@@ -130,6 +130,7 @@ const PICKUP_DELIVERY_OPTIONS: { value: PickupDeliveryOption; label: string }[] 
   { value: 'OUR_PICKUP_CUSTOMER_PICKUP', label: 'Our Pickup + Customer Pickup' },
   { value: 'OUR_PICKUP_OUR_DELIVERY', label: 'Our Pickup + Our Delivery' },
   { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
+  { value: 'CUSTOMER_DROP_CUSTOMER_PICKUP', label: 'Customer Drop + Customer Pickup' },
 ];
 
 export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }: any) {

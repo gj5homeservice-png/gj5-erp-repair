@@ -730,9 +730,10 @@ export interface RepairJobNotification {
 // transportation_logs task(s) get auto-created and what makes the job
 // count as complete.
 export type PickupDeliveryOption =
-  | 'OUR_PICKUP_CUSTOMER_PICKUP' // we fetch it; customer collects in person — pickup task only
-  | 'OUR_PICKUP_OUR_DELIVERY'    // we fetch it and drop it back — pickup + delivery tasks
-  | 'CUSTOMER_DROP_OUR_DELIVERY'; // customer brings it in; we drop it back — delivery task only
+  | 'OUR_PICKUP_CUSTOMER_PICKUP'    // we fetch it; customer collects in person — pickup task only
+  | 'OUR_PICKUP_OUR_DELIVERY'       // we fetch it and drop it back — pickup + delivery tasks
+  | 'CUSTOMER_DROP_OUR_DELIVERY'    // customer brings it in; we drop it back — delivery task only
+  | 'CUSTOMER_DROP_CUSTOMER_PICKUP'; // customer brings it in AND collects it — no Logistics task at all; Repairing-only option, deliberately never shown/managed in the Logistics module
 
 export interface RepairJob {
   id: string; // 'RJ' prefix, e.g. RJ1001

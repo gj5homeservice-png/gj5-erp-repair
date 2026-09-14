@@ -230,11 +230,14 @@ async function resolveCustomerId(conn: PoolConnection, email: string, job: any):
 
 // ---- Repairing -> Logistics integration ----
 //
-// The 3 Pickup & Delivery Options (see PickupDeliveryOption in types.ts)
+// The 4 Pickup & Delivery Options (see PickupDeliveryOption in types.ts)
 // decide which of the two physical trips GJ5 itself runs:
-//   OUR_PICKUP_CUSTOMER_PICKUP  — pickup only (customer collects in person)
-//   OUR_PICKUP_OUR_DELIVERY     — pickup, then delivery
-//   CUSTOMER_DROP_OUR_DELIVERY  — delivery only (customer drops it off)
+//   OUR_PICKUP_OUR_DELIVERY        — pickup, then delivery
+//   CUSTOMER_DROP_CUSTOMER_PICKUP  — neither trip (customer drops off AND
+//                                    collects in person) — no Logistics task
+//                                    at all; completion is fully manual
+//   OUR_PICKUP_CUSTOMER_PICKUP     — pickup only (customer collects in person)
+//   CUSTOMER_DROP_OUR_DELIVERY     — delivery only (customer drops it off)
 // Each task this creates is a normal transportation_logs row — the exact
 // same table/shape the Logistics module's own "New Log" form already
 // writes to — just created automatically instead of by hand, using a

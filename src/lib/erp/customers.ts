@@ -186,19 +186,31 @@ export async function getNextCustomerId(email: string): Promise<string> {
 }
 
 // Runs inside createCustomer()'s transaction, on the same connection as the
-// insert. FOR UPDATE locks the row it reads so a second concurrent
-// transaction reading the same "current max" blocks until the first commits
-// — and if a lock still slips through (e.g. no existing row to lock when a
-// tenant's very first two customers are created in the same instant), the
-// id column's PRIMARY KEY constraint makes any resulting collision fail the
-// INSERT with ER_DUP_ENTRY, which createCustomer() retries with a freshly
-// computed id. Either way, two concurrent creates can never end up with the
-// same Customer ID. This mirrors nextRepairJobId()'s exact pattern in
-// repairJobs.ts, the existing convention in this codebase for race-safe
-// sequential business ids.
+// insert.
+//
+// Deliberately NOT "... FOR UPDATE" (an earlier version of this function had
+// it): `id REGEXP ?` can't use the PRIMARY KEY index, so MySQL satisfies it
+// with a full table scan, and FOR UPDATE on a scanned-not-indexed query take
+// next-key locks across every row (and gap) it examines under InnoDB's
+// default REPEATABLE READ isolation — not just the one matching row. Unlike
+// repair_jobs (small, and its own resolveCustomerId() elsewhere touches
+// different rows), `customers` is continuously populated by every repair
+// job's own auto-create fallback, so this table is both large and busy;
+// locking a full scan of it here made an ordinary concurrent write (an
+// unrelated updateCustomer(), or resolveCustomerId() creating yet another
+// customer from a repair job) enough to hit InnoDB's lock wait timeout and
+// fail the save outright — the "Unable to save this customer" production
+// failure this function is fixing.
+//
+// The actual uniqueness guarantee was never this lock anyway: it's the id
+// column's PRIMARY KEY, which makes any collision fail the INSERT with
+// ER_DUP_ENTRY, and createCustomer() retries that with a freshly computed
+// id. Dropping FOR UPDATE only removes a heavy, unnecessary full-table lock
+// — two concurrent creates still can never end up with the same Customer
+// ID.
 async function nextSequentialCustomerId(conn: PoolConnection, email: string): Promise<string> {
   const [rows] = await conn.execute<any[]>(
-    `SELECT id FROM customers WHERE user_email = ? AND id REGEXP ? ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) DESC LIMIT 1 FOR UPDATE`,
+    `SELECT id FROM customers WHERE user_email = ? AND id REGEXP ? ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) DESC LIMIT 1`,
     [email, SEQUENTIAL_ID_SQL_PATTERN]
   );
   return formatSequentialCustomerId((rows as any[])[0]?.id);

@@ -33,12 +33,18 @@ export async function POST(request: Request) {
     // safe, specific messages meant to reach the admin as-is; anything else
     // (a real DB/driver failure) is logged server-side and generalized.
     const isValidation = error?.message?.includes('required') || error?.message?.includes('already exists') || error?.message?.includes('valid category');
-    if (!isValidation) console.error('[erp/customers] create failed:', error?.message || error);
+    if (!isValidation) console.error('[erp/customers] create failed:', error?.code || error?.message || error, error?.sqlMessage || '');
     return NextResponse.json(
       {
         success: false,
         error: isValidation ? error.message : 'Unable to save this customer. Please try again.',
         ...(error?.existingCustomer ? { existingCustomer: error.existingCustomer } : {}),
+        // Raw driver detail for a real (non-validation) failure — this is an
+        // authenticated admin-only endpoint, and the alternative (a bare
+        // "please try again" with the real cause only reachable via a
+        // server log this app's admins can't get to) is what made the last
+        // production failure here impossible to diagnose from the browser.
+        ...(!isValidation ? { detail: error?.sqlMessage || error?.code || error?.message || undefined } : {}),
       },
       { status: isValidation ? 400 : 500 }
     );

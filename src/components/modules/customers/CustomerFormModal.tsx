@@ -106,7 +106,10 @@ export function CustomerFormModal({
         // Customer ID is the primary business identity, so offer to use the
         // existing record instead of leaving Admin stuck on a bare error.
         if (!isEditing && json.existingCustomer) setDuplicateCustomer(json.existingCustomer);
-        throw new Error(json.error || 'Could not save this customer.');
+        // json.detail (only ever present for a real backend/driver failure,
+        // never for a validation message) is shown inline so a save failure
+        // is diagnosable from the modal itself, not just a server log.
+        throw new Error(json.detail ? `${json.error || 'Could not save this customer.'} (${json.detail})` : (json.error || 'Could not save this customer.'));
       }
       if (isEditing) {
         toast({ title: 'Customer Updated', description: `${form.name} saved successfully.` });

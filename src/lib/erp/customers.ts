@@ -1,4 +1,5 @@
 import { getPool } from '../db';
+import { PoolConnection } from 'mysql2/promise';
 import { grandTotal, totalPaid, balanceDue } from '../repair-utils';
 import { listRepairJobsForCustomerMobile } from './repairJobs';
 import { listOnlineBookingsForCustomerMobile } from './onlineBookings';
@@ -153,6 +154,56 @@ export async function findCustomerByMobile(email: string, mobile: string) {
   return row ? customerRowToObject(row) : null;
 }
 
+// Only IDs already in the "CUSTnnnn" sequential shape (4-8 digits) count
+// toward "the highest existing id" — this deliberately excludes the older
+// `CUST<Date.now()>` (13-digit) ids that earlier customers (and repair jobs'
+// own auto-create fallback in repairJobs.ts, which is untouched by this
+// change) still use. Those old rows keep their ids forever; mixing them into
+// this calculation would make the very first sequential id an enormous,
+// non-`CUST0001`-looking number. The 4-8 digit bound gives headroom to
+// ~99,999,999 customers while staying far below any 13-digit timestamp.
+const SEQUENTIAL_ID_SQL_PATTERN = '^CUST[0-9]{4,8}$';
+
+function formatSequentialCustomerId(lastId: string | undefined): string {
+  const lastNum = lastId ? parseInt(lastId.slice(4), 10) : 0;
+  const nextNum = (Number.isFinite(lastNum) ? lastNum : 0) + 1;
+  return `CUST${String(nextNum).padStart(4, '0')}`;
+}
+
+// Advisory preview only (no row lock) — used to show Admin the id an Add
+// Customer form would get before they save. The authoritative id is always
+// computed again by nextSequentialCustomerId() inside createCustomer()'s own
+// transaction, so this preview can never itself cause a duplicate; it can
+// only, in the rare case of a genuine simultaneous create from two devices,
+// end up one behind what actually gets saved.
+export async function getNextCustomerId(email: string): Promise<string> {
+  const pool = getPool();
+  const [rows] = await pool.execute<any[]>(
+    `SELECT id FROM customers WHERE user_email = ? AND id REGEXP ? ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) DESC LIMIT 1`,
+    [email, SEQUENTIAL_ID_SQL_PATTERN]
+  );
+  return formatSequentialCustomerId((rows as any[])[0]?.id);
+}
+
+// Runs inside createCustomer()'s transaction, on the same connection as the
+// insert. FOR UPDATE locks the row it reads so a second concurrent
+// transaction reading the same "current max" blocks until the first commits
+// — and if a lock still slips through (e.g. no existing row to lock when a
+// tenant's very first two customers are created in the same instant), the
+// id column's PRIMARY KEY constraint makes any resulting collision fail the
+// INSERT with ER_DUP_ENTRY, which createCustomer() retries with a freshly
+// computed id. Either way, two concurrent creates can never end up with the
+// same Customer ID. This mirrors nextRepairJobId()'s exact pattern in
+// repairJobs.ts, the existing convention in this codebase for race-safe
+// sequential business ids.
+async function nextSequentialCustomerId(conn: PoolConnection, email: string): Promise<string> {
+  const [rows] = await conn.execute<any[]>(
+    `SELECT id FROM customers WHERE user_email = ? AND id REGEXP ? ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) DESC LIMIT 1 FOR UPDATE`,
+    [email, SEQUENTIAL_ID_SQL_PATTERN]
+  );
+  return formatSequentialCustomerId((rows as any[])[0]?.id);
+}
+
 export async function createCustomer(email: string, data: any) {
   if (!data?.name || typeof data.name !== 'string' || !data.name.trim()) {
     throw new Error('Customer name is required.');
@@ -179,18 +230,35 @@ export async function createCustomer(email: string, data: any) {
   const category = isValidCustomerCategory(data.category) ? data.category : DEFAULT_CUSTOMER_CATEGORY;
 
   const pool = getPool();
-  const now = new Date().toISOString();
-  const id = `CUST${Date.now()}`;
-  await pool.execute(
-    `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, source, status, category, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
-    [
-      id, email, data.name.trim(), data.mobile,
-      data.alternateMobile || null, data.address || null, data.city || null, data.state || null,
-      data.pincode || null, data.email || null, data.status || 'Active', category, now, now,
-    ]
-  );
-  return getCustomerById(email, id);
+  const conn = await pool.getConnection();
+  try {
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await conn.beginTransaction();
+      const id = await nextSequentialCustomerId(conn, email);
+      const now = new Date().toISOString();
+      try {
+        await conn.execute(
+          `INSERT INTO customers (id, user_email, name, mobile, alternate_mobile, address, city, state, pincode, email, source, status, category, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?)`,
+          [
+            id, email, data.name.trim(), data.mobile,
+            data.alternateMobile || null, data.address || null, data.city || null, data.state || null,
+            data.pincode || null, data.email || null, data.status || 'Active', category, now, now,
+          ]
+        );
+        await conn.commit();
+        return getCustomerById(email, id);
+      } catch (err: any) {
+        await conn.rollback();
+        if (err?.code === 'ER_DUP_ENTRY' && attempt < maxAttempts) continue;
+        throw err;
+      }
+    }
+    throw new Error('Could not generate a unique customer id — please try again.');
+  } finally {
+    conn.release();
+  }
 }
 
 // Never touches id/source/created_at — an edit can only ever update the same

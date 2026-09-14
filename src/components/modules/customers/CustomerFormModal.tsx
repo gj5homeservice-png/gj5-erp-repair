@@ -43,6 +43,7 @@ export function CustomerFormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
+  const [previewNextId, setPreviewNextId] = useState<string | null>(null);
   const isEditing = !!editingCustomer;
 
   useEffect(() => {
@@ -61,6 +62,20 @@ export function CustomerFormModal({
         status: editingCustomer.status || 'Active',
         category: (editingCustomer as any).category || DEFAULT_CUSTOMER_CATEGORY,
       } : { ...EMPTY, mobile: initialMobile || '' });
+
+      if (!editingCustomer) {
+        // Best-effort preview of the id this save would get right now — the
+        // authoritative id is always recomputed server-side at save time, so
+        // this can only ever be stale, never wrong/duplicated.
+        setPreviewNextId(null);
+        const token = getToken();
+        fetch('/api/erp/customers/next-id', {
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        })
+          .then(res => res.json())
+          .then(json => { if (json?.success) setPreviewNextId(json.data.nextId); })
+          .catch(() => { /* preview only — the "Will be generated" fallback below covers this */ });
+      }
     }
   }, [isOpen, editingCustomer, initialMobile]);
 
@@ -116,7 +131,7 @@ export function CustomerFormModal({
         <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
           <Label className="text-xs text-slate-400">Customer ID</Label>
           <span className="font-code text-xs font-bold text-[#F8FAFC]">
-            {isEditing ? editingCustomer!.id : 'Will be generated'}
+            {isEditing ? editingCustomer!.id : (previewNextId || 'Will be generated')}
           </span>
         </div>
 

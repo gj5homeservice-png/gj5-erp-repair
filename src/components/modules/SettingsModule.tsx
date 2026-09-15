@@ -148,6 +148,16 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
     try {
       await store.updateCompanyProfile(companyForm);
       toast({ title: 'Settings Saved', description: 'Company details updated successfully.' });
+    } catch (err: any) {
+      // A failed write to the shared MySQL settings table (the actual
+      // cross-browser source of truth) must never be reported as a success —
+      // that false-positive is exactly what previously hid a broken/missing
+      // migration from the admin. Surface the real error instead.
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: err?.message || 'Could not save to the server. Your other browsers/devices will not see this change until it succeeds.',
+      });
     } finally {
       setSavingProfile(false);
     }

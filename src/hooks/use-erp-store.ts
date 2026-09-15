@@ -374,9 +374,18 @@ export function useErpStore() {
     }
     if (Object.keys(dbPatch).length > 0) {
       optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, ...dbPatch } }));
-      apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(dbPatch) })
-        .catch(err => console.error('Company profile sync failed:', err))
-        .finally(() => refresh(activeUser));
+      // Deliberately AWAITED and rethrown (unlike the Firestore leg above,
+      // which is a best-effort secondary sync) — this PUT to MySQL is the
+      // actual source of truth for cross-browser/device persistence, so a
+      // failure here (e.g. the system_settings columns from migration 018
+      // not existing yet on this database) must not be swallowed into a
+      // false "Settings Saved" toast. The caller (SettingsModule's
+      // handleSaveProfile) awaits this and shows a real error instead.
+      try {
+        await apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(dbPatch) });
+      } finally {
+        refresh(activeUser);
+      }
     }
   };
 

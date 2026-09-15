@@ -83,7 +83,31 @@ const DEFAULT_SETTINGS: SystemSettings = {
   logoUrl: '',
   adminTheme: 'dark',
   transportationTemplates: DEFAULT_TRANSPORTATION_TEMPLATES,
+  companyName: '',
+  tagline: '',
+  gstNumber: '',
+  panNumber: '',
+  ownerMobile: '',
+  alternateMobile: '',
+  ownerEmail: '',
+  website: '',
+  address: '',
+  pincode: '',
+  city: '',
+  state: '',
+  country: '',
 };
+
+// Business Profile & Contact fields that used to live only in the
+// Firestore/localStorage-backed companyProfile — now mirrored into
+// system_settings (migration 018) so they survive a new browser/device.
+// logoUrl is handled separately above/below since it predates this list
+// (migration 016) and already has its own effective/merge wiring.
+const BUSINESS_PROFILE_FIELDS = [
+  'companyName', 'tagline', 'gstNumber', 'panNumber',
+  'ownerMobile', 'alternateMobile', 'ownerEmail', 'website',
+  'address', 'pincode', 'city', 'state', 'country',
+] as const;
 
 const DEFAULT_VISIBILITY: VisibilitySettings = {
   tabs: Object.fromEntries(ALL_SIDEBAR_MODULES.map((m) => [m.name, true])),
@@ -253,6 +277,19 @@ export function useErpStore() {
   // updateCompanyProfile below, so this fallback is self-healing).
   const effectiveLogoUrl: string = snap.settings?.logoUrl || companyProfile?.logoUrl || '';
 
+  // Same MySQL-first/local-fallback resolution as the logo above, generalized
+  // to every Business Profile & Contact field (migration 018) — a value
+  // saved from any browser/device reaches every other one on next load,
+  // while an account that hasn't re-saved since this existed still sees its
+  // old Firestore/localStorage value until it does (self-healing, since
+  // updateCompanyProfile below now always writes through to system_settings).
+  const effectiveProfileFields: Partial<Company> = {};
+  for (const key of BUSINESS_PROFILE_FIELDS) {
+    const fromDb = (snap.settings as any)?.[key];
+    const fromLocal = (companyProfile as any)?.[key];
+    (effectiveProfileFields as any)[key] = fromDb || fromLocal || '';
+  }
+
   // Keeps the device-local logo cache (and, through it, the browser tab
   // favicon — see branding.ts) in sync with the resolved logo above, from
   // any source. Watching it here — not only the save path — means another
@@ -272,8 +309,10 @@ export function useErpStore() {
   // unchanged — they just now transparently receive the MySQL-backed value
   // once one exists, without any of those files needing to know this table
   // exists at all.
-  const resolvedCompanyProfile: Company | null = (companyProfile || effectiveLogoUrl)
-    ? ({ ...(companyProfile || {}), logoUrl: effectiveLogoUrl } as Company)
+  const hasResolvedProfileData =
+    !!companyProfile || !!effectiveLogoUrl || Object.values(effectiveProfileFields).some(v => v);
+  const resolvedCompanyProfile: Company | null = hasResolvedProfileData
+    ? ({ ...(companyProfile || {}), ...effectiveProfileFields, logoUrl: effectiveLogoUrl } as Company)
     : companyProfile;
 
   const updateSettings = (patch: Partial<SystemSettings>) => {
@@ -319,16 +358,24 @@ export function useErpStore() {
         console.error('Company Profile Cloud Sync Failure:', e);
       }
     }
-    // The permanent, cross-device fix: also write the logo into MySQL
-    // (system_settings.logo_url) whenever it changes here, independent of
-    // Firestore's availability/config — this is what makes a new browser,
-    // Incognito window, or another device show the same saved logo, since
-    // it's loaded from /api/erp/bootstrap on every login rather than from
-    // this device's own localStorage/Firestore cache.
-    if ('logoUrl' in patch) {
-      optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, logoUrl: patch.logoUrl || '' } }));
-      apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify({ logoUrl: patch.logoUrl || '' }) })
-        .catch(err => console.error('Logo sync failed:', err))
+    // The permanent, cross-device fix: also write the logo AND every Business
+    // Profile / Contact & Address field into MySQL (system_settings) whenever
+    // any of them changes here, independent of Firestore's availability/
+    // config — this is what makes a new browser, Incognito window, or
+    // another device show the same saved values, since they're loaded from
+    // /api/erp/bootstrap on every login rather than from this device's own
+    // localStorage/Firestore cache. One PUT batches whatever changed in this
+    // call (Settings' Save button always submits the whole form, but this
+    // also works correctly for a partial patch from any other caller).
+    const dbPatch: Record<string, any> = {};
+    if ('logoUrl' in patch) dbPatch.logoUrl = patch.logoUrl || '';
+    for (const key of BUSINESS_PROFILE_FIELDS) {
+      if (key in patch) dbPatch[key] = (patch as any)[key] || '';
+    }
+    if (Object.keys(dbPatch).length > 0) {
+      optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, ...dbPatch } }));
+      apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(dbPatch) })
+        .catch(err => console.error('Company profile sync failed:', err))
         .finally(() => refresh(activeUser));
     }
   };

@@ -636,6 +636,24 @@ export interface SystemSettings {
   logoUrl?: string;
   adminTheme?: 'dark' | 'light';
   transportationTemplates?: string[];
+  // Permanent, cross-browser Business Profile & Contact info (see migration
+  // 018) — the authoritative source for Settings' Business Profile/Contact
+  // & Address sections, mirrored onto the Company object in
+  // use-erp-store.ts so every existing consumer (Settings form, invoice/PDF
+  // headers) keeps reading store.companyProfile.X unchanged.
+  companyName?: string;
+  tagline?: string;
+  gstNumber?: string;
+  panNumber?: string;
+  ownerMobile?: string;
+  alternateMobile?: string;
+  ownerEmail?: string;
+  website?: string;
+  address?: string;
+  pincode?: string;
+  city?: string;
+  state?: string;
+  country?: string;
 }
 
 export interface BackupMeta {

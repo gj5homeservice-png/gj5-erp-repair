@@ -746,7 +746,24 @@ CREATE TABLE IF NOT EXISTS system_settings (
   default_due_days               INT NOT NULL DEFAULT 0,
   warranty_expiring_soon_days    INT NOT NULL DEFAULT 30,
   standard_check_in_time         VARCHAR(10) NOT NULL DEFAULT '10:00',
-  late_threshold_minutes         INT NOT NULL DEFAULT 15
+  late_threshold_minutes         INT NOT NULL DEFAULT 15,
+  -- Permanent, cross-browser Business Profile & Contact info (see
+  -- migration 018) — the authoritative source for the Settings page's
+  -- Business Profile / Contact & Address sections, replacing the older
+  -- Firestore-with-localStorage-fallback companyProfile path.
+  company_name                   VARCHAR(191) NULL,
+  tagline                        VARCHAR(255) NULL,
+  gst_number                     VARCHAR(20) NULL,
+  pan_number                     VARCHAR(20) NULL,
+  owner_mobile                   VARCHAR(20) NULL,
+  alternate_mobile               VARCHAR(20) NULL,
+  owner_email                    VARCHAR(191) NULL,
+  website                        VARCHAR(255) NULL,
+  address                        VARCHAR(255) NULL,
+  pincode                        VARCHAR(10) NULL,
+  city                           VARCHAR(100) NULL,
+  state                          VARCHAR(100) NULL,
+  country                        VARCHAR(100) NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS backup_meta (

@@ -107,6 +107,9 @@ export async function POST(request: Request) {
         defaultDueDays: 'default_due_days', warrantyExpiringSoonDays: 'warranty_expiring_soon_days',
         standardCheckInTime: 'standard_check_in_time', lateThresholdMinutes: 'late_threshold_minutes',
         logoUrl: 'logo_url', adminTheme: 'admin_theme', transportationTemplates: 'transportation_templates',
+        companyName: 'company_name', tagline: 'tagline', gstNumber: 'gst_number', panNumber: 'pan_number',
+        ownerMobile: 'owner_mobile', alternateMobile: 'alternate_mobile', ownerEmail: 'owner_email',
+        website: 'website', address: 'address', pincode: 'pincode', city: 'city', state: 'state', country: 'country',
       }, ['transportationTemplates'], s);
     }
 

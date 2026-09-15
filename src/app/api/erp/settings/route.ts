@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireUser, isAuthError } from '@/lib/api-auth';
+import { requireUser, requirePermission, isAuthError } from '@/lib/api-auth';
 import { getSingleRow, upsertSingleRow } from '@/lib/erp/singleRow';
 
 const COLUMNS: Record<string, string> = {
@@ -34,6 +34,21 @@ const COLUMNS: Record<string, string> = {
   logoUrl: 'logo_url',
   adminTheme: 'admin_theme',
   transportationTemplates: 'transportation_templates',
+  // Permanent, cross-browser Business Profile & Contact info (see
+  // migration 018) — replaces the old Firestore/localStorage-only path.
+  companyName: 'company_name',
+  tagline: 'tagline',
+  gstNumber: 'gst_number',
+  panNumber: 'pan_number',
+  ownerMobile: 'owner_mobile',
+  alternateMobile: 'alternate_mobile',
+  ownerEmail: 'owner_email',
+  website: 'website',
+  address: 'address',
+  pincode: 'pincode',
+  city: 'city',
+  state: 'state',
+  country: 'country',
 };
 
 const BOOLEAN_KEYS = new Set([
@@ -72,8 +87,14 @@ export async function GET(request: Request) {
   }
 }
 
+// Company/ERP-wide configuration — an owner/admin session always passes
+// (requirePermission's own rule); an employee session must have explicit
+// "edit" access to the Settings module, exactly like every other
+// permission-gated write in this app. Never weakens this to a plain
+// requireUser() check, since these are shared company settings, not a
+// per-user preference.
 export async function PUT(request: Request) {
-  const auth = await requireUser(request);
+  const auth = await requirePermission(request, 'Settings', 'edit');
   if (isAuthError(auth)) return auth;
   try {
     const patch = await request.json();

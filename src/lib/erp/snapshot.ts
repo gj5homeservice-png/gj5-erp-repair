@@ -84,6 +84,16 @@ export async function getFullSnapshotData(email: string) {
     // PUT /api/erp/settings call.
     logoUrl: settingsRow.logo_url || '', adminTheme: settingsRow.admin_theme || 'dark',
     transportationTemplates: settingsRow.transportation_templates || null,
+    // Permanent, cross-browser Business Profile & Contact info (see
+    // migration 018) — this is what makes Business Name/Tagline/GSTIN/PAN/
+    // Mobile/Email/Address/etc. load correctly in a new browser/device
+    // instead of the old Firestore/localStorage-only companyProfile path.
+    companyName: settingsRow.company_name || '', tagline: settingsRow.tagline || '',
+    gstNumber: settingsRow.gst_number || '', panNumber: settingsRow.pan_number || '',
+    ownerMobile: settingsRow.owner_mobile || '', alternateMobile: settingsRow.alternate_mobile || '',
+    ownerEmail: settingsRow.owner_email || '', website: settingsRow.website || '',
+    address: settingsRow.address || '', pincode: settingsRow.pincode || '',
+    city: settingsRow.city || '', state: settingsRow.state || '', country: settingsRow.country || '',
   } : null;
 
   return {

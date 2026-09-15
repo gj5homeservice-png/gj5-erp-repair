@@ -6,6 +6,7 @@ import { listOnlineBookingsForCustomerMobile } from './onlineBookings';
 import { listSalesOrdersForMobile } from './sales';
 import { listInvoicesForMobile } from './invoices';
 import { isValidCustomerCategory, DEFAULT_CUSTOMER_CATEGORY } from '../customer-categories';
+import { listAccountsWithBalances } from './accounts';
 
 // The Customer Department module is a read-heavy VIEW layer over data that
 // already lives in repair_jobs, online_bookings, sales_orders and invoices —
@@ -389,20 +390,33 @@ export async function getCustomerProfile(email: string, id: string) {
   if (!customer) return null;
 
   const mobile = customer.mobile || '';
-  const [repairJobs, onlineBookings, salesOrders, invoices, notes] = await Promise.all([
+  const [repairJobs, onlineBookings, salesOrders, invoices, notes, accounts] = await Promise.all([
     mobile ? listRepairJobsForCustomerMobile(email, mobile) : Promise.resolve([]),
     mobile ? listOnlineBookingsForCustomerMobile(email, mobile) : Promise.resolve([]),
     mobile ? listSalesOrdersForMobile(email, mobile) : Promise.resolve([]),
     mobile ? listInvoicesForMobile(email, mobile) : Promise.resolve([]),
     listCustomerNotes(email, id),
+    listAccountsWithBalances(email),
   ]);
 
+  // Master Money Control — resolve each payment's accountId to a display
+  // name so the customer's Payment History can show "Paid into: UPI-1"
+  // without the UI needing to know accounts exist.
+  const accountNameById = new Map((accounts as any[]).map(a => [a.id, a.name]));
   const jobsWithTotals = (repairJobs as any[]).map(j => ({
     ...j,
     grandTotal: grandTotal(j),
     totalPaid: totalPaid(j),
     balanceDue: balanceDue(j),
+    payments: (j.payments || []).map((p: any) => ({ ...p, accountName: p.accountId ? accountNameById.get(p.accountId) || null : null })),
   }));
+
+  // Informational only — see wallet-engine.ts's KPI notes: this system
+  // already treats an intake advance as a real payment (it's already inside
+  // totalPaid via the repair job's own payments[]), never a separate
+  // liability. This is a labeled breakdown of that same money, never added
+  // on top of totalPaid or subtracted twice from totalDue below.
+  const totalAdvance = jobsWithTotals.reduce((s, j) => s + (Number(j.advancePayment) || 0), 0);
 
   const totalSales = (salesOrders as any[]).reduce((s, o) => s + (Number(o.grandTotal) || 0), 0);
   const totalBilling = (invoices as any[]).reduce((s, i) => s + (Number(i.grandTotal) || 0), 0)
@@ -419,6 +433,7 @@ export async function getCustomerProfile(email: string, id: string) {
     totalSales,
     totalPaid: Math.round(totalPaidAll * 100) / 100,
     totalDue: Math.round(totalDue * 100) / 100,
+    totalAdvance: Math.round(totalAdvance * 100) / 100,
   };
 
   // Built only from records that actually exist — never a fabricated event.

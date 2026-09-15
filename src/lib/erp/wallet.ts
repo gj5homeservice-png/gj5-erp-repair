@@ -35,6 +35,16 @@ function txRowToObject(row: any) {
     type: row.type,
     description: row.description,
     metadata: row.metadata,
+    // Master Money Control columns (see migration 017 / src/lib/erp/accounts.ts)
+    fromAccountId: row.from_account_id,
+    toAccountId: row.to_account_id,
+    customerId: row.customer_id,
+    employeeId: row.employee_id,
+    jobId: row.job_id,
+    paymentMethod: row.payment_method,
+    createdBy: row.created_by,
+    isReversal: !!row.is_reversal,
+    reversedEntryId: row.reversed_entry_id,
   };
 }
 
@@ -71,6 +81,12 @@ export async function addWalletTransaction(email: string, type: string, amount: 
 // Matches use-erp-store.ts's deleteTransaction: reverses the balance effect
 // for credit-type transactions (TOPUP, MANUAL_CREDIT, INVOICE_SALE) before
 // removing the row.
+//
+// Deprecated — DELETE /api/erp/wallet/transactions/[id] now calls
+// src/lib/erp/accounts.ts's reverseLedgerEntry() instead, which inserts an
+// equal-and-opposite entry rather than physically deleting the row (never
+// silently delete a financial transaction). Kept here, unused, to avoid an
+// unnecessary removal.
 const CREDIT_TYPES = new Set(['TOPUP', 'MANUAL_CREDIT', 'INVOICE_SALE']);
 
 export async function deleteWalletTransaction(email: string, id: string) {

@@ -116,6 +116,23 @@ export function TransportationModule({ store }: { store: any }) {
     window.open(url, '_blank');
   };
 
+  // Reuses the exact same Google Maps pattern already shipped in
+  // RepairingModule.tsx's own "Location" action — address-only (this
+  // schema has no latitude/longitude anywhere), works identically for a
+  // pickup or a delivery log since both only ever carry a plain address.
+  const handleMapClick = (address: string) => {
+    if (!address || address.trim() === '') {
+      toast({ variant: "destructive", title: "No Address", description: "This log has no saved address to open." });
+      return;
+    }
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    try {
+      window.open(url, '_blank');
+    } catch (e) {
+      toast({ variant: "destructive", title: "Pop-up Blocked", description: "Please allow pop-ups to open the map." });
+    }
+  };
+
   const generatePDF = (log: TransportationLog, type: string) => {
     const doc = new jsPDF('p', 'mm', 'a5');
     const accentColor = [0, 102, 255]; // GJ5 Blue
@@ -341,6 +358,7 @@ export function TransportationModule({ store }: { store: any }) {
                 </Select>
               </div>
               <MobileCardActions>
+                <Button variant="ghost" size="icon" onClick={() => handleMapClick(log.address || '')} className="h-8 w-8 text-sky-400 hover:bg-sky-500/10" title="Open in Maps"><MapPin className="w-3.5 h-3.5" /></Button>
                 <Button variant="ghost" size="icon" onClick={() => setViewingLog(log)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="View Details"><Eye className="w-3.5 h-3.5" /></Button>
                 <Button variant="ghost" size="icon" onClick={() => setEditingLog(log)} className="h-8 w-8 text-amber-400 hover:bg-amber-500/10" title="Edit Log"><Edit className="w-3.5 h-3.5" /></Button>
                 <Button variant="ghost" size="icon" onClick={() => handleWhatsApp(log, 'PICKUP')} className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10" title="WhatsApp Pickup"><MessageSquare className="w-3.5 h-3.5" /></Button>
@@ -413,6 +431,7 @@ export function TransportationModule({ store }: { store: any }) {
                     </TableCell>
                     <TableCell className="text-right px-4">
                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleMapClick(log.address || '')} className="h-8 w-8 text-sky-400 hover:bg-sky-500/10" title="Open in Maps"><MapPin className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => setViewingLog(log)} className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="View Details"><Eye className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => setEditingLog(log)} className="h-8 w-8 text-amber-400 hover:bg-amber-500/10" title="Edit Log"><Edit className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => handleWhatsApp(log, 'PICKUP')} className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10" title="WhatsApp Pickup"><MessageSquare className="w-3.5 h-3.5" /></Button>

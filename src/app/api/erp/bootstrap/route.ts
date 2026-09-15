@@ -21,6 +21,7 @@ const SNAPSHOT_MODULE_MAP: Record<string, string> = {
   transactions: 'E-Wallet',
   walletBalance: 'E-Wallet',
   expenses: 'E-Wallet',
+  accounts: 'E-Wallet',
   transportationLogs: 'Logistics',
   salesOrders: 'CRM Leads',
   salesInvoices: 'CRM Leads',

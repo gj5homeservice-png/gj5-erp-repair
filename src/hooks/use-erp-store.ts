@@ -32,6 +32,8 @@ import {
   ModulePermissions,
   EmployeeDocument,
   EmployeeAuditLogEntry,
+  Account,
+  AccountType,
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
 import { ALL_SIDEBAR_MODULES, DEFAULT_SIDEBAR_ORDER } from '@/lib/nav-items';
@@ -110,6 +112,7 @@ interface Snapshot {
   expenses: Expense[];
   walletBalance: number;
   transactions: WalletTransaction[];
+  accounts: Account[];
   attendanceLinks: AttendanceLink[];
   settings: SystemSettings | null;
   visibility: { tabs: Record<string, boolean>; kpis: Record<string, boolean> } | null;
@@ -121,7 +124,7 @@ const EMPTY_SNAPSHOT: Snapshot = {
   calls: [], inquiries: [], stock: [], invoices: [], employees: [], attendance: [],
   salaries: [], leaves: [], transportationLogs: [], salesOrders: [], salesInvoices: [],
   salesDeliveries: [], repairJobs: [], onlineBookings: [], salesCustomers: [], expenses: [], walletBalance: 50000,
-  transactions: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
+  transactions: [], accounts: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
 };
 
 function getToken(): string | null {
@@ -783,20 +786,52 @@ export function useErpStore() {
       .finally(() => refresh(activeUser));
   };
 
-  const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', desc: string) => {
+  const manualAdjust = (amount: number, type: 'CREDIT' | 'DEBIT', desc: string, metadata?: Record<string, any>) => {
     apiFetch('/api/erp/wallet/adjust', {
       method: 'POST',
-      body: JSON.stringify({ amount, type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT', description: desc }),
+      body: JSON.stringify({ amount, type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT', description: desc, metadata }),
     })
       .catch(err => console.error('manualAdjust failed:', err))
       .finally(() => refresh(activeUser));
   };
 
-  const deleteTransaction = (id: string) => {
+  // Renamed from the old deleteTransaction: the server no longer deletes
+  // anything — it inserts an equal-and-opposite reversal entry instead
+  // (never silently delete a financial transaction). Returns the request
+  // promise (a deliberate exception to this file's usual fire-and-forget
+  // style) so the Ledger tab can await it and show a real error toast.
+  const reverseLedgerEntry = (id: string): Promise<void> =>
     apiFetch(`/api/erp/wallet/transactions/${id}`, { method: 'DELETE' })
-      .catch(err => console.error('deleteTransaction failed:', err))
-      .finally(() => refresh(activeUser));
-  };
+      .then(() => { refresh(activeUser); })
+      .catch(err => { refresh(activeUser); throw err; });
+
+  // ---- Master Money Control: multi-account tracking ----
+  // All return the request promise (unlike most store methods above) so
+  // each modal can await + disable-while-submitting + show a real error
+  // toast for these irreversible money-movement actions.
+  const createAccount = (data: { name: string; type: AccountType; linkedEmployeeId?: string; openingBalance?: number }): Promise<Account> =>
+    apiFetch('/api/erp/accounts', { method: 'POST', body: JSON.stringify(data) })
+      .then((res) => { refresh(activeUser); return res.data as Account; });
+
+  const updateAccount = (id: string, data: { name?: string; isActive?: boolean }): Promise<void> =>
+    apiFetch(`/api/erp/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+      .then(() => { refresh(activeUser); });
+
+  const transferBetweenAccounts = (fromAccountId: string, toAccountId: string, amount: number, note: string): Promise<void> =>
+    apiFetch('/api/erp/accounts/transfer', { method: 'POST', body: JSON.stringify({ fromAccountId, toAccountId, amount, note }) })
+      .then(() => { refresh(activeUser); });
+
+  const giveAdvance = (params: { fromAccountId: string; toAccountId: string; amount: number; note: string; employeeId?: string }): Promise<void> =>
+    apiFetch('/api/erp/accounts/advance', { method: 'POST', body: JSON.stringify(params) })
+      .then(() => { refresh(activeUser); });
+
+  const recordSettlement = (params: { fromAccountId: string; toAccountId: string; amount: number; note: string; employeeId?: string }): Promise<void> =>
+    apiFetch('/api/erp/accounts/settlement', { method: 'POST', body: JSON.stringify(params) })
+      .then(() => { refresh(activeUser); });
+
+  const recordRefund = (params: { fromAccountId: string; amount: number; note: string; customerId?: string; jobId?: string }): Promise<void> =>
+    apiFetch('/api/erp/accounts/refund', { method: 'POST', body: JSON.stringify(params) })
+      .then(() => { refresh(activeUser); });
 
   // ---- Logistics ----
   const addTransportLog = (log: TransportationLog) => {
@@ -859,7 +894,8 @@ export function useErpStore() {
     deletePassword: settings.deletePassword,
     settings, updateSettings,
     backupMeta: snap.backupMeta, recordBackup,
-    transactions: snap.transactions, deleteTransaction,
+    transactions: snap.transactions, reverseLedgerEntry,
+    accounts: snap.accounts, createAccount, updateAccount, transferBetweenAccounts, giveAdvance, recordSettlement, recordRefund,
     expenses: snap.expenses, addExpense,
     leaves: snap.leaves,
     transportationLogs: snap.transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,

@@ -278,14 +278,19 @@ export function CustomerProfileModal({ customerId, onClose, store }: { customerI
                 </Section>
 
                 <Section title="Payment / Due Summary" icon={Wallet}>
-                  <div className="grid grid-cols-3 gap-2.5 mb-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
                     <StatCard label="Total Billing" value={money(profile.summary.totalPaid + profile.summary.totalDue)} icon={Receipt} colorClass="bg-blue-600/10 text-blue-400" />
                     <StatCard label="Total Paid" value={money(profile.summary.totalPaid)} icon={Wallet} colorClass="bg-emerald-600/10 text-emerald-400" />
                     <StatCard label="Total Due" value={money(profile.summary.totalDue)} icon={Wallet} colorClass="bg-amber-600/10 text-amber-400" />
+                    {/* Informational only — already included inside Total Paid above (this
+                        system counts an intake advance as a real payment the moment it's
+                        taken, never a separate liability); shown here as a breakdown, never
+                        added on top of Total Paid or subtracted again from Total Due. */}
+                    <StatCard label="Total Advance" value={money(profile.summary.totalAdvance || 0)} icon={Wallet} colorClass="bg-sky-600/10 text-sky-400" />
                   </div>
-                  <ScrollTable head={['Date', 'Reference', 'Amount', 'Method', 'Related Repair', 'Status']}>
+                  <ScrollTable head={['Date', 'Reference', 'Amount', 'Method', 'Account', 'Related Repair', 'Status']}>
                     {profile.repairJobs.every((j: any) => (j.payments || []).length === 0) && (
-                      <tr><td colSpan={6} className="px-2.5 py-4 text-center text-slate-600 italic">No payments recorded yet.</td></tr>
+                      <tr><td colSpan={7} className="px-2.5 py-4 text-center text-slate-600 italic">No payments recorded yet.</td></tr>
                     )}
                     {profile.repairJobs.flatMap((j: any) => (j.payments || []).map((p: any) => (
                       <tr key={p.id} className="border-b border-slate-800/60 last:border-0">
@@ -293,6 +298,7 @@ export function CustomerProfileModal({ customerId, onClose, store }: { customerI
                         <td className="px-2.5 py-2 font-code whitespace-nowrap">{p.id}</td>
                         <td className="px-2.5 py-2 whitespace-nowrap">{money(p.amount)}</td>
                         <td className="px-2.5 py-2 whitespace-nowrap">{p.method}</td>
+                        <td className="px-2.5 py-2 whitespace-nowrap">{p.accountName || <span className="text-slate-600 italic">not tracked</span>}</td>
                         <td className="px-2.5 py-2 font-code text-blue-400 whitespace-nowrap">{j.id}</td>
                         <td className="px-2.5 py-2"><Badge variant="outline" className="text-[9px] uppercase border-emerald-700 text-emerald-400">Received</Badge></td>
                       </tr>

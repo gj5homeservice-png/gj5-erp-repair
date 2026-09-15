@@ -220,20 +220,45 @@ CREATE TABLE IF NOT EXISTS stock_movements (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS wallet_transactions (
-  id           VARCHAR(64) PRIMARY KEY,
-  user_email   VARCHAR(191) NOT NULL,
-  amount       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  date         VARCHAR(30) NULL,
-  time         VARCHAR(30) NULL,
-  type         VARCHAR(64) NULL,
-  description  TEXT NULL,
-  metadata     JSON NULL,
+  id                 VARCHAR(64) PRIMARY KEY,
+  user_email         VARCHAR(191) NOT NULL,
+  amount             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  date               VARCHAR(30) NULL,
+  time               VARCHAR(30) NULL,
+  type               VARCHAR(64) NULL,
+  description        TEXT NULL,
+  metadata           JSON NULL,
+  from_account_id    VARCHAR(64) NULL,
+  to_account_id      VARCHAR(64) NULL,
+  customer_id        VARCHAR(64) NULL,
+  employee_id        VARCHAR(64) NULL,
+  job_id             VARCHAR(64) NULL,
+  payment_method     VARCHAR(30) NULL,
+  created_by         VARCHAR(191) NULL,
+  is_reversal        BOOLEAN NOT NULL DEFAULT FALSE,
+  reversed_entry_id  VARCHAR(64) NULL,
   INDEX idx_wallet_tx_user (user_email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS wallet_balance (
   user_email  VARCHAR(191) PRIMARY KEY,
   balance     DECIMAL(12,2) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Master Money Control — named company money locations (Cash/UPI/Bank/
+-- per-Employee/Runner custody accounts). See migration 017.
+CREATE TABLE IF NOT EXISTS accounts (
+  id                  VARCHAR(64) PRIMARY KEY,
+  user_email          VARCHAR(191) NOT NULL,
+  name                VARCHAR(191) NOT NULL,
+  type                VARCHAR(20) NOT NULL,
+  linked_employee_id  VARCHAR(64) NULL,
+  opening_balance     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  current_balance     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at          VARCHAR(40) NULL,
+  INDEX idx_accounts_user (user_email),
+  INDEX idx_accounts_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -488,10 +513,13 @@ CREATE TABLE IF NOT EXISTS expenses (
   user_email    VARCHAR(191) NOT NULL,
   amount        DECIMAL(12,2) NOT NULL DEFAULT 0,
   category      VARCHAR(100) NULL,
+  description   TEXT NULL,
   vendor_name   VARCHAR(191) NULL,
   date          VARCHAR(30) NULL,
   payment_mode  VARCHAR(30) NULL,
+  reference     VARCHAR(191) NULL,
   timestamp     VARCHAR(50) NULL,
+  account_id    VARCHAR(64) NULL,
   INDEX idx_expenses_user (user_email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -654,6 +682,7 @@ CREATE TABLE IF NOT EXISTS repair_job_payments (
   amount          DECIMAL(12,2) NOT NULL DEFAULT 0,
   method          VARCHAR(30) NULL,
   notes           TEXT NULL,
+  account_id      VARCHAR(64) NULL,
   FOREIGN KEY (repair_job_id) REFERENCES repair_jobs(id) ON DELETE CASCADE,
   INDEX idx_repair_job_payments_job (repair_job_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

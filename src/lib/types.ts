@@ -207,6 +207,36 @@ export interface WalletTransaction {
   type: string;
   description: string;
   metadata?: any;
+  // Master Money Control — which account(s) this row moved money between,
+  // and reversal metadata. See src/lib/erp/accounts.ts. Both from/to set =
+  // a transfer between two company/employee/runner accounts; only one set
+  // = a plain inflow/outflow.
+  fromAccountId?: string;
+  toAccountId?: string;
+  customerId?: string;
+  employeeId?: string;
+  jobId?: string;
+  paymentMethod?: string;
+  createdBy?: string;
+  isReversal?: boolean;
+  reversedEntryId?: string;
+}
+
+export type AccountType = 'CASH' | 'UPI' | 'BANK' | 'EMPLOYEE' | 'RUNNER';
+
+// A named company money location (Owner Cash, UPI-1, Bank-1, or a
+// per-employee/runner custody account). See src/lib/erp/accounts.ts.
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  linkedEmployeeId?: string;
+  openingBalance: number;
+  currentBalance: number;
+  totalIn: number;
+  totalOut: number;
+  isActive: boolean;
+  createdAt?: string;
 }
 
 export interface VisibilitySettings {
@@ -243,10 +273,15 @@ export interface Expense {
   id: string;
   amount: number;
   category: string;
+  description?: string;
   vendorName: string;
   date: string;
   paymentMode: string;
+  reference?: string;
   timestamp: string;
+  // Master Money Control — which account this expense was paid from
+  // (e.g. an EMPLOYEE-type account when staff pay it out of custody cash).
+  accountId?: string;
 }
 
 export interface TransportationLog {
@@ -705,6 +740,10 @@ export interface RepairJobPayment {
   amount: number;
   method: RepairJobPaymentMethod;
   notes?: string;
+  // Master Money Control — which account this payment landed in (e.g. a
+  // RUNNER-type account when a runner collects it on delivery, before it's
+  // physically returned to the company). See src/lib/erp/accounts.ts.
+  accountId?: string;
 }
 
 export interface RepairJobNote {

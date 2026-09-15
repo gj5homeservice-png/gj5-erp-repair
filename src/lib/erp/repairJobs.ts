@@ -60,7 +60,7 @@ function jobRowToObject(row: any, children: { parts: any[]; payments: any[]; not
 }
 
 function partRow(r: any) { return { id: r.id, partName: r.part_name, partId: r.part_id, qty: r.qty, purchaseCost: r.purchase_cost, sellingPrice: r.selling_price, total: r.total, notes: r.notes }; }
-function paymentRow(r: any) { return { id: r.id, date: r.date, amount: r.amount, method: r.method, notes: r.notes }; }
+function paymentRow(r: any) { return { id: r.id, date: r.date, amount: r.amount, method: r.method, notes: r.notes, accountId: r.account_id }; }
 function noteRow(r: any) { return { id: r.id, date: r.date, text: r.text }; }
 function statusRow(r: any) { return { id: r.id, status: r.status, changedAt: r.changed_at, note: r.note }; }
 function notifRow(r: any) { return { id: r.id, trigger: r.trigger_type, message: r.message, sentAt: r.sent_at }; }
@@ -142,8 +142,8 @@ async function replaceChildren(conn: PoolConnection, jobId: string, job: any) {
   await conn.execute('DELETE FROM repair_job_payments WHERE repair_job_id = ?', [jobId]);
   for (const p of Array.isArray(job.payments) ? job.payments : []) {
     await conn.execute(
-      `INSERT INTO repair_job_payments (id, repair_job_id, date, amount, method, notes) VALUES (?, ?, ?, ?, ?, ?)`,
-      [p.id, jobId, p.date ?? null, p.amount ?? 0, p.method ?? null, p.notes ?? null]
+      `INSERT INTO repair_job_payments (id, repair_job_id, date, amount, method, notes, account_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [p.id, jobId, p.date ?? null, p.amount ?? 0, p.method ?? null, p.notes ?? null, p.accountId ?? null]
     );
   }
   await conn.execute('DELETE FROM repair_job_notes WHERE repair_job_id = ?', [jobId]);
@@ -407,29 +407,37 @@ export async function deleteRepairJob(email: string, id: string) {
 }
 
 // Mirrors addRepairJobPayment: inserts the payment row and a matching wallet
-// transaction (TX-RJ-<paymentId>) — one transaction.
+// transaction (TX-RJ-<paymentId>) — one transaction. When the payment names
+// an account (Master Money Control), that account's balance is ALSO
+// incremented, in addition to (never instead of) the legacy wallet_balance
+// leg — both run in the same transaction, so neither can happen without
+// the other.
 export async function addRepairJobPayment(email: string, jobId: string, payment: any) {
   const pool = getPool();
   const conn: PoolConnection = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [jobs] = await conn.execute<any[]>('SELECT customer_name FROM repair_jobs WHERE id = ? AND user_email = ?', [jobId, email]);
+    const [jobs] = await conn.execute<any[]>('SELECT customer_name, customer_id FROM repair_jobs WHERE id = ? AND user_email = ?', [jobId, email]);
     const job = (jobs as any[])[0];
     if (!job) {
       await conn.rollback();
       return false;
     }
     await conn.execute(
-      `INSERT INTO repair_job_payments (id, repair_job_id, date, amount, method, notes) VALUES (?, ?, ?, ?, ?, ?)`,
-      [payment.id, jobId, payment.date ?? null, payment.amount ?? 0, payment.method ?? null, payment.notes ?? null]
+      `INSERT INTO repair_job_payments (id, repair_job_id, date, amount, method, notes, account_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [payment.id, jobId, payment.date ?? null, payment.amount ?? 0, payment.method ?? null, payment.notes ?? null, payment.accountId ?? null]
     );
     const { applyWalletDelta } = await import('./wallet');
     await conn.execute(
-      `INSERT INTO wallet_transactions (id, user_email, amount, date, time, type, description)
-       VALUES (?, ?, ?, ?, ?, 'REPAIR_JOB_PAYMENT', ?)`,
-      [`TX-RJ-${payment.id}`, email, payment.amount ?? 0, new Date().toISOString().split('T')[0], new Date().toLocaleTimeString(), `Repair payment: ${jobId} - ${job.customer_name}`]
+      `INSERT INTO wallet_transactions (id, user_email, amount, date, time, type, description, to_account_id, customer_id, job_id, payment_method)
+       VALUES (?, ?, ?, ?, ?, 'REPAIR_JOB_PAYMENT', ?, ?, ?, ?, ?)`,
+      [`TX-RJ-${payment.id}`, email, payment.amount ?? 0, new Date().toISOString().split('T')[0], new Date().toLocaleTimeString(), `Repair payment: ${jobId} - ${job.customer_name}`, payment.accountId ?? null, job.customer_id ?? null, jobId, payment.method ?? null]
     );
     await applyWalletDelta(conn, email, payment.amount ?? 0);
+    if (payment.accountId) {
+      const { applyAccountDelta } = await import('./accounts');
+      await applyAccountDelta(conn, email, payment.accountId, payment.amount ?? 0);
+    }
     await conn.commit();
     return true;
   } catch (err) {

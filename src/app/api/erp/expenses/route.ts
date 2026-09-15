@@ -8,10 +8,13 @@ function rowToObject(row: any) {
     id: row.id,
     amount: row.amount,
     category: row.category,
+    description: row.description,
     vendorName: row.vendor_name,
     date: row.date,
     paymentMode: row.payment_mode,
+    reference: row.reference,
     timestamp: row.timestamp,
+    accountId: row.account_id,
   };
 }
 
@@ -41,16 +44,20 @@ export async function POST(request: Request) {
     try {
       await conn.beginTransaction();
       await conn.execute(
-        `INSERT INTO expenses (id, user_email, amount, category, vendor_name, date, payment_mode, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [exp.id, auth.email, exp.amount ?? 0, exp.category ?? null, exp.vendorName ?? null, exp.date ?? null, exp.paymentMode ?? null, exp.timestamp ?? null]
+        `INSERT INTO expenses (id, user_email, amount, category, description, vendor_name, date, payment_mode, reference, timestamp, account_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [exp.id, auth.email, exp.amount ?? 0, exp.category ?? null, exp.description ?? null, exp.vendorName ?? null, exp.date ?? null, exp.paymentMode ?? null, exp.reference ?? null, exp.timestamp ?? null, exp.accountId ?? null]
       );
       await conn.execute(
-        `INSERT INTO wallet_transactions (id, user_email, amount, date, time, type, description)
-         VALUES (?, ?, ?, ?, ?, 'EXPENSE', ?)`,
-        [`TX-EXP-${exp.id}`, auth.email, exp.amount ?? 0, new Date().toISOString().split('T')[0], new Date().toLocaleTimeString(), `Expense: ${exp.category} - ${exp.vendorName}`]
+        `INSERT INTO wallet_transactions (id, user_email, amount, date, time, type, description, from_account_id, payment_method)
+         VALUES (?, ?, ?, ?, ?, 'EXPENSE', ?, ?, ?)`,
+        [`TX-EXP-${exp.id}`, auth.email, exp.amount ?? 0, new Date().toISOString().split('T')[0], new Date().toLocaleTimeString(), `Expense: ${exp.category} - ${exp.vendorName}`, exp.accountId ?? null, exp.paymentMode ?? null]
       );
       await applyWalletDelta(conn, auth.email, -(exp.amount ?? 0));
+      if (exp.accountId) {
+        const { applyAccountDelta } = await import('@/lib/erp/accounts');
+        await applyAccountDelta(conn, auth.email, exp.accountId, -(exp.amount ?? 0));
+      }
       await conn.commit();
     } catch (err) {
       await conn.rollback();

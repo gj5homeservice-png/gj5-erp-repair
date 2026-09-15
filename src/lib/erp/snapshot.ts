@@ -9,10 +9,16 @@ import { listOnlineBookings } from './onlineBookings';
 import { listEmployees } from './employees';
 import { listSalesOrders, listSalesInvoices, listSalesDeliveries } from './sales';
 import { getWalletBalance, listWalletTransactions } from './wallet';
+import { listAccountsWithBalances } from './accounts';
 import { getSingleRow } from './singleRow';
 
+// Fixed: description/reference were missing here even though both the
+// expenses table and the dedicated GET /api/erp/expenses route already
+// include them — meaning an expense's description/reference silently
+// vanished the moment the page reloaded (bootstrap is what actually feeds
+// store.expenses). account_id added for Master Money Control.
 function expenseRow(r: any) {
-  return { id: r.id, amount: r.amount, category: r.category, vendorName: r.vendor_name, date: r.date, paymentMode: r.payment_mode, timestamp: r.timestamp };
+  return { id: r.id, amount: r.amount, category: r.category, description: r.description, vendorName: r.vendor_name, date: r.date, paymentMode: r.payment_mode, reference: r.reference, timestamp: r.timestamp, accountId: r.account_id };
 }
 
 // Full per-tenant snapshot, shared by GET /api/erp/bootstrap (seeds the
@@ -25,7 +31,7 @@ export async function getFullSnapshotData(email: string) {
   const [
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
     transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
-    customersRows, expenseRows, walletBalance, transactions,
+    customersRows, expenseRows, walletBalance, transactions, accounts,
     settingsRow, visibilityRow, navOrderRow, backupMetaRow, attendanceLinkRows,
   ] = await Promise.all([
     listRepairCalls(email),
@@ -46,6 +52,7 @@ export async function getFullSnapshotData(email: string) {
     pool.execute<any[]>('SELECT * FROM expenses WHERE user_email = ?', [email]).then(([rows]) => rows as any[]),
     getWalletBalance(email),
     listWalletTransactions(email),
+    listAccountsWithBalances(email),
     getSingleRow('system_settings', email),
     getSingleRow('visibility_settings', email),
     getSingleRow('nav_order', email),
@@ -82,7 +89,7 @@ export async function getFullSnapshotData(email: string) {
   return {
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
     transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
-    salesCustomers, expenses: expenseRows.map(expenseRow), walletBalance, transactions,
+    salesCustomers, expenses: expenseRows.map(expenseRow), walletBalance, transactions, accounts,
     attendanceLinks: attendanceLinkRows.map(r => ({
       id: r.id, token: r.token, employeeId: r.employee_id, employeeName: r.employee_name,
       mobile: r.mobile, expiresAt: r.expires_at, used: !!r.used, createdAt: r.created_at,

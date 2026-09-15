@@ -29,30 +29,47 @@ export function RepairPaymentModal({ isOpen, onClose, job, store }: RepairPaymen
   const [method, setMethod] = useState<RepairJobPaymentMethod>('Cash');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [accountId, setAccountId] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
 
   const due = job ? balanceDue(job) : 0;
+  // Master Money Control — required only once the admin has actually set up
+  // at least one active account, so existing workflows are never blocked
+  // before anyone has adopted this feature.
+  const activeAccounts = (store.accounts || []).filter((a: any) => a.isActive);
 
   const resetAndClose = () => {
     setAmount(0);
     setMethod('Cash');
     setDate(format(new Date(), 'yyyy-MM-dd'));
     setNotes('');
+    setAccountId('');
     onClose();
   };
 
   const handleSave = () => {
+    if (submitting) return;
     if (!job) return;
     if (!amount || amount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Enter a payment amount greater than zero.' });
       return;
     }
+    if (activeAccounts.length > 0 && !accountId) {
+      toast({ variant: 'destructive', title: 'Account Required', description: 'Select which account this payment landed in.' });
+      return;
+    }
     const payment: RepairJobPayment = {
       id: `PMT-${job.id}-${job.payments.length + 1}`,
-      date, amount: Number(amount), method, notes: notes || undefined
+      date, amount: Number(amount), method, notes: notes || undefined, accountId: accountId || undefined,
     };
-    store.addRepairJobPayment(job.id, payment);
-    toast({ title: 'Payment Recorded', description: `₹${amount.toLocaleString()} recorded for ${job.id}.` });
-    resetAndClose();
+    setSubmitting(true);
+    try {
+      store.addRepairJobPayment(job.id, payment);
+      toast({ title: 'Payment Recorded', description: `₹${amount.toLocaleString()} recorded for ${job.id}.` });
+      resetAndClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -82,6 +99,17 @@ export function RepairPaymentModal({ isOpen, onClose, job, store }: RepairPaymen
               <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-slate-900 border-slate-800 h-10 text-[#F8FAFC]" />
             </div>
           </div>
+          {activeAccounts.length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase font-bold text-slate-500">Account (which pocket received this?)</Label>
+              <Select value={accountId} onValueChange={setAccountId}>
+                <SelectTrigger className="bg-slate-900 border-slate-800 h-10"><SelectValue placeholder="Select account" /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  {activeAccounts.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-slate-500">Notes</Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} className="bg-slate-950 border-slate-800 min-h-[70px] text-[#F8FAFC]" />
@@ -89,7 +117,7 @@ export function RepairPaymentModal({ isOpen, onClose, job, store }: RepairPaymen
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={resetAndClose} className="text-slate-400">Cancel</Button>
-          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 font-bold uppercase text-xs px-8">Record Payment</Button>
+          <Button onClick={handleSave} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 font-bold uppercase text-xs px-8">{submitting ? 'Saving...' : 'Record Payment'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -71,6 +71,12 @@ export async function getFullSnapshotData(email: string) {
     defaultPaymentMode: settingsRow.default_payment_mode, defaultDueDays: settingsRow.default_due_days,
     warrantyExpiringSoonDays: settingsRow.warranty_expiring_soon_days, standardCheckInTime: settingsRow.standard_check_in_time,
     lateThresholdMinutes: settingsRow.late_threshold_minutes,
+    // Persistent, cross-device account preferences (see migration 016) —
+    // this is what makes the logo/theme/dispatch templates load correctly
+    // on first paint in a new browser/device, not just after a later
+    // PUT /api/erp/settings call.
+    logoUrl: settingsRow.logo_url || '', adminTheme: settingsRow.admin_theme || 'dark',
+    transportationTemplates: settingsRow.transportation_templates || null,
   } : null;
 
   return {

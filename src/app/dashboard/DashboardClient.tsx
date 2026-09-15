@@ -171,7 +171,12 @@ export default function ErpMainHub() {
   const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
   const router = useRouter();
-  const { theme, toggleTheme } = useAdminTheme();
+  // store.settings.adminTheme is the account's saved theme (MySQL, loaded on
+  // every login) — passing it here is what makes a new browser, Incognito
+  // window, or another device show the same theme instead of always
+  // defaulting to dark; onPersist saves a toggle back the same way every
+  // other Settings field already does.
+  const { theme, toggleTheme } = useAdminTheme(store.settings.adminTheme, (next) => store.updateSettings({ adminTheme: next }));
   // Whether THIS session has itself pushed at least one in-app tab-history
   // entry — lets the mobile Back button tell "there's real app history to
   // pop" apart from "the user was deep-linked straight to a non-Dashboard

@@ -27,12 +27,26 @@ function readStoredTheme(): AdminTheme {
   }
 }
 
-export function useAdminTheme() {
+// `serverTheme` (the account's saved preference, e.g. store.settings.adminTheme
+// from MySQL) and `onPersist` (called on toggle so the caller can save it
+// there, e.g. store.updateSettings({ adminTheme })) are both optional so
+// every existing caller keeps working unchanged. localStorage stays as the
+// fast, synchronous value used for the very first paint (no flash while the
+// network request is in flight); the server value — once loaded — always
+// wins, which is what makes a new browser, Incognito window, or another
+// device converge on the same saved theme instead of defaulting back to dark.
+export function useAdminTheme(serverTheme?: AdminTheme | null, onPersist?: (theme: AdminTheme) => void) {
   const [theme, setTheme] = useState<AdminTheme>('dark');
 
   useEffect(() => {
     setTheme(readStoredTheme());
   }, []);
+
+  useEffect(() => {
+    if (!serverTheme) return;
+    setTheme(serverTheme);
+    try { localStorage.setItem(STORAGE_KEY, serverTheme); } catch { /* ignore */ }
+  }, [serverTheme]);
 
   useEffect(() => {
     document.body.classList.add('gj5-admin-active');
@@ -46,9 +60,10 @@ export function useAdminTheme() {
     setTheme(prev => {
       const next: AdminTheme = prev === 'dark' ? 'light' : 'dark';
       try { localStorage.setItem(STORAGE_KEY, next); } catch { /* ignore */ }
+      onPersist?.(next);
       return next;
     });
-  }, []);
+  }, [onPersist]);
 
   return { theme, toggleTheme };
 }

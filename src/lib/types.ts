@@ -594,6 +594,13 @@ export interface SystemSettings {
   warrantyExpiringSoonDays: number;
   standardCheckInTime: string;
   lateThresholdMinutes: number;
+  // Persistent, cross-device account preferences — reuse this table (one
+  // row per tenant, already loaded on every login via /api/erp/bootstrap)
+  // rather than a new one, since these are the same class of thing as the
+  // fields above: an account-level setting, not business data.
+  logoUrl?: string;
+  adminTheme?: 'dark' | 'light';
+  transportationTemplates?: string[];
 }
 
 export interface BackupMeta {

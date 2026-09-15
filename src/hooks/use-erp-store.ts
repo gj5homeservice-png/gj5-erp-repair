@@ -42,6 +42,16 @@ import { setBrandLogoCache } from '@/lib/branding';
 // never disagree on which modules exist or their default order.
 const DEFAULT_NAV_ORDER = DEFAULT_SIDEBAR_ORDER;
 
+// Mirrors the defaults LogisticsModule.tsx used to hard-code locally before
+// its WhatsApp dispatch templates moved to server-side persistence — kept
+// here so a tenant who has never saved a custom template still sees the
+// exact same starting text as before.
+const DEFAULT_TRANSPORTATION_TEMPLATES = [
+  "Transportation Dispatch: Dear [RunnerName], please collect device [JobID] from [CustomerName] at [Address]. Issue: [Issue]. Timestamp: [Timestamp].",
+  "Transit Alert: Dear Customer, your device [JobID] is currently in transit with our runner [RunnerName].",
+  "Delivery Complete: Dear [CustomerName], runner [RunnerName] has successfully arrived for the delivery of [JobID].",
+];
+
 const DEFAULT_SETTINGS: SystemSettings = {
   gstEnabled: true,
   gstRate: 18,
@@ -67,7 +77,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
   defaultDueDays: 0,
   warrantyExpiringSoonDays: 30,
   standardCheckInTime: '10:00',
-  lateThresholdMinutes: 15
+  lateThresholdMinutes: 15,
+  logoUrl: '',
+  adminTheme: 'dark',
+  transportationTemplates: DEFAULT_TRANSPORTATION_TEMPLATES,
 };
 
 const DEFAULT_VISIBILITY: VisibilitySettings = {
@@ -228,21 +241,37 @@ export function useErpStore() {
     return () => { if (unsubscribe) unsubscribe(); };
   }, [activeUser]);
 
+  // The logo's actual source of truth: system_settings.logo_url (MySQL,
+  // scoped to the signed-in account, loaded on every bootstrap regardless of
+  // browser/device) takes priority over companyProfile.logoUrl (the older
+  // Firestore-or-localStorage path, kept only as a fallback for an account
+  // that saved a logo before this existed and hasn't re-saved since — the
+  // very next save writes it into system_settings too, via
+  // updateCompanyProfile below, so this fallback is self-healing).
+  const effectiveLogoUrl: string = snap.settings?.logoUrl || companyProfile?.logoUrl || '';
+
   // Keeps the device-local logo cache (and, through it, the browser tab
-  // favicon — see branding.ts) in sync with whatever companyProfile actually
-  // resolves to, from any source: the Firestore snapshot above, its
-  // localStorage fallback, or an explicit save. Watching companyProfile
-  // itself rather than only the save path means another device changing the
-  // logo, or simply this one loading it for the first time, updates the tab
-  // icon too — not just the browser that clicked Save.
+  // favicon — see branding.ts) in sync with the resolved logo above, from
+  // any source. Watching it here — not only the save path — means another
+  // device changing the logo, or simply this one loading it for the first
+  // time, updates the tab icon too, not just the browser that clicked Save.
   useEffect(() => {
     if (!activeUser) return;
-    setBrandLogoCache(companyProfile?.logoUrl || '');
-  }, [activeUser, companyProfile?.logoUrl]);
+    setBrandLogoCache(effectiveLogoUrl);
+  }, [activeUser, effectiveLogoUrl]);
 
   const settings: SystemSettings = { ...DEFAULT_SETTINGS, ...(snap.settings || {}) };
   const visibility: VisibilitySettings = (snap.visibility as VisibilitySettings) || DEFAULT_VISIBILITY;
   const navOrder: string[] = snap.navOrder || DEFAULT_NAV_ORDER;
+
+  // Every existing consumer (sidebar/header, and every PDF/print module that
+  // reads store.companyProfile.logoUrl for a letterhead) keeps working
+  // unchanged — they just now transparently receive the MySQL-backed value
+  // once one exists, without any of those files needing to know this table
+  // exists at all.
+  const resolvedCompanyProfile: Company | null = (companyProfile || effectiveLogoUrl)
+    ? ({ ...(companyProfile || {}), logoUrl: effectiveLogoUrl } as Company)
+    : companyProfile;
 
   const updateSettings = (patch: Partial<SystemSettings>) => {
     optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, ...patch } }));
@@ -286,6 +315,18 @@ export function useErpStore() {
       } catch (e) {
         console.error('Company Profile Cloud Sync Failure:', e);
       }
+    }
+    // The permanent, cross-device fix: also write the logo into MySQL
+    // (system_settings.logo_url) whenever it changes here, independent of
+    // Firestore's availability/config — this is what makes a new browser,
+    // Incognito window, or another device show the same saved logo, since
+    // it's loaded from /api/erp/bootstrap on every login rather than from
+    // this device's own localStorage/Firestore cache.
+    if ('logoUrl' in patch) {
+      optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, logoUrl: patch.logoUrl || '' } }));
+      apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify({ logoUrl: patch.logoUrl || '' }) })
+        .catch(err => console.error('Logo sync failed:', err))
+        .finally(() => refresh(activeUser));
     }
   };
 
@@ -814,7 +855,7 @@ export function useErpStore() {
     walletBalance: snap.walletBalance, topUpWallet, manualAdjust,
     visibility, setVisibility,
     navOrder, setNavOrder,
-    companyProfile, setCompanyProfile, updateCompanyProfile,
+    companyProfile: resolvedCompanyProfile, setCompanyProfile, updateCompanyProfile,
     deletePassword: settings.deletePassword,
     settings, updateSettings,
     backupMeta: snap.backupMeta, recordBackup,

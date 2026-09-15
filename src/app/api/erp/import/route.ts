@@ -106,7 +106,8 @@ export async function POST(request: Request) {
         defaultMinStockLevel: 'default_min_stock_level', defaultPaymentMode: 'default_payment_mode',
         defaultDueDays: 'default_due_days', warrantyExpiringSoonDays: 'warranty_expiring_soon_days',
         standardCheckInTime: 'standard_check_in_time', lateThresholdMinutes: 'late_threshold_minutes',
-      }, [], s);
+        logoUrl: 'logo_url', adminTheme: 'admin_theme', transportationTemplates: 'transportation_templates',
+      }, ['transportationTemplates'], s);
     }
 
     if (snapshot.backupMeta) {

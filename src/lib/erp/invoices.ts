@@ -37,6 +37,9 @@ function invoiceRowToObject(row: any, items: any[]) {
     obj[col.js] = v;
   }
   obj.items = items;
+  // Present only once migration 020 has been applied; marks an invoice that was
+  // generated from a Sale ("sale:<id>") so its money is counted once.
+  obj.sourceRef = row.source_ref ?? null;
   return obj;
 }
 

@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   total            DECIMAL(12,2) NULL,
   tax_enabled      BOOLEAN NULL,
   gst              DECIMAL(12,2) NULL,
+  source_ref       VARCHAR(64) NULL,
   INDEX idx_invoices_user (user_email),
   INDEX idx_invoices_number (invoice_number),
   INDEX idx_invoices_mobile (mobile)
@@ -584,6 +585,11 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   invoice_id          VARCHAR(64) NULL,
   created_at          VARCHAR(40) NULL,
   updated_at          VARCHAR(40) NULL,
+  -- Migration 020 (Sales module)
+  notes               TEXT NULL,
+  stock_deducted      TINYINT(1) NOT NULL DEFAULT 0,
+  source_order_id     VARCHAR(64) NULL,
+  billing_invoice_id  VARCHAR(64) NULL,
   INDEX idx_sales_orders_user (user_email),
   INDEX idx_sales_orders_product (product_id),
   INDEX idx_sales_orders_mobile (mobile)
@@ -621,6 +627,60 @@ CREATE TABLE IF NOT EXISTS sales_deliveries (
   updated_at       VARCHAR(40) NULL,
   INDEX idx_sales_deliveries_user (user_email),
   INDEX idx_sales_deliveries_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Orders module (migration 020) — the pre-sale order lifecycle. A delivered
+-- order is converted into a sales_orders row (sale_id links them).
+CREATE TABLE IF NOT EXISTS customer_orders (
+  id                      VARCHAR(64) PRIMARY KEY,
+  user_email              VARCHAR(191) NOT NULL,
+  customer_id             VARCHAR(64) NULL,
+  customer_name           VARCHAR(191) NULL,
+  mobile                  VARCHAR(20) NULL,
+  order_date              VARCHAR(30) NULL,
+  product_id              VARCHAR(64) NULL,
+  product_name            VARCHAR(191) NULL,
+  brand                   VARCHAR(100) NULL,
+  model                   VARCHAR(100) NULL,
+  quantity                INT NOT NULL DEFAULT 1,
+  unit_price              DECIMAL(12,2) NOT NULL DEFAULT 0,
+  subtotal                DECIMAL(12,2) NOT NULL DEFAULT 0,
+  discount                DECIMAL(12,2) NOT NULL DEFAULT 0,
+  gst_enabled             BOOLEAN NOT NULL DEFAULT FALSE,
+  gst_rate                DECIMAL(5,2) NOT NULL DEFAULT 0,
+  gst_amount              DECIMAL(12,2) NOT NULL DEFAULT 0,
+  delivery_charge         DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total_amount            DECIMAL(12,2) NOT NULL DEFAULT 0,
+  amount_paid             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  balance_due             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  payment_status          VARCHAR(20) NOT NULL DEFAULT 'Pending',
+  order_status            VARCHAR(30) NOT NULL DEFAULT 'NEW',
+  delivery_required       BOOLEAN NOT NULL DEFAULT TRUE,
+  expected_delivery_date  VARCHAR(30) NULL,
+  notes                   TEXT NULL,
+  sale_id                 VARCHAR(64) NULL,
+  created_by              VARCHAR(191) NULL,
+  created_at              VARCHAR(40) NULL,
+  updated_at              VARCHAR(40) NULL,
+  INDEX idx_customer_orders_user (user_email),
+  INDEX idx_customer_orders_status (user_email, order_status),
+  INDEX idx_customer_orders_customer (customer_id),
+  INDEX idx_customer_orders_mobile (mobile)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Payment history shared by Sales (ref_type 'SALE') and Orders ('ORDER').
+CREATE TABLE IF NOT EXISTS sales_payments (
+  id          VARCHAR(64) PRIMARY KEY,
+  user_email  VARCHAR(191) NOT NULL,
+  ref_type    VARCHAR(10) NOT NULL,
+  ref_id      VARCHAR(64) NOT NULL,
+  amount      DECIMAL(12,2) NOT NULL DEFAULT 0,
+  method      VARCHAR(30) NULL,
+  paid_on     VARCHAR(30) NULL,
+  note        TEXT NULL,
+  created_by  VARCHAR(191) NULL,
+  created_at  VARCHAR(40) NULL,
+  INDEX idx_sales_payments_ref (user_email, ref_type, ref_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -750,6 +810,13 @@ CREATE TABLE IF NOT EXISTS system_settings (
   warranty_expiring_soon_days    INT NOT NULL DEFAULT 30,
   standard_check_in_time         VARCHAR(10) NOT NULL DEFAULT '10:00',
   late_threshold_minutes         INT NOT NULL DEFAULT 15,
+  -- Persistent cross-device account preferences (migration 016): company
+  -- logo, admin light/dark theme, WhatsApp dispatch templates. These were
+  -- never mirrored into this fresh-install schema, so a brand-new database
+  -- couldn't save the theme or logo until 016 was run by hand.
+  logo_url                       LONGTEXT NULL,
+  admin_theme                    VARCHAR(10) NOT NULL DEFAULT 'dark',
+  transportation_templates       JSON NULL,
   -- Permanent, cross-browser Business Profile & Contact info (see
   -- migration 018) — the authoritative source for the Settings page's
   -- Business Profile / Contact & Address sections, replacing the older

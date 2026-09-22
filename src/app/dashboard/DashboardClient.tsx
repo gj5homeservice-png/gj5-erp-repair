@@ -75,6 +75,8 @@ const TransportationModule = dynamic(() => import('@/components/modules/Transpor
 const RepairJobsModule = dynamic(() => import('@/components/modules/repair/RepairJobsModule').then(m => m.RepairJobsModule), { loading: ModuleLoading, ssr: false });
 const OnlineBookingsModule = dynamic(() => import('@/components/modules/onlineBookings/OnlineBookingsModule').then(m => m.OnlineBookingsModule), { loading: ModuleLoading, ssr: false });
 const CustomerDepartmentModule = dynamic(() => import('@/components/modules/customers/CustomerDepartmentModule').then(m => m.CustomerDepartmentModule), { loading: ModuleLoading, ssr: false });
+const SalesModule = dynamic(() => import('@/components/modules/sales/SalesModule').then(m => m.SalesModule), { loading: ModuleLoading, ssr: false });
+const OrdersModule = dynamic(() => import('@/components/modules/orders/OrdersModule').then(m => m.OrdersModule), { loading: ModuleLoading, ssr: false });
 
 const DashboardModule = ({ store }: { store: any }) => (
   <div className="space-y-8 animate-in fade-in duration-500">
@@ -176,7 +178,13 @@ export default function ErpMainHub() {
   // window, or another device show the same theme instead of always
   // defaulting to dark; onPersist saves a toggle back the same way every
   // other Settings field already does.
-  const { theme, toggleTheme } = useAdminTheme(store.settings.adminTheme, (next) => store.updateSettings({ adminTheme: next }));
+  // Only hand over the server value once it has really loaded — the store's
+  // DEFAULT_SETTINGS placeholder ('dark') arriving first used to overwrite
+  // a Light-mode user's saved choice on every page load.
+  const { theme, toggleTheme } = useAdminTheme(
+    store.settingsLoaded ? store.settings.adminTheme : null,
+    (next) => store.updateSettings({ adminTheme: next }),
+  );
   // Whether THIS session has itself pushed at least one in-app tab-history
   // entry — lets the mobile Back button tell "there's real app history to
   // pop" apart from "the user was deep-linked straight to a non-Dashboard
@@ -317,6 +325,8 @@ export default function ErpMainHub() {
       case 'Repair Jobs': return <RepairJobsModule store={store} />;
       case 'Online Bookings': return <OnlineBookingsModule store={store} />;
       case 'Customer Department': return <CustomerDepartmentModule store={store} />;
+      case 'Sales': return <SalesModule store={store} />;
+      case 'Orders': return <OrdersModule store={store} onNavigate={setActiveTab} />;
       default: return <DashboardModule store={store} />;
     }
   };

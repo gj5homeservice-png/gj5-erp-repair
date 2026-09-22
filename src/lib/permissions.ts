@@ -13,6 +13,8 @@ export const ERP_MODULES = [
   'CRM Leads',
   'Billing',
   'Invoice History',
+  'Sales',
+  'Orders',
   'Stock',
   'Employees',
   'Attendance',
@@ -109,6 +111,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, ModulePermissions> = 
     Attendance: VIEW_CREATE, Salary: NONE, Analytics: VIEW_ONLY, 'E-Wallet': NONE,
     Logistics: VIEW_ONLY, Settings: NONE, 'KYC Vault': NONE,
     'Employee Profile': VIEW_ONLY, 'Employee Login': NONE, 'Audit Logs': NONE,
+    Sales: FULL_NO_DELETE, Orders: FULL_NO_DELETE,
   },
   'Delivery Executive': {
     Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': VIEW_ONLY, 'Customer Department': VIEW_ONLY, 'Online Bookings': VIEW_ONLY, 'CRM Leads': NONE,
@@ -116,6 +119,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, ModulePermissions> = 
     Attendance: VIEW_CREATE, Salary: NONE, Analytics: NONE, 'E-Wallet': NONE,
     Logistics: FULL_NO_DELETE, Settings: NONE, 'KYC Vault': NONE,
     'Employee Profile': VIEW_ONLY, 'Employee Login': NONE, 'Audit Logs': NONE,
+    Sales: NONE, Orders: VIEW_ONLY,
   },
   Accountant: {
     Dashboard: VIEW_ONLY, Repairing: NONE, 'Repair Jobs': VIEW_ONLY, 'Customer Department': VIEW_ONLY, 'Online Bookings': VIEW_ONLY, 'CRM Leads': NONE,
@@ -123,6 +127,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, ModulePermissions> = 
     Attendance: NONE, Salary: FULL, Analytics: VIEW_ONLY, 'E-Wallet': FULL,
     Logistics: NONE, Settings: NONE, 'KYC Vault': NONE,
     'Employee Profile': VIEW_ONLY, 'Employee Login': NONE, 'Audit Logs': NONE,
+    Sales: FULL, Orders: VIEW_ONLY,
   },
   'Store Manager': {
     Dashboard: FULL, Repairing: VIEW_ONLY, 'Repair Jobs': FULL_NO_DELETE, 'Customer Department': FULL_NO_DELETE, 'Online Bookings': FULL_NO_DELETE, 'CRM Leads': VIEW_CREATE,
@@ -130,6 +135,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, ModulePermissions> = 
     Attendance: FULL_NO_DELETE, Salary: VIEW_ONLY, Analytics: FULL, 'E-Wallet': VIEW_ONLY,
     Logistics: FULL_NO_DELETE, Settings: VIEW_ONLY, 'KYC Vault': NONE,
     'Employee Profile': VIEW_ONLY, 'Employee Login': NONE, 'Audit Logs': NONE,
+    Sales: FULL_NO_DELETE, Orders: FULL_NO_DELETE,
   },
   Employee: {
     Dashboard: VIEW_ONLY, Repairing: FULL, 'Repair Jobs': FULL, 'Customer Department': FULL, 'Online Bookings': FULL, 'CRM Leads': VIEW_ONLY,

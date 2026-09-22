@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Admin-only light/dark theme toggle. Deliberately does NOT touch <html> —
 // the public customer-facing site (book-repair, customer/login, etc.) is
@@ -14,39 +14,96 @@ import { useCallback, useEffect, useState } from 'react';
 // on <body> (not a wrapper div) is required so Radix's portaled content
 // (Select/Dialog/Toast, which render outside the dashboard's own DOM
 // subtree, appended directly to <body>) is still reached by the theme.
-const STORAGE_KEY = 'gj5_admin_theme';
+//
+// The same body classes are also applied before first paint by the inline
+// script in src/app/layout.tsx (it reads THEME_STORAGE_KEY), so a
+// Light-mode user never sees a dark flash while React hydrates.
+export const THEME_STORAGE_KEY = 'gj5_admin_theme';
+// Holds the chosen theme while that choice has NOT yet been confirmed saved
+// on the server, and is cleared once it is. While it is set, a server value
+// that disagrees is a stale one and must not override what the user just
+// picked — that override is what used to snap the toggle straight back to
+// dark within ~40 ms whenever the settings save failed or lost a race with
+// an in-flight refresh.
+const PENDING_KEY = 'gj5_admin_theme_pending';
 export type AdminTheme = 'dark' | 'light';
 
-function readStoredTheme(): AdminTheme {
-  if (typeof window === 'undefined') return 'dark';
+function readTheme(key: string): AdminTheme | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'light' ? 'light' : 'dark';
+    const v = localStorage.getItem(key);
+    return v === 'light' || v === 'dark' ? v : null;
   } catch {
-    return 'dark';
+    return null;
   }
 }
 
-// `serverTheme` (the account's saved preference, e.g. store.settings.adminTheme
-// from MySQL) and `onPersist` (called on toggle so the caller can save it
-// there, e.g. store.updateSettings({ adminTheme })) are both optional so
-// every existing caller keeps working unchanged. localStorage stays as the
-// fast, synchronous value used for the very first paint (no flash while the
-// network request is in flight); the server value — once loaded — always
-// wins, which is what makes a new browser, Incognito window, or another
-// device converge on the same saved theme instead of defaulting back to dark.
-export function useAdminTheme(serverTheme?: AdminTheme | null, onPersist?: (theme: AdminTheme) => void) {
-  const [theme, setTheme] = useState<AdminTheme>('dark');
+function writeTheme(key: string, value: AdminTheme | null) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch { /* storage blocked — in-memory state still works for this session */ }
+}
 
-  useEffect(() => {
-    setTheme(readStoredTheme());
+// `serverTheme` is the account's saved preference from MySQL. Pass null until
+// it has actually been loaded — NOT a placeholder default: a default arriving
+// before the real value used to overwrite the stored local choice on every
+// page load. `onPersist` saves a toggle server-side and should resolve true
+// on success (false / a rejection = not saved).
+export function useAdminTheme(
+  serverTheme?: AdminTheme | null,
+  onPersist?: (theme: AdminTheme) => Promise<boolean> | void,
+) {
+  const [theme, setThemeState] = useState<AdminTheme>('dark');
+  const themeRef = useRef<AdminTheme>('dark');
+  const onPersistRef = useRef(onPersist);
+  onPersistRef.current = onPersist;
+
+  const applyTheme = useCallback((next: AdminTheme) => {
+    themeRef.current = next;
+    setThemeState(next);
+    writeTheme(THEME_STORAGE_KEY, next);
   }, []);
 
+  const persist = useCallback((next: AdminTheme) => {
+    const save = onPersistRef.current;
+    if (!save) return;
+    writeTheme(PENDING_KEY, next);
+    Promise.resolve(save(next))
+      .then((ok) => {
+        if (ok === true && readTheme(PENDING_KEY) === next) writeTheme(PENDING_KEY, null);
+      })
+      .catch(() => { /* stays pending; retried on the next load */ });
+  }, []);
+
+  // First client render: adopt this device's own last choice.
+  useEffect(() => {
+    const stored = readTheme(THEME_STORAGE_KEY);
+    if (stored) applyTheme(stored);
+  }, [applyTheme]);
+
+  // Once the real server value has loaded, reconcile it with the local one.
+  // "Confirmed" is decided ONLY by persist() below (the save resolving true) —
+  // never by serverTheme merely equalling the pending value, since an
+  // optimistic local update makes the store's value change before the server
+  // has actually agreed to anything.
+  const retriedPendingRef = useRef(false);
   useEffect(() => {
     if (!serverTheme) return;
-    setTheme(serverTheme);
-    try { localStorage.setItem(STORAGE_KEY, serverTheme); } catch { /* ignore */ }
-  }, [serverTheme]);
+    const pending = readTheme(PENDING_KEY);
+    if (pending) {
+      // The user's own choice hasn't been confirmed saved yet (the save failed,
+      // or its refresh is still in flight): it wins over whatever the server
+      // currently says. Retry the save once per page load.
+      if (themeRef.current !== pending) applyTheme(pending);
+      if (!retriedPendingRef.current) {
+        retriedPendingRef.current = true;
+        persist(pending);
+      }
+      return;
+    }
+    if (themeRef.current !== serverTheme) applyTheme(serverTheme);
+  }, [serverTheme, applyTheme, persist]);
 
   useEffect(() => {
     document.body.classList.add('gj5-admin-active');
@@ -57,13 +114,10 @@ export function useAdminTheme(serverTheme?: AdminTheme | null, onPersist?: (them
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme(prev => {
-      const next: AdminTheme = prev === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(STORAGE_KEY, next); } catch { /* ignore */ }
-      onPersist?.(next);
-      return next;
-    });
-  }, [onPersist]);
+    const next: AdminTheme = themeRef.current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    persist(next);
+  }, [applyTheme, persist]);
 
   return { theme, toggleTheme };
 }

@@ -1,6 +1,7 @@
 import { getPool } from '../db';
 import { PoolConnection } from 'mysql2/promise';
 import { decrementStockByMatch } from './stock';
+import { saleRowToObject } from './saleRecords';
 
 const ORDER_COLUMNS: { js: string; sql: string; type?: 'number' | 'boolean' }[] = [
   { js: 'customerId', sql: 'customer_id' },
@@ -38,16 +39,6 @@ const ORDER_COLUMNS: { js: string; sql: string; type?: 'number' | 'boolean' }[] 
   { js: 'updatedAt', sql: 'updated_at' },
 ];
 
-function orderRowToObject(row: any) {
-  const obj: any = { id: row.id };
-  for (const col of ORDER_COLUMNS) {
-    let v = row[col.sql];
-    if (col.type === 'boolean') v = !!v;
-    obj[col.js] = v;
-  }
-  return obj;
-}
-
 function orderValues(order: any) {
   return ORDER_COLUMNS.map(c => {
     let v = order[c.js];
@@ -60,7 +51,7 @@ function orderValues(order: any) {
 export async function listSalesOrders(email: string) {
   const pool = getPool();
   const [rows] = await pool.execute<any[]>('SELECT * FROM sales_orders WHERE user_email = ?', [email]);
-  return (rows as any[]).map(orderRowToObject);
+  return (rows as any[]).map(saleRowToObject);
 }
 
 // Used by the Customer Department profile view — same row shape as
@@ -68,7 +59,7 @@ export async function listSalesOrders(email: string) {
 export async function listSalesOrdersForMobile(email: string, mobile: string) {
   const pool = getPool();
   const [rows] = await pool.execute<any[]>('SELECT * FROM sales_orders WHERE user_email = ? AND mobile = ?', [email, mobile]);
-  return (rows as any[]).map(orderRowToObject);
+  return (rows as any[]).map(saleRowToObject);
 }
 
 function deliveryRowToObject(row: any) {

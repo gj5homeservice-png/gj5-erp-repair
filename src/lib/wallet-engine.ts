@@ -467,6 +467,9 @@ export function computeReceivables(data: { repairJobs: RepairJob[]; invoices: In
   }
 
   for (const order of data.salesOrders || []) {
+    // A Cancelled/Refunded sale owes nothing (its balance is zeroed server-side too).
+    const saleStatus = String((order as any).orderStatus || '').toLowerCase();
+    if (saleStatus === 'cancelled' || saleStatus === 'refunded') continue;
     const pending = Number((order as any).balanceDue) || 0;
     if (pending > 0.01) {
       rows.push({
@@ -483,6 +486,9 @@ export function computeReceivables(data: { repairJobs: RepairJob[]; invoices: In
   }
 
   for (const inv of data.invoices || []) {
+    // An invoice generated from a Sale ("sale:<id>") is the same money the
+    // sale's own balanceDue already listed above — counting both would double it.
+    if (typeof (inv as any).sourceRef === 'string' && (inv as any).sourceRef.startsWith('sale:')) continue;
     if (inv.paymentStatus === 'Unpaid') {
       rows.push({
         customer: inv.customerName,

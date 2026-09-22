@@ -171,6 +171,8 @@ export interface Invoice {
   total?: number;
   taxEnabled?: boolean;
   gst?: number;
+  // Set ("sale:<sale id>") on invoices generated from the Sales module.
+  sourceRef?: string | null;
 }
 
 export interface StockItem {
@@ -665,8 +667,12 @@ export interface BackupMeta {
 // SALES MODULE — a separate module from Repairing/Billing. Sales orders,
 // invoices, and deliveries live in their own collections so nothing here
 // can ever touch Repairing data or the existing Billing/Invoice History flow.
-export type SalesPaymentStatus = 'Paid' | 'Unpaid' | 'Partial';
-export type SalesOrderStatus = 'New' | 'Processing' | 'Completed' | 'Cancelled';
+// 'Unpaid' is the legacy spelling of 'Pending' (older rows / Billing invoices);
+// the Sales module normalizes both — see src/lib/sales-utils.ts.
+export type SalesPaymentStatus = 'Paid' | 'Unpaid' | 'Partial' | 'Pending';
+// 'New'/'Processing' are legacy values (read as Pending); the Sales module's
+// Sale Status is Completed | Pending | Cancelled | Refunded.
+export type SalesOrderStatus = 'New' | 'Processing' | 'Completed' | 'Cancelled' | 'Pending' | 'Refunded';
 export type SalesDeliveryStatus = 'Not Required' | 'Pending Pickup' | 'Picked Up' | 'In Transit' | 'Out for Delivery' | 'Delivered' | 'Failed Delivery';
 
 export interface SalesOrder {
@@ -702,8 +708,61 @@ export interface SalesOrder {
   balanceDue: number;
   orderStatus: SalesOrderStatus;
   invoiceId?: string;
+  // Migration 020 — Sales module
+  notes?: string;
+  stockDeducted?: boolean;
+  sourceOrderId?: string;
+  billingInvoiceId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type CustomerOrderStatus = 'NEW' | 'CONFIRMED' | 'PROCESSING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+
+// ORDERS module (migration 020) — the pre-sale order lifecycle. A delivered
+// order is converted into a SalesOrder (saleId links them).
+export interface CustomerOrder {
+  id: string;
+  customerId: string;
+  customerName: string;
+  mobile: string;
+  orderDate: string;
+  productId?: string;
+  productName?: string;
+  brand: string;
+  model: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  discount: number;
+  gstEnabled: boolean;
+  gstRate: number;
+  gstAmount: number;
+  deliveryCharge: number;
+  totalAmount: number;
+  amountPaid: number;
+  balanceDue: number;
+  paymentStatus: SalesPaymentStatus;
+  orderStatus: CustomerOrderStatus;
+  deliveryRequired: boolean;
+  expectedDeliveryDate?: string;
+  notes?: string;
+  saleId?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesPayment {
+  id: string;
+  refType: 'SALE' | 'ORDER';
+  refId: string;
+  amount: number;
+  method?: string;
+  paidOn?: string;
+  note?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface SalesInvoice {

@@ -34,6 +34,7 @@ import {
   EmployeeAuditLogEntry,
   Account,
   AccountType,
+  CustomerOrder,
 } from '@/lib/types';
 import { db, doc, setDoc, collection, query, where, onSnapshot } from '@/firebase';
 import { ALL_SIDEBAR_MODULES, DEFAULT_SIDEBAR_ORDER } from '@/lib/nav-items';
@@ -137,6 +138,7 @@ interface Snapshot {
   walletBalance: number;
   transactions: WalletTransaction[];
   accounts: Account[];
+  customerOrders: CustomerOrder[];
   attendanceLinks: AttendanceLink[];
   settings: SystemSettings | null;
   visibility: { tabs: Record<string, boolean>; kpis: Record<string, boolean> } | null;
@@ -148,7 +150,7 @@ const EMPTY_SNAPSHOT: Snapshot = {
   calls: [], inquiries: [], stock: [], invoices: [], employees: [], attendance: [],
   salaries: [], leaves: [], transportationLogs: [], salesOrders: [], salesInvoices: [],
   salesDeliveries: [], repairJobs: [], onlineBookings: [], salesCustomers: [], expenses: [], walletBalance: 50000,
-  transactions: [], accounts: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
+  transactions: [], accounts: [], customerOrders: [], attendanceLinks: [], settings: null, visibility: null, navOrder: null, backupMeta: null,
 };
 
 function getToken(): string | null {
@@ -187,9 +189,9 @@ async function fetchBootstrap(): Promise<Snapshot> {
 // (dashboard, both attendance portals, the two delete-modals) resolves to the
 // same SWR key for a given signed-in email, so this refreshes all of them —
 // no Context/Provider wiring needed.
-function refresh(email: string | null) {
+function refresh(email: string | null): Promise<unknown> {
   const key = bootstrapKey(email);
-  if (key) globalMutate(key);
+  return key ? globalMutate(key) : Promise.resolve();
 }
 
 function optimisticUpdate(email: string | null, updater: (snap: Snapshot) => Snapshot) {
@@ -315,11 +317,21 @@ export function useErpStore() {
     ? ({ ...(companyProfile || {}), ...effectiveProfileFields, logoUrl: effectiveLogoUrl } as Company)
     : companyProfile;
 
-  const updateSettings = (patch: Partial<SystemSettings>) => {
+  // Resolves true only if the server actually saved the change, and only
+  // AFTER the follow-up refresh has landed (never rejects) — callers that
+  // care whether a preference really persisted (the theme toggle) can wait on
+  // it; the many that ignore the result behave exactly as before.
+  const updateSettings = async (patch: Partial<SystemSettings>): Promise<boolean> => {
     optimisticUpdate(activeUser, s => ({ ...s, settings: { ...settings, ...patch } }));
-    apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(patch) })
-      .catch(err => console.error('Settings sync failed:', err))
-      .finally(() => refresh(activeUser));
+    let saved = false;
+    try {
+      await apiFetch('/api/erp/settings', { method: 'PUT', body: JSON.stringify(patch) });
+      saved = true;
+    } catch (err) {
+      console.error('Settings sync failed:', err);
+    }
+    await refresh(activeUser);
+    return saved;
   };
 
   const setVisibility = (v: VisibilitySettings) => {
@@ -435,7 +447,7 @@ export function useErpStore() {
     apiFetch(`/api/erp/employees/${id}/permissions`, { method: 'PUT', body: JSON.stringify(permissions) }).then(() => {});
 
   const setEmployeeLoginAccess = (id: string, data: { username?: string; loginEmail?: string; password?: string; loginEnabled?: boolean; forcePasswordChange?: boolean }): Promise<void> =>
-    apiFetch(`/api/erp/employees/${id}/login-access`, { method: 'PUT', body: JSON.stringify(data) }).then(() => refresh(activeUser));
+    apiFetch(`/api/erp/employees/${id}/login-access`, { method: 'PUT', body: JSON.stringify(data) }).then(() => { refresh(activeUser); });
 
   const resetEmployeePassword = (id: string, newPassword: string): Promise<void> =>
     apiFetch(`/api/erp/employees/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword }) }).then(() => {});
@@ -949,12 +961,18 @@ export function useErpStore() {
     companyProfile: resolvedCompanyProfile, setCompanyProfile, updateCompanyProfile,
     deletePassword: settings.deletePassword,
     settings, updateSettings,
+    // True once the server has actually returned this account's settings row
+    // (as opposed to `settings` above, which is DEFAULT_SETTINGS-filled and
+    // therefore always populated) — lets a caller tell a real saved value
+    // apart from a placeholder default.
+    settingsLoaded: !!snap.settings,
     backupMeta: snap.backupMeta, recordBackup,
     transactions: snap.transactions, reverseLedgerEntry,
     accounts: snap.accounts, createAccount, updateAccount, transferBetweenAccounts, giveAdvance, recordSettlement, recordRefund,
     expenses: snap.expenses, addExpense,
     leaves: snap.leaves,
     transportationLogs: snap.transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
+    customerOrders: snap.customerOrders,
     salesOrders: snap.salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, findOrCreateSalesCustomerId,
     salesInvoices: snap.salesInvoices, generateSalesInvoice,
     salesDeliveries: snap.salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,

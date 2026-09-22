@@ -281,11 +281,50 @@ body.gj5-admin-active:not(.dark) .text-red-300 { color: #DC2626; }
 body.gj5-admin-active:not(.dark) .text-emerald-300 { color: #059669; }
 body.gj5-admin-active:not(.dark) .text-amber-300 { color: #D97706; }
 
+/* The -500 accent tones (e.g. the header's "Verified Identity" in
+   text-emerald-500 measured 2.4:1 on white) are just as light as the -400
+   ones above — same treatment: darken to a readable tone, keep the hue. */
+body.gj5-admin-active:not(.dark) .text-emerald-500 { color: #047857; }
+body.gj5-admin-active:not(.dark) .text-amber-500 { color: #B45309; }
+body.gj5-admin-active:not(.dark) .text-cyan-500 { color: #0E7490; }
+body.gj5-admin-active:not(.dark) .text-lime-500 { color: #4D7C0F; }
+body.gj5-admin-active:not(.dark) .text-yellow-500 { color: #A16207; }
+body.gj5-admin-active:not(.dark) .text-orange-500 { color: #C2410C; }
+body.gj5-admin-active:not(.dark) .text-sky-500,
+body.gj5-admin-active:not(.dark) .text-sky-400 { color: #0369A1; }
+
+/* Hover overlays built as a 40%-opaque blue layer with a white icon on top
+   (Stock's product thumbnails, Employees' QR tile): over a dark thumbnail
+   that reads as solid blue, but over a white one it washes out to pale blue
+   and the white icon nearly disappears (1.8:1). Make the layer solid enough
+   for the icon. Also keep Select's dropdown chevron (drawn at opacity-50)
+   visible on white. */
+body.gj5-admin-active:not(.dark) .bg-blue-600\/40 { background-color: rgba(37, 99, 235, 0.88); }
+body.gj5-admin-active:not(.dark) [role="combobox"] svg { opacity: 0.8; }
+
 /* Sidebar hover/active affordance that assumed a dark surface underneath */
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/20:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/40:hover,
 body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: #F1F5F9; }
+
+/* Surfaces that carry an opacity suffix or a different state prefix and so
+   were NOT matched by the plain-class rules above (found by rendering every
+   module in light mode and auditing what stayed dark): the top header bar
+   (bg-[#0B0F19]/80 — it stayed a dark strip with near-invisible icons), the
+   mobile nav drawer (bg-slate-900/95), a few remaining translucent slate
+   panels, and every dark focus/hover highlight used by Select/Dropdown
+   items and list rows (focus:bg-slate-800 alone is used 31 times). */
+body.gj5-admin-active:not(.dark) .bg-\[\#0B0F19\]\/80 { background-color: rgba(248, 250, 252, 0.88); }
+body.gj5-admin-active:not(.dark) .bg-slate-900\/95,
+body.gj5-admin-active:not(.dark) .bg-slate-950\/60,
+body.gj5-admin-active:not(.dark) .bg-slate-800\/40 { background-color: #FFFFFF; }
+body.gj5-admin-active:not(.dark) .focus\:bg-slate-800:focus,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-700:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-600:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-800\/60:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-900\/40:hover,
+body.gj5-admin-active:not(.dark) .hover\:bg-slate-900\/30:hover { background-color: #F1F5F9; }
 
 /* hover:text-white / focus:text-white — used throughout (Select items,
    dropdown menu items, icon buttons, sidebar links) as a "this chip's own

@@ -14,6 +14,8 @@ import {
   Truck,
   Settings,
   Globe,
+  ShoppingCart,
+  ClipboardCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,6 +35,8 @@ export const ALL_SIDEBAR_MODULES: SidebarModuleDef[] = [
   { name: 'Customer Department', icon: UserCircle },
   { name: 'Online Bookings', icon: Globe },
   { name: 'CRM Leads', icon: BarChart3 },
+  { name: 'Sales', icon: ShoppingCart },
+  { name: 'Orders', icon: ClipboardCheck },
   { name: 'Billing', icon: Receipt },
   { name: 'Invoice History', icon: History },
   { name: 'Stock', icon: Package },
@@ -54,6 +58,8 @@ export const DEFAULT_SIDEBAR_ORDER: string[] = [
   'Online Bookings',
   'CRM Leads',
   'E-Wallet',
+  'Sales',
+  'Orders',
   'Stock',
   'Billing',
   'Invoice History',
@@ -71,7 +77,10 @@ export const ALWAYS_VISIBLE_MODULE = 'Settings';
 // Resolves a saved (possibly stale or partial) order against the current
 // module list: known names keep the saved sequence, and any module not
 // present in the saved order (e.g. a new one added to the app later) is
-// appended at the end rather than silently disappearing.
+// placed right after whichever module precedes it in the default order (so a
+// newly added Sales/Orders lands beside E-Wallet, not at the very bottom),
+// or appended at the end if none of its default predecessors are present —
+// either way it never silently disappears.
 export function resolveSidebarOrder(navOrder: string[] | null | undefined): SidebarModuleDef[] {
   const order = navOrder && navOrder.length ? navOrder : DEFAULT_SIDEBAR_ORDER;
   const byName = new Map(ALL_SIDEBAR_MODULES.map((m) => [m.name, m]));
@@ -85,7 +94,15 @@ export function resolveSidebarOrder(navOrder: string[] | null | undefined): Side
     }
   }
   for (const mod of ALL_SIDEBAR_MODULES) {
-    if (!seen.has(mod.name)) ordered.push(mod);
+    if (seen.has(mod.name)) continue;
+    const defaultIndex = DEFAULT_SIDEBAR_ORDER.indexOf(mod.name);
+    let insertAt = ordered.length;
+    for (let i = defaultIndex - 1; i >= 0; i--) {
+      const at = ordered.findIndex((m) => m.name === DEFAULT_SIDEBAR_ORDER[i]);
+      if (at !== -1) { insertAt = at + 1; break; }
+    }
+    ordered.splice(insertAt, 0, mod);
+    seen.add(mod.name);
   }
   return ordered;
 }

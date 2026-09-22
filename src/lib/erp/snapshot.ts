@@ -10,6 +10,7 @@ import { listEmployees } from './employees';
 import { listSalesOrders, listSalesInvoices, listSalesDeliveries } from './sales';
 import { getWalletBalance, listWalletTransactions } from './wallet';
 import { listAccountsWithBalances } from './accounts';
+import { listCustomerOrdersSafe } from './customerOrders';
 import { getSingleRow } from './singleRow';
 
 // Fixed: description/reference were missing here even though both the
@@ -31,7 +32,7 @@ export async function getFullSnapshotData(email: string) {
   const [
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
     transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
-    customersRows, expenseRows, walletBalance, transactions, accounts,
+    customersRows, expenseRows, walletBalance, transactions, accounts, customerOrders,
     settingsRow, visibilityRow, navOrderRow, backupMetaRow, attendanceLinkRows,
   ] = await Promise.all([
     listRepairCalls(email),
@@ -53,6 +54,7 @@ export async function getFullSnapshotData(email: string) {
     getWalletBalance(email),
     listWalletTransactions(email),
     listAccountsWithBalances(email),
+    listCustomerOrdersSafe(email),
     getSingleRow('system_settings', email),
     getSingleRow('visibility_settings', email),
     getSingleRow('nav_order', email),
@@ -99,7 +101,7 @@ export async function getFullSnapshotData(email: string) {
   return {
     calls, inquiries, stock, invoices, employees, attendance, salaries, leaves,
     transportationLogs, salesOrders, salesInvoices, salesDeliveries, repairJobs, onlineBookings,
-    salesCustomers, expenses: expenseRows.map(expenseRow), walletBalance, transactions, accounts,
+    salesCustomers, expenses: expenseRows.map(expenseRow), walletBalance, transactions, accounts, customerOrders,
     attendanceLinks: attendanceLinkRows.map(r => ({
       id: r.id, token: r.token, employeeId: r.employee_id, employeeName: r.employee_name,
       mobile: r.mobile, expiresAt: r.expires_at, used: !!r.used, createdAt: r.created_at,

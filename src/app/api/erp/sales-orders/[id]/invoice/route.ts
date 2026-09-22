@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
-import { requireUser, isAuthError } from '@/lib/api-auth';
-import { generateSalesInvoiceForOrder } from '@/lib/erp/sales';
+import { requirePermission, isAuthError } from '@/lib/api-auth';
+import { generateInvoiceForSale, salesErrorResponse } from '@/lib/erp/saleRecords';
 
+// Creates (or returns the existing) invoice for a sale in the MAIN Billing
+// invoice engine, so it appears in Invoice History like any other invoice.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auth = await requireUser(request);
+  const auth = await requirePermission(request, 'Sales', 'edit');
   if (isAuthError(auth)) return auth;
   try {
-    const invoiceId = await generateSalesInvoiceForOrder(auth.email, id);
-    if (!invoiceId) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
-    return NextResponse.json({ success: true, invoiceId });
+    const data = await generateInvoiceForSale(auth.email, id);
+    return NextResponse.json({ success: true, data, invoiceId: data.invoiceId });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || 'Internal Server Error' }, { status: 500 });
+    const r = salesErrorResponse(error);
+    return NextResponse.json(r.body, { status: r.status });
   }
 }

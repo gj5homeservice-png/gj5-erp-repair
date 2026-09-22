@@ -7,6 +7,7 @@ import { listSalesOrdersForMobile } from './sales';
 import { listInvoicesForMobile } from './invoices';
 import { isValidCustomerCategory, DEFAULT_CUSTOMER_CATEGORY } from '../customer-categories';
 import { listAccountsWithBalances } from './accounts';
+import { normalizeSaleStatus, isActiveSale } from '../sales-utils';
 
 // The Customer Department module is a read-heavy VIEW layer over data that
 // already lives in repair_jobs, online_bookings, sales_orders and invoices —
@@ -74,11 +75,14 @@ export async function listCustomersWithStats(email: string) {
   }
 
   const [saleRows] = await pool.execute<any[]>(
-    'SELECT mobile, balance_due, created_at FROM sales_orders WHERE user_email = ?',
+    'SELECT mobile, balance_due, created_at, order_status FROM sales_orders WHERE user_email = ?',
     [email]
   );
+  // SELECT * (not a column list): invoices.source_ref only exists once
+  // migration 020 has been applied, and naming it here would break this
+  // whole screen on a database that hasn't run it yet.
   const [invoiceRows] = await pool.execute<any[]>(
-    'SELECT mobile, grand_total, payment_status, timestamp FROM invoices WHERE user_email = ?',
+    'SELECT * FROM invoices WHERE user_email = ?',
     [email]
   );
 
@@ -110,6 +114,8 @@ export async function listCustomersWithStats(email: string) {
   }
   for (const s of saleRows as any[]) {
     if (!s.mobile) continue;
+    // A Cancelled/Refunded sale is not a purchase and owes nothing.
+    if (!isActiveSale(normalizeSaleStatus(s.order_status))) continue;
     const a = ensure(s.mobile);
     a.totalPurchases += 1;
     if (Number(s.balance_due) > 0) a.pendingAmount += Number(s.balance_due);
@@ -117,6 +123,9 @@ export async function listCustomersWithStats(email: string) {
   }
   for (const inv of invoiceRows as any[]) {
     if (!inv.mobile) continue;
+    // An invoice generated from a Sale (source_ref 'sale:<id>') is that same
+    // money — the sale's own balance_due above already counts it.
+    if (typeof inv.source_ref === 'string' && inv.source_ref.startsWith('sale:')) continue;
     const a = ensure(inv.mobile);
     if (inv.payment_status && inv.payment_status !== 'Paid') a.pendingAmount += Number(inv.grand_total) || 0;
     bumpActivity(a, inv.timestamp);
@@ -343,6 +352,14 @@ export async function deactivateOrDeleteCustomer(email: string, id: string): Pro
       const [rows] = await pool.execute<any[]>(sql, [email, customer.mobile]);
       relatedCount += Number((rows as any[])[0]?.c || 0);
     }
+    // Orders (migration 020) — a customer with any order is deactivated, never
+    // deleted. Tolerates the table not existing yet on an un-migrated database.
+    try {
+      const [rows] = await pool.execute<any[]>('SELECT COUNT(*) AS c FROM customer_orders WHERE user_email = ? AND mobile = ?', [email, customer.mobile]);
+      relatedCount += Number((rows as any[])[0]?.c || 0);
+    } catch (err: any) {
+      if (err?.code !== 'ER_NO_SUCH_TABLE') throw err;
+    }
   }
 
   if (relatedCount > 0) {
@@ -418,12 +435,19 @@ export async function getCustomerProfile(email: string, id: string) {
   // on top of totalPaid or subtracted twice from totalDue below.
   const totalAdvance = jobsWithTotals.reduce((s, j) => s + (Number(j.advancePayment) || 0), 0);
 
-  const totalSales = (salesOrders as any[]).reduce((s, o) => s + (Number(o.grandTotal) || 0), 0);
-  const totalBilling = (invoices as any[]).reduce((s, i) => s + (Number(i.grandTotal) || 0), 0)
-    + jobsWithTotals.reduce((s, j) => s + j.grandTotal, 0);
+  // Sales count once, through the sale itself (Completed/Pending only —
+  // a Cancelled/Refunded sale is neither billed nor owed); an invoice that was
+  // generated FROM a sale is that same money, so it's left out of the invoice
+  // sums to avoid counting it twice.
+  const activeSales = (salesOrders as any[]).filter(o => isActiveSale(normalizeSaleStatus(o.orderStatus)));
+  const standaloneInvoices = (invoices as any[]).filter(i => !(typeof i.sourceRef === 'string' && i.sourceRef.startsWith('sale:')));
+  const totalSales = activeSales.reduce((s, o) => s + (Number(o.grandTotal) || 0), 0);
+  const totalBilling = standaloneInvoices.reduce((s, i) => s + (Number(i.grandTotal) || 0), 0)
+    + jobsWithTotals.reduce((s, j) => s + j.grandTotal, 0)
+    + totalSales;
   const totalPaidAll = jobsWithTotals.reduce((s, j) => s + j.totalPaid, 0)
-    + (salesOrders as any[]).reduce((s, o) => s + (Number(o.amountPaid) || 0), 0)
-    + (invoices as any[]).reduce((s, i) => s + (i.paymentStatus === 'Paid' ? (Number(i.grandTotal) || 0) : 0), 0);
+    + activeSales.reduce((s, o) => s + (Number(o.amountPaid) || 0), 0)
+    + standaloneInvoices.reduce((s, i) => s + (i.paymentStatus === 'Paid' ? (Number(i.grandTotal) || 0) : 0), 0);
   const totalDue = Math.max(0, totalBilling - totalPaidAll);
 
   const summary = {

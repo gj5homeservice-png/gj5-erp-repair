@@ -50,8 +50,7 @@ import { format, isToday, isThisWeek, isThisMonth, isThisYear, parseISO } from '
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { DeleteJobModal } from './repairing/DeleteJobModal';
-import { jsPDF } from 'jspdf';
-import { addLogoToPdf } from '@/lib/branding';
+import { downloadInvoicePdf } from '@/lib/invoice-pdf';
 
 interface InvoiceHistoryModuleProps {
   store: any;
@@ -101,83 +100,7 @@ export function InvoiceHistoryModule({ store, onEditInvoice }: InvoiceHistoryMod
   const handleDownloadPDF = (inv: Invoice) => {
     if (!inv) return;
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const profile = store.companyProfile || {};
-      const hasLogo = addLogoToPdf(doc, profile.logoUrl, 15, 8, 16, 16);
-      const headerTextX = hasLogo ? 35 : 15;
-
-      doc.setFontSize(22);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 102, 255);
-      doc.text(profile.companyName?.toUpperCase() || 'GJ5 HOME SERVICE', headerTextX, 25);
-
-      doc.setFontSize(10);
-      doc.setTextColor(80);
-      doc.text('Invoice Number: ' + String(inv.invoiceNumber || "N/A"), 15, 32);
-      
-      const formattedDate = inv.timestamp ? format(parseISO(inv.timestamp), 'dd/MM/yyyy HH:mm') : "N/A";
-      doc.text('Date: ' + formattedDate, 15, 37);
-      
-      doc.setTextColor(0);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CLIENT DETAILS', 15, 50);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Name: ' + String(inv.customerName || "N/A"), 15, 56);
-      doc.text('Cust ID: ' + String(inv.customerId || "N/A"), 15, 62);
-      doc.text('Mobile: ' + String(inv.mobile || "N/A"), 15, 68);
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('DEVICE DETAILS', 110, 50);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Device: ' + String(inv.brand || "") + ' ' + String(inv.model || ""), 110, 56);
-      doc.text('Job ID: ' + String(inv.jobId || "N/A"), 110, 62);
-
-      let y = 85;
-      doc.setFillColor(0, 102, 255);
-      doc.rect(15, y, 180, 10, 'F');
-      doc.setTextColor(255);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DESCRIPTION', 20, y + 7);
-      doc.text('QTY', 150, y + 7, { align: 'center' });
-      doc.text('AMT (INR)', 190, y + 7, { align: 'right' });
-      
-      y += 10;
-      doc.setTextColor(0);
-      doc.setFont('helvetica', 'normal');
-      
-      if (!inv.items || inv.items.length === 0) {
-        doc.text('No Parts Used', 20, y + 7);
-        y += 10;
-      } else {
-        inv.items.forEach(item => {
-          doc.text(String(item.name || "Part"), 20, y + 7);
-          doc.text(String(item.quantity || 1), 150, y + 7, { align: 'center' });
-          doc.text('INR ' + (item.amount || 0).toFixed(2), 190, y + 7, { align: 'right' });
-          y += 10;
-        });
-      }
-      
-      doc.text('Labour & Service Charges', 20, y + 7);
-      doc.text('1', 150, y + 7, { align: 'center' });
-      doc.text('INR ' + (inv.labourCharges || 0).toFixed(2), 190, y + 7, { align: 'right' });
-      
-      y += 20;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Subtotal:', 140, y);
-      doc.text('INR ' + (inv.subtotal || 0).toFixed(2), 190, y, { align: 'right' });
-      
-      if (inv.taxEnabled) {
-        y += 7;
-        doc.text('GST (18%):', 140, y);
-        doc.text('INR ' + (inv.gst || 0).toFixed(2), 190, y, { align: 'right' });
-      }
-      
-      y += 10;
-      doc.setFontSize(14);
-      doc.text('Total Amount:', 140, y);
-      doc.text('INR ' + (inv.grandTotal || 0).toFixed(2), 190, y, { align: 'right' });
-
-      doc.save(`${inv.invoiceNumber || 'Invoice'}.pdf`);
+      downloadInvoicePdf(inv, store.companyProfile || {});
       toast({ title: "PDF Generated", description: "Your invoice has been downloaded." });
     } catch (e) {
       console.error(e);

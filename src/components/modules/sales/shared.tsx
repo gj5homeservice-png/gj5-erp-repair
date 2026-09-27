@@ -1,21 +1,23 @@
 "use client"
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, UserPlus, X, Loader2, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, X, Loader2, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CustomerFormModal } from '@/components/modules/customers/CustomerFormModal';
 import { apiFetch } from '@/lib/client-api';
 import { PAYMENT_METHODS, remaining, round2, validatePayment } from '@/lib/sales-utils';
 import { format } from 'date-fns';
 
 // Pieces shared by the Sales and Orders modules. Customers come from the
-// Customer Department's own table (GET /api/erp/customers) and products from
-// the existing Stock list (store.stock) — nothing here keeps a copy of either.
+// Customer Department's own master record (via the fast, indexed
+// /api/erp/customers/search — see CustomerSearch.tsx) and products from the
+// existing Stock list (store.stock) — nothing here keeps a copy of either.
+export { CustomerPicker, useCustomerSearch } from '@/components/modules/customers/CustomerSearch';
+export type { CustomerSearchResult as DirectoryCustomer } from '@/components/modules/customers/CustomerSearch';
 
 export const money = (n: number | undefined | null) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
 
@@ -29,111 +31,6 @@ export function SummaryCard({ label, value, icon: Icon, colorClass }: { label: s
         <p className="text-[9px] uppercase font-bold text-slate-500 tracking-wide truncate">{label}</p>
         <p className="text-lg font-headline font-black text-slate-100 truncate">{value}</p>
       </div>
-    </div>
-  );
-}
-
-export interface DirectoryCustomer {
-  id: string; name: string | null; mobile: string | null; email?: string | null; address?: string | null;
-  city?: string | null; pincode?: string | null; status?: string | null;
-}
-
-export function useCustomerDirectory() {
-  const [customers, setCustomers] = useState<DirectoryCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setError(null);
-      const json = await apiFetch('/api/erp/customers');
-      setCustomers(json.data || []);
-    } catch (e: any) {
-      setError(e?.message || 'Could not load customers.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { reload(); }, [reload]);
-  return { customers, loading, error, reload };
-}
-
-// ----------------------------------------------------------- customer picker
-
-export function CustomerPicker({
-  selected, onSelect, disabled, directory,
-}: {
-  selected: { id: string; name: string; mobile: string } | null;
-  onSelect: (c: DirectoryCustomer | null) => void;
-  disabled?: boolean;
-  directory: ReturnType<typeof useCustomerDirectory>;
-}) {
-  const [query, setQuery] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
-
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return directory.customers
-      .filter(c => c.status !== 'Inactive')
-      .filter(c => c.id.toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q) || (c.mobile || '').includes(q))
-      .slice(0, 6);
-  }, [query, directory.customers]);
-
-  if (selected) {
-    return (
-      <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-100 truncate">{selected.name}</p>
-          <p className="text-[11px] text-slate-500 font-code">{selected.id} • {selected.mobile}</p>
-        </div>
-        {!disabled && (
-          <Button type="button" variant="ghost" size="sm" className="text-slate-400 shrink-0" onClick={() => onSelect(null)}>
-            <X className="w-4 h-4 mr-1" /> Change
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
-        <Input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder={directory.loading ? 'Loading customers...' : 'Search customer by name, mobile or Customer ID...'}
-          className="pl-10 h-11 bg-slate-950 border-slate-800 text-[#F8FAFC]"
-        />
-        {query.trim() && (
-          <div className="absolute z-30 mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-            {matches.map(c => (
-              <button key={c.id} type="button" onClick={() => { onSelect(c); setQuery(''); }}
-                className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800 flex justify-between gap-3">
-                <span className="font-bold truncate">{c.name || 'Unnamed'} <span className="text-slate-500 font-code font-normal">{c.id}</span></span>
-                <span className="text-slate-500 font-code shrink-0">{c.mobile}</span>
-              </button>
-            ))}
-            {matches.length === 0 && <p className="px-4 py-3 text-xs text-slate-500">No customer matches “{query}”.</p>}
-          </div>
-        )}
-      </div>
-      {directory.error && <p className="text-[11px] text-rose-400">{directory.error} <button type="button" className="underline" onClick={directory.reload}>Retry</button></p>}
-      <Button type="button" variant="outline" size="sm" className="border-slate-800 text-slate-300" onClick={() => setShowAdd(true)}>
-        <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add New Customer
-      </Button>
-      <CustomerFormModal
-        isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
-        initialMobile={/^[0-9]{10}$/.test(query.trim()) ? query.trim() : undefined}
-        onSaved={async (c) => {
-          setShowAdd(false);
-          await directory.reload();
-          if (c?.id) { onSelect(c); setQuery(''); }
-        }}
-      />
     </div>
   );
 }

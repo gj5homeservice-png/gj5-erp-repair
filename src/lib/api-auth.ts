@@ -7,6 +7,13 @@ export interface AuthedRequest {
   employeeId: string | null; // null = owner/admin session (always full access)
 }
 
+// Who performed a write, for audit-log columns (owner/admin sessions have no
+// employee id). Shared by every domain's audit trail (Sales/Orders, Customer
+// Management, ...) so "who did this" is recorded identically everywhere.
+export function actorFrom(auth: { employeeId: string | null }): { label: string } {
+  return { label: auth.employeeId ? `Employee ${auth.employeeId}` : 'Owner' };
+}
+
 // Every /api/erp/* route (other than the public attendance-link endpoints,
 // which are authorized by the link token itself instead) calls this first.
 // Never trusts a client-supplied email — always resolves identity from a

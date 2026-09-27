@@ -81,6 +81,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   warrantyExpiringSoonDays: 30,
   standardCheckInTime: '10:00',
   lateThresholdMinutes: 15,
+  customerIdStartNumber: 1001,
   logoUrl: '',
   adminTheme: 'dark',
   transportationTemplates: DEFAULT_TRANSPORTATION_TEMPLATES,
@@ -203,6 +204,12 @@ function optimisticUpdate(email: string | null, updater: (snap: Snapshot) => Sna
 export function useErpStore() {
   const [activeUser, setActiveUser] = useState<string | null>(null);
   const [companyProfile, setCompanyProfile] = useState<Company | null>(null);
+  // Pure client-side navigation handoff — never persisted, never sent to the
+  // server. Set by Customer Profile's "Create Sale/Order/Repair" quick
+  // actions right before switching tabs; the target module reads it once on
+  // mount to pre-select the customer, then clears it, so it never lingers or
+  // affects a later, unrelated visit to that tab.
+  const [pendingCustomerAction, setPendingCustomerAction] = useState<{ customer: { id: string; name: string; mobile: string }; action: 'sale' | 'order' | 'repair' } | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -973,6 +980,7 @@ export function useErpStore() {
     leaves: snap.leaves,
     transportationLogs: snap.transportationLogs, addTransportLog, updateTransportLogStatus, deleteTransportLog,
     customerOrders: snap.customerOrders,
+    pendingCustomerAction, setPendingCustomerAction,
     salesOrders: snap.salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, findOrCreateSalesCustomerId,
     salesInvoices: snap.salesInvoices, generateSalesInvoice,
     salesDeliveries: snap.salesDeliveries, updateSalesDelivery, updateSalesDeliveryStatus,

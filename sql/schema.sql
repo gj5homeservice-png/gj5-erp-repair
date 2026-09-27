@@ -71,8 +71,46 @@ CREATE TABLE IF NOT EXISTS customers (
   category          VARCHAR(50) NOT NULL DEFAULT 'Customer',
   created_at        VARCHAR(40) NULL,
   updated_at        VARCHAR(40) NULL,
+  -- Migration 021 (Customer Management)
+  whatsapp_number   VARCHAR(20) NULL,
+  gstin             VARCHAR(20) NULL,
+  date_of_birth     VARCHAR(20) NULL,
+  photo             LONGTEXT NULL,
+  created_by        VARCHAR(191) NULL,
+  updated_by        VARCHAR(191) NULL,
+  merged_into       VARCHAR(64) NULL,
   INDEX idx_customers_user (user_email),
-  INDEX idx_customers_mobile (mobile)
+  INDEX idx_customers_mobile (mobile),
+  INDEX idx_customers_whatsapp (whatsapp_number),
+  INDEX idx_customers_email (email),
+  INDEX idx_customers_gstin (gstin),
+  INDEX idx_customers_name (name),
+  INDEX idx_customers_status (user_email, status),
+  INDEX idx_customers_created (user_email, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Persistent, per-tenant Customer ID counter (migration 021) — only ever
+-- increases, so a deleted customer's number is never reissued. See
+-- src/lib/erp/customers.ts's allocateCustomerId.
+CREATE TABLE IF NOT EXISTS customer_id_sequences (
+  user_email  VARCHAR(191) PRIMARY KEY,
+  last_number INT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Customer-specific audit trail (migration 021), mirroring
+-- employee_audit_logs' shape for the same class of event.
+CREATE TABLE IF NOT EXISTS customer_audit_logs (
+  id            VARCHAR(64) PRIMARY KEY,
+  user_email    VARCHAR(191) NOT NULL,
+  customer_id   VARCHAR(64) NOT NULL,
+  event_type    VARCHAR(40) NOT NULL,
+  performed_by  VARCHAR(191) NOT NULL,
+  timestamp     VARCHAR(40) NOT NULL,
+  record_id     VARCHAR(64) NULL,
+  details       VARCHAR(500) NULL,
+  INDEX idx_customer_audit_user (user_email),
+  INDEX idx_customer_audit_customer (customer_id),
+  INDEX idx_customer_audit_event (event_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -107,7 +145,8 @@ CREATE TABLE IF NOT EXISTS repair_calls (
   photos              JSON NULL,
   INDEX idx_repair_calls_user (user_email),
   INDEX idx_repair_calls_mobile (mobile),
-  INDEX idx_repair_calls_customer (customer_id)
+  INDEX idx_repair_calls_customer (customer_id),
+  CONSTRAINT fk_repair_calls_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS repair_call_visit_history (
@@ -155,7 +194,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   source_ref       VARCHAR(64) NULL,
   INDEX idx_invoices_user (user_email),
   INDEX idx_invoices_number (invoice_number),
-  INDEX idx_invoices_mobile (mobile)
+  INDEX idx_invoices_mobile (mobile),
+  CONSTRAINT fk_invoices_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS invoice_items (
@@ -241,7 +281,8 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
   created_by         VARCHAR(191) NULL,
   is_reversal        BOOLEAN NOT NULL DEFAULT FALSE,
   reversed_entry_id  VARCHAR(64) NULL,
-  INDEX idx_wallet_tx_user (user_email)
+  INDEX idx_wallet_tx_user (user_email),
+  CONSTRAINT fk_wallet_transactions_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS wallet_balance (
@@ -592,7 +633,8 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   billing_invoice_id  VARCHAR(64) NULL,
   INDEX idx_sales_orders_user (user_email),
   INDEX idx_sales_orders_product (product_id),
-  INDEX idx_sales_orders_mobile (mobile)
+  INDEX idx_sales_orders_mobile (mobile),
+  CONSTRAINT fk_sales_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sales_invoices (
@@ -665,7 +707,8 @@ CREATE TABLE IF NOT EXISTS customer_orders (
   INDEX idx_customer_orders_user (user_email),
   INDEX idx_customer_orders_status (user_email, order_status),
   INDEX idx_customer_orders_customer (customer_id),
-  INDEX idx_customer_orders_mobile (mobile)
+  INDEX idx_customer_orders_mobile (mobile),
+  CONSTRAINT fk_customer_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Payment history shared by Sales (ref_type 'SALE') and Orders ('ORDER').
@@ -721,7 +764,8 @@ CREATE TABLE IF NOT EXISTS repair_jobs (
   created_at               VARCHAR(40) NULL,
   updated_at               VARCHAR(40) NULL,
   INDEX idx_repair_jobs_user (user_email),
-  INDEX idx_repair_jobs_mobile (mobile)
+  INDEX idx_repair_jobs_mobile (mobile),
+  CONSTRAINT fk_repair_jobs_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS repair_job_parts (
@@ -802,6 +846,10 @@ CREATE TABLE IF NOT EXISTS system_settings (
   delete_password                VARCHAR(255) NOT NULL DEFAULT '1234',
   invoice_prefix                 VARCHAR(20) NOT NULL DEFAULT 'INV',
   customer_id_prefix             VARCHAR(20) NOT NULL DEFAULT 'GJ5',
+  -- Migration 021 — the floor applied to every future Customer ID
+  -- allocation (see customer_id_sequences above). 'CUST-1001' is the
+  -- literal default the Customer Management feature documents.
+  customer_id_start_number       INT NOT NULL DEFAULT 1001,
   default_warranty_duration      VARCHAR(50) NOT NULL DEFAULT 'No Warranty',
   default_pickup_required        BOOLEAN NOT NULL DEFAULT FALSE,
   default_min_stock_level        INT NOT NULL DEFAULT 5,
@@ -919,7 +967,8 @@ CREATE TABLE IF NOT EXISTS online_bookings (
   INDEX idx_online_bookings_user (user_email),
   INDEX idx_online_bookings_mobile (customer_mobile),
   INDEX idx_online_bookings_status (status),
-  INDEX idx_online_bookings_repair_job (repair_job_id)
+  INDEX idx_online_bookings_repair_job (repair_job_id),
+  CONSTRAINT fk_online_bookings_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS online_booking_status_history (

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserCircle2, X as XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerListItem } from './CustomerDepartmentModule';
 import { CUSTOMER_CATEGORIES, DEFAULT_CUSTOMER_CATEGORY } from '@/lib/customer-categories';
@@ -26,8 +26,8 @@ const EMAIL_FORMAT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_LOCATION_SUGGESTIONS = 8;
 
 const EMPTY = {
-  name: '', mobile: '', email: '', alternateMobile: '',
-  facebookId: '', instagramId: '',
+  name: '', mobile: '', email: '', alternateMobile: '', whatsappNumber: '',
+  facebookId: '', instagramId: '', gstin: '', dateOfBirth: '', photo: '',
   address: '', city: '', state: '', pincode: '', area: '',
   status: 'Active', category: '',
 };
@@ -51,7 +51,7 @@ export function CustomerFormModal({
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
+  const [duplicates, setDuplicates] = useState<any[] | null>(null);
   const [previewNextId, setPreviewNextId] = useState<string | null>(null);
   const [showPincodeDropdown, setShowPincodeDropdown] = useState(false);
   const [pincodeHighlight, setPincodeHighlight] = useState(0);
@@ -60,7 +60,7 @@ export function CustomerFormModal({
   useEffect(() => {
     if (isOpen) {
       setError(null);
-      setDuplicateCustomer(null);
+      setDuplicates(null);
       setShowPincodeDropdown(false);
       setPincodeHighlight(0);
       setForm(editingCustomer ? {
@@ -68,8 +68,12 @@ export function CustomerFormModal({
         mobile: editingCustomer.mobile || '',
         email: editingCustomer.email || '',
         alternateMobile: editingCustomer.alternateMobile || '',
+        whatsappNumber: (editingCustomer as any).whatsappNumber || '',
         facebookId: (editingCustomer as any).facebookId || '',
         instagramId: (editingCustomer as any).instagramId || '',
+        gstin: (editingCustomer as any).gstin || '',
+        dateOfBirth: (editingCustomer as any).dateOfBirth || '',
+        photo: (editingCustomer as any).photo || '',
         address: editingCustomer.address || '',
         city: editingCustomer.city || '',
         state: editingCustomer.state || '',
@@ -151,11 +155,15 @@ export function CustomerFormModal({
     }
   };
 
-  const handleSave = async () => {
+  // `force: true` skips the duplicate check server-side — used only by the
+  // "Continue Creating New Customer" button once the admin has already seen
+  // the possible-match candidates and deliberately chosen to proceed anyway.
+  const handleSave = async (force = false) => {
     setError(null);
-    setDuplicateCustomer(null);
+    if (!force) setDuplicates(null);
     if (!form.name.trim()) { setError('Customer name is required.'); return; }
     if (!/^[0-9]{10}$/.test(form.mobile)) { setError('A valid 10-digit mobile number is required.'); return; }
+    if (form.whatsappNumber && !/^[0-9]{10}$/.test(form.whatsappNumber)) { setError('WhatsApp number must be a valid 10-digit number.'); return; }
     if (form.email && !EMAIL_FORMAT_RE.test(form.email)) { setError('Please enter a valid email address.'); return; }
 
     setSaving(true);
@@ -168,14 +176,15 @@ export function CustomerFormModal({
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, force }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        // A duplicate mobile on create means this customer already exists —
-        // Customer ID is the primary business identity, so offer to use the
-        // existing record instead of leaving Admin stuck on a bare error.
-        if (!isEditing && json.existingCustomer) setDuplicateCustomer(json.existingCustomer);
+        // "Possible existing customer found" — Customer ID is the primary
+        // business identity, so every match is shown with Open Existing /
+        // Continue Creating New / Cancel, never a silent block or a silent
+        // second record.
+        if (json.duplicates?.length) setDuplicates(json.duplicates);
         // json.detail (only ever present for a real backend/driver failure,
         // never for a validation message) is shown inline so a save failure
         // is diagnosable from the modal itself, not just a server log.
@@ -211,6 +220,25 @@ export function CustomerFormModal({
         <div className="space-y-4">
           <div>
             <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Basic Information</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
+                {form.photo ? <img src={form.photo} alt="Customer" className="w-full h-full object-cover" /> : <UserCircle2 className="w-9 h-9 text-slate-700" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="customer-photo-input" className="cursor-pointer text-xs font-bold text-blue-400 border border-slate-800 rounded-md px-3 py-1.5 hover:bg-slate-800">
+                  {form.photo ? 'Change Photo' : 'Upload Photo'}
+                </Label>
+                <input id="customer-photo-input" type="file" accept="image/*" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onloadend = () => update('photo', reader.result as string);
+                  reader.readAsDataURL(file);
+                }} />
+                {form.photo && <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-rose-400" onClick={() => update('photo', '')}><XIcon className="w-3.5 h-3.5" /></Button>}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Customer Name *</Label>
@@ -223,6 +251,14 @@ export function CustomerFormModal({
               <div>
                 <Label className="text-xs text-slate-400">Alternate Mobile</Label>
                 <Input value={form.alternateMobile} onChange={e => update('alternateMobile', e.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-400">WhatsApp Number</Label>
+                <Input value={form.whatsappNumber} onChange={e => update('whatsappNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder={form.mobile || 'Same as mobile if blank'} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-400">GSTIN</Label>
+                <Input value={form.gstin} onChange={e => update('gstin', e.target.value.toUpperCase())} placeholder="24XXXXX0000X1Z5" className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC] font-code" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Email</Label>
@@ -247,6 +283,10 @@ export function CustomerFormModal({
               <div>
                 <Label className="text-xs text-slate-400">Instagram ID</Label>
                 <Input value={form.instagramId} onChange={e => update('instagramId', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-400">Date of Birth</Label>
+                <Input type="date" value={form.dateOfBirth} onChange={e => update('dateOfBirth', e.target.value)} className="mt-1 bg-slate-950 border-slate-800 text-[#F8FAFC]" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs text-slate-400">Category</Label>
@@ -326,27 +366,42 @@ export function CustomerFormModal({
             </Select>
           </div>
 
-          {error && (
-            <div className="text-xs bg-rose-900/20 border border-rose-800 rounded-lg p-2.5 space-y-2">
+          {error && !duplicates && (
+            <div className="text-xs bg-rose-900/20 border border-rose-800 rounded-lg p-2.5">
               <p className="text-rose-300">{error}</p>
-              {duplicateCustomer && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-rose-700/60 text-rose-200 hover:bg-rose-900/40 h-8"
-                  onClick={() => onSaved(duplicateCustomer)}
-                >
-                  Use Existing Customer ({duplicateCustomer.id})
+            </div>
+          )}
+
+          {duplicates && duplicates.length > 0 && (
+            <div className="bg-amber-900/20 border border-amber-800 rounded-lg p-3 space-y-2.5">
+              <p className="text-xs font-bold text-amber-300">Possible existing customer found</p>
+              <div className="space-y-2">
+                {duplicates.map(d => (
+                  <div key={d.id} className="flex items-center justify-between gap-3 bg-slate-950/60 border border-amber-800/40 rounded-lg px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="font-code text-[11px] font-bold text-amber-300">{d.id}</p>
+                      <p className="text-xs text-slate-200 truncate">{d.name}</p>
+                      <p className="text-[10px] text-slate-400 font-code">{d.mobile}{d.address ? ` • ${d.address}` : ''}</p>
+                    </div>
+                    <Button type="button" size="sm" variant="outline" className="border-amber-700/60 text-amber-200 hover:bg-amber-900/40 h-8 shrink-0" onClick={() => onSaved(d)}>
+                      Open Existing
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" size="sm" variant="ghost" className="text-slate-400 h-8" onClick={() => { setDuplicates(null); setError(null); }}>Cancel</Button>
+                <Button type="button" size="sm" variant="outline" className="border-slate-700 h-8" onClick={() => handleSave(true)} disabled={saving}>
+                  Continue Creating New Customer
                 </Button>
-              )}
+              </div>
             </div>
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" className="border-slate-800" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={handleSave} disabled={saving}>
+          <Button className="bg-[#0066FF] hover:bg-[#0052CC]" onClick={() => handleSave(false)} disabled={saving}>
             {saving && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
             {isEditing ? 'Save Changes' : 'Add Customer'}
           </Button>

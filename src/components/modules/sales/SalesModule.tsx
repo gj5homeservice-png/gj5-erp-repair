@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Plus, Search, Eye, Pencil, Printer, FileText, Wallet, Trash2, AlertTriangle, RefreshCw, X, Loader2,
   ShoppingCart, CalendarDays, CalendarRange, BadgeCheck, Clock, Ban, ChevronLeft, ChevronRight, ExternalLink,
@@ -38,6 +38,19 @@ export function SalesModule({ store }: { store: any }) {
   const { toast } = useToast();
   const [view, setView] = useState<'list' | 'form'>('list');
   const [editing, setEditing] = useState<SalesOrder | null>(null);
+  const [initialCustomer, setInitialCustomer] = useState<{ id: string; name: string; mobile: string } | null>(null);
+
+  // "Create Sale" from a Customer Profile lands here with the customer
+  // already picked — consumed once, then cleared so it never re-triggers.
+  useEffect(() => {
+    if (store.pendingCustomerAction?.action === 'sale') {
+      setInitialCustomer(store.pendingCustomerAction.customer);
+      setEditing(null);
+      setView('form');
+      store.setPendingCustomerAction(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.pendingCustomerAction]);
   const [viewing, setViewing] = useState<SalesOrder | null>(null);
   const [paying, setPaying] = useState<SalesOrder | null>(null);
   const [deleting, setDeleting] = useState<SalesOrder | null>(null);
@@ -168,9 +181,9 @@ export function SalesModule({ store }: { store: any }) {
   if (view === 'form') {
     return (
       <TransactionForm
-        store={store} mode="sale" editing={editing}
-        onClose={() => { setView('list'); setEditing(null); }}
-        onSaved={(msg) => { toast({ title: 'Saved', description: msg }); setView('list'); setEditing(null); }}
+        store={store} mode="sale" editing={editing} initialCustomer={initialCustomer}
+        onClose={() => { setView('list'); setEditing(null); setInitialCustomer(null); }}
+        onSaved={(msg) => { toast({ title: 'Saved', description: msg }); setView('list'); setEditing(null); setInitialCustomer(null); }}
       />
     );
   }

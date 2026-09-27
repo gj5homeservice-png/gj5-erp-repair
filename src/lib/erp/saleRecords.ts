@@ -288,10 +288,9 @@ export async function insertDelivery(
 
 export interface SaleActor { label: string }
 
-// Who performed the action, for the audit columns (owner/admin sessions have no employee id).
-export function actorFrom(auth: { employeeId: string | null }): SaleActor {
-  return { label: auth.employeeId ? `Employee ${auth.employeeId}` : 'Owner' };
-}
+// Re-exported for existing callers — the canonical definition now lives in
+// api-auth.ts (shared with Customer Management's audit trail).
+export { actorFrom } from '../api-auth';
 
 export async function createSale(email: string, body: any, actor: SaleActor, opts: { generateInvoice?: boolean } = {}) {
   const status = body?.orderStatus ? normalizeSaleStatus(body.orderStatus) : 'Completed';

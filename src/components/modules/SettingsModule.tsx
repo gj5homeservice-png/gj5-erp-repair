@@ -495,9 +495,12 @@ export function SettingsModule({ store, onNavigate }: { store: any; onNavigate?:
             <SectionHeader title="Numbering & ID Prefixes" description="Prefixes used when new records are created." />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {settingText('invoicePrefix', 'Invoice Number Prefix')}
-              {settingText('customerIdPrefix', 'Customer ID Prefix')}
+              {settingText('customerIdPrefix', 'Customer ID Prefix (legacy)')}
+              {settingText('customerIdStartNumber', 'Customer ID Start Number', 'number')}
             </div>
-            <p className="text-[10px] text-slate-600 mt-4">Repair Job IDs use category-specific prefixes (e.g. TV, PC, CCTV) assigned automatically by service category and are not affected by this setting. Existing IDs already issued never change.</p>
+            <p className="text-[10px] text-slate-600 mt-4">
+              New customers get a permanent, sequential ID in the format <span className="font-code text-slate-400">CUST-1001</span> — the number here is the floor for the next one ever issued (default 1001); raising it later applies from the next customer onward and can never reissue a number already given out. Existing customers keep their current ID unchanged. Repair Job IDs use category-specific prefixes (e.g. TV, PC, CCTV) assigned automatically by service category and are not affected by this setting.
+            </p>
             <div className="pt-6"><SaveBar label="Numbering & ID Prefixes" /></div>
           </div>
         );

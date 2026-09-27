@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Plus, Search, Eye, Pencil, Printer, Receipt, Wallet, Trash2, AlertTriangle, RefreshCw, X, Loader2, ArrowRightCircle,
   ClipboardList, Sparkles, Hourglass, CheckCircle2, Cog, PackageCheck, Truck, Ban, ChevronLeft, ChevronRight,
@@ -31,6 +31,19 @@ export function OrdersModule({ store, onNavigate }: { store: any; onNavigate?: (
   const { toast } = useToast();
   const [view, setView] = useState<'list' | 'form'>('list');
   const [editing, setEditing] = useState<CustomerOrder | null>(null);
+  const [initialCustomer, setInitialCustomer] = useState<{ id: string; name: string; mobile: string } | null>(null);
+
+  // "Create Order" from a Customer Profile lands here with the customer
+  // already picked — consumed once, then cleared so it never re-triggers.
+  useEffect(() => {
+    if (store.pendingCustomerAction?.action === 'order') {
+      setInitialCustomer(store.pendingCustomerAction.customer);
+      setEditing(null);
+      setView('form');
+      store.setPendingCustomerAction(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.pendingCustomerAction]);
   const [viewing, setViewing] = useState<CustomerOrder | null>(null);
   const [paying, setPaying] = useState<CustomerOrder | null>(null);
   const [deleting, setDeleting] = useState<CustomerOrder | null>(null);
@@ -139,9 +152,9 @@ export function OrdersModule({ store, onNavigate }: { store: any; onNavigate?: (
   if (view === 'form') {
     return (
       <TransactionForm
-        store={store} mode="order" editing={editing}
-        onClose={() => { setView('list'); setEditing(null); }}
-        onSaved={(msg) => { toast({ title: 'Saved', description: msg }); setView('list'); setEditing(null); }}
+        store={store} mode="order" editing={editing} initialCustomer={initialCustomer}
+        onClose={() => { setView('list'); setEditing(null); setInitialCustomer(null); }}
+        onSaved={(msg) => { toast({ title: 'Saved', description: msg }); setView('list'); setEditing(null); setInitialCustomer(null); }}
       />
     );
   }

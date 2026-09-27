@@ -106,6 +106,7 @@ export async function POST(request: Request) {
         defaultMinStockLevel: 'default_min_stock_level', defaultPaymentMode: 'default_payment_mode',
         defaultDueDays: 'default_due_days', warrantyExpiringSoonDays: 'warranty_expiring_soon_days',
         standardCheckInTime: 'standard_check_in_time', lateThresholdMinutes: 'late_threshold_minutes',
+        customerIdStartNumber: 'customer_id_start_number',
         logoUrl: 'logo_url', adminTheme: 'admin_theme', transportationTemplates: 'transportation_templates',
         companyName: 'company_name', tagline: 'tagline', gstNumber: 'gst_number', panNumber: 'pan_number',
         ownerMobile: 'owner_mobile', alternateMobile: 'alternate_mobile', ownerEmail: 'owner_email',

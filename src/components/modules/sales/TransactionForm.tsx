@@ -15,7 +15,7 @@ import {
   computeTotals, derivePaymentStatus, remaining, round2, validateSaleInput, validateOrderInput,
   PAYMENT_METHODS, PAYMENT_STATUS_BADGE, isActiveSale, normalizeSaleStatus,
 } from '@/lib/sales-utils';
-import { CustomerPicker, ProductPicker, useCustomerDirectory, money } from './shared';
+import { CustomerPicker, ProductPicker, money } from './shared';
 
 // One form for both modules — New/Edit Sale and New/Edit Order share the same
 // customer + product + pricing + payment fields, so they share the code and
@@ -28,22 +28,25 @@ const label = 'text-[10px] uppercase font-bold text-slate-500';
 const input = 'bg-slate-900 border-slate-800 h-11 text-[#F8FAFC]';
 
 export function TransactionForm({
-  store, mode, editing, onClose, onSaved,
+  store, mode, editing, onClose, onSaved, initialCustomer,
 }: {
   store: any;
   mode: Mode;
   editing?: any | null;
   onClose: () => void;
   onSaved: (message: string) => void;
+  // Pre-selects the customer when this form was opened via a Customer
+  // Profile's "Create Sale"/"Create Order" quick action (see
+  // store.pendingCustomerAction) — ignored once editing an existing record.
+  initialCustomer?: { id: string; name: string; mobile: string } | null;
 }) {
   const isEdit = !!editing;
   const isSale = mode === 'sale';
-  const directory = useCustomerDirectory();
   const stock: any[] = store.stock || [];
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const [customer, setCustomer] = useState<{ id: string; name: string; mobile: string } | null>(
-    editing ? { id: editing.customerId, name: editing.customerName, mobile: editing.mobile } : null
+    editing ? { id: editing.customerId, name: editing.customerName, mobile: editing.mobile } : (initialCustomer || null)
   );
   const [productId, setProductId] = useState<string>(editing?.productId || '');
   const [brand, setBrand] = useState<string>(editing?.brand || '');
@@ -169,7 +172,7 @@ export function TransactionForm({
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><User className="w-3.5 h-3.5" /> Customer</h4>
-            <CustomerPicker selected={customer} directory={directory} disabled={invoiceLocked}
+            <CustomerPicker selected={customer} disabled={invoiceLocked}
               onSelect={(c) => setCustomer(c ? { id: c.id, name: c.name || '', mobile: c.mobile || '' } : null)} />
             {customer && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

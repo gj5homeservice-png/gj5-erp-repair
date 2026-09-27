@@ -75,6 +75,8 @@ const TransportationModule = dynamic(() => import('@/components/modules/Transpor
 const RepairJobsModule = dynamic(() => import('@/components/modules/repair/RepairJobsModule').then(m => m.RepairJobsModule), { loading: ModuleLoading, ssr: false });
 const OnlineBookingsModule = dynamic(() => import('@/components/modules/onlineBookings/OnlineBookingsModule').then(m => m.OnlineBookingsModule), { loading: ModuleLoading, ssr: false });
 const CustomerDepartmentModule = dynamic(() => import('@/components/modules/customers/CustomerDepartmentModule').then(m => m.CustomerDepartmentModule), { loading: ModuleLoading, ssr: false });
+const GlobalQuickSearch = dynamic(() => import('@/components/modules/customers/GlobalQuickSearch').then(m => m.GlobalQuickSearch), { ssr: false });
+const CustomerProfileModal = dynamic(() => import('@/components/modules/customers/CustomerProfileModal').then(m => m.CustomerProfileModal), { ssr: false });
 const SalesModule = dynamic(() => import('@/components/modules/sales/SalesModule').then(m => m.SalesModule), { loading: ModuleLoading, ssr: false });
 const OrdersModule = dynamic(() => import('@/components/modules/orders/OrdersModule').then(m => m.OrdersModule), { loading: ModuleLoading, ssr: false });
 
@@ -169,6 +171,11 @@ const DashboardModule = ({ store }: { store: any }) => (
 export default function ErpMainHub() {
   const [activeTab, setActiveTabState] = useState('Dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Ctrl+K quick customer lookup — mounted once here (not inside any one
+  // module) so it works from every tab. Opening a result shows its full
+  // profile via this same top-level modal, independent of whichever module
+  // is currently on screen.
+  const [globalCustomerId, setGlobalCustomerId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [syncTimeout, setSyncTimeout] = useState(false);
   const store = useErpStore();
@@ -324,7 +331,7 @@ export default function ErpMainHub() {
       case 'Settings': return <SettingsModule store={store} onNavigate={setActiveTab} />;
       case 'Repair Jobs': return <RepairJobsModule store={store} />;
       case 'Online Bookings': return <OnlineBookingsModule store={store} />;
-      case 'Customer Department': return <CustomerDepartmentModule store={store} />;
+      case 'Customer Department': return <CustomerDepartmentModule store={store} onNavigate={setActiveTab} />;
       case 'Sales': return <SalesModule store={store} />;
       case 'Orders': return <OrdersModule store={store} onNavigate={setActiveTab} />;
       default: return <DashboardModule store={store} />;
@@ -480,13 +487,14 @@ export default function ErpMainHub() {
                >
                  <Menu className="w-5 h-5" />
                </Button>
-               <div className="relative w-full max-w-xs sm:max-w-sm hidden sm:block">
+               <button type="button" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))} className="relative w-full max-w-xs sm:max-w-sm hidden sm:block text-left">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
                   <Input
-                    placeholder="Audit: Jobs, Stock, Invoices..."
-                    className="pl-10 h-11 border-slate-800 focus-visible:ring-[#123C8C] placeholder:text-slate-600 bg-white text-slate-900"
+                    readOnly
+                    placeholder="Search Customer (Ctrl+K)..."
+                    className="pl-10 h-11 border-slate-800 focus-visible:ring-[#123C8C] placeholder:text-slate-600 bg-white text-slate-900 cursor-pointer"
                   />
-               </div>
+               </button>
             </div>
 
             <div className="flex items-center gap-3 md:gap-6 shrink-0">
@@ -527,6 +535,16 @@ export default function ErpMainHub() {
           </div>
         </main>
       </div>
+
+      <GlobalQuickSearch onOpenCustomer={setGlobalCustomerId} />
+      <CustomerProfileModal
+        customerId={globalCustomerId}
+        onClose={() => setGlobalCustomerId(null)}
+        store={store}
+        onCreateSale={(c) => { store.setPendingCustomerAction?.({ action: 'sale', customer: c }); setGlobalCustomerId(null); setActiveTab('Sales'); }}
+        onCreateOrder={(c) => { store.setPendingCustomerAction?.({ action: 'order', customer: c }); setGlobalCustomerId(null); setActiveTab('Orders'); }}
+        onCreateRepair={(c) => { store.setPendingCustomerAction?.({ action: 'repair', customer: c }); setGlobalCustomerId(null); setActiveTab('Repairing'); }}
+      />
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }

@@ -133,7 +133,7 @@ const PICKUP_DELIVERY_OPTIONS: { value: PickupDeliveryOption; label: string }[] 
   { value: 'CUSTOMER_DROP_OUR_DELIVERY', label: 'Customer Drop + Our Delivery' },
 ];
 
-export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }: any) {
+export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage, initialCustomer }: any) {
   const [activeTab, setActiveTab] = useState('Registry');
   const [estimatedCost, setEstimatedCost] = useState(0);
   const [advancePayment, setAdvancePayment] = useState(0);
@@ -219,8 +219,13 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
       setNotFoundMobile('');
       setCustomerEmail('');
       setPickupDeliveryOption('OUR_PICKUP_CUSTOMER_PICKUP');
+      // "Create Repair" from a Customer Profile lands here with the customer
+      // already chosen — same effect as a successful Customer ID lookup,
+      // just skipping the manual search step.
+      if (initialCustomer) applyCustomerMatch(initialCustomer);
     }
-  }, [editingCall, isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingCall, isOpen, initialCustomer]);
 
   // Populates the repair form from a Customer Master record — used by both
   // Customer ID and Mobile Number lookup, and by the "Add New Customer" /
@@ -242,6 +247,10 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
     setNotFoundMobile('');
   };
 
+  // Uses the same fast, indexed /api/erp/customers/search every other
+  // picker in the app calls — never fetches the full customer list (that
+  // used to be the case here, and stopped scaling once the customer base
+  // grew: see the Customer Management search-performance requirement).
   const handleCustomerSearch = async (mode: 'id' | 'mobile') => {
     const raw = mode === 'id' ? lookupCustomerId.trim() : lookupMobile.trim();
     if (!raw) return;
@@ -249,15 +258,15 @@ export function CallModal({ isOpen, onClose, editingCall, store, renderAsPage }:
     setMatchedCustomer(null);
     try {
       const token = getAuthToken();
-      const res = await fetch('/api/erp/customers', {
+      const res = await fetch(`/api/erp/customers/search?q=${encodeURIComponent(raw)}&limit=10`, {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Could not search customers.');
       const list: any[] = json.data || [];
       const match = mode === 'id'
-        ? list.find(c => c.id.toLowerCase() === raw.toLowerCase())
-        : list.find(c => c.mobile === raw);
+        ? list.find(c => c.id.toLowerCase() === raw.toLowerCase()) || list[0]
+        : list.find(c => c.mobile === raw) || list[0];
       if (match) {
         applyCustomerMatch(match);
       } else {

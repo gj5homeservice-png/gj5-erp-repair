@@ -623,6 +623,9 @@ export interface SystemSettings {
   deletePassword: string;
   invoicePrefix: string;
   customerIdPrefix: string;
+  // Migration 021 — floor applied to every future Customer ID allocation
+  // (see src/lib/erp/customers.ts's allocateCustomerId). Default 1001.
+  customerIdStartNumber?: number;
   defaultWarrantyDuration: string;
   defaultPickupRequired: boolean;
   defaultMinStockLevel: number;

@@ -20,6 +20,8 @@ const COLUMNS: Record<string, string> = {
   deletePassword: 'delete_password',
   invoicePrefix: 'invoice_prefix',
   customerIdPrefix: 'customer_id_prefix',
+  // Migration 021 — floor applied to every future Customer ID allocation.
+  customerIdStartNumber: 'customer_id_start_number',
   defaultWarrantyDuration: 'default_warranty_duration',
   defaultPickupRequired: 'default_pickup_required',
   defaultMinStockLevel: 'default_min_stock_level',

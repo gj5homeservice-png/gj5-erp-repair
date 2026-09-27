@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Clock, 
@@ -101,7 +101,19 @@ function repeatJobIds(jobs: RepairJob[]): Set<string> {
 
 export function RepairingModule({ store }: { store: any }) {
   const [showNewRepairForm, setShowNewRepairForm] = useState(false);
+  const [initialCustomer, setInitialCustomer] = useState<{ id: string; name: string; mobile: string } | null>(null);
   const [editingJob, setEditingJob] = useState<RepairJob | null>(null);
+
+  // "Create Repair" from a Customer Profile lands here with the customer
+  // already picked — consumed once, then cleared so it never re-triggers.
+  useEffect(() => {
+    if (store.pendingCustomerAction?.action === 'repair') {
+      setInitialCustomer(store.pendingCustomerAction.customer);
+      setShowNewRepairForm(true);
+      store.setPendingCustomerAction(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.pendingCustomerAction]);
   const [stickerCall, setStickerCall] = useState<RepairJob | null>(null);
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,7 +197,7 @@ export function RepairingModule({ store }: { store: any }) {
   ].filter(kpi => store.visibility.kpis[kpi.id as keyof typeof store.visibility.kpis]);
 
   if (showNewRepairForm) {
-    return <CallModal renderAsPage isOpen={true} onClose={() => setShowNewRepairForm(false)} editingCall={null} store={store} />;
+    return <CallModal renderAsPage isOpen={true} onClose={() => { setShowNewRepairForm(false); setInitialCustomer(null); }} editingCall={null} store={store} initialCustomer={initialCustomer} />;
   }
 
   // Reuses the exact same edit/update form the Repair Jobs module uses —
